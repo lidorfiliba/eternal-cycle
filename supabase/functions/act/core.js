@@ -82,9 +82,13 @@ const SLOTS=['w','h','a','p','l','b','g'],DROPS=['w','h','a','p','l','b'],ARM={h
 const SLOTN={w:'נשק',h:'קסדה',a:'שריון',p:'מכנסיים',l:'כפפות',b:'מגפיים',g:'כנפיים'};
 const SETN=['שומרי היער','חופרי האבק','ילדי הערפל','זעם החולות','לב הכפור','גחלת נצחית','צל המגדל','כתר הנצח','בני התהום','נסיכי הקרח','אוצר ההיכל','לב המעגל','שומרי הזמן','יוצרי העולם'];
 const SETB=[[2,'hp',10],[3,'dmg',12],[4,'cdmg',25],[5,'aspd',8],[6,'dmg',25],[6,'xp',20]];
+// Every gear tier has two ancient sets: the first hits harder, the second (v:1) holds the line and finds more.
+const SETN2=['ציידי הלילה','אבירי האבן','קוראי הסערה','נוודי השמש','שומרי הקרחון','בני הלהבה','לוחשי הצל','מלכי הנצח','שליטי המעמקים','אדוני הסופה','שומרי האוצר','חותמי המעגל','נוסעי הזמן','אבות הבריאה'];
+const SETB2=[[2,'def',12],[3,'hp',15],[4,'crit',5],[5,'drop',10],[6,'hp',30],[6,'gold',25]];
+const setKey=it=>(it.t-1)+(it.v?'b':''),setName=k=>(String(k).slice(-1)==='b'?SETN2:SETN)[parseInt(k)],setTable=k=>String(k).slice(-1)==='b'?SETB2:SETB;
 const rslot=()=>DROPS[Math.floor(_rnd()*DROPS.length)];
 const isSet=it=>it&&it.r===4&&it.s!=='g'&&it.z>=0;
-function setCounts(s){const c={};for(const k of DROPS){const it=s.eq[k];if(isSet(it))c[it.t-1]=(c[it.t-1]||0)+1;}return c;} // a set is its gear tier: pieces from any map of that tier belong together
+function setCounts(s){const c={};for(const k of DROPS){const it=s.eq[k];if(isSet(it)){const k=setKey(it);c[k]=(c[k]||0)+1;}}return c;} // a set is its gear tier: pieces from any map of that tier belong together
 const UPCH=[.75,.65,.55,.5,.45,.4,.35,.3,.25];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const need=L=>Math.round((4+0.07*L)/1.5*10*Math.pow(1+L/50,1.6)*(1+1.25*Math.min(1,L/100)));
@@ -122,7 +126,7 @@ function ensureDay(s){
   if(s.pass.key!==seasonKey())s.pass={key:seasonKey(),xp:0,claimed:0};
 }
 function itemVals(it){
-  const m=RAR[it.r].m*(1+0.08*it.p);
+  const m=RAR[it.r].m*(1+0.08*it.p)*(it.pf?PERFECT_M:1);
   if(it.s==='w')return {atk:Math.round((20+25*it.t)*m)};
   if(ARM[it.s])return {hp:Math.round((80+110*it.t)*m*ARM[it.s]),def:Math.round((8+9*it.t)*m*ARM[it.s])};
   const w=wingBase(it.t)*(1+0.06*it.p)*(1+0.1*it.r);
@@ -130,7 +134,7 @@ function itemVals(it){
 }
 function itemName(it,cls){
   if(it.s==='g')return (it.ex?(isFull(it)?'אקסלנט מלא · ':'אקסלנט · '):'')+(it.season?'כנפי העונה':WINGN[it.t-1]);
-  return (it.ex?(isFull(it)?'אקסלנט מלא · ':'אקסלנט · '):'')+(it.s==='w'?CLS[cls].wn:SLOTN[it.s])+(isSet(it)?' · '+SETN[it.t-1]:' '+TIERN[it.t-1]);
+  return (it.pf?'עתיק מושלם · ':it.ex?(isFull(it)?'אקסלנט מלא · ':'אקסלנט · '):'')+(it.s==='w'?CLS[cls].wn:SLOTN[it.s])+(isSet(it)?' · '+setName(setKey(it)):' '+TIERN[it.t-1]);
 }
 function itemScore(it){
   const v=itemVals(it);let b=it.s==='w'?v.atk:ARM[it.s]?v.hp+v.def*10:v.wd*100;if(isSet(it))b*=1.15;
@@ -148,7 +152,7 @@ function calc(s,au){
   let atk=0,ahp=0,adef=0,wd=0,wh=0;
   for(const k of SLOTS){const it=s.eq[k];if(!it)continue;const v=itemVals(it);
     atk+=v.atk||0;ahp+=v.hp||0;adef+=v.def||0;wd+=v.wd||0;wh+=v.wh||0;for(const f of it.af)a[f[0]]+=f[1];}
-  const sc=setCounts(s);for(const z in sc)for(const b of SETB)if(sc[z]>=b[0])a[b[1]]+=b[2];
+  const sc=setCounts(s);for(const z in sc)for(const b of setTable(z))if(sc[z]>=b[0])a[b[1]]+=b[2];
   const main=st[c.main];
   const base=10+main*c.coef+(st.str+st.agi+st.ene-main)*0.15+atk;
   const ml=mastery(s.kills);
@@ -240,17 +244,23 @@ function makeExcellent(it){const max=POOL[it.s].length,i=rollRar(EXW),n=i===5?ma
 const isFull=it=>!!(it&&it.ex&&it.af.length>=POOL[it.s].length);
 function makeItem(s,slot,t,r,zi,extra){
   const it={id:s.nid++,s:slot,t:t,r:r,p:0,z:zi,af:rollAff(slot,t,zi>=0?ZONES[zi].sig:null,r)};
+  if(r===4&&slot!=='g'&&zi>=0&&(it.id*7+zi)%2)it.v=1;
   if(extra)Object.assign(it,extra);return it;
 }
+// The rarest thing in the game: an ancient set piece with every option it can hold and stronger base numbers.
+// It only falls from bosses, champions and high tower floors, at odds that make a full set a matter of months.
+const PERFECT_M=1.3,PERFECT_BOSS=.0003,PERFECT_ELITE=.0015,PERFECT_TOWER=.003,PERFECT_FLOOR=20;
+function perfectDrop(S,zi,rep,ch){if(!(_rnd()<ch))return null;const it=makeItem(S,rslot(),tierOf(zi),4,zi);it.ex=1;while(addOpt(it));it.pf=1;gainItem(S,it,rep);if(rep){(rep.notable=rep.notable||[]).unshift(it);rep.perfect=1;}return it;}
 function rollRar(tab){let x=_rnd()*100;for(let i=0;i<tab.length;i++){x-=tab[i];if(x<0)return i;}return 0;}
-const sellVal=it=>Math.round(20*(it.s==='g'?it.t*3:it.t)*(it.r+1)*(it.r+1)*(1+it.p*.3)*(it.ex?3:1));
+const sellVal=it=>Math.round(20*(it.s==='g'?it.t*3:it.t)*(it.r+1)*(it.r+1)*(1+it.p*.3)*(it.ex?3:1)*(it.pf?20:1));
 // What the character bends down for. Gold, soul stones, boxes and shards are always taken; gear is taken by rarity,
 // with ancient-set pieces, wings and excellent items as their own switches. What is not picked up stays on the ground.
 const PICK_KEYS=['0','1','2','3','4','set','g','ex'];
 const pickOf=A=>{const p=A.pick||{},o={};for(const k of PICK_KEYS)o[k]=p[k]!==false;return o;};
-function picks(s,it){const p=pickOf(s);if(it.ex)return p.ex;if(it.s==='g')return p.g;if(isSet(it))return p.set;return p[it.r];}
-const dropNote=(rep,it,cls,left)=>{if(rep){const l=rep.names=rep.names||[];if(l.length<8)l.push([itemName(it,cls),it.ex?5:it.r,left?1:0]);}};
+function picks(s,it){const p=pickOf(s);if(it.pf)return true;if(it.ex)return p.ex;if(it.s==='g')return p.g;if(isSet(it))return p.set;return p[it.r];}
+const dropNote=(rep,it,cls,left)=>{if(rep){const l=rep.names=rep.names||[];if(l.length<8)l.push([itemName(it,cls),it.pf?6:it.ex?5:it.r,left?1:0]);}};
 function stash(s,it,rep){
+  if(it.pf){s.inv.push(it);return true;} // never sold on the way in, even with a full bag
   const weak=it.r<s.autoSell&&!it.ex;
   if(weak||s.inv.length>=BAG){const g=sellVal(it);s.gold+=g;if(rep){rep.sold=(rep.sold||0)+1;rep.gold=(rep.gold||0)+g;}return false;}
   s.inv.push(it);return true;
@@ -689,7 +699,7 @@ function apply(A,kind,args,ctx){
       if(args.elite&&A.elite){ // enough time must have passed to deal its health in damage, as with a boss
         if((now-A.elite.t)/1000*c.dps*2.8>=zd.hp*ELITE_HP*.9){A.elite=null;rep.levels=(rep.levels||0)+addXp(S,zd.xp*15*c.xpM*pb);
           const it=makeItem(S,rslot(),tierOf(z),rollRar([0,0,74,22,4]),z);if(_rnd()<.06)makeExcellent(it);gainItem(S,it,rep);(rep.notable=rep.notable||[]).push(it);
-          const g=1+Math.floor(_rnd()*2);A.gems+=g;rep.gems=(rep.gems||0)+g;const sh=1+Math.floor(_rnd()*2);A.shards=(A.shards||0)+sh;rep.shards=(rep.shards||0)+sh;rep.elite=true;A.elites=(A.elites||0)+1;}
+          const g=1+Math.floor(_rnd()*2);A.gems+=g;rep.gems=(rep.gems||0)+g;const sh=1+Math.floor(_rnd()*2);A.shards=(A.shards||0)+sh;rep.shards=(rep.shards||0)+sh;rep.elite=true;A.elites=(A.elites||0)+1;perfectDrop(S,z,rep,PERFECT_ELITE);}
         else rep.eliteDenied=true;}
       if(args.boss){
         const b=A.bossAt;
@@ -698,6 +708,7 @@ function apply(A,kind,args,ctx){
           if(_rnd()<.08){A.jewels=(A.jewels||0)+1;rep.jewel=1;}
           if(_rnd()<.05){A.feathers=(A.feathers||0)+1;rep.feather=1;}
           A.bossAt=null;rep.levels=(rep.levels||0)+addXp(S,zd.xp*40*c.xpM*pb);rollLoot(S,z,1,c,rep);
+          perfectDrop(S,z,rep,PERFECT_BOSS);
           if(args.clean){A.gems+=1;rep.gems=(rep.gems||0)+1;rep.clean=1;A.cleans=(A.cleans||0)+1;} // none of its marked moves landed: only the client can know, so the bonus is small
           const it=makeItem(S,rslot(),tierOf(z),rollRar([0,0,70,25,5]),z);gainItem(S,it,rep);(rep.notable=rep.notable||[]).push(it);
           const g=2+Math.floor(_rnd()*3);A.gems+=g;rep.gems=(rep.gems||0)+g;if(_rnd()<.3){A.boxes++;rep.boxes=(rep.boxes||0)+1;}
@@ -790,7 +801,7 @@ function apply(A,kind,args,ctx){
     case 'towerEnd':{
       const pd=A.pd;if(!pd||!pd.tower)return fail('אין קרב פעיל');const el=(now-pd.t)/1000,f=pd.tower;let win=!!args.win;
       if(win&&el<1/(pd.live.b[0]*DUEL_LIVE.maxRate)*.8){win=false;r.denied=true;}
-      A.pd=null;r.win=win;r.f=f;if(win){A.daily.tw=Math.max(0,(A.daily.tw|0)-1);A.tower.best=Math.max(A.tower.best|0,f);const rw=towerReward(f);give(A,S,rw);r.rt=towerText(rw);}break;}
+      A.pd=null;r.win=win;r.f=f;if(win){A.daily.tw=Math.max(0,(A.daily.tw|0)-1);A.tower.best=Math.max(A.tower.best|0,f);const rw=towerReward(f);give(A,S,rw);r.rt=towerText(rw);if(f>=PERFECT_FLOOR){const it=perfectDrop(S,clamp(A.open|0,0,ZONES.length-1),null,PERFECT_TOWER);if(it){r.perfect=1;r.notable=[it];}}}break;}
     case 'duelEnd':{
       const pd=A.pd;if(!pd||!pd.live||pd.tower)return fail('אין קרב פעיל');const el=(now-pd.t)/1000,claim=!!args.win;
       // fastest possible kill: ordinary hits with every crit landing plus every skill on cooldown
@@ -818,4 +829,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

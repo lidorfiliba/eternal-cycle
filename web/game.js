@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126190840';
-const {mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126193618';
+const {SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
@@ -97,7 +97,7 @@ const SC={t:0,cam:0,mons:[],boss:null,hero:{x:110,face:1,dir:0,hp:1,atkT:0,anim:
 const amb=[];for(let i=0;i<26;i++)amb.push({x:Math.random(),y:Math.random(),s:.5+Math.random()*1.5,v:.02+Math.random()*.05});
 const mapW=()=>SC.zi<0?TW:MW, gy=()=>Math.min(H*.8,H-112);
 function lookOf(s){const g=it=>it?[it.t,it.r,it.p,it.season?1:0,it.ex?(isFull(it)?2:1):0]:null,o={c:s.cls,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g),sp:armorPlus(s),r:A&&A.chars&&A.chars.includes(s)?totalResets(A):s.resets|0};
-  const sc=setCounts(s);let bz=-1,bn=0;for(const z in sc)if(sc[z]>bn){bn=sc[z];bz=+z;}if(bn>=4)o.set=[bn,TCOL[clamp(bz,0,11)]];return o;}
+  const sc=setCounts(s);let bz=-1,bn=0;for(const z in sc)if(sc[z]>bn){bn=sc[z];bz=parseInt(z);}if(bn>=4)o.set=[bn,TCOL[clamp(bz,0,11)]];let pf=0;for(const k in s.eq)if(s.eq[k]&&s.eq[k].pf)pf++;if(pf)o.pf=pf;return o;}
 function glowAmt(p,r,t){let g=p>=13?24:p>=11?16+5*Math.sin(t*6):p>=9?12:p>=7?7:0;if(r>=3)g=Math.max(g,6);return g;}
 function gearColor(g,t,fallback){if(!g)return fallback;if(g[2]>=15)return 'hsl('+((t*90)%360)+',95%,68%)';return RAR[g[1]].c;}
 const WPAL={1:['#2f7a45','#b6ef86'],2:['#2260c9','#a8e8ff'],3:['#c42d18','#ffbe55'],4:['#caa02e','#fff8d2'],5:['#35106b','#d596ff'],6:['#1b6ea8','#effcff'],7:['#a8740a','#fff1a8'],8:['#ff4fa3','#7df9ff'],s:['#a637ee','#62f3e2']};
@@ -332,6 +332,28 @@ function drawBackWeapon(x,y,look,t,k,flip){
   if((p>=9||ex)&&!calm&&Math.random()<(p>=13||ex===2?.3:.12))SC.parts.push({x:x+(flip?1:-1)*(4+Math.random()*10)*k,y:y-(6+Math.random()*22)*k,vx:0,vy:-14,life:.6,c:edge,s:2});
 }
 function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+// The body changes with the account's resets: fire at the back, cracked ground, a fan of blades, a crown, lightning.
+// Upgrades add sparkles one by one, and a perfect ancient piece puts moving colours around the wearer.
+const PRISM=['#ff5c7a','#ffb23e','#ffd75e','#62f3e2','#5aa9ff','#c77dff'];
+function drawForm(key,an,fi,x,y,bx,by,k,sc,bh,look,t,flip,front,anim){
+  const r=look.r|0,cc=(CLS[look.c]||CLS.blade).c,H=bh*k,hot=r>=25?'#ff3b5c':r>=10?'#ff7a3d':cc,av=look.sp?look.sp[1]|0:0,pf=look.pf|0;
+  if(!r&&!av&&!pf)return;ctx.save();ctx.globalCompositeOperation='lighter';
+  if(!front){
+    if(r>=6){ctx.strokeStyle=hot;ctx.shadowColor=hot;ctx.shadowBlur=8;ctx.lineWidth=1.6;ctx.globalAlpha=.45+.2*Math.sin(t*3);const n=r>=15?7:5;for(let i=0;i<n;i++){const a=i/n*6.28+.4,L=(20+((i*37)%14))*sc*(r>=25?1.3:1);ctx.beginPath();ctx.moveTo(x+Math.cos(a)*6*sc,y+1+Math.sin(a)*2*sc);ctx.lineTo(x+Math.cos(a+.25)*L*.55,y+1+Math.sin(a+.25)*L*.18);ctx.lineTo(x+Math.cos(a)*L,y+1+Math.sin(a)*L*.3);ctx.stroke();}}
+    if(r>=3){const sil=silhouette(key,hot);if(sil){ctx.shadowColor=hot;ctx.shadowBlur=14;const n=r>=15?3:2;for(let i=1;i<=n;i++)sprFrame(sil,key,an,fi,x,y,k,flip,(r>=25?.13:.15)/i,0,-i*2,1+.05*i+.02*Math.sin(t*9+i),1+.08*i+.035*Math.sin(t*11+i*2));}}
+    if(r>=40&&!calm){const cy=by-H*.6,R=36*sc;ctx.strokeStyle='#ffd75e';ctx.shadowColor='#ffd75e';ctx.shadowBlur=10;ctx.globalAlpha=.5;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(bx,cy,R,0,7);ctx.stroke();for(let i=0;i<8;i++){const a=t*.7+i*.785;ctx.beginPath();ctx.moveTo(bx+Math.cos(a)*R*.82,cy+Math.sin(a)*R*.82);ctx.lineTo(bx+Math.cos(a)*R*1.14,cy+Math.sin(a)*R*1.14);ctx.stroke();}}
+    if(r>=10){const n=r>=40?8:r>=25?6:r>=15?5:3,cy=by-H*.58,cx=bx-(flip?-1:1)*5*sc,fl=1+(anim>0?anim*.3:0);ctx.shadowColor=hot;ctx.shadowBlur=12;
+      for(let i=0;i<n;i++){const u=n>1?i/(n-1)-.5:0,a=-1.5708+u*(n>=6?2.5:1.9)+Math.sin(t*1.6+i)*.05,L=(26+(1-Math.abs(u)*1.2)*12+(r>=25?6:0))*sc*fl,d=14*sc,ox=cx+Math.cos(a)*d,oy=cy+Math.sin(a)*d,tx=cx+Math.cos(a)*(d+L),ty=cy+Math.sin(a)*(d+L),nx=-Math.sin(a)*3.2*sc,ny=Math.cos(a)*3.2*sc,mx=ox+(tx-ox)*.3,my=oy+(ty-oy)*.3;
+        ctx.globalAlpha=.8;ctx.fillStyle=hot;ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(mx+nx,my+ny);ctx.lineTo(tx,ty);ctx.lineTo(mx-nx,my-ny);ctx.closePath();ctx.fill();ctx.globalAlpha=.9;ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(tx,ty);ctx.stroke();}}
+    ctx.restore();return;}
+  if(r>=1&&!calm){const n=3+Math.min(6,r>>1);ctx.shadowColor=hot;ctx.shadowBlur=6;for(let i=0;i<n;i++){const ph=(t*.55+i*.371)%1;ctx.globalAlpha=(1-ph)*.85;ctx.fillStyle=i%3?hot:'#ffd9a0';const s2=(1.4+(i%3)*.6)*sc;ctx.fillRect(x+Math.sin(i*12.9+ph*3)*20*sc,y-ph*H*.95,s2,s2);}}
+  if(r>=15){const n=r>=25?5:3,hy=by-H-3*sc;ctx.fillStyle='#ffd75e';ctx.shadowColor='#ffd75e';ctx.shadowBlur=10;ctx.globalAlpha=.75+.2*Math.sin(t*4);for(let i=0;i<n;i++){const u=i-(n-1)/2,px=bx+u*6*sc,hh=(9-Math.abs(u)*2.2)*sc;ctx.beginPath();ctx.moveTo(px-2*sc,hy);ctx.lineTo(px,hy-hh);ctx.lineTo(px+2*sc,hy);ctx.closePath();ctx.fill();}}
+  if(r>=25&&!calm&&Math.floor(t*2.5)%3===0){const sd=Math.floor(t*14),rn=i=>{const v=Math.sin(sd*12.9898+i*78.233)*43758.5453;return v-Math.floor(v);};ctx.strokeStyle='#fff';ctx.shadowColor=hot;ctx.shadowBlur=12;ctx.globalAlpha=.8;ctx.lineWidth=1.4;const side=rn(0)<.5?-1:1;let px=bx+side*10*sc,py=by-H*.7;ctx.beginPath();ctx.moveTo(px,py);for(let i=1;i<=5;i++){px+=side*(rn(i)*10-2)*sc;py+=H*.14;ctx.lineTo(px,py);}ctx.stroke();}
+  if(av>0){const n=Math.min(15,av);ctx.fillStyle='#fff';ctx.shadowColor=cc;ctx.shadowBlur=8;for(let i=0;i<n;i++){const tw=Math.pow(Math.max(0,Math.sin(t*2.6+i*2.1)),3);if(tw<.05)continue;const px=x+Math.sin(i*91.7)*22*sc,py=y-((i*.618)%1)*H,S2=(1.6+av*.14)*sc*tw;ctx.globalAlpha=tw;ctx.beginPath();ctx.moveTo(px,py-S2*2);ctx.lineTo(px+S2*.5,py-S2*.5);ctx.lineTo(px+S2*2,py);ctx.lineTo(px+S2*.5,py+S2*.5);ctx.lineTo(px,py+S2*2);ctx.lineTo(px-S2*.5,py+S2*.5);ctx.lineTo(px-S2*2,py);ctx.lineTo(px-S2*.5,py-S2*.5);ctx.closePath();ctx.fill();}}
+  if(pf>0){const col=PRISM[Math.floor(t*3)%6],sil=silhouette(key,col);if(sil){ctx.shadowColor=col;ctx.shadowBlur=16;sprFrame(sil,key,an,fi,x,y,k,flip,.07+.02*pf,0,-1,1.05,1.04);}
+    const n=Math.min(12,pf*2);for(let i=0;i<n;i++){const a=t*1.8+i*6.28/n,px=bx+Math.cos(a)*26*sc,py=by-H*.5+Math.sin(a)*H*.42+Math.sin(a*2)*4;ctx.globalAlpha=Math.sin(a)>0?.95:.4;ctx.fillStyle=PRISM[(i+Math.floor(t*4))%6];ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=10;ctx.beginPath();ctx.arc(px,py,2.2*sc,0,7);ctx.fill();}}
+  ctx.restore();
+}
 function drawHero(x,y,sc,look,t,anim,flip,dead,mv,fury){
   const key=look.spr||CLSSPR[look.c],m=SPR[key],k=2*sc,cl=CLS[look.c]||CLS.blade;
   const maxP=Math.max(look.w?look.w[2]:0,look.ar?look.ar[2]:0,look.g?look.g[2]:0);
@@ -347,6 +369,7 @@ function drawHero(x,y,sc,look,t,anim,flip,dead,mv,fury){
   else if(mv){an='run';fi=Math.floor(t*12)%frames(key,'run');}
   else fi=fi%frames(key,'idle');
   const bs=look.spr||dead?[0,0]:bodyShift(key,an,fi),bx=x+(flip?-1:1)*bs[0]*k,by=y+bs[1]*k; // the body's place in this frame
+  if(!dead&&!look.spr)drawForm(key,an,fi,x,y,bx,by,k,sc,m.bh,look,t,flip,false,anim);
   if(look.g&&!dead)drawWings(bx,by,look.g,t,k,flip,look.c,m.bh,mv,anim);
   if(look.w&&!dead&&!look.spr)drawBackWeapon(bx-(flip?-1:1)*7*k,by-m.bh*k*.5,look,t,k,flip);
   let gl=0;if(look.w)gl=Math.max(gl,glowAmt(look.w[2],look.w[1],t));if(look.ar)gl=Math.max(gl,glowAmt(look.ar[2],look.ar[1],t)*.7);if(fury)gl=Math.max(gl,14);
@@ -355,6 +378,7 @@ function drawHero(x,y,sc,look,t,anim,flip,dead,mv,fury){
   if(mv&&maxP>=11&&!dead&&!calm)spr(key,an,fi-1,x-(flip?-1:1)*12*sc,y,k,flip,null,0,.28,sheet); // afterimage at +11
   spr(key,an,fi,x,y,k,flip,gt>=7?ac:gc,dead?0:Math.max(anim>0?Math.min(gl,6):gl,gt>=13?12:gt>=9?11:gt>=7?9:0),null,sheet);
   if(gt)drawArmorShine(key,an,fi,x,y,k,flip,gt,t,m.bh);if(gt>=13)drawOrbit(bx,by,k,m.bh,t,gt,ac,true);
+  if(!dead&&!look.spr)drawForm(key,an,fi,x,y,bx,by,k,sc,m.bh,look,t,flip,true,anim);
   if(look.lu>0&&!dead){const u=look.lu,sil=silhouette(key,'#ffd75e'),w=silhouette(key,'#ffffff'); // level up: the body flares gold for a second
     if(sil&&w){ctx.save();ctx.globalCompositeOperation='lighter';ctx.shadowColor='#ffd75e';ctx.shadowBlur=22;const e=1-u;
       sprFrame(w,key,an,fi,x,y,k,flip,u*u*.3);for(let i=1;i<=3;i++)sprFrame(sil,key,an,fi,x,y,k,flip,u*.32/i,0,-e*i*5,1+(.06+e*.22)*i,1+(.05+e*.2)*i);ctx.restore();}
@@ -414,6 +438,24 @@ function drawLadder(x,p){
 }
 function addNum(x,y,txt,c,big){SC.nums.push({x:x+(Math.random()-.5)*14,y:y,txt:txt,c:c,s:big?22:15,life:.9});}
 function burst(x,y,c,n){if(calm)n=Math.ceil(n/3);for(let i=0;i<n;i++){const a=Math.random()*6.28,v=40+Math.random()*130;SC.parts.push({x:x,y:y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-40,life:.35+Math.random()*.4,c:c,s:1.5+Math.random()*2});}}
+function perfectFound(){snd('rare');announce('עתיק מושלם נפל לידיך! הפריט הנדיר ביותר במשחק',true);toast('עתיק מושלם בתיק שלך',6);SC.fx.push({k:'screen',life:1.2,d:1.2,c:'#ffd75e'});if(!calm)SC.shake=.5;}
+// Reset arts: special attacks that join the ordinary chain as the account gathers resets. Every third finisher
+// fires the next one that is open, so a veteran's fight looks nothing like a newcomer's.
+const ARTS=[{r:1,n:'להב רפאים',d:'שלושה גלי להב שחוצים את השורה'},{r:3,n:'מטר כוכבים',d:'כוכבים נופלים על חמש מפלצות'},{r:6,n:'חותם המעגל',d:'חותם בוער מתחת לרגליים פוגע בכל מה שקרוב'},{r:10,n:'ברק הנצח',d:'ברק שקופץ בין שש מפלצות'},{r:15,n:'סופת אפר',d:'עמודי אש עולים מתחת לכל האויבים בטווח'},{r:25,n:'קריסת הזמן',d:'הזמן נעצר: כל המסך נפגע ונהמם'},{r:40,n:'משפט הנצח',d:'ברק, אש וכוכבים על כל מה שזז'}];
+const artsOpen=()=>{const R=A?totalResets(A):0;return ARTS.filter(a=>R>=a.r);};
+function castArt(m,col){
+  const h=SC.hero,un=artsOpen();if(!un.length)return;const a=un[(h.artI=(h.artI||0)+1)%un.length],i=ARTS.indexOf(a),g=gy(),mult=1.5+i*.25,near=R=>alive().filter(q=>Math.abs(q.x-h.x)<R).sort((p,q)=>Math.abs(p.x-h.x)-Math.abs(q.x-h.x));
+  addNum(h.x,hY()-150,a.n,'#ffd75e',true);snd('fury');h.skA=.35;let ts=[];
+  if(i===0){ts=near(280).filter(q=>(q.x-h.x)*h.face>-30);for(let q=0;q<3;q++)SC.fx.push({k:'wave',x:h.x+h.face*(10+q*26),y:g,dir:h.face,dist:230+q*30,h:70+q*22,life:.34+q*.08,d:.34+q*.08,c:q===1?'#ffffff':col});SC.fx.push({k:'cres',x:h.x+h.face*40,y:g-40,R:64,rot:h.face<0?3.14:0,sp:1.6*h.face,life:.3,d:.3,c:col});}
+  else if(i===1){ts=near(300).slice(0,5);for(const q of ts){SC.fx.push({k:'line',x1:q.x-90*h.face,y1:-20,x2:q.x,y2:q.y-24,life:.26,c:'#ffffff',w:3});SC.fx.push({k:'line',x1:q.x-90*h.face+6,y1:-20,x2:q.x,y2:q.y-24,life:.3,c:col,w:7});SC.fx.push({k:'star',x:q.x,y:q.y-26,r:36,rot:Math.random()*3,life:.4,d:.4,c:'#ffd75e'});}}
+  else if(i===2){ts=near(175);SC.fx.push({k:'rune',x:h.x,y:g-2,r:160,life:.8,d:.8,c:col});SC.fx.push({k:'rune',x:h.x,y:g-2,r:96,life:.6,d:.6,c:'#ffd75e'});SC.fx.push({k:'ring',x:h.x,y:g-10,life:.5,c:col,r:170});}
+  else if(i===3){ts=near(340).slice(0,6);let px=h.x+h.face*14,py=hY()-70;for(const q of ts){const pts=[[px,py]];for(let u=1;u<5;u++)pts.push([px+(q.x-px)*u/5+(Math.random()-.5)*22,py+(q.y-30-py)*u/5+(Math.random()-.5)*22]);pts.push([q.x,q.y-30]);SC.fx.push({k:'bolt',pts:pts,life:.3,c:col});px=q.x;py=q.y-30;}}
+  else if(i===4){ts=near(260);for(const q of ts){SC.fx.push({k:'pillar',x:q.x,y:g,life:.45,d:.45,c:'#ff7a3d'});SC.fx.push({k:'rune',x:q.x,y:g-2,r:40,life:.5,d:.5,c:'#ff7a3d'});}SC.fx.push({k:'screen',life:.3,d:.3,c:'#ff7a3d'});}
+  else if(i===5){ts=near(400);SC.fx.push({k:'screen',life:.55,d:.55,c:'#9fe8ff'});SC.fx.push({k:'rune',x:h.x,y:g-2,r:240,life:1,d:1,c:'#9fe8ff'});for(const q of ts){if(!q.boss)q.stun=Math.max(q.stun||0,1.2);SC.fx.push({k:'star',x:q.x,y:q.y-28,r:30,rot:0,life:.5,d:.5,c:'#9fe8ff'});}}
+  else{ts=near(440);SC.fx.push({k:'screen',life:.5,d:.5,c:'#ffd75e'});for(const q of ts){const pts=[];let px=q.x+(Math.random()-.5)*40,py=0;while(py<q.y-30){pts.push([px,py]);px+=(Math.random()-.5)*28;py+=20;}pts.push([q.x,q.y-26]);SC.fx.push({k:'bolt',pts:pts,life:.34,c:'#ffd75e'});SC.fx.push({k:'pillar',x:q.x,y:g,life:.5,d:.5,c:col});SC.fx.push({k:'star',x:q.x,y:q.y-28,r:40,rot:Math.random()*3,life:.45,d:.45,c:'#ffffff'});}SC.fx.push({k:'rune',x:h.x,y:g-2,r:200,life:.9,d:.9,c:'#ffd75e'});}
+  if(!calm)SC.shake=Math.max(SC.shake||0,.2+i*.04);
+  for(const q of ts){SC.fx.push({k:'flash',x:q.x,y:q.y-26,r:40,life:.22,d:.22,c:col});if(q.die<=0)strike(q,mult,col,true);}
+}
 function attackFx(cls,hx,hy,face,targets,combo,c){
   for(const tg of targets){
     if(cls==='blade')SC.fx.push({k:'slash',x:tg.x-6*face,y:tg.y-28,rot:Math.random()*1.2-.6+(face<0?3.14:0),life:.22,c:c,big:combo});
@@ -542,7 +584,7 @@ function dropOrbs(m,rep){
   { // what fell lies on the ground for a moment with its name, then the character picks up what it was told to
     let row=0;const lay=(txt,c,left)=>{if(SC.drops.length>70)return;SC.drops.push({x:m.x+(Math.random()-.5)*90,y:m.y-24,vx:(Math.random()-.5)*120,vy:-170-Math.random()*60,c:c,s:left?3:4.5,age:0,life:left?4.5:5,lie:left?4:1.5+row*.12,txt:txt,left:left,row:row%3});row++;};
     if(rep.gold>0)lay(fmt(rep.gold)+' זהב','#f2c14e',false);if(rep.gems>0)lay(rep.gems+' אבני נשמה','#5fd4ff',false);if(rep.shards>0)lay(rep.shards+' שברי ארגמן','#ff5c7a',false);if(rep.feather)lay('נוצת נצח','#ffd75e',false);
-    if(rep.names)for(const n of rep.names)lay(n[0],n[1]>=5?'#7dffb0':RAR[n[1]].c,!!n[2]);}
+    if(rep.names)for(const n of rep.names)lay(n[0],n[1]>=6?'#ffd75e':n[1]>=5?'#7dffb0':RAR[n[1]].c,!!n[2]);}
   if(rep.notable)for(const it of rep.notable){add(RAR[it.r].c,5.5);SC.fx.push({k:'beam',x:m.x,y:m.y,life:1.2,c:RAR[it.r].c});toast((it.ex?'':RAR[it.r].n+': ')+itemName(it,S.cls),it.ex?4:it.r);}
   if(rep.jewel)toast('אבן שלמות נפלה מהבוס',4);
   if(rep.shards&&(A.shards||0)>=KEY_SHARDS&&(A.shards||0)-rep.shards<KEY_SHARDS)toast('יש לך מספיק שברים למפתח מצודה',3);
@@ -571,6 +613,7 @@ function afterTick(r,m,l0){
   if(!ONLINE||rep.items||rep.gems||rep.boxes||rep.notable)dropOrbs(src,rep);
   if(rep.items||rep.boxes)panelDirty=true;
   if(rep.elite){toast('האלוף הובס. השלל שלך',3);snd('rare');}if(rep.eliteDenied)toast('השרת לא אישר את הניצחון על האלוף');
+  if(rep.perfect)perfectFound();
   if(rep.clean)toast('ניצחון נקי: אף מהלך מסומן לא פגע בך. אבן נשמה נוספת',3);
   if(rep.boss||rep.bossDenied){bossPending=false;if(rep.opened!=null)toast('השער אל '+ZONES[rep.opened].n+' נפתח');if(rep.bossDenied)toast('השרת לא אישר את הניצחון על הבוס');}
   if(r.shared>0)addNum(SC.hero.x,gy()-150,'+'+fmt(r.shared)+' ניסיון מהפארטי','#8be28b',true);
@@ -729,7 +772,7 @@ function updateWorld(dt){
           if(S.cls==='blade'){SC.fx.push({k:'cres',x:m.x,y:gy()-38,R:50,rot:h.face<0?3.14:0,sp:1.4*h.face,life:.28,d:.28,c:col});SC.fx.push({k:'wave',x:h.x+h.face*20,y:gy(),dir:h.face,dist:150,h:64,life:.3,d:.3,c:col});}
           else if(S.cls==='storm'){SC.fx.push({k:'pillar',x:m.x,y:gy(),life:.35,d:.35,c:col});SC.fx.push({k:'rune',x:m.x,y:gy()-2,r:44,life:.5,d:.5,c:col});}
           else for(let q=-1;q<=1;q++)SC.fx.push({k:'line',x1:h.x+18*h.face,y1:gy()-58+q*10,x2:m.x,y2:m.y-26+q*14,life:.16+Math.abs(q)*.04,c:col,w:2.5});
-          strike(m,1.8,col,true);}
+          strike(m,1.8,col,true);if((h.artN=(h.artN||0)+1)%3===0&&SC.mode==='farm')castArt(m,col);}
         else{attackFx(S.cls,h.x,hY(),h.face,[m],false,col);if(step===2&&S.cls==='blade')SC.fx.push({k:'cres',x:m.x-4*h.face,y:gy()-34,R:30,rot:(h.face<0?3.14:0)+.5,sp:-1.1*h.face,life:.2,d:.2,c:col});strike(m,1,col,false);}
         splash(m,col);if(m.dead)h.atkT=Math.max(h.atkT,.3);}
     }
@@ -824,7 +867,7 @@ function showGuide(){
   for(let t=1;t<=TIERN.length;t++){let zi=-1;for(let i=0;i<ZONES.length;i++)if(tierOf(i)===t){zi=i;break;}if(zi<0)continue;
     const a0=arm(t,3,0),a15=arm(t,4,15),q=reqOf(mk('w',t,3,0),cls),qa=reqOf(mk('a',t,3,0),cls);
     rows+='<div class="card" style="display:block'+(t===myT?';border-color:var(--gold)':'')+'"><div class="kv"><b style="color:var(--gold)">דרגה '+L(t)+' · '+TIERN[t-1]+'</b><span>'+(ZONES[zi].req?'מפות ריסט':'מ'+zoneName(zi))+'</span></div>'+
-      '<div class="kv"><span>סט עתיק</span><b style="color:var(--r4)">'+SETN[t-1]+'</b></div>'+
+      '<div class="kv"><span>סט עתיק</span><b style="color:var(--r4)">'+SETN[t-1]+'</b></div><div class="kv"><span>סט עתיק שני</span><b style="color:var(--r4)">'+SETN2[t-1]+'</b></div>'+
       '<div class="kv"><span>נשק אגדי '+L('+0')+' / '+L('+9')+' / '+L('+15')+'</span><b class="num">'+L(fmt(itemVals(mk('w',t,3,0)).atk)+' / '+fmt(itemVals(mk('w',t,3,9)).atk)+' / '+fmt(itemVals(mk('w',t,3,15)).atk))+'</b></div>'+
       '<div class="kv"><span>נשק עתיק '+L('+15')+'</span><b class="num" style="color:var(--r4)">'+L(fmt(itemVals(mk('w',t,4,15)).atk))+'</b></div>'+
       '<div class="kv"><span>5 חלקי שריון אגדי '+L('+0')+'</span><b class="num">'+L(fmt(a0[0])+' חיים · '+fmt(a0[1])+' הגנה')+'</b></div>'+
@@ -839,7 +882,8 @@ function showGuide(){
       '4. <b>עתיק מול אגדי</b>: עתיק חזק ב-33%, ורק חלקים עתיקים נספרים לסט.<br>'+
       '5. <b>אקסלנט</b> מוסיף אופציות (נזק, קריטי, מהירות ועוד) שלא קיימות בפריט רגיל, ואקסלנט מלא הוא הטוב ביותר באותה דרגה ונדירות.<br>'+
       '6. הכפתור "לבש את הכי חזק" בתיק מחשב את כל זה בשבילך.</p></div>'+
-    '<div class="card" style="display:block"><b>בונוס סט עתיק</b><p class="hint" style="margin-top:4px">חלקים עתיקים מאותה דרגה: '+SETB.map(b=>L(b[0])+' חלקים: '+AFF[b[1]][0]+' '+L('+'+b[2]+'%')).join(' · ')+'. הנשק נספר כחלק השישי.</p></div>'+
+    '<div class="card" style="display:block"><b>בונוס סט עתיק</b><p class="hint" style="margin-top:4px">חלקים עתיקים מאותה דרגה: '+SETB.map(b=>L(b[0])+' חלקים: '+AFF[b[1]][0]+' '+L('+'+b[2]+'%')).join(' · ')+'. הנשק נספר כחלק השישי.</p><p class="hint" style="margin-top:4px">לכל דרגה יש סט שני, של שורדים ומחפשי אוצרות: '+SETB2.map(b=>L(b[0])+' חלקים: '+AFF[b[1]][0]+' '+L('+'+b[2]+'%')).join(' · ')+'. חלקים משני הסטים לא נספרים יחד.</p></div>'+
+    '<div class="card" style="display:block"><b style="color:#ffd75e">עתיק מושלם</b><p class="hint" style="margin-top:4px">הפריט הנדיר ביותר במשחק: חלק סט עתיק עם כל האופציות ובסיס חזק ב-'+L(Math.round((PERFECT_M-1)*100)+'%')+'. הוא נופל רק מבוסים, מאלופים ומקומות גבוהות במגדל הנצח, בסיכוי זעום. סט מלא כזה הוא עניין של חודשים.</p></div>'+
     '<div class="card" style="display:block"><b>סיכויי שדרוג</b><p class="hint" style="margin-top:4px">עד '+L('+6')+' תמיד מצליח. אחר כך: '+up+'. מ-'+L('+7')+' כישלון מוריד דרגה, אלא אם יש קמע הגנה.</p></div>'+
     '<p class="hint">המספרים לפי המקצוע שלך. הדרגה שהנשק שלך בה מסומנת בזהב.</p>'+rows+
     '</div><div class="acts"><button class="btn pri" data-act="closeModal">סגור</button></div>');
@@ -955,7 +999,7 @@ function updateDuel(dt){
 }
 async function endDuel(win){ // a fight that ran here: report it; the server checks that it could have happened
   const d=SC.duel;if(!d||d.sent)return;d.sent=true;d.end=9;d.holdAtk=false;d.local=win;renderDuelBar();
-  const r=await send(d.tower?'towerEnd':'duelEnd',{win:win});if(SC.duel!==d)return;if(d.tower&&r&&r.ok)d.rt=r.rt;
+  const r=await send(d.tower?'towerEnd':'duelEnd',{win:win});if(SC.duel!==d)return;if(d.tower&&r&&r.ok){d.rt=r.rt;if(r.perfect)perfectFound();}
   showResult(d,r&&r.ok?!!r.win:win,r&&r.ok?r.gain|0:0,!!(r&&r.denied));
 }
 function showResult(d,win,gain,denied){
@@ -1056,7 +1100,7 @@ const SVG={
 const gcls=p=>p>=13?' g13':p>=11?' g11':p>=9?' g9':p>=7?' g7':'';
 function mainLine(it){const v=itemVals(it);return it.s==='w'?'נזק '+fmt(v.atk):ARM[it.s]?'חיים '+fmt(v.hp)+' · הגנה '+v.def:'נזק '+L('+'+v.wd+'%');}
 function itemCard(it){
-  return '<button class="it r'+it.r+gcls(it.p)+(it.ex?(isFull(it)?' ex full':' ex'):'')+'" data-act="item" data-id="'+it.id+'" style="color:var(--r'+it.r+')">'+SVG[it.s]+
+  return '<button class="it r'+it.r+gcls(it.p)+(it.pf?' ex full pf':it.ex?(isFull(it)?' ex full':' ex'):'')+'" data-act="item" data-id="'+it.id+'" style="color:var(--r'+it.r+')">'+SVG[it.s]+
     '<span class="nm">'+esc(itemName(it,S.cls))+(it.p?' '+L('+'+it.p):'')+'</span><span class="sub">'+mainLine(it)+'</span></button>';
 }
 function findItem(id){for(const k of SLOTS)if(S.eq[k]&&S.eq[k].id===id)return {it:S.eq[k],eq:k};const i=A.inv.findIndex(x=>x.id===id);return i>=0?{it:A.inv[i],i:i}:null;}
@@ -1106,6 +1150,8 @@ function renderChar(){
    '<div class="kv"><span>טווח תקיפה</span><b>'+(S.cls==='blade'?'קרוב':'רחוק')+'</b></div></div></div>';
   {const ml=mastery(A.kills),a0=masteryNeed(ml),a1=masteryNeed(ml+1);
     h+='<h2>דרגת המעגל</h2><div class="card" style="display:block"><div class="kv"><b style="color:var(--gold)">דרגה '+L(ml)+'</b><b class="num">'+L('+'+ml*MASTERY_PCT+'%')+' נזק וחיים</b></div><div class="bar gold" style="margin:6px 0"><i style="width:'+clamp((A.kills-a0)/(a1-a0)*100,0,100)+'%"></i></div><p class="hint">הדרגה הזו לא נגמרת. כל מפלצת שהחשבון חיסל אי פעם נספרת, וכל דרגה מוסיפה '+L(MASTERY_PCT+'%')+' נזק וחיים לכל הדמויות. עוד '+L(fmt(Math.max(0,a1-A.kills)))+' חיסולים לדרגה הבאה.</p></div>';}
+  {const R=totalResets(A),nx=ARTS.find(a=>R<a.r);
+    h+='<h2>אומנויות ריסט</h2><div class="card" style="display:block"><p class="hint" style="margin-bottom:6px">מתקפות מיוחדות שמצטרפות לשרשרת המכות ככל שהחשבון צובר ריסטים. כל מכת סיום שלישית מפעילה את הבאה בתור. גם המראה של הדמות משתנה באותן מדרגות.'+(nx?' הבאה נפתחת בריסט '+L(nx.r)+'.':'')+'</p>'+ARTS.map(a=>'<div class="kv"'+(R>=a.r?'':' style="opacity:.45"')+'><span><b style="color:'+(R>=a.r?'var(--gold)':'inherit')+'">'+a.n+'</b> · '+a.d+'</span><b class="num">'+(R>=a.r?'פעיל':'ריסט '+L(a.r))+'</b></div>').join('')+'</div>';}
   h+='<h2>נקודות סטט: '+L(S.pts)+'</h2><div class="card">';const spentPts=S.stats.str+S.stats.agi+S.stats.vit+S.stats.ene-60;
   for(const k of ['str','agi','vit','ene'])h+='<div class="stat"><div class="n">'+STATN[k][0]+'<small>'+STATN[k][1]+'</small></div><b class="num"'+(S.stats[k]>=STAT_MAX?' style="color:var(--gold)"':'')+'>'+(S.stats[k]>=STAT_MAX?'מלא':fmt(S.stats[k]))+'</b>'+
     '<button class="btn sm" data-act="pt" data-k="'+k+'" data-n="1"'+(S.pts<1?' disabled':'')+'>'+L('+1')+'</button>'+
@@ -1124,7 +1170,7 @@ function renderChar(){
   h+='<p class="hint">ציורי הדמויות והמפלצות: LuizMelo, ברישיון חופשי.</p>';
   return h;
 }
-function setLines(z,n){return SETB.map(b=>'<div class="kv"'+(n>=b[0]?' style="color:var(--r4)"':'')+'><span style="color:inherit">'+L(b[0])+' חלקים</span><b>'+AFF[b[1]][0]+' '+L('+'+b[2]+'%')+'</b></div>').join('');}
+function setLines(z,n){return setTable(z).map(b=>'<div class="kv"'+(n>=b[0]?' style="color:var(--r4)"':'')+'><span style="color:inherit">'+L(b[0])+' חלקים</span><b>'+AFF[b[1]][0]+' '+L('+'+b[2]+'%')+'</b></div>').join('');}
 function renderGear(){
   const sp=armorPlus(S),gtier=glowTier(sp),gn=GLOW_NAME.find(x=>gtier>=x[0]);
   const res=[['זהב',fmt(A.gold),'var(--gold)'],['אבני נשמה',A.gems,'var(--arc)'],['אותות ריסט',A.cred,'var(--ember)'],['מטבעות עונה',A.coins,'var(--r2)'],['קרדיטים',fmt(A.prem||0),'#7df9ff'],['נוצות נצח',A.feathers||0,'#ffd75e'],['אבני שלמות',A.jewels||0,'#7dffb0'],
@@ -1133,7 +1179,7 @@ function renderGear(){
     '<div class="kv" style="margin-top:6px"><span>אבני שלמות</span><b class="num" style="color:#7dffb0">'+L(A.jewels||0)+'</b></div><p class="hint">פריט אקסלנט נופל לעיתים רחוקות ונושא אופציות נוספות, עד כל האופציות של החלק. אבן שלמות מוסיפה לו אופציה חסרה. האבנים נופלות מבוסים ונמכרות בחנות הריסט ובחנות העונה.</p></div><div class="items">';
   for(const k of SLOTS)h+=S.eq[k]?itemCard(S.eq[k]):'<div class="it empty">'+SLOTN[k]+'</div>';
   h+='</div>';
-  const sc=setCounts(S);for(const z in sc)h+='<div class="card r4"><b style="color:var(--r4)">סט עתיק: '+SETN[z]+' · '+L(sc[z]+'/6')+'</b>'+setLines(z,sc[z])+'</div>';
+  const sc=setCounts(S);for(const z in sc)h+='<div class="card r4"><b style="color:var(--r4)">סט עתיק: '+setName(z)+' · '+L(sc[z]+'/6')+'</b>'+setLines(z,sc[z])+'</div>';
   h+='<div class="card" style="display:flex;flex-direction:column;gap:8px">'+tog('לבש אוטומטית ציוד חזק יותר',A.autoEq,'autoEq')+
     '<div><span style="font-size:13px">מה להרים מהרצפה</span><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:5px">'+[['0','רגיל'],['1','קסום'],['2','נדיר'],['3','אגדי'],['4','עתיק'],['set','חלקי סט'],['g','כנפיים'],['ex','אקסלנט']].map(x=>'<button class="btn sm pk'+(pickOf(A)[x[0]]?' on':'')+'" data-act="pickup" data-k="'+x[0]+'">'+(pickOf(A)[x[0]]?'\u2713 ':'\u2715 ')+x[1]+'</button>').join('')+'</div><p class="hint" style="margin-top:4px">ירוק עם \u2713: הדמות מרימה. אפור עם \u2715: נשאר על הרצפה. זהב, אבני נשמה, תיבות ושברים נאספים תמיד.</p></div>'+
     '<div class="tog"><span>מכירה אוטומטית</span><button class="btn sm" data-act="autoSell">'+['כבויה','רגיל','רגיל וקסום'][A.autoSell]+'</button></div>'+
@@ -1263,13 +1309,13 @@ function openSheet(id){
   let diff='';if(f.eq==null){const old=S.eq[it.s];S.eq[it.s]=it;const p2=calc(S).power;S.eq[it.s]=old;const d=p2-C.power;diff='<div class="kv"><span>שינוי בכוח הלחימה אם תלבש</span><b class="num" style="color:var(--'+(d>=0?'good':'bad')+')">'+L((d>=0?'+':'-')+fmt(Math.abs(d)))+'</b></div>';}
   let h='<h3 class="r'+it.r+'" style="color:var(--r'+it.r+')">'+esc(itemName(it,S.cls))+(it.p?' '+L('+'+it.p):'')+'</h3>'+
     '<p class="hint">'+RAR[it.r].n+' · דרגה '+L(it.t)+(it.z>=0?' · מקור: '+ZONES[it.z].n:'')+'</p>'+
-    (it.ex?'<p class="extag">'+(isFull(it)?'אקסלנט מלא · כל ':'אקסלנט · ')+L(it.af.length+'/'+POOL[it.s].length)+' אופציות</p>':'')+'<div>';
+    (it.pf?'<p class="extag" style="color:#ffd75e">עתיק מושלם · כל האופציות · בסיס חזק ב-'+L(Math.round((PERFECT_M-1)*100)+'%')+'</p>':it.ex?'<p class="extag">'+(isFull(it)?'אקסלנט מלא · כל ':'אקסלנט · ')+L(it.af.length+'/'+POOL[it.s].length)+' אופציות</p>':'')+'<div>';
   if(it.s==='w')h+='<div class="kv"><span>נזק נשק</span><b class="num">'+fmt(v.atk)+'</b></div>';
   if(ARM[it.s])h+='<div class="kv"><span>חיים</span><b class="num">'+fmt(v.hp)+'</b></div><div class="kv"><span>הגנה</span><b class="num">'+v.def+'</b></div>';
   if(it.s==='g')h+='<div class="kv"><span>נזק</span><b class="num">'+L('+'+v.wd+'%')+'</b></div><div class="kv"><span>חיים</span><b class="num">'+L('+'+v.wh+'%')+'</b></div><div class="kv"><span>מהירות הליכה</span><b class="num">'+L('+'+it.t*8+'%')+'</b></div>';
   for(const a of it.af)h+='<div class="kv aff"><span style="color:inherit">'+AFF[a[0]][0]+'</span><b class="num">'+L('+'+a[1]+'%')+'</b></div>';
   h+=diff+'</div>';
-  if(isSet(it)){const n=setCounts(S)[it.t-1]||0;h+='<div class="card r4"><b style="color:var(--r4)">סט עתיק: '+SETN[it.t-1]+' · לבושים '+L(n+'/6')+'</b>'+setLines(it.t-1,n)+'</div>';}
+  if(isSet(it)){const sk=setKey(it),n=setCounts(S)[sk]||0;h+='<div class="card r4"><b style="color:var(--r4)">סט עתיק: '+setName(sk)+' · לבושים '+L(n+'/6')+'</b>'+setLines(sk,n)+'</div>';}
   if(it.s==='g'&&it.t<WING_MAX){const n=wingFeathers(it.t),ok=it.p>=15&&(A.feathers||0)>=n;
     h+='<button class="btn'+(ok?' pri glow':'')+'" data-act="wingEvolve" data-id="'+it.id+'"'+(ok?'':' disabled')+' style="width:100%;margin-bottom:6px">פתח ל'+WINGN[it.t]+' · '+L(n)+' נוצות · '+L(Math.round(wingChance(it.t)*100)+'%')+'</button>'+
       '<p class="hint" style="margin-bottom:6px">'+(it.p<15?'כנפיים מתפתחות לדרגה הבאה רק ב-'+L('+15')+'. ':'')+'יש לך '+L(A.feathers||0)+' נוצות נצח. קונים אותן בחנות העונה, ומקבלים בפס העונה ולעיתים מבוסים. כישלון שורף את הנוצות, הכנפיים נשארות. דרגה '+L(it.t+'/'+WING_MAX)+'.</p>';}
@@ -1862,6 +1908,6 @@ async function boot(){
   openModal('<h3>מעגל הנצח</h3><p class="hint">מתחבר לשרת...</p>');
   await startOnline();
 }
-if(typeof window!=='undefined')window.EC={syncElite,spawnBoss,duelAct,netSend,get peers(){return peers;},get ws(){return ws;},get A(){return A;},get S(){return S;},get C(){return C;},set C(v){C=v;},SC,G,send,act,frame,enterZone,pend,flushTick,syncBoss,spawnBoss,touch,get demo(){return demo;}};
+if(typeof window!=='undefined')window.EC={syncElite,spawnBoss,castArt,ARTS,duelAct,netSend,get peers(){return peers;},get ws(){return ws;},get A(){return A;},get S(){return S;},get C(){return C;},set C(v){C=v;},SC,G,send,act,frame,enterZone,pend,flushTick,syncBoss,spawnBoss,touch,get demo(){return demo;}};
 startLang();
 boot();

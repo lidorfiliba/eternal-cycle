@@ -65,7 +65,7 @@ test('AFK-only time to first reset stays in the designed range and sets work',()
   const now=clock(1.8e12);G.setEnv(Math.random,now);const A=G.newAccount();G.apply(A,'create',{name:'x',cls:'blade'});A.open=G.BASEZ-1;const s=A.chars[0];let t=0;
   while(s.lvl<G.CAP&&t<40*3600){let z=0;for(let i=0;i<G.BASEZ;i++)if(G.ZONES[i].min<=s.lvl)z=i;s.zone=z;s.last=now();G.offline(s,300);now.add(300);t+=300;}
   console.log('AFK-only minutes to first reset:',t/60);assert.ok(t/60>200&&t/60<480,'minutes: '+t/60);
-  for(const k of G.DROPS)s.eq[k]=G.makeItem(s,k,8,4,21+DROPS_I++%3);
+  for(const k of G.DROPS){s.eq[k]=G.makeItem(s,k,8,4,21+DROPS_I++%3);delete s.eq[k].v;}
   assert.equal(G.setCounts(s)[7],6,'pieces of one tier form a set, whichever map of the region they came from');const full=G.calc(s).dmg;s.eq.b=null;assert.ok(G.calc(s).dmg<full);
 });
 test('reset maps open by reset count and level, never by editing the opened-map counter',()=>{
@@ -339,5 +339,19 @@ test('a boss beaten without taking a marked move pays one extra soul stone, and 
   const run=clean=>{const A=G.newAccount();G.apply(A,'create',{name:'Cln',cls:'blade'},{});G.apply(A,'travel',{z:0},{});A.bossAt={z:0,t:t-600000};const g=A.gems,r=G.apply(A,'tick',{z:0,f:0,kills:0,boss:true,clean:clean},{});return [A.gems-g,r.rep];};
   const [a,ra]=run(true),[b,rb]=run(false);assert.ok(ra.boss&&rb.boss,'both kills accepted');assert.equal(a-b,1);assert.ok(ra.clean&&!rb.clean);
   const A=G.newAccount();G.apply(A,'create',{name:'Cln',cls:'blade'},{});G.apply(A,'travel',{z:0},{});const g=A.gems,r=G.apply(A,'tick',{z:0,f:0,kills:0,boss:true,clean:true},{});assert.ok(!r.rep.clean&&A.gems===g,'no boss, no bonus');
+  G.setEnv(Math.random,Date.now);
+});
+
+test('two ancient sets per tier, and the perfect ancient piece',()=>{
+  G.setEnv(()=>.5,()=>1.8e12);const A=G.newAccount();G.apply(A,'create',{name:'Set',cls:'blade'},{});const s=A.chars[0];
+  for(const k of G.DROPS){s.eq[k]=G.makeItem(s,k,3,4,6);s.eq[k].v=1;}
+  assert.equal(G.setCounts(s)['2b'],6);assert.equal(G.setCounts(s)[2],undefined,'the two sets of a tier do not count together');assert.equal(G.setName('2b'),G.SETN2[2]);assert.equal(G.setName('2'),G.SETN[2]);
+  const c2=G.calc(s);delete s.eq.w.v;const mixed=G.calc(s);assert.ok(mixed.hp<c2.hp,'breaking the set loses its six-piece bonus');assert.ok(G.itemName(s.eq.h,'blade').includes(G.SETN2[2]));
+  let seen=[0,0];for(let i=0;i<200;i++){const it=G.makeItem(s,'h',3,4,6);seen[it.v?1:0]++;}assert.ok(seen[0]>40&&seen[1]>40,'both sets drop');assert.equal(G.makeItem(s,'h',3,3,5).v,undefined);
+  let x=.5;G.setEnv(()=>x,()=>1.8e12);assert.equal(G.perfectDrop(s,6,{},G.PERFECT_BOSS),null);x=0;const rep={};const it=G.perfectDrop(s,6,rep,G.PERFECT_BOSS);
+  assert.ok(it&&it.pf&&it.r===4&&G.isFull(it)&&rep.perfect===1&&rep.notable[0]===it);assert.ok(G.itemName(it,'blade').startsWith('עתיק מושלם'));
+  const plain={...it,pf:0};assert.ok(Math.abs((G.itemVals(it).atk||G.itemVals(it).hp)/(G.itemVals(plain).atk||G.itemVals(plain).hp)-G.PERFECT_M)<.02);
+  A.pick={'4':false,set:false,ex:false};A.inv.length=0;for(let i=0;i<60;i++)A.inv.push(G.makeItem(s,'h',1,0,0));const n=A.inv.length;x=0;const it2=G.perfectDrop(s,6,{},1);assert.ok(A.inv.includes(it2)||Object.values(s.eq).includes(it2),'kept even with a full bag and every pickup switch off');
+  assert.ok(G.PERFECT_BOSS<=.0005&&G.PERFECT_ELITE<=.002,'the odds stay tiny');
   G.setEnv(Math.random,Date.now);
 });
