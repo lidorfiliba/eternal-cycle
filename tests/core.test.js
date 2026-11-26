@@ -148,3 +148,24 @@ test('excellent items: extra options up to a full set, perfection stones, kept t
   s.autoSell=4;const ex=G.makeExcellent(G.makeItem(s,'b',2,0,0));assert.equal(G.stash(s,ex,{}),true,'never sold automatically');
   assert.ok(G.fighter(Object.assign(s,{eq:Object.assign(s.eq,{w:G.makeExcellent(G.makeItem(s,'w',2,0,0))})})).w[4]>=1);
 });
+
+test('selling by rarity leaves wings, excellent items and the other rarities alone',()=>{
+  const {A}=fresh(),s=A.chars[0];A.inv=[];
+  for(const r of [0,0,1,2,2,2,3])A.inv.push(G.makeItem(s,'h',3,r,0));A.inv.push(G.makeItem(s,'g',2,2,0));A.inv.push(G.makeExcellent(G.makeItem(s,'a',3,2,0)));
+  const want=A.inv.filter(it=>it.r===2&&it.s!=='g'&&!it.ex).reduce((x,it)=>x+G.sellVal(it),0),gold=A.gold;
+  const r=G.apply(A,'sellRar',{r:2});assert.ok(r.ok);assert.equal(r.n,3);assert.equal(A.gold,gold+want);assert.equal(A.inv.length,6);
+  assert.equal(A.inv.filter(it=>it.r===2).length,2,'the wings and the excellent piece stay');assert.equal(G.apply(A,'sellRar',{r:4}).ok,false);
+});
+
+test('tiered event: the bracket is set by the level at the first kill, higher brackets pay more, below level 15 there is no entry',()=>{
+  assert.deepEqual([1,14,15,80,81,330,331,400].map(G.evTier),[0,0,1,1,2,6,7,7]);assert.deepEqual(G.tierRange(7),[331,400]);assert.deepEqual(G.tierRange(1),[15,80]);
+  assert.ok(G.tierReward(7).lv>G.tierReward(6).lv&&G.tierReward(2).gems>G.tierReward(1).gems);
+  const at=Date.parse('2026-11-26T12:02:00Z'); // two minutes into the hourly event
+  const run=(lvl,ticks=12,kills=30)=>{const A=G.newAccount();let now=at-60000;G.setEnv(()=>.5,()=>now);G.apply(A,'create',{name:'a',cls:'blade'});const s=A.chars[0];s.lvl=lvl;s.stats.str=5000;s.stats.vit=3000;s.autoPts=false;A.open=7;
+    let z=0;for(let i=0;i<8;i++)if(G.ZONES[i].min<=lvl)z=i;G.apply(A,'travel',{z});
+    for(let i=0;i<ticks;i++){now+=20000;G.apply(A,'tick',{z,kills});}
+    const rec=Object.values(A.ev||{})[0]||{},before=s.lvl,r=G.apply(A,'claimEvent',{id:'crimson'});return {rec,r,gained:s.lvl-before,s};};
+  const low=run(10,1,2);assert.equal(low.s.lvl,10);assert.equal(low.r.ok,false,'no entry below level 15');assert.ok(!low.rec.k,'kills below the first bracket do not count');
+  const t2=run(100);assert.ok(t2.r.ok,t2.r.msg);assert.equal(t2.rec.tr,2);assert.match(t2.r.rt,/^4 רמות/);
+  const t7=run(335);assert.ok(t7.r.ok);assert.equal(t7.rec.tr,7);assert.match(t7.r.rt,/^10 רמות/);assert.ok(t7.gained>=9);
+});

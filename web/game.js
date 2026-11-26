@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126134708';
-const {isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126141309';
+const {TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -805,7 +805,8 @@ function renderGear(){
     '<div class="kv"><span>קמעות הגנה</span><b>'+L(A.charms)+'</b></div></div>';
   h+='<h2>תיק משותף '+L(A.inv.length+'/'+BAG)+'</h2>';
   if(!A.inv.length)h+='<p class="hint">התיק ריק. פריטים נופלים ממפלצות ומבוסים. פריט עתיק שייך לסט של המפה שבה נפל, ושישה חלקים נותנים את כל בונוסי הסט.</p>';
-  else{const inv=A.inv.slice().sort((a,b)=>b.r-a.r||b.t-a.t||b.p-a.p);h+='<div class="items">'+inv.map(it=>itemCard(it)).join('')+'</div><button class="btn" data-act="sellJunk">מכור את כל הרגילים והקסומים</button>';}
+  else{const inv=A.inv.slice().sort((a,b)=>b.r-a.r||b.t-a.t||b.p-a.p);h+='<div class="items">'+inv.map(it=>itemCard(it)).join('')+'</div><p class="hint">מכירה מהירה לפי צבע. תופיע בקשת אישור לפני המכירה. פריטי אקסלנט וכנפיים לא נמכרים כך.</p><div class="sellrow">'+
+    RAR.map((q,i)=>{const n=A.inv.filter(it=>it.r===i&&it.s!=='g'&&!it.ex).length;return '<button class="btn sm" data-act="sellAsk" data-r="'+i+'" style="border-color:var(--r'+i+');color:var(--r'+i+')"'+(n?'':' disabled')+'>'+q.n+' · '+L(n)+'</button>';}).join('')+'</div>';}
   return h;
 }
 function renderZones(){
@@ -837,8 +838,14 @@ function renderEvents(){
   let h='<h2>אירועים</h2><p class="hint">האירועים רצים לפי השעון, בשעון ישראל. בונוסים ומשימות נספרים רק כשמשחקים בפועל.</p>';
   for(const e of EVENTS){
     const w=wins.find(x=>x.e.id===e.id),rec=w&&ev[w.key]||{},live=w&&w.live;
-    h+='<div class="card'+(live?' zone cur':'')+'" style="display:block"><div class="kv"><b'+(live?' style="color:var(--gold)"':'')+'>'+e.n+'</b><b class="num" style="color:var(--'+(live?'good':'dim')+')">'+(live?'פעיל · '+L(mmss((w.end-now)/1000)):'בעוד '+fmtT(evNext(e,now)))+'</b></div>'+
-      '<p class="hint">'+e.d+' · '+e.when+(e.rt?' · פרס: '+e.rt:'')+'</p>';
+    let tierLine='',tn='';
+    if(e.tiered){const t=rec.tr||evTier(S.lvl),nx=evTier(S.lvl)+1;
+      if(!t)tierLine='<p class="hint" style="color:var(--bad)">הכניסה מרמה '+L(TIER_MIN[0])+'. חסרות לך '+L(TIER_MIN[0]-S.lvl)+' רמות.</p>';
+      else{const rg=tierRange(t),rw=tierReward(t);tn=' '+t;
+        tierLine='<div class="tiers">'+TIER_MIN.map((m,i)=>'<i class="'+(i+1===t?'on':i+1<t?'past':'')+'">'+(i+1)+'</i>').join('')+'</div><p class="hint"><b style="color:var(--gold)">דרגה '+L(t)+'</b> · רמות '+L(rg[0]+'-'+rg[1])+' · פרס: '+L(rw.lv)+' רמות, '+L(rw.gems)+' אבני נשמה, '+L(rw.coins)+' מטבעות עונה</p>'+
+          (nx<=7&&!rec.tr?'<p class="hint" style="color:#8fd3ff">עוד '+L(TIER_MIN[nx-1]-S.lvl)+' רמות לדרגה '+L(nx)+', שנותנת '+L(tierReward(nx).lv)+' רמות. תגיע לפני שהשער נפתח.</p>':'');}}
+    h+='<div class="card'+(live?' zone cur':'')+'" style="display:block"><div class="kv"><b'+(live?' style="color:var(--gold)"':'')+'>'+e.n+tn+'</b><b class="num" style="color:var(--'+(live?'good':'dim')+')">'+(live?'פעיל · '+L(mmss((w.end-now)/1000)):'בעוד '+fmtT(evNext(e,now)))+'</b></div>'+
+      '<p class="hint">'+e.d+' · '+e.when+(e.rt&&!e.tiered?' · פרס: '+e.rt:'')+'</p>'+tierLine;
     if(w&&e.obj){
       const have=Math.min(rec[e.obj[0]]||0,e.obj[1]),done=have>=e.obj[1];
       if(e.id==='quiz'&&live&&!rec.t){const q=quizFor(w.key);h+='<p style="margin:8px 0 6px;font-weight:700">'+q.q+'</p><div class="grid2">'+q.o.map((o,i)=>'<button class="btn sm" data-act="answer" data-i="'+i+'">'+L(o)+'</button>').join('')+'</div>';}
@@ -977,7 +984,7 @@ function fsToggle(){
   }catch(e){toast('הדפדפן לא תומך במסך מלא');}
 }
 document.addEventListener('fullscreenchange',fsSync);document.addEventListener('webkitfullscreenchange',fsSync);
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;panelDirty=true;});
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;panelDirty=true;if(!prefs.inst){prefs.inst=1;savePrefs();setTimeout(()=>announce('אפשר להתקין את המשחק כאפליקציה. הכפתור בלשונית דמות'),20000);}});
 window.addEventListener('appinstalled',()=>{installEvt=null;panelDirty=true;});
 function installHtml(){
   if(standalone())return '';
@@ -1068,6 +1075,10 @@ document.addEventListener('click',async e=>{
   if(a==='acct'){acctModal(b.dataset.k);return;}
   if(a==='acctGo'){acctGo(b.dataset.k);return;}
   if(a==='tut'){tutNext();return;}
+  if(a==='sellAsk'){const q=+b.dataset.r,list=A.inv.filter(it=>it.r===q&&it.s!=='g'&&!it.ex),gold=list.reduce((x,it)=>x+sellVal(it),0),up=list.filter(it=>it.p>0).length;if(!list.length)return;
+    openModal('<h3 style="color:var(--r'+q+')">למכור את כל ה'+RAR[q].n+'?</h3><p class="hint">'+L(list.length)+' פריטים יימכרו תמורת '+L(fmt(gold))+' זהב. אי אפשר לבטל אחרי המכירה.</p>'+
+      (up?'<p class="hint" style="color:var(--bad)">שים לב: '+L(up)+' מהם משודרגים.</p>':'')+(q>=3?'<p class="hint" style="color:var(--bad)">אלה פריטים '+(q===4?'עתיקים':'אגדיים')+'. ודא שאתה לא צריך אותם.</p>':'')+
+      '<div class="acts"><button class="btn" data-act="closeModal">ביטול</button><button class="btn pri" data-act="sellRar" data-r="'+q+'">מכור '+L(list.length)+' פריטים</button></div>');return;}
   if(a==='big'){setBig(!prefs.big);return;}
   if(a==='fs'){fsToggle();return;}
   if(a==='install'){if(installEvt){const ev=installEvt;installEvt=null;ev.prompt();}renderPanel();return;}
@@ -1112,6 +1123,7 @@ document.addEventListener('click',async e=>{
     else if(a==='zone'){if(SC.mode==='farm'){clickBusy=false;await travelTo(+b.dataset.i,'L',+(b.dataset.f||0));}}
     else if(a==='reset'){if(SC.mode==='farm'&&canReset(S)){r=await act('reset',{});if(r.ok){enterZone(-1,'L',0);C=calc(S,auras);SC.hero.hp=C.hp;if(!calm)SC.shake=.4;burst(SC.hero.x,gy()-50,'#f2c14e',40);snd('lvl');toast('ריסט '+r.resets+'. קיבלת '+r.gain+' אותות ריסט');}}}
     else if(a==='equip'||a==='unequip'||a==='sell'){r=await act(a,{id:id});closeSheet();}
+    else if(a==='sellRar'){closeModal();r=await act('sellRar',{r:+b.dataset.r});if(r.ok){snd('coin');toast(r.n+' פריטים נמכרו ב-'+fmt(r.gold)+' זהב');}}
     else if(a==='sellJunk'){r=await act('sellJunk',{});if(r.ok)toast('נמכר ב-'+fmt(r.gold)+' זהב');}
     else if(a==='upgrade'){r=await act('upgrade',{id:id});if(r.ok){const c=r.code;snd(c==='ok'?'ok':c==='poor'||c==='max'?'click':'fail');
         toast(c==='ok'?'השדרוג הצליח. דרגה '+r.p:c==='saved'?'נכשל. קמע ההגנה שמר על הדרגה':c==='down'?'נכשל. הדרגה ירדה ל-'+r.p:c==='fail'?'השדרוג נכשל':'חסרים חומרים',c==='ok'?r.r:null);touch();C=calc(S,auras);openSheet(id);}}
@@ -1293,18 +1305,32 @@ function loadMe(){
 
 /* ---------- event announcements in the middle of the screen ---------- */
 // From five minutes before an event, once a minute, and once more when it opens.
-const annPrev={},annMark={},annQ=[];let annT=0,annShow=0;
+const annPrev={},annMark={},annLive={},annQ=[];let annT=0,annShow=0,annRemind=200;
 function announce(txt,live){annQ.push({t:txt,live:!!live});if(annQ.length>4)annQ.shift();}
 function updateAnnounce(dt){
   const el=$('annc');if(!el)return;
   if(annShow>0){annShow-=dt;if(annShow<=0)el.classList.remove('on');}
   else if(annQ.length&&S&&!demo){const a=annQ.shift();el.textContent=a.t;el.classList.toggle('live',a.live);el.classList.add('on');annShow=4.2;snd(a.live?'boss':'ok');}
   if(!S||demo||(annT+=dt)<1)return;annT=0;
-  const now=Date.now(),list=EVENTS.map(e=>({id:e.id,n:e.n,s:evNext(e,now),d:e.d})),sg=siegeInfo(now);
+  const now=Date.now(),list=EVENTS.map(e=>{const t=e.tiered?evTier(S.lvl):0;return {id:e.id,n:e.n+(t?' '+t:''),s:evNext(e,now),d:e.d,t:t,tiered:e.tiered};}),sg=siegeInfo(now);
   list.push({id:'siege',n:'מצור הטירה',s:sg.on?1e9:sg.next*60-new Date(now).getSeconds(),d:'כל חיסול של חבר גילדה נספר'});
   for(const e of list){const prev=annPrev[e.id];annPrev[e.id]=e.s;
     if(prev!=null&&prev<=90&&e.s>prev+120){annMark[e.id]=0;announce(e.n+' התחיל! '+e.d,true);continue;}
-    if(e.s<=300&&e.s>5){const m=Math.ceil(e.s/60);if(annMark[e.id]!==m&&prev!=null){annMark[e.id]=m;announce(e.n+' מתחיל בעוד '+(m===1?'דקה':m+' דקות'));}}}
+    if(e.s<=300&&e.s>5){const m=Math.ceil(e.s/60);if(annMark[e.id]!==m&&prev!=null){annMark[e.id]=m;announce(e.n+' מתחיל בעוד '+(m===1?'דקה':m+' דקות'));
+      if(e.tiered&&(m===5||m===2)){if(!e.t)announce('הכניסה ל'+e.n+' מרמה '+TIER_MIN[0]+'. חסרות לך '+(TIER_MIN[0]-S.lvl)+' רמות');else if(e.t<7)announce('עוד '+(TIER_MIN[e.t]-S.lvl)+' רמות לדרגה '+(e.t+1)+'. תספיק?');}}}}
+  // While an event runs: how much is left, the moment its goal is reached, and what was missed when it closes.
+  const ev=A.ev||{},wins=evWindows(now,1);
+  for(const w of wins){const e=w.e;if(!e.obj)continue;const rec=ev[w.key]||{},have=Math.min(rec[e.obj[0]]||0,e.obj[1])+(e.obj[0]==='k'&&w.live?0:0),done=have>=e.obj[1],st=annLive[w.key]||(annLive[w.key]={});
+    if(done&&!rec.c&&!st.done){st.done=1;announce('השלמת את '+e.n+'! הפרס מחכה באירועים',true);}
+    if(w.live&&!done){const left=Math.ceil((w.end-now)/60000);if(left<=2&&st.left!==left&&e.id!=='quiz'){st.left=left;announce((left<=1?'דקה אחרונה: ':'נשארו 2 דקות: ')+e.n+' · '+have+'/'+e.obj[1]);}
+      if(e.id==='quiz'&&!rec.t&&!st.q){st.q=1;announce('חידון המעגל פתוח. ענה בלשונית אירועים',true);}}
+    if(!w.live&&!done&&!st.miss&&(have>0||e.id==='storm')){st.miss=1;announce('פספסת את '+e.n+'. הבא בעוד '+Math.ceil(evNext(e,now)/60)+' דקות');}}
+  for(const k in annLive)if(!wins.some(w=>w.key===k))delete annLive[k];
+  // Rewards left uncollected are called out every few minutes.
+  if((annRemind+=1)>=240){annRemind=0;const lv=passLevel(S);
+    if(A.login&&!A.login.got)announce('פרס הכניסה היומי מחכה לך');
+    else if(lv>A.pass.claimed)announce('פרס פס העונה מחכה לאיסוף');
+    else if(TASKS.some(t=>A.daily[t.k]>=t.n&&!A.daily.done[t.k]))announce('משימה יומית הושלמה. אסוף את הפרס');}
 }
 
 /* ---------- first steps ---------- */
