@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126143409';
+const BUILD='20261126144041';
 const {KEY_SHARDS,KEY_GOLD,EV_XP,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -427,8 +427,8 @@ let AC=null,MG=null;const sndLast={};
 function initAudio(){try{if(!AC){const X=window.AudioContext||window.webkitAudioContext;if(!X)return;AC=new X();MG=AC.createGain();MG.gain.value=.5;MG.connect(AC.destination);}if(AC.state==='suspended')AC.resume();loadSfx();}catch(e){}}
 document.addEventListener('pointerdown',initAudio);document.addEventListener('keydown',initAudio);
 // Recorded effects; anything not loaded falls back to the synthesised version below.
-const SFX={pull:['whoosh'],ult:['ult'],hit:['hit0','hit1','hit2'],crit:['crit0','crit1'],skill:['skill0','skill1'],hurt:['hurt0','hurt1'],kill:['kill'],coin:['coin'],rare:['rare'],boss:['boss'],slam:['slam']};
-const SFXVOL={pull:.6,ult:.8,hit:.5,crit:.75,skill:.6,hurt:.35,kill:.4,coin:.3,rare:.6,boss:.7,slam:.8},sfxBuf={};let sfxAsked=false;
+const SFX={pull:['whoosh'],ult:['ult'],hit:['hit0','hit1','hit2'],crit:['crit0','crit1'],skill:['skill0','skill1'],hurt:['hurt0','hurt1'],kill:['kill'],coin:['coin'],rare:['rare'],boss:['roar0','roar1'],bossdie:['bossdie'],growl:['growl0'],slam:['slam']};
+const SFXVOL={bossdie:.8,growl:.6,pull:.6,ult:.8,hit:.5,crit:.75,skill:.6,hurt:.35,kill:.4,coin:.3,rare:.6,boss:.7,slam:.8},sfxBuf={};let sfxAsked=false;
 function loadSfx(){
   if(sfxAsked||!AC)return;sfxAsked=true;
   for(const k in SFX)for(const f of SFX[k])fetch('sfx/'+f+'.mp3').then(r=>r.ok?r.arrayBuffer():null).then(b=>b&&AC.decodeAudioData(b)).then(b=>{if(b)sfxBuf[f]=b;}).catch(()=>{});
@@ -518,7 +518,7 @@ function afterTick(r,m,l0){
 function onKill(m,zi){
   const z=ZONES[zi];
   if(demo){burst(m.x,m.y-24,z.c,10);if(m.boss)SC.boss=null;return;}
-  if(m.boss){
+  if(m.boss){snd('bossdie');
     SC.boss=null;bossPending=true;burst(m.x,m.y-40,'#f2c14e',40);if(!calm)SC.shake=.4;addNum(m.x,m.y-150,'הבוס הובס!','#f2c14e',true);
     if(ONLINE){pend.boss=true;flushTick();}else{const l0=S.lvl;afterTick(localTick({z:zi,kills:0,boss:true}),m,l0);}
     return;
@@ -610,7 +610,7 @@ function updateWorld(dt){
     if(h.dead<=0&&(m.boss?ad<340:(m.ag||ad<110))){
       if(ad>reach){m.x+=Math.sign(dx)*(m.boss?45:58)*dt;m.mv=true;}
       else if((m.atkT-=dt)<=0){m.atkT=m.boss?1.2:1;m.atkA=.5;const taken=zs(zi,SC.fl).atk*(m.boss?2:1)*300/(300+C.def)*(h.shield>0?.3:1);h.hp-=taken;snd('hurt');addNum(h.x,gy()-100,'-'+fmt(taken),'#ff5c7a');}
-      if(m.boss&&(m.slamT-=dt)<=0&&ad<210){m.wind=1.2;m.slamX=m.x;}
+      if(m.boss&&(m.slamT-=dt)<=0&&ad<210){m.wind=1.2;m.slamX=m.x;snd('growl');}
     }else if(Math.abs(m.x-m.home)>4){m.x+=Math.sign(m.home-m.x)*40*dt;m.mv=true;m.back=true;}else m.back=false;
   }
   SC.mons=SC.mons.filter(m=>!m.gone);
