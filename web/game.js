@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126154727';
-const {DUEL_ROUNDS,duelCan,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126160213';
+const {WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,duelCan,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -169,8 +169,10 @@ function wingShape(c,T,pal,t,far){
 }
 // Eight wing styles by tier: leaf, storm feathers, flame, angel, bat, ice, golden, energy. Both wings sweep back from the shoulders.
 function drawWings(x,y,g,t,k,flip,cls,bh,mv,anim){
-  const T=clamp(g[0]|0,1,8),c=wctx,at=WING_AT[cls]||WING_AT.blade,f=flip?-1:1;let pal=g[3]?WPAL.s:WPAL[T];
-  if(T===8&&!g[3]){const h=(t*70)%360;pal=['hsl('+h+',90%,55%)','hsl('+((h+120)%360)+',95%,80%)'];}
+  const R=clamp(g[0]|0,1,WING_MAX),hi=R>8,fam=hi?Math.floor((R-9)/7):0,gr=hi?(R-9)%7:0,T=hi?[3,5,6,2,7,8][fam]:R,c=wctx,at=WING_AT[cls]||WING_AT.blade,f=flip?-1:1;let pal=g[3]?WPAL.s:WPAL[T];
+  if(hi&&!g[3]){const h=([8,268,205,172,44,318][fam]+gr*7)%360;pal=['hsl('+h+',88%,'+(34+gr*3)+'%)','hsl('+((h+26)%360)+',100%,'+(72+gr*3)+'%)'];if(fam===5){const hh=(t*90+gr*40)%360;pal=['hsl('+hh+',92%,56%)','hsl('+((hh+150)%360)+',100%,84%)'];}}
+  k*=hi?1.06+fam*.035+gr*.012:1;
+  if(T===8&&!g[3]&&!hi){const h=(t*70)%360;pal=['hsl('+h+',90%,55%)','hsl('+((h+120)%360)+',95%,80%)'];}
   const flap=Math.sin(t*(mv?7:2.6))*(mv?1.5:1),lean=(mv?.22:0)-(anim>0?anim*.35:0),OX=130,OY=185; // beat faster on the run, trail back, open on a strike
   c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,340,280);
   c.save();c.translate(OX-14,OY-4);c.rotate(-.42+flap*.11+lean*.7);c.scale(.74,.74);c.globalAlpha=.72;wingShape(c,T,pal,t+.4,true);c.restore(); // far wing, behind and higher
@@ -178,8 +180,9 @@ function drawWings(x,y,g,t,k,flip,cls,bh,mv,anim){
   if(T===4||T>=7){c.save();c.strokeStyle=T===8?pal[1]:'#fff3b0';c.lineWidth=5;c.globalAlpha=.85;c.beginPath();c.ellipse(OX-(at[0]+3)*2,OY-bh*2*(1-at[1])-20,22,6.5,0,0,7);c.stroke();c.restore();}
   const u=k*.5,ax=x-f*at[0]*k,ay=y-bh*k*at[1];
   ctx.save();ctx.translate(Math.round(ax),Math.round(ay));ctx.scale(-f*u,u);ctx.imageSmoothingEnabled=true;
-  const gl=Math.max(glowAmt(g[2],g[1],t),T>=4?6+T:3);ctx.shadowColor=pal[1];ctx.shadowBlur=gl;
+  const gl=Math.max(glowAmt(g[2],g[1],t),hi?14+fam*2+gr:T>=4?6+T:3);ctx.shadowColor=pal[1];ctx.shadowBlur=gl;
   ctx.drawImage(wcv,-OX,-OY);ctx.restore();
+  if(hi&&!calm&&Math.random()<.12+fam*.05)SC.parts.push({x:ax-f*(10+Math.random()*60)*k*.5,y:ay-Math.random()*60*k*.5,vx:-f*14,vy:-26,life:.8,c:Math.random()<.3?'#fff':pal[1],s:2+(gr>3?1:0)});
   if(T>=6&&!calm&&Math.random()<.22)SC.parts.push({x:ax-f*(10+Math.random()*50)*k*.5,y:ay-Math.random()*50*k*.5,vx:0,vy:T===6?16:-18,life:.7,c:pal[1],s:2});
 }
 // Armor shows on the character: the whole sprite sheet is recolored toward the armor tier's color (or the set color for ancient pieces).
@@ -883,7 +886,7 @@ function renderChar(){
 function setLines(z,n){return SETB.map(b=>'<div class="kv"'+(n>=b[0]?' style="color:var(--r4)"':'')+'><span style="color:inherit">'+L(b[0])+' חלקים</span><b>'+AFF[b[1]][0]+' '+L('+'+b[2]+'%')+'</b></div>').join('');}
 function renderGear(){
   const sp=armorPlus(S),gtier=glowTier(sp),gn=GLOW_NAME.find(x=>gtier>=x[0]);
-  const res=[['זהב',fmt(A.gold),'var(--gold)'],['אבני נשמה',A.gems,'var(--arc)'],['אותות ריסט',A.cred,'var(--ember)'],['מטבעות עונה',A.coins,'var(--r2)'],['קרדיטים',fmt(A.prem||0),'#7df9ff'],['אבני שלמות',A.jewels||0,'#7dffb0'],
+  const res=[['זהב',fmt(A.gold),'var(--gold)'],['אבני נשמה',A.gems,'var(--arc)'],['אותות ריסט',A.cred,'var(--ember)'],['מטבעות עונה',A.coins,'var(--r2)'],['קרדיטים',fmt(A.prem||0),'#7df9ff'],['נוצות נצח',A.feathers||0,'#ffd75e'],['אבני שלמות',A.jewels||0,'#7dffb0'],
     ['קמעות הגנה',A.charms,'#ffd75e'],['שברי ארגמן',A.shards||0,'#ff6b8a'],['מפתחות מצודה',A.keys||0,'#ffb23e'],['תיבות אוצר',A.boxes,'#c9a66b'],['תיבות עונה',A.sboxes,'#c77dff'],['כרטיסי זירה',A.tickets,'#8fd3ff']];
   let h='<h2>מה יש לך</h2><div class="card resgrid">'+res.map(x=>'<div><i class="dot" style="background:'+x[2]+'"></i><span>'+x[0]+'</span><b class="num">'+L(x[1])+'</b></div>').join('')+'</div><h2>ציוד לבוש</h2><button class="btn pri" data-act="bestEq">הלבש את הציוד הכי חזק מהתיק</button><p class="hint">בודק את התיק ומחליף כל חלק בחזק ממנו. ציוד שלבוש על דמות אחרת בחשבון לא זז ממנה. כדי להעביר אותו, צריך קודם להסיר אותו שם.</p><div class="card"><div class="kv"><span>זוהר השריון</span><b style="color:var(--gold)">'+(gn?gn[1]:'עדיין אין')+'</b></div><p class="hint">חמשת חלקי השריון קובעים את הזוהר על הגוף. ממוצע השדרוג שלך '+L('+'+sp[1])+', והחלק הנמוך ביותר '+L('+'+sp[0])+'. נצנוץ בממוצע '+L('+7')+', זוהר ב-'+L('+9')+', זוהר פועם ב-'+L('+11')+'. כשכל החלקים ב-'+L('+13')+' נדלקת הילת להבה סביב כל הגוף, וב-'+L('+15')+' היא מחליפה צבעים.</p>'+
     '<div class="kv" style="margin-top:6px"><span>אבני שלמות</span><b class="num" style="color:#7dffb0">'+L(A.jewels||0)+'</b></div><p class="hint">פריט אקסלנט נופל לעיתים רחוקות ונושא אופציות נוספות, עד כל האופציות של החלק. אבן שלמות מוסיפה לו אופציה חסרה. האבנים נופלות מבוסים ונמכרות בחנות הריסט ובחנות העונה.</p></div><div class="items">';
@@ -965,7 +968,7 @@ function renderPass(){
     '<small>'+(nextBig?'הפרס הגדול הבא: <b>'+passReward(nextBig).t+'</b> ברמה '+nextBig+(nextBig>lv?', עוד '+(nextBig-lv)+' רמות':', מחכה לאיסוף')+' · ':'')+'נשארו '+L(days)+' ימים לעונה</small></div></div>'+
     '<div class="card" style="display:block"><div class="kv"><span>ניסיון לפס ממשחק היום</span><b class="num"'+(pd>=PASS_DAY?' style="color:var(--good)"':'')+'>'+L(pd+'/'+PASS_DAY)+'</b></div><div class="bar gold"><i style="width:'+Math.round(pd/PASS_DAY*100)+'%"></i></div><p class="hint">העונה נמשכת חודשיים. חיסולים, ריסטים וניצחונות בזירה מקדמים את הפס עד '+L(PASS_DAY)+' ביום, והמשימות היומיות מתווספות מעל זה. מי שמשחק כל יום מסיים בנחת.</p></div>';
   h+='<div class="track" id="passTrack">';
-  for(let i=1;i<=PASS_MAX;i++){const rw=passReward(i),got=i<=A.pass.claimed,open=!got&&i<=lv,cur=i===lv+1,big=!!rw.wing,ic=rw.wing?'wing':rw.sboxes?'sboxes':rw.gems?'gems':'coins';
+  for(let i=1;i<=PASS_MAX;i++){const rw=passReward(i),got=i<=A.pass.claimed,open=!got&&i<=lv,cur=i===lv+1,big=!!rw.wing||rw.feathers>=3,ic=rw.wing||rw.feathers?'wing':rw.sboxes?'sboxes':rw.gems?'gems':'coins';
     h+='<div class="tier'+(got?' got':open?' open':cur?' cur':'')+(big?' big':'')+'"><b>'+i+'</b><span class="pic">'+PICON[ic]+'</span><em>'+rw.t+'</em><i>'+(got?'נאסף':open?'מוכן':cur?L(xp+'%'):'נעול')+'</i></div>';}
   h+='</div>';
   h+='<button class="btn pri'+(wait>0?' glow':'')+'" data-act="claimPass"'+(wait>0?'':' disabled')+'>'+(wait>1?'אסוף '+wait+' פרסים':wait===1?'אסוף פרס רמה '+(A.pass.claimed+1):'אין פרס לאיסוף כרגע')+'</button>';
@@ -1020,6 +1023,9 @@ function openSheet(id){
   for(const a of it.af)h+='<div class="kv aff"><span style="color:inherit">'+AFF[a[0]][0]+'</span><b class="num">'+L('+'+a[1]+'%')+'</b></div>';
   h+=diff+'</div>';
   if(isSet(it)){const n=setCounts(S)[it.t-1]||0;h+='<div class="card r4"><b style="color:var(--r4)">סט עתיק: '+SETN[it.t-1]+' · לבושים '+L(n+'/6')+'</b>'+setLines(it.t-1,n)+'</div>';}
+  if(it.s==='g'&&it.t<WING_MAX){const n=wingFeathers(it.t),ok=it.p>=15&&(A.feathers||0)>=n;
+    h+='<button class="btn'+(ok?' pri glow':'')+'" data-act="wingEvolve" data-id="'+it.id+'"'+(ok?'':' disabled')+' style="width:100%;margin-bottom:6px">פתח ל'+WINGN[it.t]+' · '+L(n)+' נוצות · '+L(Math.round(wingChance(it.t)*100)+'%')+'</button>'+
+      '<p class="hint" style="margin-bottom:6px">'+(it.p<15?'כנפיים מתפתחות לדרגה הבאה רק ב-'+L('+15')+'. ':'')+'יש לך '+L(A.feathers||0)+' נוצות נצח. קונים אותן בחנות העונה, ומקבלים בפס העונה ולעיתים מבוסים. כישלון שורף את הנוצות, הכנפיים נשארות. דרגה '+L(it.t+'/'+WING_MAX)+'.</p>';}
   if(it.ex&&!isFull(it))h+='<button class="btn'+(A.jewels>0?' pri':'')+'" data-act="exAdd" data-id="'+it.id+'"'+(A.jewels>0?'':' disabled')+' style="width:100%;margin-bottom:6px">הוסף אופציה · אבני שלמות: '+L(A.jewels||0)+'</button>';
   if(it.p<15)h+='<p class="hint">שדרוג לדרגה '+L('+'+(it.p+1))+': '+L(uc.gems)+' אבני נשמה ו-'+L(fmt(uc.gold))+' זהב · סיכוי '+L(Math.round(upChance(it)*100)+'%')+(it.p>=7?' · כישלון מוריד דרגה אחת'+(A.charms?' (יש קמע הגנה)':''):'')+'</p>';
   h+='<div class="acts">'+(f.eq!=null?'<button class="btn" data-act="unequip" data-id="'+it.id+'">הסר</button>':'<button class="btn pri" data-act="equip" data-id="'+it.id+'">לבש</button>')+
@@ -1233,6 +1239,7 @@ document.addEventListener('click',async e=>{
     else if(a==='claimPass'){for(let n=0;n<PASS_MAX&&passLevel(S)>A.pass.claimed;n++){r=await act('claimPass',{});if(!r.ok)break;snd('rare');toast('פרס עונה: '+r.t);}passScroll=null;}
     else if(a==='claimEvent'){r=await act('claimEvent',{id:b.dataset.k});if(r.ok){snd('rare');toast('פרס האירוע: '+r.rt);if(r.levels)afterXp(r.levels);}}
     else if(a==='answer'){r=await act('answer',{a:+b.dataset.i});if(r.ok){snd(r.correct?'ok':'fail');toast(r.correct?'תשובה נכונה. אסוף את הפרס':'תשובה שגויה');}}
+    else if(a==='wingEvolve'){const id=+b.dataset.id;r=await act('wingEvolve',{id:id});if(r.ok){if(r.evolved){snd('rare');toast('הכנפיים התפתחו: '+WINGN[r.t-1],4);announce('הכנפיים שלך התפתחו ל'+WINGN[r.t-1],true);}else{snd('slam');toast('הפיתוח נכשל. '+r.need+' נוצות נשרפו');}openSheet(id);}else toast(r.msg);}
     else if(a==='exAdd'){const id=+b.dataset.id;r=await act('exAdd',{id:id});if(r.ok){snd('rare');toast(r.full?'הפריט הגיע לאקסלנט מלא':'נוספה אופציה: '+AFF[r.opt[0]][0]+' '+r.opt[1]+'%',4);openSheet(id);}}
     else if(a==='claimLogin'){r=await act('claimLogin',{});if(r.ok){snd('rare');closeModal();toast('פרס יום '+r.day+': '+r.t);}}
     else if(a==='claimTask'){r=await act('claimTask',{k:b.dataset.k});if(r.ok)toast(r.xp+' ניסיון לפס');}

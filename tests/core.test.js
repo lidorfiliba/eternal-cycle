@@ -209,7 +209,7 @@ test('the season pass is long: play feeds it only up to a daily amount, tasks co
   assert.ok(A.kills>10000,'kills '+A.kills);assert.equal(A.pass.xp,G.PASS_DAY,'a whole day of grinding stops at the daily amount');
   A.daily.kills=5000;assert.ok(G.apply(A,'claimTask',{k:'kills'}).ok);assert.equal(A.pass.xp,G.PASS_DAY+60,'tasks are on top of it');
   st.now+=86400000;G.apply(A,'tick',{z:0,kills:0});st.now+=20000;G.apply(A,'tick',{z:0,kills:40});st.now+=60000;for(let i=0;i<8;i++){st.now+=20000;G.apply(A,'tick',{z:0,kills:40});}assert.ok(A.pass.xp>G.PASS_DAY+60,'the next day it moves again');
-  assert.ok(G.PASS_MAX*G.PASS_STEP/(G.PASS_DAY+260)>20,'even a perfect player needs more than twenty days');assert.ok(G.passReward(60).wing&&G.passReward(40).wing&&G.passReward(20).wing);
+  assert.ok(G.PASS_MAX*G.PASS_STEP/(G.PASS_DAY+260)>20,'even a perfect player needs more than twenty days');assert.ok(G.passReward(60).wing&&G.passReward(40).feathers&&G.passReward(20).feathers);
   const old=JSON.parse(JSON.stringify(A));old.zv=1;old.pass.xp=1000;const B=G.adopt(old);assert.equal(B.pass.xp,2000);assert.equal(B.zv,2);
 });
 
@@ -232,4 +232,17 @@ test('the manual duel: choices decide between equals, gear decides between unequ
   assert.ok(G.apply(A,'duelStart',{i:0}).ok,'asking again resumes');assert.equal(A.tickets,t0-1);assert.equal(G.apply(A,'duelAct',{a:'u'}).ok,false);
   let r,n=0;const rt=A.rating;do{r=G.apply(A,'duelAct',{a:G.duelAI(A.pd.D,0)});n++;}while(r.ok&&!r.D.over&&n<40);assert.ok(r.D.over);assert.equal(A.pd,null);assert.notEqual(A.rating,rt);
   G.apply(A,'opps',{},{players:[],uid:'x'});G.apply(A,'duelStart',{i:0});st.now+=11*60000;G.apply(A,'opps',{},{players:[],uid:'x'});const r1=A.rating;G.apply(A,'duelStart',{i:0});assert.equal(A.rating,r1-12,'a duel left for ten minutes is lost');
+});
+
+test('wings: fifty ranks, each stronger; only +15 wings evolve, with feathers, and a failure costs only the feathers',()=>{
+  assert.equal(G.WING_MAX,50);const st={now:Date.parse('2026-11-26T12:20:00Z')};let x=.99;G.setEnv(()=>x,()=>st.now);
+  const A=G.newAccount();G.apply(A,'create',{name:'a',cls:'blade'});const s=A.chars[0];
+  const mk=(t,p)=>({id:900+t,s:'g',t:t,r:2,p:p,z:-1,af:[]});let prev=0;for(let t=1;t<=50;t++){const v=G.itemVals(mk(t,15)).wd;assert.ok(v>prev,'rank '+t);prev=v;}
+  assert.ok(G.itemName(mk(9,0),'blade')!==G.itemName(mk(50,0),'blade'));assert.equal(new Set(Array.from({length:50},(_,i)=>G.itemName(mk(i+1,0),'blade'))).size,50,'fifty different names');
+  const w=mk(8,14);A.inv.push(w);A.feathers=10;assert.match(G.apply(A,'wingEvolve',{id:w.id}).msg,/\+15|15/);
+  w.p=15;A.feathers=1;assert.match(G.apply(A,'wingEvolve',{id:w.id}).msg,/נוצות/);A.feathers=10;const need=G.wingFeathers(8);
+  const fail=G.apply(A,'wingEvolve',{id:w.id});assert.ok(fail.ok);assert.equal(fail.evolved,false);assert.equal(w.t,8);assert.equal(w.p,15);assert.equal(A.feathers,10-need);
+  x=.01;const ok=G.apply(A,'wingEvolve',{id:w.id});assert.equal(ok.evolved,true);assert.equal(w.t,9);assert.equal(w.p,15,'the upgrade level is kept, so evolving never weakens');assert.equal(A.feathers,10-2*need);
+  w.t=50;assert.equal(G.apply(A,'wingEvolve',{id:w.id}).ok,false);A.coins=100;assert.ok(G.apply(A,'buy',{shop:'season',k:'feather'}).ok);assert.equal(A.coins,60);
+  assert.ok(G.wingChance(1)>G.wingChance(49)&&G.wingFeathers(49)>G.wingFeathers(1));
 });
