@@ -551,7 +551,7 @@ function apply(A,kind,args,ctx){
   args=args||{};ctx=ctx||{};const now=_now(),r={ok:true};loginDay(A);
   const fail=m=>({ok:false,msg:m});
   if(kind==='create'){
-    const nm=String(args.name||'').replace(/[<>&"'\u0000-\u001f]/g,'').trim().slice(0,14)||'גיבור',cls=CLS[args.cls]?args.cls:'blade';
+    const nm=String(args.name||'').replace(/[<>&"'\u2605\u0000-\u001f]/g,'').trim().slice(0,14)||'גיבור',cls=CLS[args.cls]?args.cls:'blade';
     if(A.chars.length>=3||(A.chars.length&&A.chars.length>=slotsOpen(A)))return fail('אין מקום לדמות נוספת');
     if(A.chars.length)A.chars[A.cur].last=now;
     A.chars.push(bind(A,newChar(nm,cls)));A.cur=A.chars.length-1;A.allow=0;A.tk=now;A.bossAt=null;A.opps=null;return r;

@@ -195,6 +195,16 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
       if (!upd.data || !upd.data.length) continue; // another request saved first; redo on fresh state
 
       if (ARENA_KINDS.has(kind)) await saveArena(uid, A);
+      { // feats the whole server hears about; a failure here never fails the action
+        const ch = A.chars[A.cur], nm = ch ? String(ch.name).slice(0, 14) : "", rep = r.rep || {}; let feat = "";
+        if (kind === "upgrade" && r.code === "ok" && r.p >= 11) feat = nm + " שדרג פריט ל-+" + r.p;
+        else if (kind === "wingEvolve" && r.evolved && r.t >= 9) feat = nm + " פיתח את " + G.WINGN[r.t - 1];
+        else if (kind === "reset" && r.ok) feat = nm + " השלים ריסט " + r.resets;
+        else if (kind === "exAdd" && r.full) feat = nm + " השלים פריט אקסלנט מלא";
+        else if (kind === "tick" && rep.notable) { const it = rep.notable.find((x) => x.ex || x.r >= 4); if (it) feat = nm + " מצא " + G.itemName(it, ch.cls); }
+        else if (kind === "duelAct" && r.win === true && A.rating >= 1200) feat = nm + " ניצח בזירה והגיע לדירוג " + A.rating;
+        if (feat && nm) { try { await admin.from("chat").insert({ ch: "w", user_id: null, name: "\u2605", tag: "", msg: feat.slice(0, 160) }); } catch (_e) { /* not worth failing for */ } }
+      }
       const out = { result: r, state: next };
       if (kind === "tick" && r.kills > 0 && r.partyN > 0 && r.base > 0) await admin.rpc("party_share_add", { p_user: uid, p_zone: Math.floor(Number(args.z)), p_xp: Math.round(r.base * G.PARTY_SHARE), p_lvl: A.chars[A.cur].lvl });
       if (kind === "tick" && r.kills > 0) await admin.rpc("guild_tick", { p_user: uid, p_kills: r.kills, p_siege: G.siegeInfo(now).on, p_key: G.siegeInfo(now).key });

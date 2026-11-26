@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126161028';
+const BUILD='20261126161350';
 const {reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,duelCan,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -1368,14 +1368,14 @@ function drawPeers(g0,sc){
 }
 function addChat(list){
   const first=chatSince===0;if(!first&&list.length)chatAt=Date.now();
-  for(const m of list){const i=+m.i;if(!(i>chatSince))continue;chatSince=i;chatLog.push({c:m.c==='g'?'g':'w',n:String(m.n||''),g:String(m.g||''),m:String(m.m||''),me:!!m.me});if(!first&&tab!=='chat'&&!m.me)chatUnread++;}
+  for(const m of list){const i=+m.i;if(!(i>chatSince))continue;chatSince=i;const sys=m.n==='\u2605';chatLog.push({c:m.c==='g'?'g':'w',n:String(m.n||''),g:String(m.g||''),m:String(m.m||''),me:!!m.me,sys:sys});if(sys){if(!first)announce('\u2605 '+String(m.m||''));}else if(!first&&tab!=='chat'&&!m.me)chatUnread++;}
   if(chatLog.length>120)chatLog.splice(0,chatLog.length-120);
   const l=$('chatList');if(l){l.innerHTML=chatRows();l.scrollTop=l.scrollHeight;}
 }
 function chatRows(){
   const rows=chatLog.filter(m=>m.c===chatCh).slice(-60);
   if(!rows.length)return '<p class="hint">'+(chatCh==='g'?'עוד אין הודעות בגילדה.':'עוד אין הודעות. תהיה הראשון.')+'</p>';
-  return rows.map(m=>'<div class="cl'+(m.me?' me':'')+'"><b>'+(m.g?'['+esc(m.g)+'] ':'')+esc(m.n)+'</b> <span dir="auto">'+esc(m.m)+'</span></div>').join('');
+  return rows.map(m=>m.sys?'<div class="cl" style="color:var(--gold)">\u2605 <span dir="auto">'+esc(m.m)+'</span></div>':'<div class="cl'+(m.me?' me':'')+'"><b>'+(m.g?'['+esc(m.g)+'] ':'')+esc(m.n)+'</b> <span dir="auto">'+esc(m.m)+'</span></div>').join('');
 }
 function renderChat(){
   if(!ONLINE)return '<h2>צ\'אט</h2><p class="hint">הצ\'אט עובד רק במצב מקוון, מול השרת.</p>';
