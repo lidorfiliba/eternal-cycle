@@ -111,39 +111,60 @@ function spr(key,an,fi,x,y,k,flip,glowC,glowB,alpha,sheet){
   ctx.restore();return true;
 }
 const frames=(key,an)=>{const m=SPR[key];return (m.a[an]||m.a.idle)[1];};
-const wcv=document.createElement('canvas');wcv.width=144;wcv.height=112;const wctx=wcv.getContext('2d');
-// Eight wing styles by tier: leaf, storm feathers, flame, angel, bat, ice shards, double golden, energy blades with a halo.
-function drawWings(x,y,g,t,k){
-  const T=clamp(g[0]|0,1,8),c=wctx,flap=Math.sin(t*3)*.16;let pal=g[3]?WPAL.s:WPAL[T];
-  if(T===8&&!g[3]){const h=(t*70)%360;pal=['hsl('+h+',90%,58%)','hsl('+((h+120)%360)+',95%,78%)'];}
-  c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,144,112);c.translate(72,72);c.scale(.5,.5);
-  const grad=(len,a,b)=>{const gr=c.createLinearGradient(0,0,len,0);gr.addColorStop(0,a||pal[0]);gr.addColorStop(1,b||pal[1]);return gr;};
-  const feather=(len,w)=>{c.beginPath();c.moveTo(0,0);c.quadraticCurveTo(len*.5,-w,len,-2);c.quadraticCurveTo(len*.55,w*.8,0,3);c.fill();};
-  for(const side of [-1,1]){c.save();c.scale(side,1);
-    if(T===5){ // bat membrane with finger bones
-      c.save();c.rotate(-.5+flap*1.4);c.fillStyle=grad(86);c.beginPath();c.moveTo(0,0);c.lineTo(34,-46);c.lineTo(86,-34);
-      c.quadraticCurveTo(70,-16,78,2);c.quadraticCurveTo(58,-2,56,20);c.quadraticCurveTo(38,10,30,28);c.quadraticCurveTo(18,10,0,6);c.fill();
-      c.strokeStyle=pal[1];c.lineWidth=2.5;c.beginPath();for(const p of [[86,-34],[78,2],[56,20],[30,28]]){c.moveTo(34,-46);c.lineTo(p[0],p[1]);}c.moveTo(0,0);c.lineTo(34,-46);c.stroke();c.restore();
-    }else if(T===6){ // ice shards
-      for(let i=5;i>=0;i--){c.save();c.rotate(-(.05+i*.27)+flap*(1+i*.2));const len=34+i*9;c.fillStyle=grad(len);c.beginPath();c.moveTo(0,-2);c.lineTo(len*.55,-9-i);c.lineTo(len,0);c.lineTo(len*.5,6);c.lineTo(0,3);c.fill();
-        c.strokeStyle='rgba(255,255,255,.75)';c.lineWidth=1.5;c.beginPath();c.moveTo(4,0);c.lineTo(len-3,0);c.stroke();c.restore();}
-    }else if(T===8){ // energy blades
-      for(let i=6;i>=0;i--){c.save();c.rotate(-(.0+i*.26)+flap*(1+i*.3));const len=42+i*9;c.fillStyle=grad(len);c.globalAlpha=.9;c.beginPath();c.moveTo(6,-3);c.lineTo(len,-1);c.lineTo(len+10,0);c.lineTo(len,1);c.lineTo(6,3);c.fill();
-        c.globalAlpha=1;c.fillStyle='#fff';c.fillRect(8,-.8,len-8,1.6);c.restore();}
-    }else{ // feathered families: leaf, storm, flame, angel, golden double
-      const n=T===1?3:T===2?5:T===3?5:T===4?7:8,layers=T===7?2:1;
-      for(let L=layers-1;L>=0;L--)for(let i=n-1;i>=0;i--){c.save();
-        const wob=T===3?Math.sin(t*9+i*1.7)*.08:0;c.rotate(-(.15+i*(T===1?.42:.26))+flap*(1+i*.25)+wob+L*.5);
-        const len=(T===1?26:T===3?30:24)+i*(T>=4?8:6)+T*3-L*14;c.fillStyle=L?grad(len,pal[1],'#fff'):grad(len);
-        if(T===3){c.beginPath();c.moveTo(0,0);c.bezierCurveTo(len*.3,-16,len*.6,6,len,-10+Math.sin(t*12+i)*4);c.bezierCurveTo(len*.7,10,len*.3,2,0,4);c.fill();}
-        else feather(len,T===1?15:T>=4?12:11);
-        c.restore();}
-    }
-    c.restore();}
-  if(T===8||T===4||T===7){c.strokeStyle=pal[1];c.lineWidth=T===8?4:3;c.globalAlpha=T===8?.9:.6;c.beginPath();c.ellipse(0,-64,20,6,0,0,7);c.stroke();c.globalAlpha=1;}
-  ctx.save();ctx.imageSmoothingEnabled=false;const gl=Math.max(glowAmt(g[2],g[1],t),T>=5?5+T:0);if(gl){ctx.shadowColor=pal[1];ctx.shadowBlur=gl;}
-  ctx.globalAlpha=.95;ctx.drawImage(wcv,Math.round(x-72*k),Math.round(y-72*k),144*k,112*k);ctx.restore();
-  if(T>=6&&!calm&&Math.random()<.2)SC.parts.push({x:x+(Math.random()-.5)*60*k,y:y-Math.random()*30*k,vx:0,vy:T===6?14:-16,life:.7,c:pal[1],s:2});
+const wcv=document.createElement('canvas');wcv.width=340;wcv.height=280;const wctx=wcv.getContext('2d');
+const WING_AT={blade:[5,.7],storm:[3,.72],hunter:[4,.76]}; // where the wings meet the back: pixels behind the middle, share of body height
+const WLEN=[0,60,80,86,104,106,94,116,122];
+// One wing, drawn in its own space: the shoulder is the origin, +x points behind the hero, -y is up.
+function wingShape(c,T,pal,t,far){
+  const L=WLEN[T],lin=(len,a,b)=>{const g=c.createLinearGradient(0,0,len,0);g.addColorStop(0,a);g.addColorStop(1,b);return g;};
+  const feather=(a,len,w,fill,rim)=>{c.save();c.rotate(a);c.fillStyle=fill;c.beginPath();c.moveTo(0,-w*.3);c.bezierCurveTo(len*.35,-w,len*.8,-w*.75,len,0);c.bezierCurveTo(len*.75,w*.7,len*.3,w*.8,0,w*.3);c.closePath();c.fill();
+    c.strokeStyle=rim;c.lineWidth=1.4;c.globalAlpha*=.6;c.stroke();c.beginPath();c.moveTo(4,0);c.lineTo(len*.9,0);c.lineWidth=1;c.stroke();c.restore();};
+  const fan=(n,a0,a1,len,w,f0,f1,rim,prof)=>{for(let i=n-1;i>=0;i--){const u=n>1?i/(n-1):0,l=len*(prof?prof(u):.62+.38*Math.sin(Math.PI*Math.min(1,u*1.25+.12)));feather(a0+(a1-a0)*u,l,w,lin(l,f0,f1),rim);}};
+  const dark=far?'#0a0616':pal[0];
+  if(T===5){ // bat: fingers and a scalloped membrane
+    const tips=[[-1.25,.7],[-.85,1],[-.4,.95],[.05,.8],[.5,.55]].map(q=>[Math.cos(q[0])*L*q[1],Math.sin(q[0])*L*q[1]]);
+    c.fillStyle=lin(L,pal[0],pal[1]);c.beginPath();c.moveTo(0,0);c.lineTo(tips[0][0],tips[0][1]);
+    for(let i=1;i<tips.length;i++){const a=tips[i-1],b=tips[i];c.quadraticCurveTo((a[0]+b[0])*.36,(a[1]+b[1])*.36,b[0],b[1]);}
+    c.quadraticCurveTo(L*.2,L*.18,0,10);c.fill();
+    c.strokeStyle=pal[1];c.lineWidth=3;c.lineCap='round';c.beginPath();for(const q of tips){c.moveTo(0,0);c.lineTo(q[0],q[1]);}c.stroke();
+    c.fillStyle='#fff';for(const q of tips){c.beginPath();c.arc(q[0],q[1],2.6,0,7);c.fill();}
+  }else if(T===6){ // ice: faceted crystals
+    for(let i=7;i>=0;i--){const u=i/7,a=-1.45+u*1.9,len=L*(.55+.45*Math.sin(Math.PI*Math.min(1,u*1.2+.1))),w=9+len*.06;c.save();c.rotate(a);
+      c.fillStyle=lin(len,pal[0],pal[1]);c.beginPath();c.moveTo(0,-3);c.lineTo(len*.5,-w);c.lineTo(len,0);c.lineTo(0,0);c.fill();
+      c.fillStyle=lin(len,'#0f4f80','#bfeaff');c.beginPath();c.moveTo(0,0);c.lineTo(len,0);c.lineTo(len*.5,w*.8);c.lineTo(0,3);c.fill();
+      c.strokeStyle='rgba(255,255,255,.85)';c.lineWidth=1.2;c.beginPath();c.moveTo(2,0);c.lineTo(len,0);c.stroke();c.restore();}
+  }else if(T===8){ // energy: blades of light
+    for(let i=8;i>=0;i--){const u=i/8,a=-1.5+u*2,len=L*(.6+.4*Math.sin(Math.PI*Math.min(1,u*1.2+.1)))*(1+.05*Math.sin(t*6+i));c.save();c.rotate(a);
+      c.fillStyle=lin(len,pal[0],pal[1]);c.globalAlpha*=.85;c.beginPath();c.moveTo(8,-5);c.lineTo(len*.8,-3);c.lineTo(len,0);c.lineTo(len*.8,3);c.lineTo(8,5);c.fill();
+      c.globalAlpha/=.85;c.fillStyle='#fff';c.fillRect(10,-1.2,len*.78,2.4);c.restore();}
+    c.fillStyle='#fff';c.beginPath();c.arc(2,0,7,0,7);c.fill();
+  }else if(T===3){ // flame: tongues that flicker, with a bright core
+    for(let i=7;i>=0;i--){const u=i/7,a=-1.5+u*1.95+Math.sin(t*8+i*1.9)*.07,len=L*(.55+.45*Math.sin(Math.PI*Math.min(1,u*1.2+.1)))*(1+.08*Math.sin(t*11+i*2.3));
+      for(const [sc,f0,f1] of [[1,pal[0],pal[1]],[.6,'#ff9a2e','#fff3a8']]){c.save();c.rotate(a);const l=len*sc,w=13*sc,wv=Math.sin(t*10+i)*5*sc;c.fillStyle=lin(l,f0,f1);
+        c.beginPath();c.moveTo(0,-w*.4);c.bezierCurveTo(l*.3,-w*1.2,l*.6,w*.3+wv,l,-w*.5+wv);c.bezierCurveTo(l*.7,w*.9,l*.3,w*.5,0,w*.4);c.fill();c.restore();}}
+  }else{ // feathered: leaf, storm, angel, golden
+    const n=[0,4,7,0,10,0,0,12][T],w=T===1?15:T===2?10:9,rim=T===1?'#eaffd0':'#ffffff';
+    if(T===7)fan(n,-1.62,.55,L*1.02,w+1,far?dark:'#7a4f06',pal[0],rim);
+    fan(n,-1.5,.45,L,w,dark,pal[1],rim);
+    if(T>=2)fan(Math.ceil(n*.7),-1.42,.3,L*.5,w*.9,pal[1],'#ffffff',rim,u=>.8+.2*Math.sin(Math.PI*u));
+    if(T>=4)fan(Math.ceil(n*.5),-1.3,.15,L*.27,w*.8,'#ffffff','#ffffff',rim,()=>1);
+    c.strokeStyle=T===1?'#6b4a2e':pal[1];c.lineWidth=T===1?4:5;c.lineCap='round';c.beginPath();c.moveTo(0,2);c.quadraticCurveTo(L*.12,-L*.2,L*.1,-L*.42);c.stroke();
+  }
+}
+// Eight wing styles by tier: leaf, storm feathers, flame, angel, bat, ice, golden, energy. Both wings sweep back from the shoulders.
+function drawWings(x,y,g,t,k,flip,cls,bh){
+  const T=clamp(g[0]|0,1,8),c=wctx,at=WING_AT[cls]||WING_AT.blade,f=flip?-1:1;let pal=g[3]?WPAL.s:WPAL[T];
+  if(T===8&&!g[3]){const h=(t*70)%360;pal=['hsl('+h+',90%,55%)','hsl('+((h+120)%360)+',95%,80%)'];}
+  const flap=Math.sin(t*2.6),OX=130,OY=185;
+  c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,340,280);
+  c.save();c.translate(OX-14,OY-4);c.rotate(-.42+flap*.11);c.scale(.74,.74);c.globalAlpha=.72;wingShape(c,T,pal,t+.4,true);c.restore(); // far wing, behind and higher
+  c.save();c.translate(OX,OY);c.rotate(flap*.14);c.globalAlpha=1;wingShape(c,T,pal,t,false);c.restore();
+  if(T===4||T>=7){c.save();c.strokeStyle=T===8?pal[1]:'#fff3b0';c.lineWidth=5;c.globalAlpha=.85;c.beginPath();c.ellipse(OX-(at[0]+3)*2,OY-bh*2*(1-at[1])-20,22,6.5,0,0,7);c.stroke();c.restore();}
+  const u=k*.5,ax=x-f*at[0]*k,ay=y-bh*k*at[1];
+  ctx.save();ctx.translate(Math.round(ax),Math.round(ay));ctx.scale(-f*u,u);ctx.imageSmoothingEnabled=true;
+  const gl=Math.max(glowAmt(g[2],g[1],t),T>=4?6+T:3);ctx.shadowColor=pal[1];ctx.shadowBlur=gl;
+  ctx.drawImage(wcv,-OX,-OY);ctx.restore();
+  if(T>=6&&!calm&&Math.random()<.22)SC.parts.push({x:ax-f*(10+Math.random()*50)*k*.5,y:ay-Math.random()*50*k*.5,vx:0,vy:T===6?16:-18,life:.7,c:pal[1],s:2});
 }
 // Armor shows on the character: the whole sprite sheet is recolored toward the armor tier's color (or the set color for ancient pieces).
 const TINT={};
@@ -242,7 +263,7 @@ function drawHero(x,y,sc,look,t,anim,flip,dead,mv,fury){
   ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(x,y+1,20*sc,5*sc,0,0,7);ctx.fill();
   if(look.set&&!dead)drawSetAura(x,y,sc,look.set,t);
   if(!dead&&!look.spr&&petTier(look.r|0))drawPet(x-(flip?-1:1)*38*sc,y-m.bh*k*.92,sc,petTier(look.r|0),t+(look.c==='storm'?1:0),flip);
-  if(look.g&&!dead)drawWings(x-(flip?-1:1)*5*k,y-m.bh*k*.62,look.g,t,k);
+  if(look.g&&!dead)drawWings(x,y,look.g,t,k,flip,look.c,m.bh);
   if(look.w&&!dead&&!look.spr)drawBackWeapon(x-(flip?-1:1)*7*k,y-m.bh*k*.5,look,t,k,flip);
   let an='idle',fi=Math.floor(t*8);
   if(dead){an='die';fi=Math.min(frames(key,'die')-1,Math.floor((dead===true?9:dead)*8));}
