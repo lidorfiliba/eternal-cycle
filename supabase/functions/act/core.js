@@ -706,7 +706,7 @@ function apply(A,kind,args,ctx){
     case 'duel':return fail('אין יותר קרב אוטומטי. הקרב בזירה ידני');
     case 'duelStart':{
       if(A.pd&&now-A.pd.t>600000){duelSettle(A,now,false,A.pd.o.rt);A.pd=null;} // walked away from a duel: it counts as lost
-      if(!A.pd){const o=A.opps&&A.opps[int(args.i,0,3)];if(!o)return fail('רענן את רשימת היריבים');
+      if(!A.pd){let o=null;if(args.k!=null){if(!ctx.target)return fail('השחקן הזה כבר לא כאן');o=Object.assign({},ctx.target);delete o.id;}else o=A.opps&&A.opps[int(args.i,0,3)];if(!o)return fail('רענן את רשימת היריבים');
         const free=evWindows(now,0).some(w=>w.e.id==='royale');if(!free&&A.tickets<1)return fail('אין כרטיסים');
         if(!free)A.tickets--;A.opps=null;const me=fighter(S),D=duelNew(me,o);
         // The live duel is fought on the player's device. The server fixes the numbers of both sides here and, at the

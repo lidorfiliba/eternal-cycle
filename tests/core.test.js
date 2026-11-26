@@ -283,3 +283,10 @@ test('the live duel: the server fixes the numbers and refuses a win claimed fast
   G.apply(A,'opps',{},{players:[],uid:'x'});G.apply(A,'duelStart',{i:1});st.now+=30000;const ok=G.apply(A,'duelEnd',{win:true});assert.equal(ok.win,true);assert.ok(ok.gain>0);
   G.apply(A,'opps',{},{players:[],uid:'x'});G.apply(A,'duelStart',{i:1});st.now+=20000;const lost=G.apply(A,'duelEnd',{win:false});assert.equal(lost.win,false);assert.equal(lost.gain,0);
 });
+
+test('a duel against a player seen on the map uses the fighter the server looked up, never one the client sends',()=>{
+  const st={now:Date.parse('2026-11-26T12:20:00Z')};G.setEnv(()=>.5,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'a',cls:'blade'});
+  assert.match(G.apply(A,'duelStart',{k:'0123456789'}).msg,/לא כאן/);
+  const t=G.cleanPlayer('u2',{n:'יריב',c:'storm',l:50,r:1,p:900,d:120,a:1.1,h:900,f:60,cr:.1,cd:2,rt:1100});const r=G.apply(A,'duelStart',{k:'0123456789'},{target:t});
+  assert.ok(r.ok);assert.equal(r.pd.o.n,'יריב');assert.equal(r.pd.o.id,undefined,'ids never reach the browser');assert.ok(r.pd.live.b[1]>0);
+});

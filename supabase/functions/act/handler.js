@@ -20,6 +20,8 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
       .or(`buyer.is.null,buyer.eq.${uid},seller.eq.${uid}`).order("created_at", { ascending: false }).limit(200);
     return (data || []).map((l) => ({ id: String(l.id), sn: l.seller_name, mine: l.seller === uid, direct: !!l.buyer, it: l.item, price: Number(l.price) }));
   }
+  // The same short key the heartbeat hands out for other players: md5(user id + 'peer'), first ten hex digits.
+  async function peerKey(id) { const { createHash } = await import("node:crypto"); return createHash("md5").update(String(id) + "peer").digest("hex").slice(0, 10); }
   async function board(uid) {
     const { data } = await admin.from("arena").select("user_id,snap").order("resets", { ascending: false }).limit(60);
     return (data || []).map((r) => G.cleanPlayer(r.user_id, r.snap));
@@ -173,6 +175,10 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
       const ctx = { uid };
       let players = null;
       if (kind === "opps") { players = await board(uid); ctx.players = players; }
+      if (kind === "duelStart" && typeof args.k === "string" && /^[0-9a-f]{10}$/.test(args.k)) { // challenge someone seen on the map
+        const { data } = await admin.from("arena").select("user_id,snap").order("seen_at", { ascending: false }).limit(300);
+        for (const row of data || []) { if (row.user_id !== uid && (await peerKey(row.user_id)) === args.k) { ctx.target = G.cleanPlayer(row.user_id, row.snap); break; } }
+      }
       if (kind === "tick" && Number(args.z) >= 0) {
         const pm = await admin.rpc("party_mates", { p_user: uid, p_zone: Math.floor(Number(args.z)) });
         const mates = pm.error || !Array.isArray(pm.data) ? [] : pm.data;

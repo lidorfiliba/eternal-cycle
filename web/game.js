@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126164510';
+const BUILD='20261126164912';
 const {RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -90,7 +90,7 @@ function resize(){const r=cv.getBoundingClientRect();DPR=Math.min(window.deviceP
 window.addEventListener('resize',resize);if(prefs.big)document.getElementById('app').classList.add('wide');if(prefs.big)document.getElementById('bigBtn').textContent='הקטן';setTimeout(()=>fsSync(),0);
 const MW=1500,TW=1150;
 const TOWN={n:'כפר המעגל',sky:['#141033','#4a3a78'],sil:'#0c0a20',amb:'#ffe9a8',kind:'town'};
-const NPCS=[{x:270,n:'הנפח',tab:'gear',c:'blade',col:'#ff8a4d',spr:'n_smith'},{x:440,n:'הסוחרת',tab:'shop',c:'hunter',col:'#f2c14e',spr:'n_merch'},{x:610,n:'שומר המעגל',tab:'char',c:'storm',col:'#8be28b',spr:'n_guard'},{x:780,n:'כרוז העונה',tab:'pass',c:'hunter',col:'#5fd4ff',spr:'n_herald'},{x:950,n:'שומר הזירה',tab:'arena',c:'blade',col:'#6fe39a',spr:'n_arena'}];
+const NPCS=[]; // the village is a lobby now: the tabs are reached from anywhere, and the street belongs to players' stalls
 const SC={t:0,cam:0,mons:[],boss:null,hero:{x:110,face:1,dir:0,hp:1,atkT:0,anim:0,dead:0,mAtk:1,tgt:null,tx:null,goal:null,manual:0,buff:0,shield:0,cds:[0,0,0,0,0,0],autoSk:0,mv:false},fx:[],parts:[],nums:[],drops:[],shake:0,mode:'farm',duel:null,zi:-1,fl:0};
 const amb=[];for(let i=0;i<26;i++)amb.push({x:Math.random(),y:Math.random(),s:.5+Math.random()*1.5,v:.02+Math.random()*.05});
 const mapW=()=>SC.zi<0?TW:MW, gy=()=>Math.min(H*.8,H-112);
@@ -513,6 +513,7 @@ function enterZone(z,side,f,ev){
   if(h.climb&&h.climb.ph==='wait'){h.climb.ph='in';h.climb.t=.45;h.x=side==='R'?mapW()-50:50;}else h.climb=null;
   if(z>=0){const n=ev?22:8,gap=ev?52:140;for(let i=0;i<n;i++)SC.mons.push(newMon((ev?240:300)+i*gap+Math.random()*(ev?30:50),z));}
   h.up=0;h.lift=0;if(hasDeck(z))for(const i of [2,3,4]){const m=SC.mons[i];m.up=1;m.home=clamp(m.home,DECK.x0+50,DECK.x1-50);m.x=m.home;}
+  if(z<0&&ONLINE&&!demo)loadMarket();
   if(z<0||z!==S.zone){auras=[];partyN=0;}statsDirty=true;panelDirty=true;syncBoss();peers=[];beatT=99;
 }
 function spawnBoss(){
@@ -732,7 +733,7 @@ cv.addEventListener('pointerdown',e=>{
     for(const m of alive())if(m.up&&Math.abs(wx-m.x)<32&&py>g0-deckH()-95&&py<g0-deckH()+8){h.tgt=m;return;}
     for(const m of alive())if(!m.up&&Math.abs(wx-m.x)<(m.boss?60:32)&&py>g0-(m.boss?170:95)){h.tgt=m;return;}
     for(const p of peers)if(Math.abs(wx-p.x)<26&&py>g0-120){showPeer(p);return;}
-    if(SC.zi<0)for(const n of NPCS)if(Math.abs(wx-n.x)<32){h.tx=n.x-60;h.goal={npc:n};return;}
+    if(SC.zi<0&&ONLINE)for(const q of stalls())if(Math.abs(wx-q.x)<40&&py>g0-90){openStall(q);return;}
     if(SC.zi>=0&&Math.abs(wx-50)<42){h.tx=60;h.goal={dir:-1};return;}
     if(portalState(1)&&Math.abs(wx-(mapW()-50))<42){h.tx=mapW()-60;h.goal={dir:1};return;}
   }
@@ -762,6 +763,7 @@ function drawWorld(){
     const hg=g0-deckH()*(h.lift||0);
     if(h.shield>0){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle='#9fe8ff';ctx.shadowColor='#9fe8ff';ctx.shadowBlur=14;ctx.globalAlpha=.45+.25*Math.sin(SC.t*9);ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(h.x,hg-hk.bh*sc,34*sc,hk.bh*sc+8,0,0,7);ctx.stroke();ctx.restore();}
     lk.lu=h.luAt!=null?Math.max(0,1-(SC.t-h.luAt)/1.1):0;drawHero(h.x,hg,sc,lk,SC.t,h.anim,h.face<0,h.dead>0?3-h.dead:0,h.mv,h.buff>0);lk.lu=0;
+    if(h.say&&h.say.t>SC.t)bubble(h.x,hg-hk.bh*2*sc-52,h.say.m);
     hpBar(h.x-30,hg-hk.bh*2*sc-16,60,h.hp/C.hp,'#6fe39a');nameTag(h.x,hg-hk.bh*2*sc-22,S.name,lk.r,guild.mine?guild.mine.tag:'',!!(guild.mine&&guild.mine.castle));}
   drawFx(SC.dt);ctx.restore();
   if(window.EC&&window.EC.gallery)window.EC.gallery(drawHero,ctx); // debug hook for looking at gear art
@@ -1355,6 +1357,8 @@ document.addEventListener('click',async e=>{
     else if(a==='respec'){closeModal();r=await act('respec',{});if(r.ok){snd('rare');toast(fmt(r.pts)+' נקודות חזרו אליך');}else toast(r.msg);}
     else if(a==='fight'){if(SC.mode==='farm'&&(A.tickets>0||A.pd)){r=await act('duelStart',{i:+b.dataset.i});if(r.ok)startDuel(r.pd);}}
     else if(a==='da'){return;}
+    else if(a==='challenge'){closeModal();r=await act('duelStart',{k:b.dataset.k});if(r.ok)startDuel(r.pd);else toast(r.msg==='net'?'אין חיבור לשרת':r.msg);}
+    else if(a==='pinvite'){closeModal();try{const j=await rpc('say',{m:b.dataset.n+', בוא לפארטי שלי. הקוד: '+party.code,g:false});toast(j&&j.result&&j.result.ok?'ההזמנה נשלחה בצ\'אט':'ההזמנה לא נשלחה');beatT=99;}catch(e){}r={ok:true};}
     else if(a==='reroll'){loadArena();}
     else if(a==='pt'){r=await act('pt',{k:b.dataset.k,n:b.dataset.n});}
     else if(a==='autoPts'||a==='autoEq'||a==='autoSell'){r=await act(a,{});}
@@ -1385,8 +1389,9 @@ function showPeer(p){
     '<div class="kv"><span>רמה</span><b class="num">'+L(s.l)+'</b></div><div class="kv"><span>ריסטים</span><b class="num">'+L(s.r)+'</b></div><div class="kv"><span>כוח לחימה</span><b class="num">'+L(fmt(s.p))+'</b></div>'+
     '<div class="kv"><span>נשק</span><b>'+gearLine(s.w,TIERN)+'</b></div><div class="kv"><span>שריון</span><b>'+gearLine(s.ar,TIERN)+'</b></div><div class="kv"><span>כנפיים</span><b>'+gearLine(s.g,WINGN)+'</b></div>'+
     (pet?'<div class="kv"><span>מלווה</span><b>'+pet[1]+'</b></div>':'')+
-    (party.code?'<p class="hint" style="margin-top:8px">קוד הפארטי שלך: <b dir="ltr">'+esc(party.code)+'</b>. שלח לו אותו בצ\'אט כדי לצרף אותו.</p>':'')+
-    '<div class="acts"><button class="btn pri" data-act="closeModal">סגור</button></div>');
+    '<div class="grid2" style="margin-top:10px"><button class="btn pri" data-act="challenge" data-k="'+esc(p.k)+'"'+(A.tickets>0&&SC.mode==='farm'?'':' disabled')+'>אתגר לדו-קרב</button><button class="btn" data-act="pinvite" data-n="'+esc(s.n)+'"'+(party.code?'':' disabled')+'>'+(party.code?'שלח קוד פארטי':'אין לך פארטי')+'</button></div>'+
+    '<p class="hint" style="margin-top:6px">בדו-קרב אתה נלחם בדמות שלו עם הציוד האמיתי שלה, והיא מופעלת על ידי המשחק. עולה כרטיס זירה.</p>'+
+    '<div class="acts"><button class="btn" data-act="closeModal">סגור</button></div>');
 }
 /* ---------- the keep: a tiered event fought in its own place, entered with a crafted key ---------- */
 const keepWin=()=>{const n=Date.now();return evWindows(n,0).find(w=>w.e.tiered&&w.live&&keepOpen(w,n)&&!(A&&A.ev&&A.ev[w.key]&&A.ev[w.key].no));};
@@ -1471,13 +1476,35 @@ function updatePeers(dt){
     if(p.mv){p.x+=Math.sign(d)*Math.min(Math.abs(d),Math.max(190,Math.abs(d)*1.2)*dt);p.dir=d<0?-1:1;}
     p.an=Math.max(0,p.an-dt*4);if(p.a&&!p.mv&&SC.zi>=0&&(p.sw-=dt)<=0){p.sw=.8+Math.random()*.6;p.an=1;}}
 }
+function bubble(x,y,txt){ // what someone just said, over their head
+  ctx.save();ctx.font='600 11.5px Assistant,Arial';ctx.textAlign='center';const w=Math.min(190,ctx.measureText(txt).width+14);
+  ctx.fillStyle='rgba(255,255,255,.94)';rr(x-w/2,y-20,w,19,7);ctx.fill();ctx.beginPath();ctx.moveTo(x-5,y-2);ctx.lineTo(x+5,y-2);ctx.lineTo(x,y+5);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#1a1630';ctx.fillText(txt,x,y-6.5,w-10);ctx.restore();
+}
+// Stalls: every player with items on the market has a stand in the village street, whether or not he is online.
+function stalls(){const by={};for(const m of market){if(m.direct)continue;(by[m.sn]=by[m.sn]||[]).push(m);}return Object.keys(by).slice(0,8).map((n,i)=>({n:n,x:250+i*112,list:by[n],mine:by[n][0].mine}));}
+function drawStalls(g0,sc){
+  const st=stalls();if(!st.length){label('רחוב הדוכנים: מי שמציע פריט בשוק מקבל כאן דוכן',TW/2,g0-74*sc,'#a79fc9',11.5);return;}
+  for(const q of st){const x=q.x,w=38*sc,hh=46*sc,c=q.mine?'#6fe39a':'#f2c14e';
+    ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(x,g0+1,w*.95,5,0,0,7);ctx.fill();
+    ctx.fillStyle='#5e4426';ctx.fillRect(x-w*.8,g0-hh,4,hh);ctx.fillRect(x+w*.8-4,g0-hh,4,hh);ctx.fillStyle='#7a5a34';ctx.fillRect(x-w*.85,g0-hh*.42,w*1.7,hh*.42);ctx.fillStyle='#b58a52';ctx.fillRect(x-w*.9,g0-hh*.48,w*1.8,5);
+    for(let k=0;k<6;k++){ctx.fillStyle=k%2?'#fff3d6':c;ctx.beginPath();ctx.moveTo(x-w+k*w/3,g0-hh);ctx.lineTo(x-w+(k+1)*w/3,g0-hh);ctx.lineTo(x-w+(k+1)*w/3-2,g0-hh+12*sc);ctx.lineTo(x-w+k*w/3+2,g0-hh+12*sc);ctx.closePath();ctx.fill();}
+    for(let k=0;k<Math.min(3,q.list.length);k++){const it=cleanItem(q.list[k].it);ctx.fillStyle=it?RAR[it.r].c:'#fff';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=8;ctx.fillRect(x-w*.5+k*w*.42,g0-hh*.48-9,8,8);ctx.shadowBlur=0;}
+    label(q.n,x,g0-hh-18,c,11.5);label(q.list.length+' פריטים',x,g0-hh-5,'#d9d3f5',10);}
+}
+function openStall(q){
+  const rows=q.list.slice(0,20).map(m=>{const it=cleanItem(m.it);if(!it)return '';return '<div class="card shop r'+it.r+'"><div style="width:34px;color:var(--r'+it.r+')">'+SVG[it.s]+'</div><div class="z"><b style="color:var(--r'+it.r+')">'+esc(itemName(it,S.cls))+(it.p?' '+L('+'+it.p):'')+'</b><small>'+mainLine(it)+'</small></div>'+
+    (m.mine?'<button class="btn sm" data-act="mcancel" data-m="'+esc(m.id)+'">בטל</button>':'<button class="btn sm'+(A.gold>=m.price?' pri':'')+'" data-act="mbuy" data-m="'+esc(m.id)+'"'+(A.gold>=m.price?'':' disabled')+'>'+L(fmt(m.price))+' זהב</button>')+'</div>';}).join('');
+  openModal('<h3 style="color:var(--gold)">הדוכן של '+esc(q.n)+'</h3><div style="display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow-y:auto">'+rows+'</div><div class="acts"><button class="btn pri" data-act="closeModal">סגור</button></div>');
+}
 function drawPeers(g0,sc){
+  if(SC.zi<0&&ONLINE)drawStalls(g0,sc);
   for(const p of peers){ctx.save();ctx.globalAlpha=.9;drawHero(p.x,g0,sc,p.s,SC.t+p.k.charCodeAt(0),p.an,(p.mv?p.dir:p.f)<0,0,p.mv,false);ctx.restore();
-    nameTag(p.x,g0-SPR[CLSSPR[p.s.c]].bh*2*sc-10,p.s.n,p.s.r,p.g,false);}
+    nameTag(p.x,g0-SPR[CLSSPR[p.s.c]].bh*2*sc-10,p.s.n,p.s.r,p.g,false);if(p.say&&p.say.t>SC.t)bubble(p.x,g0-SPR[CLSSPR[p.s.c]].bh*2*sc-40,p.say.m);}
 }
 function addChat(list){
   const first=chatSince===0;if(!first&&list.length)chatAt=Date.now();
-  for(const m of list){const i=+m.i;if(!(i>chatSince))continue;chatSince=i;const sys=m.n==='\u2605';chatLog.push({c:m.c==='g'?'g':'w',n:String(m.n||''),g:String(m.g||''),m:String(m.m||''),me:!!m.me,sys:sys});if(sys){if(!first)announce('\u2605 '+String(m.m||''));}else if(!first&&tab!=='chat'&&!m.me)chatUnread++;}
+  for(const m of list){const i=+m.i;if(!(i>chatSince))continue;chatSince=i;const sys=m.n==='\u2605';chatLog.push({c:m.c==='g'?'g':'w',n:String(m.n||''),g:String(m.g||''),m:String(m.m||''),me:!!m.me,sys:sys});if(!sys&&!first){const who=m.me?SC.hero:peers.find(p=>p.s&&p.s.n===m.n);if(who)who.say={m:String(m.m||'').slice(0,60),t:SC.t+6};}if(sys){if(!first)announce('\u2605 '+String(m.m||''));}else if(!first&&tab!=='chat'&&!m.me)chatUnread++;}
   if(chatLog.length>120)chatLog.splice(0,chatLog.length-120);
   const l=$('chatList');if(l){l.innerHTML=chatRows();l.scrollTop=l.scrollHeight;}
 }
