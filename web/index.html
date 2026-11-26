@@ -75,8 +75,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--arc);outline-of
   #app.wide{grid-template-columns:minmax(0,1fr)}#app.wide #hud,#app.wide #tabs,#app.wide #chatBar{display:none}
   #paceTag{font-size:13px;bottom:8px}
 }
-#duelBar{position:absolute;left:8px;right:8px;bottom:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;direction:rtl}
-#duelBar button{height:50px;border-radius:12px;border:1.5px solid rgba(255,255,255,.4);background:rgba(24,19,49,.88);color:#fff;font-size:13px;font-weight:700;line-height:1.15;padding:2px}
+#duelBar{position:absolute;right:8px;bottom:8px;display:grid;grid-template-columns:repeat(4,58px);gap:5px;direction:rtl}
+#duelBar button{height:46px;border-radius:12px;border:1.5px solid rgba(255,255,255,.4);background:rgba(24,19,49,.88);color:#fff;font-size:11px;font-weight:700;line-height:1.1;padding:2px;touch-action:none}
+#duelBar button[data-a=atk]{grid-row:span 2;height:auto;font-size:14px;border-color:#ff8a4d;background:rgba(120,40,10,.75)}
 #duelBar button small{display:block;font-size:10.5px;font-weight:400;color:#c9c2ea}
 #duelBar button:disabled{opacity:.35}
 #duelBar button.rdy{border-color:var(--gold);box-shadow:0 0 12px rgba(242,193,78,.55)}
@@ -87,6 +88,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--arc);outline-of
 #autoBtn.on{border-color:var(--good);color:var(--good)}
 #mv{position:absolute;left:8px;bottom:8px;display:flex;gap:6px;direction:ltr}
 #mv button{width:56px;height:50px;border-radius:12px;border:1.5px solid rgba(255,255,255,.35);background:rgba(24,19,49,.82);color:#fff;font-size:22px;line-height:1;touch-action:none}
+#stage.duel #mv button{width:42px}#stage.duel #mv .ud button{width:38px}#stage.duel #duelBar{grid-template-columns:repeat(4,50px)}
+@media (min-width:1000px){#stage.duel #duelBar{grid-template-columns:repeat(4,64px)}#stage.duel #mv button{width:56px}}
+#mv .ud{display:flex;flex-direction:column;gap:4px}#mv .ud button{width:46px;height:23px;font-size:13px}
 #mv button.hold{background:rgba(95,212,255,.35)}
 #sndBtn{position:absolute;left:8px;bottom:108px;height:28px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(10,8,24,.6);color:var(--dim);font-size:12px;padding:0 9px}
 #sndBtn.on{color:#fff}
@@ -245,8 +249,8 @@ input[type=text],input[type=password],select{width:100%;background:#0a0818;borde
     <button id="sndBtn" data-act="mute"></button>
     <div id="annc" role="status" aria-live="polite"></div>
     <button id="tip" data-act="tut" style="display:none"><span></span><small></small></button>
-    <div id="mv"><button id="mvL" aria-label="הליכה שמאלה">&#9664;</button><button id="mvR" aria-label="הליכה ימינה">&#9654;</button></div>
-    <div id="duelBar" style="display:none"><button data-act="da" data-a="a"></button><button data-act="da" data-a="h"></button><button data-act="da" data-a="g"></button><button data-act="da" data-a="c"></button><button data-act="da" data-a="u"></button><button data-act="da" data-a="p"></button></div>
+    <div id="mv"><button id="mvL" aria-label="הליכה שמאלה">&#9664;</button><span class="ud"><button id="mvU" aria-label="פנימה" style="display:none">&#9650;</button><button id="mvD" aria-label="החוצה" style="display:none">&#9660;</button></span><button id="mvR" aria-label="הליכה ימינה">&#9654;</button></div>
+    <div id="duelBar" style="display:none"><button data-act="da" data-a="atk"></button><button data-act="da" data-a="s0"></button><button data-act="da" data-a="s1"></button><button data-act="da" data-a="s3"></button><button data-act="da" data-a="s2"></button><button data-act="da" data-a="dash"></button><button data-act="da" data-a="pot"></button></div>
     <div id="skills"><button data-act="sk" data-i="0"></button><button data-act="sk" data-i="1"></button><button data-act="sk" data-i="2"></button><button data-act="sk" data-i="3"></button><button data-act="sk" data-i="4"></button><button data-act="sk" data-i="5"></button></div>
   </div>
   <button id="chatBar" data-tab="chat" style="display:none"></button>

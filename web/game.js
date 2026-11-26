@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126162338';
-const {RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,duelCan,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126163957';
+const {RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -702,6 +702,14 @@ function updateWorld(dt){
 function holdBtn(id,d){const b=$(id);const on=e=>{e.preventDefault();initAudio();SC.hero.dir=d;b.classList.add('hold');},off=()=>{if(SC.hero.dir===d)SC.hero.dir=0;b.classList.remove('hold');};
   b.addEventListener('pointerdown',on);for(const ev of ['pointerup','pointercancel','pointerleave'])b.addEventListener(ev,off);b.addEventListener('contextmenu',e=>e.preventDefault());}
 holdBtn('mvL',-1);holdBtn('mvR',1);
+for(const [id,v] of [['mvU',-1],['mvD',1]]){const b=$(id),on=e=>{e.preventDefault();initAudio();SC.hero.dz=v;b.classList.add('hold');},off=()=>{if(SC.hero.dz===v)SC.hero.dz=0;b.classList.remove('hold');};b.addEventListener('pointerdown',on);for(const ev of ['pointerup','pointercancel','pointerleave'])b.addEventListener(ev,off);b.addEventListener('contextmenu',e=>e.preventDefault());}
+window.addEventListener('keydown',e=>{if(!SC.duel||e.target&&e.target.tagName==='INPUT')return;if(e.key==='ArrowUp'||e.key==='w'){SC.hero.dz=-1;e.preventDefault();}else if(e.key==='ArrowDown'||e.key==='s'){SC.hero.dz=1;e.preventDefault();}});
+window.addEventListener('keyup',e=>{if((e.key==='ArrowUp'||e.key==='w')&&SC.hero.dz<0||(e.key==='ArrowDown'||e.key==='s')&&SC.hero.dz>0)SC.hero.dz=0;});
+{const bar=$('duelBar');bar.addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||b.disabled||!SC.duel)return;e.preventDefault();initAudio();if(b.dataset.a==='atk')SC.duel.holdAtk=true;duelAct(b.dataset.a);});
+  for(const ev of ['pointerup','pointercancel','pointerleave'])bar.addEventListener(ev,()=>{if(SC.duel)SC.duel.holdAtk=false;});bar.addEventListener('contextmenu',e=>e.preventDefault());
+  const DK={' ':'atk','1':'s0','2':'s1','3':'s2','4':'s3','q':'dash','e':'pot','/':'dash'};
+  window.addEventListener('keydown',e=>{if(!SC.duel||e.target&&e.target.tagName==='INPUT')return;const k=DK[e.key.toLowerCase()];if(!k)return;e.preventDefault();if(k==='atk')SC.duel.holdAtk=true;duelAct(k);});
+  window.addEventListener('keyup',e=>{if(SC.duel&&e.key===' ')SC.duel.holdAtk=false;});}
 window.addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT')return;const k=e.key;if(k==='ArrowLeft'||k==='a')SC.hero.dir=-1;else if(k==='ArrowRight'||k==='d')SC.hero.dir=1;else if(k>='1'&&k<='6'&&S&&!demo)cast(+k-1,false);});
 window.addEventListener('keyup',e=>{const k=e.key;if((k==='ArrowLeft'||k==='a')&&SC.hero.dir<0||(k==='ArrowRight'||k==='d')&&SC.hero.dir>0)SC.hero.dir=0;});
 window.addEventListener('blur',()=>{SC.hero.dir=0;});
@@ -744,11 +752,6 @@ function drawWorld(){
 }
 
 /* ---------- arena duel ---------- */
-const DACT={a:['תקיפה','בונה קומבו ואנרגיה'],h:['מכת מחץ','40 אנרגיה · שוברת הגנה'],g:['הגנה','חוסמת תקיפה ומחזירה'],c:['קומבו','אחרי 3 פגיעות ברצף'],u:['אולטימטיבי','100 אנרגיה'],p:['שיקוי','ממלא 30% חיים']};
-function startDuel(pd,live){
-  SC.duel={opp:pd.o,D:pd.D,an:[0,0],end:0,win:null,gain:0,busy:false,say:[null,null],sayT:0,live:live||null,pool:[C.hp*5,pd.o.h*5],shown:pd.D.n};
-  SC.mode='duel';SC.fx=[];SC.nums=[];SC.drops=[];renderDuelBar();
-}
 // Pace: levels gained over the last minutes, as experience per hour, kills per minute and time left to the reset.
 const pace={q:[],k:0};
 function paceTick(){
@@ -771,50 +774,102 @@ function sideCard(){
 // Hidden finds: the client notices the moment, the server decides whether it counts and pays once.
 const egg={moon:0,still:0,tried:{}};
 async function tryEgg(k){if(!S||demo||egg.tried[k]||(A.eggs&&A.eggs[k]))return;egg.tried[k]=1;const r=await send('egg',{k:k});if(r&&r.ok){snd('rare');announce('\u2726 '+r.t,true);toast('מצאת סוד נסתר ('+r.found+'/5)',4);}}
+/* ---------- the arena: a live duel. You walk, strike, cast, guard, dash and drink; nothing happens by itself. ---------- */
+const DRNG={blade:62,storm:185,hunter:235},DLANE=.3; // the arena has depth: a blow lands only on someone standing in about the same lane
+const dy=f=>gy()-(1-f.z)*84,dsc=f=>.8+f.z*.2;
+const DBTN=['atk','s0','s1','s3','s2','dash','pot'];
+function startDuel(pd){
+  const o=pd.o,L=pd.live,mk=(x,cls,i)=>({x:x,z:.5,hp:1,face:i?-1:1,atkT:.4,cd:{s0:1,s1:2,s2:0,s3:6,dash:0,pot:0},stun:0,sh:0,inv:0,pots:DUEL_LIVE.pots,anim:0,mv:false,cls:cls,chain:0,hitT:0});
+  SC.duel={opp:o,L:L,f:[mk(W*.24,S.cls,0),mk(W*.76,o.c,1)],t:0,end:0,win:null,gain:0,sent:false,ai:{t:.6,threat:0},holdAtk:false,go:1.2};
+  SC.mode='duel';SC.fx=[];SC.nums=[];SC.drops=[];SC.hero.dir=0;SC.hero.dz=0;renderDuelBar();
+}
 function renderDuelBar(){
-  const d=SC.duel,bar=$('duelBar');if(!d){bar.style.display='none';return;}bar.style.display='grid';const me=d.D.f[0],wait=d.busy||d.end>0||(d.live&&d.live.sent);
-  bar.querySelectorAll('button').forEach(b=>{const a=b.dataset.a,ok=duelCan(me,a),t=DACT[a][0]+(a==='p'?' ×'+me.pots:'')+'<small>'+(a==='c'?'קומבו '+Math.min(3,me.combo)+'/3':DACT[a][1])+'</small>';
-    if(b.dataset.h!==t){b.dataset.h=t;b.innerHTML=t;}b.disabled=!ok||!!wait;b.classList.toggle('rdy',ok&&(a==='c'||a==='u')&&!wait);});
+  const d=SC.duel,bar=$('duelBar');if(!d){bar.style.display='none';return;}bar.style.display='grid';const me=d.f[0],off=d.end>0||d.go>0;
+  bar.querySelectorAll('button').forEach((b,i)=>{const k=DBTN[i],cd=k==='atk'?0:me.cd[k],nm=k==='atk'?'תקיפה':k==='dash'?'צעד':k==='pot'?'שיקוי ×'+me.pots:CLS[S.cls].sk[k==='s0'?0:k==='s1'?3:k==='s2'?4:5],
+    t=nm+'<small>'+(cd>0?Math.ceil(cd)+' שנ׳':k==='pot'&&!me.pots?'נגמר':k==='s2'?'מגן':k==='s3'?'מכה סופית':k==='s1'?'מהמם':k==='dash'?'חמיקה':'&nbsp;')+'</small>';
+    if(b.dataset.h!==t){b.dataset.h=t;b.innerHTML=t;}const dis=off||cd>0||(k==='pot'&&!me.pots);if(b.disabled!==dis)b.disabled=dis;b.classList.toggle('rdy',!dis&&k==='s3');});
 }
-function showRound(rd,D){ // play one settled round: side 0 is always this player
-  const d=SC.duel;if(!d||!rd)return;d.D=D;d.shown=D.n;d.say=[DACT[rd.a[0]][0],DACT[rd.a[1]][0]];d.sayT=1.6;const ax=W*.26,bx=W*.74,g=gy();
-  for(let i=0;i<2;i++){const x=rd.a[i],sx=i?bx:ax,tx=i?ax:bx,look=i?d.opp:lookOf(S),cls=i?d.opp.c:S.cls,col=gearColor(look.w,SC.t,CLS[cls].c);
-    if(x==='g')SC.fx.push({k:'ring',x:sx,y:g-40,life:.5,c:'#9fe8ff',r:60});
-    if(x==='p'){burst(sx,g-50,'#6fe39a',18);addNum(sx,g-110,'+30%','#6fe39a',true);snd('fury');}
-    if(rd.d[i]>0){d.an[i]=1;const big=x!=='a';attackFx(cls,sx,g,i?-1:1,[{x:tx,y:g-10}],big,col);
-      if(x==='c'||x==='u'){SC.fx.push({k:'rune',x:sx,y:g-2,r:x==='u'?110:70,life:.8,d:.8,c:col});SC.fx.push({k:'star',x:tx,y:g-44,r:x==='u'?70:46,rot:.3,life:.45,d:.45,c:col});if(x==='u'&&!calm)SC.fx.push({k:'screen',life:.3,d:.3,c:col});snd('ult');}
-      else snd(rd.crit[i]?'crit':x==='h'?'skill':'hit');
-      addNum(tx,g-90-(i?0:14),fmt(Math.round(rd.d[i]*d.pool[1-i])),rd.crit[i]?'#ffd75e':big?col:'#fff',rd.crit[i]||big);}
-    if(rd.ctr[i]>0)addNum(i?ax:bx,g-60,'נגד '+fmt(Math.round(rd.ctr[i]*d.pool[1-i])),'#9fe8ff',false);}
-  renderDuelBar();
+function dHit(d,ai,mult,big,col){ // side ai strikes the other side
+  const a=d.f[ai],v=d.f[1-ai],g=dy(v),pool=d.L.pool[1-ai],off=Math.abs(a.z-v.z)>DLANE;a.anim=1;a.face=v.x>=a.x?1:-1;
+  attackFx(a.cls,a.x,dy(a),a.face,[{x:v.x,y:(off?dy(a):g)-10}],big,col);
+  if(off){addNum(v.x,g-110,'החטיא','#c9c2ea',false);return;}
+  if(v.inv>0){addNum(v.x,g-110,'חמק!','#9fe8ff',true);return;}
+  const crit=Math.random()<d.L.cr[ai];let dm=d.L.b[ai]*mult*(crit?1.5:1)*(.9+Math.random()*.2);if(v.sh>0){dm*=1-DUEL_LIVE.sk[2].cut;SC.fx.push({k:'ring',x:v.x,y:g-40,life:.3,c:'#9fe8ff',r:50});}
+  v.hp-=dm;v.hitT=.18;snd(crit?'crit':big?'skill':'hit');addNum(v.x,g-92,fmt(Math.round(dm*pool)),crit?'#ffd75e':big?col:'#fff',crit||big);if(big&&!calm)SC.shake=.18;
 }
-function endDuel(win,gain){const d=SC.duel;if(!d)return;d.win=win;d.gain=gain|0;d.end=2.2;SC.nums.push({x:W/2,y:H*.4,txt:win?'ניצחון!':'הפסד',c:win?'#f2c14e':'#ff5c7a',s:34,life:2.2});snd(win?'rare':'slam');renderDuelBar();}
-async function duelAct(a){
-  const d=SC.duel;if(!d||d.busy||d.end>0)return;
-  if(d.live){pvpAct(a);return;}
-  d.busy=true;renderDuelBar();const r=await send('duelAct',{a:a});if(SC.duel!==d)return;d.busy=false;
-  if(!r.ok){toast(r.msg==='net'?'אין חיבור לשרת':r.msg);renderDuelBar();return;}
-  showRound(r.round,r.D);if(r.D.over)endDuel(r.win,r.gain);
+function dAct(d,i,k){ // one move by side i; returns whether it happened
+  const me=d.f[i],en=d.f[1-i],g=dy(me),ge=dy(en),col=gearColor((i?d.opp:lookOf(S)).w,SC.t,CLS[me.cls].c),dist=Math.abs(en.x-me.x),rng=DRNG[me.cls],K=DUEL_LIVE;
+  if(d.end>0||d.go>0||me.stun>0)return false;
+  if(k==='atk'){if(me.atkT>0||dist>rng+14)return false;const T=d.L.T[i];me.atkT=T;me.chain=(me.chain+1)%4;const fin=me.chain===0;dHit(d,i,T/1.5*(fin?1.5:.84),fin,col);return true;}
+  if(me.cd[k]>0)return false;
+  if(k==='s0'){if(dist>rng+40)return false;me.cd.s0=K.sk[0].cd;SC.fx.push({k:'rune',x:me.x,y:g-2,r:64,life:.6,d:.6,c:col});if(me.cls==='blade')SC.fx.push({k:'wave',x:me.x+me.face*20,y:g,dir:en.x>=me.x?1:-1,dist:150,h:70,life:.32,d:.32,c:col});dHit(d,i,K.sk[0].m,true,col);}
+  else if(k==='s1'){if(dist>rng+20)return false;me.cd.s1=K.sk[1].cd;SC.fx.push({k:'pillar',x:en.x,y:ge,life:.45,d:.45,c:col});SC.fx.push({k:'star',x:en.x,y:ge-44,r:46,rot:.4,life:.4,d:.4,c:col});const dodged=en.inv>0||Math.abs(en.z-me.z)>DLANE,guarded=en.sh>0;dHit(d,i,K.sk[1].m,true,col);if(!dodged&&!guarded){en.stun=K.sk[1].stun;addNum(en.x,ge-128,'הלם','#ffd75e',false);}}
+  else if(k==='s2'){me.cd.s2=K.sk[2].cd;me.sh=K.sk[2].dur;snd('fury');SC.fx.push({k:'rune',x:me.x,y:g-2,r:70,life:.9,d:.9,c:'#9fe8ff'});SC.fx.push({k:'pillar',x:me.x,y:g,life:.5,d:.5,c:'#9fe8ff'});}
+  else if(k==='s3'){if(dist>rng+60)return false;me.cd.s3=K.sk[3].cd;snd('ult');SC.fx.push({k:'rune',x:me.x,y:g-2,r:150,life:1,d:1,c:col});if(!calm)SC.fx.push({k:'screen',life:.3,d:.3,c:col});for(const q of [-1,1])SC.fx.push({k:'wave',x:me.x+q*30,y:g,dir:q,dist:420,h:110,life:.55,d:.55,c:col});SC.fx.push({k:'flash',x:en.x,y:ge-40,r:90,life:.35,d:.35,c:col});dHit(d,i,K.sk[3].m,true,col);if(!calm)SC.shake=.4;}
+  else if(k==='dash'){me.cd.dash=K.dash.cd;me.inv=K.dash.inv;const side=i===0?(!SC.hero.dir&&SC.hero.dz?SC.hero.dz:0):(Math.random()<.5?(me.z>.5?-1:1):0),dir=side?0:i===0&&SC.hero.dir?SC.hero.dir:(me.cls==='blade'?(en.x>=me.x?1:-1):(en.x>=me.x?-1:1));for(let q=0;q<4;q++)SC.parts.push({x:me.x,y:g-20-q*14,vx:-dir*90,vy:0,life:.4,c:'#9fe8ff',s:3});me.x=clamp(me.x+dir*K.dash.d,34,W-34);me.z=clamp(me.z+side*.55,0,1);snd('whoosh');}
+  else if(k==='pot'){if(me.pots<1)return false;me.cd.pot=K.potCd;me.pots--;me.hp=Math.min(1,me.hp+K.heal);burst(me.x,g-50,'#6fe39a',18);addNum(me.x,g-112,'+30%','#6fe39a',true);snd('fury');}
+  else return false;
+  if(i===0){renderDuelBar();if(k==='s1'||k==='s3')d.ai.threat=.5;}
+  return true;
+}
+function duelAct(k){const d=SC.duel;if(d)dAct(d,0,k);}
+function duelAI(d,dt){ // the absent player, played here with his own numbers and the same moves
+  const me=d.f[1],en=d.f[0],ai=d.ai,rng=DRNG[me.cls],dist=Math.abs(en.x-me.x),dir=en.x>=me.x?1:-1;me.mv=false;if(me.stun>0)return;
+  const want=me.cls==='blade'?rng*.8:rng*.86,sp=me.cls==='blade'?150:128;
+  if(dist>want+8){me.x+=dir*sp*dt;me.mv=true;}else if(me.cls!=='blade'&&dist<want*.55&&me.x>50&&me.x<W-50){me.x-=dir*sp*.8*dt;me.mv=true;}
+  me.x=clamp(me.x,34,W-34);me.face=dir;
+  {const dz=en.z-me.z;if(Math.abs(dz)>.1){me.z=clamp(me.z+Math.sign(dz)*.62*dt,0,1);me.mv=true;}}
+  if(ai.threat>0){const was=ai.threat;ai.threat-=dt;if(was>.25&&ai.threat<=.25){if(Math.random()<.4)dAct(d,1,'dash');else if(Math.random()<.45)dAct(d,1,'s2');}}
+  if((ai.t-=dt)>0){if(dist<=rng+14&&Math.abs(en.z-me.z)<=DLANE)dAct(d,1,'atk');return;}
+  ai.t=.3+Math.random()*.25;const r=Math.random();
+  if(me.hp<.36&&me.pots>0&&r<.75){dAct(d,1,'pot');return;}
+  if(me.hp<.6&&me.sh<=0&&r<.3&&dAct(d,1,'s2'))return;
+  if(Math.abs(en.z-me.z)>DLANE)return; // not lined up yet: no point swinging
+  if(r<.5&&dAct(d,1,'s3'))return;if(r<.7&&dAct(d,1,'s1'))return;if(r<.8&&dAct(d,1,'s0'))return;
+  dAct(d,1,'atk');
 }
 function updateDuel(dt){
-  const d=SC.duel;d.an[0]=Math.max(0,d.an[0]-dt*3);d.an[1]=Math.max(0,d.an[1]-dt*3);if(d.sayT>0)d.sayT-=dt;
-  if(d.end>0){d.end-=dt;if(d.end<=0)finishDuel();}
+  const d=SC.duel,me=d.f[0];
+  for(const f of d.f){f.anim=Math.max(0,f.anim-dt*3.2);f.atkT=Math.max(0,f.atkT-dt);f.stun=Math.max(0,f.stun-dt);f.sh=Math.max(0,f.sh-dt);f.inv=Math.max(0,f.inv-dt);f.hitT=Math.max(0,f.hitT-dt);for(const k in f.cd)f.cd[k]=Math.max(0,f.cd[k]-dt);}
+  if(d.end>0){d.end-=dt;if(d.end<=0)finishDuel();return;}
+  if(d.go>0){d.go-=dt;if(d.go<=0){renderDuelBar();snd('boss');}return;}
+  d.t+=dt;me.mv=false;if(me.stun<=0&&SC.hero.dir){me.x=clamp(me.x+SC.hero.dir*(me.cls==='blade'?165:145)*dt,34,W-34);me.mv=true;me.face=SC.hero.dir;}
+  if(me.stun<=0&&SC.hero.dz){me.z=clamp(me.z+SC.hero.dz*.95*dt,0,1);me.mv=true;}
+  if(d.holdAtk)dAct(d,0,'atk');
+  duelAI(d,dt);
+  if((d.bt=(d.bt||0)+dt)>.25){d.bt=0;renderDuelBar();}
+  if(me.hp<=0||d.f[1].hp<=0||d.t>=DUEL_LIVE.time)endDuel(d.f[1].hp<=0?true:me.hp<=0?false:me.hp>=d.f[1].hp);
+}
+async function endDuel(win){
+  const d=SC.duel;if(!d||d.sent)return;d.sent=true;d.end=9;d.holdAtk=false;d.local=win;renderDuelBar();
+  const r=await send('duelEnd',{win:win});if(SC.duel!==d)return;
+  d.win=r&&r.ok?!!r.win:win;d.gain=r&&r.ok?r.gain|0:0;d.denied=!!(r&&r.denied);d.end=2.4;
+  SC.nums.push({x:W/2,y:H*.4,txt:d.win?'ניצחון!':'הפסד',c:d.win?'#f2c14e':'#ff5c7a',s:34,life:2.4});snd(d.win?'rare':'slam');
 }
 function finishDuel(){
   const d=SC.duel,win=d.win;
-  toast(win?'ניצחון. הדירוג עלה ב-'+d.gain+', קיבלת 8 מטבעות עונה':'הפסד. הדירוג ירד ב-12');
-  SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];renderDuelBar();touch();
+  toast(d.denied?'השרת לא אישר את הניצחון':win?'ניצחון. הדירוג עלה ב-'+d.gain+', קיבלת 8 מטבעות עונה':'הפסד. הדירוג ירד ב-12');
+  SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];SC.hero.dir=0;SC.hero.dz=0;renderDuelBar();touch();
 }
 function drawDuel(dt){
-  const d=SC.duel,sc=clamp(H/300,.8,1.45),f=d.D.f,ax=W*.26,bx=W*.74,g=gy(),dead=d.end>0?2.2-d.end:0;
-  drawHero(ax,g,sc,lookOf(S),SC.t,d.an[0],false,d.win===false?dead:0);drawHero(bx,g,sc,d.opp,SC.t+1.7,d.an[1],true,d.win===true?dead:0);
-  const side=(x,ff,c,nm)=>{hpBar(x-55,26,110,ff.hp,c,nm);ctx.fillStyle='rgba(0,0,0,.6)';rr(x-55,36,110,5,2);ctx.fill();ctx.fillStyle=ff.en>=100?'#ffd75e':'#5fb4ff';rr(x-55,36,Math.max(2,110*ff.en/100),5,2);ctx.fill();
-    label('קומבו '+Math.min(3,ff.combo)+'/3 · שיקויים '+ff.pots,x,54,ff.combo>=3?'#ffd75e':'#c9c2ea',10.5);};
-  side(ax,f[0],'#6fe39a',S.name);side(bx,f[1],'#ff5c7a',d.opp.n);
-  label('סיבוב '+Math.min(DUEL_ROUNDS,d.D.n+1)+'/'+DUEL_ROUNDS,W/2,30,'#fff',12);
-  if(d.live&&d.end<=0)label(d.live.sent?'מחכה ליריב...':'בחר פעולה · '+Math.max(0,Math.ceil((d.live.dl-Date.now())/1000)),W/2,46,'#ffd75e',11.5);
-  if(d.sayT>0&&d.say[0]){ctx.globalAlpha=clamp(d.sayT*2,0,1);label(d.say[0],ax,g-150*sc,'#fff',14);label(d.say[1],bx,g-150*sc,'#fff',14);ctx.globalAlpha=1;}
-  const hx0=SC.hero.x;SC.hero.x=ax;drawFx(dt);SC.hero.x=hx0;
+  const d=SC.duel,sc=clamp(H/300,.8,1.45),f=d.f,g=gy(),lost=d.sent?(d.win!=null?!d.win:!d.local):null,dead=d.sent?Math.min(2.4,d.end>2.4?(9-d.end):2.4-d.end+.6):0,looks=[lookOf(S),d.opp];
+  { // the floor, seen at an angle: far edge narrower, lines running into the distance
+    const y0=g-84,y1=g+6,in0=W*.13;ctx.save();const gr=ctx.createLinearGradient(0,y0,0,y1);gr.addColorStop(0,'rgba(60,44,110,.55)');gr.addColorStop(1,'rgba(120,90,190,.38)');ctx.fillStyle=gr;
+    ctx.beginPath();ctx.moveTo(in0,y0);ctx.lineTo(W-in0,y0);ctx.lineTo(W-6,y1);ctx.lineTo(6,y1);ctx.closePath();ctx.fill();ctx.strokeStyle='rgba(255,215,94,.22)';ctx.lineWidth=1;
+    for(let q=0;q<=8;q++){const u=q/8;ctx.beginPath();ctx.moveTo(in0+(W-2*in0)*u,y0);ctx.lineTo(6+(W-12)*u,y1);ctx.stroke();}
+    for(let q=0;q<=4;q++){const u=q/4,y=y0+(y1-y0)*u*u,ins=in0+(6-in0)*u*u;ctx.beginPath();ctx.moveTo(ins,y);ctx.lineTo(W-ins,y);ctx.stroke();}
+    ctx.strokeStyle='rgba(255,215,94,.6)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(in0,y0);ctx.lineTo(W-in0,y0);ctx.lineTo(W-6,y1);ctx.lineTo(6,y1);ctx.closePath();ctx.stroke();ctx.restore();}
+  for(const i of (f[0].z<=f[1].z?[0,1]:[1,0])){const a=f[i],ya=dy(a),s2=sc*dsc(a),x=a.x+(a.hitT>0?(Math.random()-.5)*5:0),down=lost!=null&&(i===0?lost:!lost);
+    ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(a.x,ya+2,22*s2,6*s2,0,0,7);ctx.fill();
+    if(Math.abs(f[0].z-f[1].z)<=DLANE&&i===1&&!d.sent){ctx.strokeStyle='rgba(255,92,122,.55)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(a.x,ya+2,28*s2,8*s2,0,0,7);ctx.stroke();}
+    if(a.sh>0){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle='#9fe8ff';ctx.shadowColor='#9fe8ff';ctx.shadowBlur=12;ctx.globalAlpha=.5+.3*Math.sin(SC.t*9);ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(a.x,ya-44*s2,30*s2,50*s2,0,0,7);ctx.stroke();ctx.restore();}
+    ctx.save();if(a.inv>0)ctx.globalAlpha=.45;drawHero(x,ya,s2,looks[i],SC.t+i*1.7,a.anim,a.face<0,down?Math.max(.01,dead):0,a.mv,false);ctx.restore();
+    if(a.stun>0)for(let q=0;q<3;q++){const an=SC.t*6+q*2.1;label('\u2726',a.x+Math.cos(an)*16,ya-128*s2+Math.sin(an)*5,'#ffd75e',12);}}
+  const side=(x,a,c,nm)=>{hpBar(x-60,26,120,a.hp,c,nm);label('שיקויים '+a.pots+(a.sh>0?' · מגן':'')+(a.stun>0?' · המום':''),x,48,'#c9c2ea',10.5);};
+  side(W*.26,f[0],'#6fe39a',S.name);side(W*.74,f[1],'#ff5c7a',d.opp.n);
+  label(d.go>0?'היכון...':mmss(Math.max(0,DUEL_LIVE.time-d.t)),W/2,32,d.go>0?'#ffd75e':'#fff',d.go>0?18:13);
+  if(d.go<=0&&!d.sent){const far=Math.abs(f[1].x-f[0].x)>DRNG[f[0].cls]+14,offl=Math.abs(f[1].z-f[0].z)>DLANE;if(far||offl)label(offl?'עמוד מולו כדי לפגוע':'התקרב כדי לתקוף',f[0].x,dy(f[0])-150*sc*dsc(f[0]),'#ffd75e',11);}
+  const hx0=SC.hero.x;SC.hero.x=f[0].x;drawFx(dt);SC.hero.x=hx0;
 }
 function frame(dt){
   SC.t+=dt;SC.dt=dt;if(statsDirty){C=calc(S,auras);statsDirty=false;}
@@ -860,7 +915,7 @@ function renderHud(){
   {const left=(A.boost-Date.now())/1000,bt=left>0&&!duel?'ניסיון '+L('+50%')+' · '+mmss(left):'';if($('boostTag').dataset.t!==bt){$('boostTag').dataset.t=bt;$('boostTag').innerHTML=bt;}}
   {const kw=!duel&&!SC.ev&&S&&!demo?keepWin():null,kb=$('keepBtn');kb.style.display=kw?'':'none';if(kw){const t=(A.keys>0||(A.ev&&A.ev[kw.key]&&A.ev[kw.key].in)?'שגר למצודה':'המצודה פתוחה · אין מפתח')+' · הכניסה נסגרת בעוד '+mmss((kw.end-(kw.e.dur-KEEP_GATE)*60000-Date.now())/1000);if(kb.textContent!==t)kb.textContent=t;}}
   $('resetNow').style.display=canReset(S)&&!duel?'block':'none';
-  $('autoBtn').style.display=$('skills').style.display=duel||zi<0?'none':'';$('paceTag').style.visibility=$('bigBtn').style.visibility=$('sndBtn').style.visibility=$('fsBtn').style.visibility=duel?'hidden':'';if(duel)renderDuelBar();$('mv').style.display=duel?'none':'';
+  $('autoBtn').style.display=$('skills').style.display=duel||zi<0?'none':'';$('paceTag').style.visibility=$('bigBtn').style.visibility=$('sndBtn').style.visibility=$('fsBtn').style.visibility=duel?'hidden':'';if(duel)renderDuelBar();$('mv').style.display='';$('mvU').style.display=$('mvD').style.display=duel?'':'none';$('stage').classList.toggle('duel',duel);
   $('sndBtn').textContent=prefs.mute?'צליל כבוי':'צליל פעיל';$('sndBtn').classList.toggle('on',!prefs.mute);
   $('autoBtn').textContent='אוטומטי: '+(S.auto?'פעיל':'כבוי');$('autoBtn').classList.toggle('on',!!S.auto);
   const bs=$('skills').children,h=SC.hero;
@@ -1029,7 +1084,7 @@ function renderParty(){
 function renderArena(){
   const arenaOpps=A.opps||[];
   let h=renderTop()+renderGuild()+renderParty()+'<h2>זירה</h2><div class="card"><div class="grid2"><div class="kv"><span>דירוג</span><b class="num" style="color:var(--gold)">'+A.rating+'</b></div><div class="kv"><span>כרטיסים היום</span><b class="num">'+A.tickets+'</b></div></div>'+
-    '<p class="hint" style="margin-top:6px">הקרב ידני, בסיבובים: בכל סיבוב שניכם בוחרים פעולה באותו רגע. תקיפה מנצחת מכת מחץ, מכת מחץ שוברת הגנה, הגנה חוסמת תקיפה ומחזירה. שלוש פגיעות ברצף פותחות קומבו, 100 אנרגיה פותחות אולטימטיבי, ויש 3 שיקויים. כשהיריב לא מחובר, השרת משחק במקומו עם הציוד האמיתי שלו. '+(ONLINE?'הדמות שלך שמורה בשרת ומופיעה לשחקנים אחרים.':'מצב מקומי: יוצגו רק דמויות אימון.')+'</p>'+(A.pd?'<button class="btn pri glow" data-act="fight" data-i="0">חזור לקרב שהתחלת</button>':'')+'</div><h2>יריבים</h2>';
+    '<p class="hint" style="margin-top:6px">קרב חי, שום דבר לא קורה לבד: זזים עם החיצים, תוקפים, ומפעילים שלושה כישורים, מגן, צעד חמיקה ושלושה שיקויים. מכת המהמם עוצרת את היריב לרגע, המגן בולם 60% מהנזק, ובזמן חמיקה אי אפשר לפגוע בך. כשהיריב לא מחובר, המשחק מפעיל את הדמות שלו עם הציוד האמיתי שלו. במקלדת: רווח לתקיפה, 1 עד 4 לכישורים, Q לחמיקה, E לשיקוי. '+(ONLINE?'הדמות שלך שמורה בשרת ומופיעה לשחקנים אחרים.':'מצב מקומי: יוצגו רק דמויות אימון.')+'</p>'+(A.pd?'<button class="btn pri glow" data-act="fight" data-i="0">חזור לקרב שהתחלת</button>':'')+'</div><h2>יריבים</h2>';
   arenaOpps.forEach((o,i)=>{h+='<div class="card opp"><div class="z"><b>'+esc(o.n)+'</b>'+(o.bot?'<span class="tag">דמות אימון</span>':'')+
     '<small>'+CLS[o.c].n+' · רמה '+L(o.l)+' · ריסטים '+L(o.r)+' · כוח '+L(fmt(o.p))+'</small></div><button class="btn sm pri" data-act="fight" data-i="'+i+'"'+(A.tickets>0&&SC.mode==='farm'?'':' disabled')+'>הילחם</button></div>';});
   if(!arenaOpps.length)h+='<p class="hint">טוען יריבים...</p>';
@@ -1282,7 +1337,7 @@ document.addEventListener('click',async e=>{
     else if(a==='pick'){r=await act('pick',{k:b.dataset.k});}
     else if(a==='respec'){closeModal();r=await act('respec',{});if(r.ok){snd('rare');toast(fmt(r.pts)+' נקודות חזרו אליך');}else toast(r.msg);}
     else if(a==='fight'){if(SC.mode==='farm'&&(A.tickets>0||A.pd)){r=await act('duelStart',{i:+b.dataset.i});if(r.ok)startDuel(r.pd);}}
-    else if(a==='da'){duelAct(b.dataset.a);return;}
+    else if(a==='da'){return;}
     else if(a==='reroll'){loadArena();}
     else if(a==='pt'){r=await act('pt',{k:b.dataset.k,n:b.dataset.n});}
     else if(a==='autoPts'||a==='autoEq'||a==='autoSell'){r=await act(a,{});}
@@ -1586,5 +1641,5 @@ async function boot(){
   openModal('<h3>מעגל הנצח</h3><p class="hint">מתחבר לשרת...</p>');
   await startOnline();
 }
-if(typeof window!=='undefined')window.EC={get A(){return A;},get S(){return S;},get C(){return C;},set C(v){C=v;},SC,G,send,act,frame,enterZone,pend,flushTick,syncBoss,spawnBoss,touch,get demo(){return demo;}};
+if(typeof window!=='undefined')window.EC={duelAct,get A(){return A;},get S(){return S;},get C(){return C;},set C(v){C=v;},SC,G,send,act,frame,enterZone,pend,flushTick,syncBoss,spawnBoss,touch,get demo(){return demo;}};
 boot();

@@ -368,6 +368,9 @@ function simDuel(A,B){
    Health is a share of the fighter's own pool. Gear and stats set how much of it a hit removes; the square root
    keeps a stronger fighter clearly ahead without making the choices irrelevant. The same engine runs a duel
    against an absent player (the server picks his actions) and one between two players who are both present. */
+// The live duel: what each move does, in units of a fighter's `base` (the share of the enemy's health one
+// second and a half of ordinary attacking removes). The device runs the fight; the server knows these numbers too.
+const DUEL_LIVE={time:75,pots:3,heal:.3,sk:[{m:.9,cd:5},{m:1.6,cd:9,stun:.8},{cd:14,dur:3,cut:.6},{m:2.8,cd:22}],dash:{cd:4,inv:.45,d:150},potCd:5,maxRate:(1.5/1.5)+.9/5+1.6/9+2.8/22};
 const DUEL_ROUNDS=30,DUEL_POTS=3,DUEL_MULT={a:1,h:2.2,c:3.2,u:4.5,g:0,p:0};
 function duelNew(A,B){
   const raw=(x,y)=>x.d*Math.max(.3,x.a)*300/(300+y.f)/Math.max(1,y.h*5),K=.09/Math.sqrt(Math.max(1e-12,raw(A,B)*raw(B,A)));
@@ -705,8 +708,17 @@ function apply(A,kind,args,ctx){
       if(A.pd&&now-A.pd.t>600000){duelSettle(A,now,false,A.pd.o.rt);A.pd=null;} // walked away from a duel: it counts as lost
       if(!A.pd){const o=A.opps&&A.opps[int(args.i,0,3)];if(!o)return fail('רענן את רשימת היריבים');
         const free=evWindows(now,0).some(w=>w.e.id==='royale');if(!free&&A.tickets<1)return fail('אין כרטיסים');
-        if(!free)A.tickets--;A.opps=null;A.pd={o:o,D:duelNew(fighter(S),o),t:now};}
+        if(!free)A.tickets--;A.opps=null;const me=fighter(S),D=duelNew(me,o);
+        // The live duel is fought on the player's device. The server fixes the numbers of both sides here and, at the
+        // end, accepts a win only if enough time has passed to have dealt that much damage (see duelEnd).
+        A.pd={o:o,D:D,t:now,live:{b:[D.f[0].base,D.f[1].base],cr:[D.f[0].cr,D.f[1].cr],T:[clamp(1/Math.max(.3,me.a),.3,1.2),clamp(1/Math.max(.3,o.a),.3,1.2)],pool:[me.h*5,o.h*5]}};}
       r.pd=A.pd;break;}
+    case 'duelEnd':{
+      const pd=A.pd;if(!pd||!pd.live)return fail('אין קרב פעיל');const el=(now-pd.t)/1000,claim=!!args.win;
+      // fastest possible kill: ordinary hits with every crit landing plus every skill on cooldown
+      const minT=1/(pd.live.b[0]*DUEL_LIVE.maxRate);let win=claim;
+      if(claim&&el<minT*.8){win=false;r.denied=true;}
+      r.win=win;r.gain=duelSettle(A,now,win,pd.o.rt);A.pd=null;break;}
     case 'duelAct':{
       const pd=A.pd;if(!pd)return fail('אין קרב פעיל');const a=String(args.a),D=pd.D;
       if(!duelCan(D.f[0],a))return fail('הפעולה הזו לא זמינה עכשיו');
@@ -728,4 +740,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

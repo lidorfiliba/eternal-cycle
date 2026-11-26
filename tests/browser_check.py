@@ -45,12 +45,12 @@ async def run(pg,online):
     out['opps']=await pg.evaluate("()=>(EC.A.opps||[]).length")
     await pg.click('[data-tab=arena]');await pg.wait_for_timeout(300);await pg.click('[data-act=fight]');await pg.wait_for_timeout(900)
     out['duel']=await pg.evaluate("()=>[EC.SC.mode,EC.A.tickets]")
-    for i in range(45):
+    await pg.wait_for_timeout(1500)
+    for i in range(140):
         if await pg.evaluate("()=>EC.SC.mode")!='duel': break
-        for a in ('u','c','h','a'):
-            if await pg.evaluate("(a)=>{const b=document.querySelector('#duelBar [data-a='+a+']');if(b&&!b.disabled){b.click();return true}return false}",a): break
-        await pg.wait_for_timeout(260 if i else 900)
-        if i==3: await pg.screenshot(path='/tmp/duel.png')
+        await pg.evaluate("()=>{const d=EC.SC.duel;if(!d||d.sent)return;const me=d.f[0],en=d.f[1];EC.SC.hero.dir=Math.abs(en.x-me.x)>60?(en.x>me.x?1:-1):0;EC.SC.hero.dz=Math.abs(en.z-me.z)>.15?Math.sign(en.z-me.z):0;for(const k of ['s3','s1','s0','atk'])EC.duelAct(k);if(me.hp<.4)EC.duelAct('pot');}")
+        await pg.wait_for_timeout(250)
+        if i==14: await pg.screenshot(path='/tmp/duel.png')
     out['duelEnd']=await pg.evaluate("()=>[EC.SC.mode,EC.A.rating]")
     await pg.click('[data-tab=pass]');await pg.wait_for_timeout(1300)
     out['events']=await pg.evaluate("()=>[document.querySelectorAll('#panel .card').length,document.getElementById('evChip').textContent]")

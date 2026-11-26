@@ -275,3 +275,11 @@ test('respec, pickup filter, weekly tasks, side quests and hidden finds',()=>{
   A.sq={i:0,m:0,z:0,n:250,have:0,until:st.now-1};st.now+=20000;assert.ok(G.apply(A,'tick',{z:0,kills:10}).sqLost);
   assert.ok(G.apply(A,'egg',{k:'moon'}).ok);assert.equal(G.apply(A,'egg',{k:'moon'}).ok,false);assert.equal(G.apply(A,'egg',{k:'dawn'}).ok,false,'only at four in the morning');assert.equal(G.apply(A,'egg',{k:'nope'}).ok,false);
 });
+
+test('the live duel: the server fixes the numbers and refuses a win claimed faster than it could be earned',()=>{
+  const st={now:Date.parse('2026-11-26T12:20:00Z')};G.setEnv(()=>.5,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'a',cls:'blade'});
+  assert.equal(G.apply(A,'duelEnd',{win:true}).ok,false);G.apply(A,'opps',{},{players:[],uid:'x'});const s0=G.apply(A,'duelStart',{i:1});assert.ok(s0.ok&&s0.pd.live&&s0.pd.live.b[0]>0&&s0.pd.live.pool[1]>0);
+  const r0=A.rating;st.now+=1500;const fast=G.apply(A,'duelEnd',{win:true});assert.ok(fast.ok);assert.equal(fast.win,false);assert.ok(fast.denied);assert.equal(A.rating,r0-12);assert.equal(A.pd,null);
+  G.apply(A,'opps',{},{players:[],uid:'x'});G.apply(A,'duelStart',{i:1});st.now+=30000;const ok=G.apply(A,'duelEnd',{win:true});assert.equal(ok.win,true);assert.ok(ok.gain>0);
+  G.apply(A,'opps',{},{players:[],uid:'x'});G.apply(A,'duelStart',{i:1});st.now+=20000;const lost=G.apply(A,'duelEnd',{win:false});assert.equal(lost.win,false);assert.equal(lost.gain,0);
+});
