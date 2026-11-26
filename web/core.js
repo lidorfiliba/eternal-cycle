@@ -48,14 +48,14 @@ const ZRAW=[
 ];
 const BASEZ=24,REGION=3;
 // Reset maps are built for characters that kept their stats through resets: [life, damage] multipliers by the resets a map needs.
-const RESET_TOUGH={1:[4,4,3],2:[4.5,6,2.7],3:[5,8,2.4],4:[5.5,11,2.2],5:[6.5,14,2],7:[10.5,20,1.8],10:[15,28,1.75],15:[34,70,2.5],20:[42,95,2.1],30:[65,165,1.9],50:[130,400,1.7]}; // health, attack, experience: tougher than the main road, and worth more
+const RESET_TOUGH={1:[4,4,3],2:[4.5,6,2.7],3:[5,8,2.4],4:[5.5,11,2.2],5:[6.5,14,2],7:[10.5,20,1.8],10:[15,28,1.75],15:[34,70,2.5],20:[42,95,2.1],30:[65,165,1.9],50:[130,400,1.7]}; // health and attack (the third number is no longer used): tougher than the main road; what they give is ancient set pieces, three times as often
 const SIGS=['xp','gold','hp','crit','aspd','cdmg','drop','dmg'],RSIGS=['xp','dmg','gold','cdmg','aspd','crit'];
 const ZONES=ZRAW.map((q,i)=>{
   const min=q[2],req=q[11]||0,base=i<BASEZ,j=i-BASEZ,z={n:q[0],m:q[1],min:min,spr:q[3],tint:q[4],kind:q[5],c:q[6],sky:[q[7],q[8]],sil:q[9],amb:q[10],fly:q[3].indexOf('eye')===0};
   z.sig=base?SIGS[Math.floor(i/REGION)]:RSIGS[Math.floor(j/2)];
   z.hp=Math.round(90+9*min+.018*min*min);z.atk=Math.round(13+.84*min);z.xp=Math.round(10*Math.pow(1+min/50,1.6));z.gold=Math.round(3+.19*min);
   if(base){const w=[0,0,1,0,2,0,3,4][Math.floor(i/REGION)];if(w)z.wing=w;}
-  else{const t=RESET_TOUGH[req]||[4,2.2];z.req=req;z.wing=5+Math.floor(j/2);z.xp=Math.round(z.xp*1.7*(t[2]||1));z.gold=Math.round(48+(min-100)*.314);z.hp=Math.round(z.hp*1.55*t[0]);z.atk=Math.round(z.atk*1.4*t[1]);}
+  else{const t=RESET_TOUGH[req]||[4,2.2];z.req=req;z.wing=5+Math.floor(j/2);z.xp=Math.round(z.xp*1.7);z.gold=Math.round(48+(min-100)*.314);z.hp=Math.round(z.hp*1.55*t[0]);z.atk=Math.round(z.atk*1.4*t[1]);}
   return z;});
 // Gear tier of what a map drops: the main road climbs one tier per region (1 to 8), reset maps hold tiers 9 to 12.
 const tierOf=zi=>zi<BASEZ?1+Math.floor(zi/REGION):9+Math.floor((zi-BASEZ)/2);
@@ -167,6 +167,7 @@ function calc(s,au){
   for(const k of SLOTS){const it=s.eq[k];if(!it||k==='y'&&it.until&&it.until<=(s._now||_now()))continue;const v=itemVals(it);
     atk+=v.atk||0;ahp+=v.hp||0;adef+=v.def||0;wd+=v.wd||0;wh+=v.wh||0;for(const f of it.af)a[f[0]]+=f[1];}
   const sc=setCounts(s);for(const z in sc)for(const b of setTable(z))if(sc[z]>=b[0])a[b[1]]+=b[2];
+  {const n=exCount(s);for(const b of EXB)if(n>=b[0])a[b[1]]+=b[2];}
   const main=st[c.main];
   const base=10+main*c.coef+(st.str+st.agi+st.ene-main)*0.15+atk;
   const ml=mastery(s.kills);
@@ -258,6 +259,9 @@ function addOpt(it){const have=it.af.map(f=>f[0]),pool=POOL[it.s].filter(k=>have
   const k=pool[Math.floor(_rnd()*pool.length)],d=AFF[k];it.af.push([k,Math.round((d[1]+_rnd()*(d[2]-d[1]))*(0.7+0.06*it.t)*10)/10]);return true;}
 function makeExcellent(it){const max=POOL[it.s].length,i=rollRar(EXW),n=i===5?max:Math.min(max,it.af.length+i+1);it.ex=1;while(it.af.length<n&&addOpt(it));return it;}
 const isFull=it=>!!(it&&it.ex&&it.af.length>=POOL[it.s].length);
+// Full excellent pieces count toward a bonus of their own, whatever their rarity, so four ancient pieces with two
+// full excellent ones is a real choice, and an ancient piece that is also full excellent counts for both.
+const EXB=[[2,'crit',3],[4,'aspd',5],[6,'dmg',15]],exCount=s=>DROPS.reduce((n,k)=>n+(isFull(s.eq[k])?1:0),0);
 function makeItem(s,slot,t,r,zi,extra){
   const it={id:s.nid++,s:slot,t:t,r:r,p:0,z:zi,af:rollAff(slot,t,zi>=0?ZONES[zi].sig:null,r)};
   if(r===4&&DROPS.indexOf(slot)>=0&&zi>=0&&(it.id*7+zi)%2)it.v=1;
@@ -288,7 +292,7 @@ function gainItem(s,it,rep){
   if(s.autoEq&&canWear(s,it)&&(!cur||itemScore(it)>itemScore(cur))){s.eq[it.s]=it;if(rep)rep.equipped=(rep.equipped||0)+1;if(cur)stash(s,cur,rep);return 'eq';}
   return stash(s,it,rep)?'bag':'sold';
 }
-const JEW_RATE=.0003;
+const JEW_RATE=.0003,RESET_RAR=[60.6,25,9,3.3,2.1];
 function jewelDrop(s,zi,rep,tab,exc){const it=makeItem(s,JEW[Math.floor(_rnd()*JEW.length)],tierOf(zi),rollRar(tab),zi);if(_rnd()<(exc||0))makeExcellent(it);const where=gainItem(s,it,rep);if(rep&&where!=='left'&&where!=='sold')(rep.notable=rep.notable||[]).push(it);return it;}
 function rollLoot(s,zi,kills,c,rep){
   const z=ZONES[zi];
@@ -297,12 +301,11 @@ function rollLoot(s,zi,kills,c,rep){
   const nb=pois(kills*.0012);s.boxes+=nb;rep.boxes=(rep.boxes||0)+nb;
   const ni=Math.min(80,pois(kills*.03*c.dropM));
   const exc=z.req?.03:.012;
-  for(let i=0;i<ni;i++){const it=makeItem(s,rslot(),tierOf(zi),rollRar([62,25,9,3.3,.7]),zi);if(_rnd()<exc)makeExcellent(it);
+  for(let i=0;i<ni;i++){const it=makeItem(s,rslot(),tierOf(zi),rollRar(z.req?RESET_RAR:[62,25,9,3.3,.7]),zi);if(_rnd()<exc)makeExcellent(it);
     const where=gainItem(s,it,rep);if(where!=='left')rep.items=(rep.items||0)+1;if((it.r>=2||it.ex)&&where!=='sold'&&where!=='left'){(rep.notable=rep.notable||[]).push(it);}}
   if(z.wing){const nw=Math.min(4,pois(kills*.0006*c.dropM));
     for(let i=0;i<nw;i++){const it=makeItem(s,'g',z.wing,rollRar([62,28,8,1.7,.3]),zi);if(_rnd()<exc*2)makeExcellent(it);gainItem(s,it,rep);(rep.notable=rep.notable||[]).push(it);}}
   {const nj=Math.min(3,pois(kills*JEW_RATE*c.dropM));for(let i=0;i<nj;i++)jewelDrop(s,zi,rep,[55,28,12,4,1],exc);}
-  if(z.req){const m=1+z.req/10,nj=pois(kills*.00025*m),nf=pois(kills*.00004*m);if(nj){s.jewels=(s.jewels||0)+nj;rep.jewels=(rep.jewels||0)+nj;}if(nf){s.feathers=(s.feathers||0)+nf;rep.feathers=(rep.feathers||0)+nf;}} // only the reset maps give these from ordinary monsters
   {const ns=pois(kills*.012);if(ns){s.shards=(s.shards||0)+ns;rep.shards=(rep.shards||0)+ns;}}
   s.kills+=kills;s.daily.kills+=kills;if(s.week)s.week.kills=(s.week.kills||0)+kills;s.killAcc+=kills;s.zk[zi]=(s.zk[zi]||0)+kills;
   if(s.killAcc>=100){const n=Math.floor(s.killAcc/100);s.killAcc-=n*100;passAdd(s,n*5);}
@@ -538,7 +541,7 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:1500,H:1000,TIME:25*60,crownT:15,swT:3,resp:8,guardResp:15,pots:3,potPrice:500,gateHp:1,gateHit:.03,rad:14,
+const SG={W:1500,H:1000,TIME:59*60,crownT:30,swT:3,resp:8,guardResp:15,pots:3,potPrice:500,gateHp:1,gateHit:.03,rad:14,
   walls:[[-462,-432,462,-408],[-462,108,-50,132],[50,108,462,132],[-462,-432,-438,-200],[-462,-110,-438,132],[438,-432,462,-200],[438,-110,462,132]],
   gates:[[-50,108,50,132],[-462,-200,-438,-110],[438,-200,462,-110]],sw:[[-260,-250],[260,-250]],crown:[0,-350],zone:46,
   shops:[[-520,400],[330,-40]],shopR:70,camp:[0,400],yard:[0,-140],posts:[[-260,-250],[260,-250],[-40,60],[40,60],[0,-330]]};
@@ -553,12 +556,14 @@ const sgSpawn=(B,f,rnd)=>{const inside=f.g===B.sg.holder,p=f.post||(inside?SG.ya
 function sgFighter(p,g,tag,rnd){return {id:p.id,n:p.n,c:CLS[p.c]?p.c:'blade',bot:!!p.bot,g:g,tag:String(tag||'').slice(0,4),x:0,y:0,hp:1,d:p.d,T:clamp(1/Math.max(.3,p.a),.3,1.2),pool:Math.max(1,p.h*5),def:p.f,cr:p.cr,
   at:{atk:0,s0:1,s1:3,s2:0,s3:8,dash:0,pot:0},stun:0,sh:0,inv:0,alive:true,resp:0,kills:0,pots:SG.pots,bought:0,shopT:0,chain:0,face:1,think:rnd()*.5,post:null};}
 function sgNew(rnd,avg){
-  const B={t:-3,over:0,f:[],sg:{holder:0,gate:SG.gates.map(()=>SG.gateHp),sw:[0,0],swp:[[0,0],[0,0]],crown:[0,0],caps:0}};
+  const B={t:-3,over:0,f:[],sg:{holder:0,gate:SG.gates.map(()=>SG.gateHp),sw:[0,0],swBy:[-1,-1],swp:[[0,0],[0,0]],crown:[0,0],caps:0}};
   SG.posts.forEach((po,i)=>{const f=sgFighter({id:'guard'+i,bot:true,n:'שומר הטירה',c:i<2?'hunter':i<4?'blade':'storm',d:avg.d*.8,a:avg.a,h:avg.h*.9,f:avg.f*.8,cr:.08},0,'',rnd);f.post=po;sgSpawn(B,f,rnd);B.f.push(f);});
   return B;
 }
 function sgAdd(B,p,g,tag,rnd){const f=sgFighter(p,g,tag,rnd);sgSpawn(B,f,rnd);B.f.push(f);return B.f.length-1;}
-function sgDown(B,j,by,ev){const e=B.f[j];if(!e.alive)return;e.alive=false;e.hp=0;e.resp=B.t+(e.g===0?SG.guardResp:SG.resp);if(by>=0&&B.f[by])B.f[by].kills++;if(ev)ev.push({k:'down',to:j,by:by});}
+function sgDown(B,j,by,ev){const e=B.f[j];if(!e.alive)return;const S=B.sg; // a switch falls back to the castle with the one who turned it, and the crown starts over
+  for(let q=0;q<2;q++)if(S.swBy[q]===j){S.swBy[q]=-1;S.sw[q]=S.holder;S.swp[q]=[0,0];S.crown=[0,0];S.lost=(S.lost||[]).concat([q]);}
+  e.alive=false;e.hp=0;e.resp=B.t+(e.g===0?SG.guardResp:SG.resp);if(by>=0&&B.f[by])B.f[by].kills++;if(ev)ev.push({k:'down',to:j,by:by});}
 function sgAct(B,i,k,rnd){
   const me=B.f[i],t=B.t,K=DUEL_LIVE;if(B.over||t<0||!me||!me.alive||me.stun>t||!(k in me.at)||me.at[k]>t)return null;
   const o={by:i,k:k,to:-1,dm:0,crit:false,miss:false,stun:false,dead:false,heal:0};
@@ -582,11 +587,12 @@ function sgStep(B,dt,rnd){
     for(const sh of SG.shops)if(!f.bot&&f.pots<SG.pots&&sgNear(f,sh,SG.shopR)){if((f.shopT+=dt)>=1.5){f.shopT=0;f.pots++;f.bought++;ev.push({k:'buy',by:i});}}});
   // switches: one guild alone on a switch turns it to its side after a few seconds
   SG.sw.forEach((p,q)=>{let g=-1,mix=false;for(const f of B.f)if(f.alive&&sgNear(f,p,SG.zone)){if(g<0)g=f.g;else if(g!==f.g)mix=true;}const sp=S.swp[q];
-    if(g<0||mix||g===S.sw[q]){sp[1]=0;return;}if(sp[0]!==g){sp[0]=g;sp[1]=0;}sp[1]+=dt;if(sp[1]>=SG.swT){S.sw[q]=g;sp[1]=0;ev.push({k:'sw',q:q,g:g});}});
+    if(g<0||mix||g===S.sw[q]){sp[1]=0;return;}if(sp[0]!==g){sp[0]=g;sp[1]=0;}sp[1]+=dt;if(sp[1]>=SG.swT){S.sw[q]=g;sp[1]=0;S.swBy[q]=B.f.findIndex(f=>f.alive&&f.g===g&&sgNear(f,p,SG.zone));ev.push({k:'sw',q:q,g:g});}});
+  if(S.lost){for(const q of S.lost)ev.push({k:'swLost',q:q});S.lost=null;}
   { // the crown: both switches mine, one of mine on it, no one else there
     const p=SG.crown;let g=-1,mix=false;for(const f of B.f)if(f.alive&&sgNear(f,p,SG.zone)){if(g<0)g=f.g;else if(g!==f.g)mix=true;}
     if(g>0&&!mix&&g!==S.holder&&S.sw[0]===g&&S.sw[1]===g){if(S.crown[0]!==g)S.crown=[g,0];S.crown[1]+=dt;
-      if(S.crown[1]>=SG.crownT){S.holder=g;S.caps++;S.crown=[0,0];S.sw=[g,g];S.swp=[[0,0],[0,0]];S.gate=SG.gates.map(()=>SG.gateHp);ev.push({k:'taken',g:g});
+      if(S.crown[1]>=SG.crownT){S.holder=g;S.caps++;S.crown=[0,0];S.sw=[g,g];S.swBy=[-1,-1];S.swp=[[0,0],[0,0]];S.gate=SG.gates.map(()=>SG.gateHp);ev.push({k:'taken',g:g});
         B.f.forEach((f,i)=>{if(f.g===0){f.alive=false;f.resp=0;f.hp=0;}else if(f.alive&&f.g!==g){f.post=null;sgSpawn(B,f,rnd);ev.push({k:'out',to:i});}});}}
     else if(S.crown[1]>0)S.crown=[0,0];}
   // the castle's own guards
@@ -662,13 +668,14 @@ function duelSettle(A,now,won,oppRt){
 const BOSSN=40;
 const GUILD_FEE=20000; // gold to found a guild
 const SECRET_Q=['שם חיית המחמד הראשונה שלך','שם בית הספר היסודי שלך','העיר שבה נולדה אמא שלך','הכינוי שלך בילדות'];
-// Weekly guild siege: Saturday 21:00 to 21:30, Israel time. `key` names the last siege that has ended.
+const SIEGE_MIN=60;
+// Weekly guild siege: Saturday 21:00 to 22:00, Israel time. `key` names the last siege that has ended.
 const _sgFmt=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jerusalem',weekday:'short',hour:'numeric',minute:'numeric',hourCycle:'h23'});
 function siegeInfo(now){
   const o={};for(const x of _sgFmt.formatToParts(new Date(now)))o[x.type]=x.value;
   const cur=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(o.weekday)*1440+(+o.hour%24)*60+(+o.minute),S0=6*1440+21*60,W=10080;
-  const on=cur>=S0&&cur<S0+30,since=((cur-(S0+30))%W+W)%W;
-  return {on:on,left:on?S0+30-cur:0,next:on?0:((S0-cur)%W+W)%W,key:'s'+Math.floor((now-since*60000)/3600000)};
+  const on=cur>=S0&&cur<S0+SIEGE_MIN,since=((cur-(S0+SIEGE_MIN))%W+W)%W;
+  return {on:on,left:on?S0+SIEGE_MIN-cur:0,next:on?0:((S0-cur)%W+W)%W,key:'s'+Math.floor((now-since*60000)/3600000)};
 }
 const PARTY_XP=.05; // extra XP for each active party member on the same map beyond the second player, party of up to 5
 const partyXp=n=>PARTY_XP*Math.max(0,Math.min(4,n|0)-1); // extra XP per active party member in the same map, up to 3
@@ -1040,4 +1047,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {EXB,exCount,SIEGE_MIN,RESET_RAR,keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

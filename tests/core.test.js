@@ -97,13 +97,14 @@ test('floors: deeper floors need more levels, pay more, and cannot be forged',()
   G.apply(A,'travel',{z:-1,f:2});assert.equal(s.floor,0,'the village has no floors');
 });
 
-test('siege window: Saturday 21:00 to 21:30 Israel time, one key per finished siege',()=>{
+test('siege window: Saturday 21:00 to 22:00 Israel time, one key per finished siege',()=>{
   const at=t=>G.siegeInfo(Date.parse(t));
-  assert.equal(at('2026-11-28T19:10:00Z').on,true);assert.equal(at('2026-11-28T19:10:00Z').left,20);
-  assert.equal(at('2026-11-28T18:59:00Z').on,false);assert.equal(at('2026-11-28T18:59:00Z').next,1);assert.equal(at('2026-11-28T19:30:00Z').on,false);
-  const k=at('2026-11-28T19:31:10Z').key;assert.equal(at('2026-12-05T19:29:50Z').key,k);assert.equal(at('2026-12-02T08:00:00Z').key,k);
-  assert.notEqual(at('2026-11-28T19:29:00Z').key,k);assert.notEqual(at('2026-12-05T19:30:30Z').key,k);
+  assert.equal(at('2026-11-28T19:10:00Z').on,true);assert.equal(at('2026-11-28T19:10:00Z').left,50);assert.equal(at('2026-11-28T19:45:00Z').on,true);
+  assert.equal(at('2026-11-28T18:59:00Z').on,false);assert.equal(at('2026-11-28T18:59:00Z').next,1);assert.equal(at('2026-11-28T20:00:00Z').on,false);
+  const k=at('2026-11-28T20:01:10Z').key;assert.equal(at('2026-12-05T19:59:50Z').key,k);assert.equal(at('2026-12-02T08:00:00Z').key,k);
+  assert.notEqual(at('2026-11-28T19:59:00Z').key,k);assert.notEqual(at('2026-12-05T20:00:30Z').key,k);
 });
+
 
 test('the build id in the client matches version.txt',()=>{
   const v=fs.readFileSync('web/version.txt','utf8').trim(),m=/^const BUILD='([0-9]{14})';$/m.exec(fs.readFileSync('web/game.js','utf8'));
@@ -470,12 +471,28 @@ test('castle siege: walls and gates stop movement, switches then the crown take 
   fa.x=G.SG.sw[0][0];fa.y=G.SG.sw[0][1];fb.x=G.SG.sw[1][0];fb.y=G.SG.sw[1][1];let ev=[];for(let i=0;i<20;i++)ev=ev.concat(G.sgStep(B,.2,rnd));assert.deepEqual(B.sg.sw,[7,7]);assert.equal(ev.filter(x=>x.k==='sw').length,2);
   fe.alive=true;fe.x=G.SG.crown[0];fe.y=G.SG.crown[1];for(let i=0;i<100;i++)G.sgStep(B,.2,rnd);assert.equal(B.sg.holder,0,'the crown ignores a guild that does not hold both switches');
   fa.x=G.SG.crown[0];fa.y=G.SG.crown[1];for(let i=0;i<100;i++)G.sgStep(B,.2,rnd);assert.equal(B.sg.holder,0,'and stays put while two guilds stand on it');
-  fe.x=600;fe.y=400;ev=[];for(let i=0;i<80;i++)ev=ev.concat(G.sgStep(B,.2,rnd));assert.equal(B.sg.holder,7,'alone on the crown for long enough, the castle is theirs');assert.ok(ev.some(x=>x.k==='taken'&&x.g===7));
+  fe.x=600;fe.y=400;for(let i=0;i<60;i++)G.sgStep(B,.2,rnd);assert.ok(B.sg.crown[1]>5&&B.sg.holder===0,'the crown takes half a minute, not less');
+  { // the one who turned the right switch is killed: the switch falls back and the crown starts over
+    fe.x=fb.x+20;fe.y=fb.y;fb.hp=.0001;B.t+=30;fe.at.s3=0;const kk=G.sgAct(B,e,'s3',rnd);assert.ok(kk.dead);assert.equal(B.sg.sw[1],0);assert.equal(B.sg.crown[1],0);const e2=G.sgStep(B,.2,rnd);assert.ok(e2.some(x=>x.k==='swLost'&&x.q===1));
+    fe.x=600;fe.y=400;fb.alive=true;fb.hp=1;fb.x=G.SG.sw[1][0];fb.y=G.SG.sw[1][1];for(let i=0;i<20;i++)G.sgStep(B,.2,rnd);assert.deepEqual(B.sg.sw,[7,7]);}
+  ev=[];for(let i=0;i<160;i++)ev=ev.concat(G.sgStep(B,.2,rnd));assert.equal(B.sg.holder,7,'alone on the crown for long enough, the castle is theirs');assert.ok(ev.some(x=>x.k==='taken'&&x.g===7));
   assert.deepEqual(B.sg.gate,G.SG.gates.map(()=>G.SG.gateHp),'the gates are whole again');assert.ok(B.f.every(f=>f.g!==0||!f.alive),'the guards are gone for good');
   B.t+=1;fe.x=fa.x+20;fe.y=fa.y;fe.at.atk=0;assert.equal(G.sgAct(B,a,'atk',rnd).to,e);fe.hp=.0001;fa.at.s3=0;const k=G.sgAct(B,a,'s3',rnd);assert.ok(k.dead&&!fe.alive&&fe.resp>B.t);
   for(let i=0;i<60;i++)G.sgStep(B,.2,rnd);assert.ok(fe.alive&&fe.hp===1&&fe.y>300,'the fallen return at their camp');
   fe.pots=0;fe.x=G.SG.shops[0][0];fe.y=G.SG.shops[0][1];for(let i=0;i<20;i++)G.sgStep(B,.2,rnd);assert.ok(fe.pots>=2&&fe.bought===fe.pots,'potions are bought by standing at the seller');
   B.sg.time=B.t+1;for(let i=0;i<10;i++)G.sgStep(B,.2,rnd);assert.ok(B.over);
   const A=G.newAccount();G.apply(A,'create',{name:'Sg',cls:'blade'},{});A.gold=1200;const c0=A.coins;G.sgReward(A,true,2);assert.equal(A.coins,c0+30);assert.equal(A.gold,200);G.sgReward(A,false,5);assert.equal(A.gold,0,'never below nothing');assert.equal(A.coins,c0+40);
+  G.setEnv(Math.random,Date.now);
+});
+
+test('reset maps give no extra experience, only more ancient set pieces; full excellent pieces have a bonus of their own',()=>{
+  const zr=G.ZONES.findIndex(z=>z.req===10),zm=G.BASEZ-1;assert.ok(G.ZONES[zr].xp<G.ZONES[zm].xp*2.2,'no experience bonus beyond what they always had');assert.ok(G.RESET_RAR[4]>=2&&Math.abs(G.RESET_RAR.reduce((a,b)=>a+b,0)-100)<1e-9);
+  let seed=5;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};G.setEnv(rnd,()=>1.8e12);
+  const count=zi=>{const A=G.newAccount();G.apply(A,'create',{name:'D',cls:'blade'},{});const s=A.chars[0];A.autoSell=0;A.autoEq=false;let n=0;for(let i=0;i<300;i++){A.inv.length=0;const rep={};G.rollLoot(s,zi,600,G.calc(s),rep);n+=A.inv.filter(it=>it.r===4&&G.DROPS.includes(it.s)).length;}return n;};
+  const a=count(zr),b=count(zm);assert.ok(a>b*2,'ancient pieces: '+a+' in a reset map against '+b+' on the main road');
+  const A=G.newAccount();G.apply(A,'create',{name:'Ex',cls:'blade'},{});const s=A.chars[0],c0=G.calc(s);assert.equal(G.exCount(s),0);
+  for(const k of G.DROPS){const it=G.makeItem(s,k,1,2,0);it.af=[];s.eq[k]=it;}const plain=G.calc(s);
+  for(const k of ['w','h']){const it=s.eq[k];it.ex=1;it.af=G.POOL[k].map(x=>[x,0]);}assert.equal(G.exCount(s),2);assert.ok(Math.abs(G.calc(s).crit-plain.crit-.03)<1e-6,'two full excellent pieces: crit');
+  for(const k of G.DROPS){const it=s.eq[k];it.ex=1;it.af=G.POOL[k].map(x=>[x,0]);}assert.equal(G.exCount(s),6);assert.ok(G.calc(s).dmg>plain.dmg*1.14);
   G.setEnv(Math.random,Date.now);
 });
