@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const {GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const {AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -21,7 +21,7 @@ function toast(txt,r){if(demo||!txt)return;const d=document.createElement('div')
 function setNet(ok){$('net').textContent=ONLINE?(ok?'מחובר לשרת':'אין חיבור לשרת'):'מצב מקומי, בלי הגנה';}
 
 // In online mode the server owns the account; the client only asks and displays.
-let session=null,chain=Promise.resolve(),players=[],market=[],party={code:'',members:[]},partyN=0;
+let session=null,chain=Promise.resolve(),players=[],market=[],party={code:'',members:[]},partyN=0,auras=[];
 // Online accounts: username + password. After sign-in the server hands back a signed session token kept in this browser.
 const SKEY='eternal-cycle-session';
 function initServer(){
@@ -234,8 +234,8 @@ let AC=null,MG=null;const sndLast={};
 function initAudio(){try{if(!AC){const X=window.AudioContext||window.webkitAudioContext;if(!X)return;AC=new X();MG=AC.createGain();MG.gain.value=.5;MG.connect(AC.destination);}if(AC.state==='suspended')AC.resume();loadSfx();initMusic();}catch(e){}}
 document.addEventListener('pointerdown',initAudio);document.addEventListener('keydown',initAudio);
 // Recorded effects; anything not loaded falls back to the synthesised version below.
-const SFX={hit:['hit0','hit1','hit2'],crit:['crit0','crit1'],skill:['skill0','skill1'],hurt:['hurt0','hurt1'],kill:['kill'],coin:['coin'],rare:['rare'],boss:['boss'],slam:['slam']};
-const SFXVOL={hit:.5,crit:.75,skill:.6,hurt:.35,kill:.4,coin:.3,rare:.6,boss:.7,slam:.8},sfxBuf={};let sfxAsked=false;
+const SFX={pull:['whoosh'],ult:['ult'],hit:['hit0','hit1','hit2'],crit:['crit0','crit1'],skill:['skill0','skill1'],hurt:['hurt0','hurt1'],kill:['kill'],coin:['coin'],rare:['rare'],boss:['roar'],slam:['slam']};
+const SFXVOL={pull:.6,ult:.8,hit:.5,crit:.75,skill:.6,hurt:.35,kill:.4,coin:.3,rare:.6,boss:.7,slam:.8},sfxBuf={};let sfxAsked=false;
 function loadSfx(){
   if(sfxAsked||!AC)return;sfxAsked=true;
   for(const k in SFX)for(const f of SFX[k])fetch('sfx/'+f+'.mp3').then(r=>r.ok?r.arrayBuffer():null).then(b=>b&&AC.decodeAudioData(b)).then(b=>{if(b)sfxBuf[f]=b;}).catch(()=>{});
@@ -281,7 +281,7 @@ function enterZone(z,side,f){
   h.x=side==='R'?mapW()-110:110;h.face=side==='R'?-1:1;
   if(h.climb&&h.climb.ph==='wait'){h.climb.ph='in';h.climb.t=.45;h.x=side==='R'?mapW()-50:50;}else h.climb=null;
   if(z>=0)for(let i=0;i<8;i++)SC.mons.push(newMon(300+i*140+Math.random()*50,z));
-  statsDirty=true;panelDirty=true;syncBoss();peers=[];beatT=99;
+  if(z<0||z!==S.zone){auras=[];partyN=0;}statsDirty=true;panelDirty=true;syncBoss();peers=[];beatT=99;
 }
 function spawnBoss(){
   const zi=SC.zi,z=ZONES[zi];if(SC.boss||zi<0)return;
@@ -314,7 +314,7 @@ function afterTick(r,m,l0){
   if(!ONLINE||rep.items||rep.gems||rep.boxes||rep.notable)dropOrbs(src,rep);
   if(rep.items||rep.boxes)panelDirty=true;
   if(rep.boss||rep.bossDenied){bossPending=false;if(rep.opened!=null)toast('השער אל '+ZONES[rep.opened].n+' נפתח');if(rep.bossDenied)toast('השרת לא אישר את הניצחון על הבוס');}
-  if(r.partyN!=null)partyN=r.partyN;
+  if(r.partyN!=null)partyN=r.partyN;if(r.auras&&r.auras.join()!==auras.join()){auras=r.auras;statsDirty=true;panelDirty=true;}
   if(S.lvl>l0)afterXp(S.lvl-l0);
   statsDirty=true;syncBoss();
 }
@@ -359,7 +359,7 @@ function cast(i,auto){
   else if(i===4){snd('fury');h.shield=5;h.hp=Math.min(C.hp,h.hp+C.hp*.3);SC.fx.push({k:'ring',x:h.x,y:gy()-40,life:.5,c:'#9fe8ff',r:90});burst(h.x,gy()-50,'#9fe8ff',20);
     addNum(h.x,gy()-100,'+'+fmt(C.hp*.3),'#6fe39a',true);SC.nums.push({x:h.x,y:gy()-135,txt:CLS[S.cls].sk[4]+'!',c:'#9fe8ff',s:18,life:1});}
   else if(i===5){const ts=alive().filter(m=>Math.abs(m.x-h.x)<560);if(!ts.length&&auto)return false;
-    snd('slam');h.anim=1;h.skA=.5;for(let k=0;k<5;k++)SC.fx.push({k:'ring',x:h.x+(k-2)*200,y:gy()-20,life:.35+k*.06,c:col,r:150});
+    snd('ult');h.anim=1;h.skA=.5;for(let k=0;k<5;k++)SC.fx.push({k:'ring',x:h.x+(k-2)*200,y:gy()-20,life:.35+k*.06,c:col,r:150});
     for(const m of ts){burst(m.x,gy()-40,col,14);strike(m,6,col,true);}
     SC.nums.push({x:h.x,y:gy()-150,txt:CLS[S.cls].sk[5]+'!',c:'#ffd75e',s:21,life:1.2});}
   else{snd('fury');h.buff=8;SC.fx.push({k:'ring',x:h.x,y:gy()-20,life:.4,c:'#ffd75e',r:120});burst(h.x,gy()-50,'#ffd75e',24);SC.nums.push({x:h.x,y:gy()-135,txt:CLS[S.cls].sk[2]+'!',c:'#ffd75e',s:18,life:1});}
@@ -498,7 +498,7 @@ function finishDuel(){
   SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];touch();
 }
 function frame(dt){
-  SC.t+=dt;SC.dt=dt;if(statsDirty){C=calc(S);statsDirty=false;}
+  SC.t+=dt;SC.dt=dt;if(statsDirty){C=calc(S,auras);statsDirty=false;}
   if(SC.mode==='farm'){updateWorld(dt);updatePeers(dt);}else updateDuel(dt);
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.save();if(SC.shake>0){SC.shake-=dt;ctx.translate((Math.random()-.5)*7,(Math.random()-.5)*5);}
@@ -538,7 +538,7 @@ function renderHud(){
   $('hXp').style.width=(S.lvl>=CAP?100:S.xp/need(S.lvl)*100)+'%';
   $('cGold').textContent=fmt(A.gold);$('cGem').textContent=fmt(A.gems);$('cCred').textContent=fmt(A.cred);$('cCoin').textContent=fmt(A.coins);
   const duel=SC.mode==='duel',zi=SC.zi;
-  $('zoneTag').textContent=duel?'זירה':zoneName(zi)+(zi>=0?' · קומה '+(SC.fl+1):'')+(partyN>0&&zi>=0?' · פארטי '+Math.round(PARTY_XP*100*partyN)+'%+':'');
+  $('zoneTag').textContent=duel?'זירה':zoneName(zi)+(zi>=0?' · קומה '+(SC.fl+1):'')+(partyN>0&&zi>=0?' · פארטי '+(partyN+1)+(partyXp(partyN)?' · '+Math.round(partyXp(partyN)*100)+'%+':''):'');
   $('rateTag').textContent=duel||zi<0?'':SC.boss?'בוס במפה':'בוס: '+(A.bossM[zi]||0)+'/'+BOSSN;
   $('resetNow').style.display=canReset(S)&&!duel?'block':'none';
   $('autoBtn').style.display=$('skills').style.display=duel||zi<0?'none':'';$('mv').style.display=duel?'none':'';
@@ -659,12 +659,13 @@ function renderPass(){
 function renderParty(){
   let h='<h2>פארטי</h2>';
   if(!ONLINE)return h+'<p class="hint">פארטי עובד רק במצב מקוון, מול השרת.</p>';
-  const per=Math.round(PARTY_XP*100);
-  if(!party.code)return h+'<div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">עד ארבעה שחקנים. כל חבר פעיל באותה מפה מוסיף '+L(per+'%')+' ניסיון, עד '+L(per*3+'%')+'. חברי פארטי יכולים גם למכור פריטים ישירות זה לזה.</p>'+
+  const per=Math.round(PARTY_XP*100),buffs=Object.keys(AURAS).map(k=>'<div class="kv"><span>'+esc(CLS[k].n)+' · '+esc(AURAS[k].n)+'</span><b'+(auras.includes(k)?' style="color:var(--good)"':'')+'>'+L('+')+esc(AURAS[k].d)+(auras.includes(k)?' · פעיל':'')+'</b></div>').join('');
+  const rules='<p class="hint">עד חמישה שחקנים. כל מקצוע נותן באף משלו לחברי הפארטי שנלחמים איתו באותה מפה, גם מול בוסים. מהשחקן השלישי באותה מפה, כל חבר מוסיף '+L(per+'%')+' ניסיון, עד '+L(per*3+'%')+'.</p>'+buffs;
+  if(!party.code)return h+'<div class="card" style="display:flex;flex-direction:column;gap:8px">'+rules+'<p class="hint">חברי פארטי יכולים גם למכור פריטים ישירות זה לזה.</p>'+
     '<button class="btn pri" data-act="pcreate">צור פארטי</button><input type="text" id="pcode" maxlength="6" placeholder="קוד פארטי של חבר" autocomplete="off" dir="ltr"><button class="btn" data-act="pjoin">הצטרף עם קוד</button></div>';
   h+='<div class="card"><div class="kv"><span>קוד להזמנת חברים</span><b class="num" dir="ltr" style="letter-spacing:2px;color:var(--gold)">'+esc(party.code)+'</b></div>';
   for(const m of party.members)h+='<div class="kv"><span><i class="dot" style="background:var(--'+(m.active?'good':'line')+')"></i>'+esc(m.n)+(m.me?' (אתה)':'')+(m.leader?' · מוביל':'')+'</span><b>רמה '+L(m.l)+' · '+esc(zoneName(clamp(m.zone|0,-1,ZONES.length-1)))+'</b></div>';
-  return h+'<p class="hint" style="margin-top:6px">כל חבר פעיל באותה מפה מוסיף '+L(per+'%')+' ניסיון. הבונוס עכשיו: '+L(per*partyN+'%')+'.</p><button class="btn sm" data-act="pleave">עזוב פארטי</button></div>';
+  return h+'<div style="margin-top:6px">'+rules+'</div><p class="hint" style="margin-top:6px">איתך במפה עכשיו: '+L(partyN)+' חברים. בונוס ניסיון: '+L(Math.round(partyXp(partyN)*100)+'%')+'.</p><button class="btn sm" data-act="pleave">עזוב פארטי</button></div>';
 }
 function renderArena(){
   const arenaOpps=A.opps||[];
@@ -731,7 +732,7 @@ function openTab(name){
 }
 function loadArena(){if(!demo&&S)act('opps',{}).then(()=>{panelDirty=true;});}
 function enterGame(r){
-  S=A.chars[A.cur];C=calc(S);enterZone(S.zone,'L',S.floor);SC.hero.hp=C.hp;SC.hero.dead=0;SC.hero.cds=[0,0,0,0,0,0];SC.hero.climb=null;SC.hero.shield=0;touch();renderHud();renderPanel();
+  S=A.chars[A.cur];C=calc(S,auras);enterZone(S.zone,'L',S.floor);SC.hero.hp=C.hp;SC.hero.dead=0;SC.hero.cds=[0,0,0,0,0,0];SC.hero.climb=null;SC.hero.shield=0;touch();renderHud();renderPanel();
   if(r&&r.afk)showOffline(r.afk);
 }
 async function switchTo(i){
@@ -836,17 +837,17 @@ document.addEventListener('click',async e=>{
     else if(a==='gleave'){r=await act('gleave',{});}
     else if(a==='gkick'){r=await act('gkick',{i:+b.dataset.i});}
     else if(a==='gnotice'){r=await act('gnotice',{text:$('gnotice').value||''});}
-    else if(a==='pcreate'||a==='pleave'){r=await act(a,{});if(r.ok&&a==='pleave')partyN=0;}
+    else if(a==='pcreate'||a==='pleave'){r=await act(a,{});if(r.ok&&a==='pleave'){partyN=0;auras=[];statsDirty=true;}}
     else if(a==='pjoin'){r=await act('pjoin',{code:($('pcode').value||'').trim()});if(r.ok)toast('הצטרפת לפארטי');}
     else if(a==='mbuy'){await buyListing(b.dataset.m);}
     else if(a==='mcancel'){await cancelListing(b.dataset.m);}
     else if(a==='mrefresh'){loadMarket();}
     else if(a==='zone'){if(SC.mode==='farm'){clickBusy=false;await travelTo(+b.dataset.i,'L',+(b.dataset.f||0));}}
-    else if(a==='reset'){if(SC.mode==='farm'&&canReset(S)){r=await act('reset',{});if(r.ok){enterZone(-1,'L',0);C=calc(S);SC.hero.hp=C.hp;if(!calm)SC.shake=.4;burst(SC.hero.x,gy()-50,'#f2c14e',40);snd('lvl');toast('ריסט '+r.resets+'. קיבלת '+r.gain+' אותות ריסט');}}}
+    else if(a==='reset'){if(SC.mode==='farm'&&canReset(S)){r=await act('reset',{});if(r.ok){enterZone(-1,'L',0);C=calc(S,auras);SC.hero.hp=C.hp;if(!calm)SC.shake=.4;burst(SC.hero.x,gy()-50,'#f2c14e',40);snd('lvl');toast('ריסט '+r.resets+'. קיבלת '+r.gain+' אותות ריסט');}}}
     else if(a==='equip'||a==='unequip'||a==='sell'){r=await act(a,{id:id});closeSheet();}
     else if(a==='sellJunk'){r=await act('sellJunk',{});if(r.ok)toast('נמכר ב-'+fmt(r.gold)+' זהב');}
     else if(a==='upgrade'){r=await act('upgrade',{id:id});if(r.ok){const c=r.code;snd(c==='ok'?'ok':c==='poor'||c==='max'?'click':'fail');
-        toast(c==='ok'?'השדרוג הצליח. דרגה '+r.p:c==='saved'?'נכשל. קמע ההגנה שמר על הדרגה':c==='down'?'נכשל. הדרגה ירדה ל-'+r.p:c==='fail'?'השדרוג נכשל':'חסרים חומרים',c==='ok'?r.r:null);touch();C=calc(S);openSheet(id);}}
+        toast(c==='ok'?'השדרוג הצליח. דרגה '+r.p:c==='saved'?'נכשל. קמע ההגנה שמר על הדרגה':c==='down'?'נכשל. הדרגה ירדה ל-'+r.p:c==='fail'?'השדרוג נכשל':'חסרים חומרים',c==='ok'?r.r:null);touch();C=calc(S,auras);openSheet(id);}}
     else if(a==='openBox'){r=await act('openBox',{k:b.dataset.k});if(r.ok)boxFx(r.box);}
     else if(a==='buy'){r=await act('buy',{shop:b.dataset.s,k:b.dataset.k});if(r.ok){if(r.box)boxFx(r.box);else{snd('coin');toast('נקנה: '+r.bought);}}}
     else if(a==='claimPass'){r=await act('claimPass',{});if(r.ok){snd('rare');toast('פרס עונה: '+r.t);}}
@@ -859,7 +860,7 @@ document.addEventListener('click',async e=>{
     else if(a==='autoPts'||a==='autoEq'||a==='autoSell'){r=await act(a,{});}
     failTxt(r);
   }finally{clickBusy=false;}
-  touch();if(S){C=calc(S);statsDirty=false;}renderHud();renderPanel();saveLocal();
+  touch();if(S){C=calc(S,auras);statsDirty=false;}renderHud();renderPanel();saveLocal();
 });
 
 /* ---------- other players, chat, guilds ---------- */
@@ -982,12 +983,18 @@ function loadMe(){
 }
 
 /* ---------- music: a small generated loop that follows the map ---------- */
-let musG=null,musT=0,musStep=0;
+let musG=null,musT=0,musStep=0,musEl=null,musFile='';
 const MUS_PROG={town:[[0,4,7],[7,11,14],[9,12,16],[5,9,12]],wild:[[0,3,7],[8,12,15],[3,7,10],[10,14,17]]};
 function musNote(f,t,d,type,v){const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.02);g.gain.exponentialRampToValueAtTime(.0008,t+d);o.connect(g);g.connect(musG);o.start(t);o.stop(t+d+.05);}
 function musTick(){
   if(!AC||!musG)return;
-  const on=!prefs.mute&&prefs.music!==false&&!document.hidden&&!!S&&!demo;musG.gain.setTargetAtTime(on?.15:0,AC.currentTime,.4);if(!on){musT=0;return;}
+  const on=!prefs.mute&&prefs.music!==false&&!document.hidden&&!!S&&!demo;
+  if(musFile!=='fail'&&musEl){ // the recorded track; the generated loop below only plays if the file cannot be loaded
+    musG.gain.setTargetAtTime(0,AC.currentTime,.2);
+    const boss=!!SC.boss&&SC.mode==='farm';musEl.volume=boss?.3:.22;
+    if(on&&musEl.paused){const p=musEl.play();if(p&&p.catch)p.catch(()=>{});}else if(!on&&!musEl.paused)musEl.pause();
+    return;}
+  musG.gain.setTargetAtTime(on?.15:0,AC.currentTime,.4);if(!on){musT=0;return;}
   const zi=SC.zi,town=zi<0,boss=!!SC.boss&&SC.mode==='farm',bpm=town?76:boss?124:92+(zi%4)*4,sp=60/bpm/2,root=110*Math.pow(2,(town?3:[0,2,-2,5,-4,3,-5,1][zi%8])/12),prog=MUS_PROG[town?'town':'wild'],f=n=>root*Math.pow(2,n/12);
   if(musT<AC.currentTime)musT=AC.currentTime+.05;
   while(musT<AC.currentTime+.35){const ch=prog[Math.floor(musStep/8)%4],st=musStep%8;
@@ -997,7 +1004,9 @@ function musTick(){
     if(boss&&st%2===0)musNote(f(ch[0])/4,musT,sp*.8,'sawtooth',.16);
     musT+=sp;musStep++;}
 }
-function initMusic(){if(!AC||musG)return;musG=AC.createGain();musG.gain.value=0;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1800;musG.connect(lp);lp.connect(MG);setInterval(musTick,120);}
+function initMusic(){if(!AC||musG)return;musG=AC.createGain();musG.gain.value=0;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1800;musG.connect(lp);lp.connect(MG);
+  try{musEl=new Audio('sfx/music.mp3');musEl.loop=true;musEl.preload='auto';musEl.volume=.22;musEl.addEventListener('error',()=>{musFile='fail';});}catch(e){musFile='fail';}
+  setInterval(musTick,120);musTick();}
 
 /* ---------- first steps ---------- */
 const TUT=['החזק את החץ ימינה, או לחץ על השער, כדי לצאת מהכפר אל השדה','לחץ על מפלצת כדי לתקוף אותה. הדמות ממשיכה להילחם לבד','הכפתורים מימין הם הכישורים. הפעל את הראשון','אחרי 40 חיסולים מגיע בוס, והוא פותח את המפה הבאה. בקצה כל קומה יש סולם לקומה חזקה יותר','ברמה 400 עושים ריסט ומתחזקים. האירועים בשעות קבועות מקצרים את הדרך. בהצלחה'];
@@ -1020,7 +1029,7 @@ function loop(ts){
   requestAnimationFrame(loop);if(!S)return;
   let dt=(ts-lastT)/1000;lastT=ts;if(!(dt>0))return;
   if(dt>3&&!demo){ // the tab was asleep: let the rules decide what happened meanwhile
-    if(!resyncing){resyncing=true;send('sync',{}).then(r=>{resyncing=false;if(!r.ok||SC.mode!=='farm')return;if(S.zone!==SC.zi||(S.floor|0)!==SC.fl)enterZone(S.zone,'L',S.floor);C=calc(S);SC.hero.hp=C.hp;syncBoss();if(r.afk)showOffline(r.afk);saveLocal();});}
+    if(!resyncing){resyncing=true;send('sync',{}).then(r=>{resyncing=false;if(!r.ok||SC.mode!=='farm')return;if(S.zone!==SC.zi||(S.floor|0)!==SC.fl)enterZone(S.zone,'L',S.floor);C=calc(S,auras);SC.hero.hp=C.hp;syncBoss();if(r.afk)showOffline(r.afk);saveLocal();});}
     return;
   }
   dt=Math.min(dt,.1);
@@ -1037,7 +1046,7 @@ window.addEventListener('pagehide',()=>{if(A&&!demo)saveLocal();});
 
 function startDemo(){ // a live scene behind the first dialog
   demo=true;A=newAccount();const d=bind(A,newChar('גיבור','blade'));d.lvl=60;d.zone=0;d.eq.w={id:0,s:'w',t:3,r:3,p:9,z:0,af:[]};d.eq.g={id:0,s:'g',t:2,r:2,p:7,z:0,af:[]};
-  A.chars=[d];S=d;C=calc(S);enterZone(0,'L');SC.hero.hp=C.hp;renderHud();renderPanel();
+  A.chars=[d];S=d;C=calc(S,auras);enterZone(0,'L');SC.hero.hp=C.hp;renderHud();renderPanel();
 }
 async function boot(){
   loadSprites();resize();if(window.ResizeObserver)new ResizeObserver(resize).observe($('stage'));setNet(true);

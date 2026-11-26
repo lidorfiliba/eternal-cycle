@@ -69,24 +69,25 @@ test('a browser session cannot read or write tables, or call market functions di
   assert.equal((await db.query('select count(*)::int c from accounts')).rows[0].c,3,'the server role still works');
 });
 test('parties: codes, size limit, same-map bonus, leaving',async()=>{
-  const db=await setup();const U4='00000000-0000-0000-0000-000000000004',U5='00000000-0000-0000-0000-000000000005';
-  for(const u of [U4,U5]){G.setEnv(Math.random,Date.now);const A=G.newAccount();G.apply(A,'create',{name:'x',cls:'storm'});
+  const db=await setup();const U4='00000000-0000-0000-0000-000000000004',U5='00000000-0000-0000-0000-000000000005',U6='00000000-0000-0000-0000-000000000006';
+  for(const u of [U4,U5,U6]){G.setEnv(Math.random,Date.now);const A=G.newAccount();G.apply(A,'create',{name:'x',cls:'storm'});
     await db.query('insert into auth.users values ($1)',[u]);await db.query('insert into accounts(user_id,state) values ($1,$2)',[u,JSON.stringify(A)]);}
   const code=(await db.query('select party_create($1) c',[U1])).rows[0].c;assert.match(code,/^[0-9A-F]{6}$/);
   await assert.rejects(db.query('select party_create($1)',[U1]),/in_party/);
   await assert.rejects(db.query('select party_join($1,$2)',[U2,'ZZZZZZ']),/no_party/);
-  for(const u of [U2,U3,U4])await db.query('select party_join($1,$2)',[u,code.toLowerCase()+' ']);
-  await assert.rejects(db.query('select party_join($1,$2)',[U5,code]),/full/);
-  for(const [u,z] of [[U1,2],[U2,2],[U3,2],[U4,5]])await db.query('insert into arena(user_id,snap,zone) values ($1,$2,$3)',[u,'{}',z]);
+  for(const u of [U2,U3,U4,U5])await db.query('select party_join($1,$2)',[u,code.toLowerCase()+' ']);
+  await assert.rejects(db.query('select party_join($1,$2)',[U6,code]),/full/);
+  for(const [u,z] of [[U1,2],[U2,2],[U3,2],[U4,5]])await db.query('insert into arena(user_id,snap,zone) values ($1,$2,$3)',[u,u===U2?'{"c":"hunter"}':'{}',z]);
+  assert.deepEqual((await db.query('select party_mates($1,2) m',[U1])).rows[0].m.sort(),['blade','hunter'],'classes of the members beside me');assert.deepEqual((await db.query('select party_mates($1,5) m',[U4])).rows[0].m,[]);
   const bonus=async(u,z)=>(await db.query('select party_bonus($1,$2) b',[u,z])).rows[0].b;
-  assert.equal(await bonus(U1,2),2);assert.equal(await bonus(U4,5),0);assert.equal(await bonus(U5,2),0,'not a member');assert.equal(await bonus(U1,-1),0,'no bonus in the village');
+  assert.equal(await bonus(U1,2),2);assert.equal(await bonus(U4,5),0);assert.equal(await bonus(U6,2),0,'not a member');assert.equal(await bonus(U1,-1),0,'no bonus in the village');
   await db.query("update arena set seen_at=now()-interval '10 minutes' where user_id=$1",[U2]);
   assert.equal(await bonus(U1,2),1,'inactive members do not count');
-  const info=(await db.query('select party_info($1) i',[U3])).rows[0].i;assert.equal(info.members.length,4);assert.equal(info.leader,U1);
+  const info=(await db.query('select party_info($1) i',[U3])).rows[0].i;assert.equal(info.members.length,5);assert.equal(info.leader,U1);
   await db.query('select party_leave($1)',[U1]);
   assert.equal((await db.query('select party_info($1) i',[U2])).rows[0].i.leader,U2,'leadership passes on');
   assert.equal((await db.query('select party_info($1) i',[U1])).rows[0]?.i??null,null);
-  for(const u of [U2,U3,U4])await db.query('select party_leave($1)',[u]);
+  for(const u of [U2,U3,U4,U5])await db.query('select party_leave($1)',[u]);
   assert.equal((await db.query('select count(*)::int c from parties')).rows[0].c,0,'an empty party is removed');
 });
 test('a direct sale can only target a party member and only that member can buy it',async()=>{

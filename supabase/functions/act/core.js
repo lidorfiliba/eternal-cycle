@@ -84,7 +84,10 @@ function itemScore(it){
   let a=0;for(const f of it.af)a+=f[1]/(AFF[f[0]][2]);
   return b*(1+a*0.12);
 }
-function calc(s){
+// What each class gives to party members fighting on the same map.
+const AURAS={blade:{n:'זעקת קרב',d:'12% נזק'},storm:{n:'רוח סער',d:'10% מהירות תקיפה'},hunter:{n:'עין הצייד',d:'8% קריטי ו-15% נפילות'}};
+const cleanAuras=l=>Array.isArray(l)?[...new Set(l.filter(k=>typeof k==='string'&&AURAS[k]))]:[];
+function calc(s,au){
   const c=CLS[s.cls],st=s.stats,a={dmg:0,crit:0,cdmg:0,aspd:0,hp:0,def:0,xp:0,gold:0,drop:0};
   let atk=0,ahp=0,adef=0,wd=0,wh=0;
   for(const k of SLOTS){const it=s.eq[k];if(!it)continue;const v=itemVals(it);
@@ -92,12 +95,13 @@ function calc(s){
   const sc=setCounts(s);for(const z in sc)for(const b of SETB)if(sc[z]>=b[0])a[b[1]]+=b[2];
   const main=st[c.main];
   const base=10+main*c.coef+(st.str+st.agi+st.ene-main)*0.15+atk;
-  const dmg=base*(1+0.04*s.resets)*(1+a.dmg/100)*(1+wd/100);
-  const aspd=Math.min(3.2,(1.1+st.agi/500)*(1+a.aspd/100));
-  const crit=Math.min(.6,.05+st.agi/3000+a.crit/100);
+  let dmg=base*(1+0.04*s.resets)*(1+a.dmg/100)*(1+wd/100);
+  let aspd=Math.min(3.2,(1.1+st.agi/500)*(1+a.aspd/100));
+  let crit=Math.min(.6,.05+st.agi/3000+a.crit/100);
   const cdmg=2+a.cdmg/100;
   const hp=(120+st.vit*10+s.lvl*6+ahp)*(1+a.hp/100)*(1+wh/100);
   const def=(st.agi*.15+st.vit*.1+adef)*(1+a.def/100);
+  if(au&&au.length){if(au.includes('blade'))dmg*=1.12;if(au.includes('storm'))aspd*=1.1;if(au.includes('hunter'))crit=Math.min(.75,crit+.08);}
   const dps=dmg*aspd*(1+crit*(cdmg-1))*1.3;
   const boost=s.boost>(s._now||_now())?1.5:1;
   return {dmg,aspd,crit,cdmg,hp,def,dps,power:Math.round(dps*.6+hp*.25+def*2),
@@ -257,7 +261,8 @@ function siegeInfo(now){
   const on=cur>=S0&&cur<S0+30,since=((cur-(S0+30))%W+W)%W;
   return {on:on,left:on?S0+30-cur:0,next:on?0:((S0-cur)%W+W)%W,key:'s'+Math.floor((now-since*60000)/3600000)};
 }
-const PARTY_XP=.08; // extra XP per active party member in the same map, up to 3
+const PARTY_XP=.05; // extra XP for each active party member on the same map beyond the second player, party of up to 5
+const partyXp=n=>PARTY_XP*Math.max(0,Math.min(4,n|0)-1); // extra XP per active party member in the same map, up to 3
 const GOLD_SHOP=[{k:'gem',t:'אבן נשמה',d:'חומר לשדרוג ציוד',cost:5000},{k:'box',t:'תיבת אוצר',d:'פריט מהמפה הגבוהה שפתחת, אבנים או זהב',cost:40000},{k:'ticket',t:'כרטיס זירה',d:'קרב נוסף',cost:10000},{k:'scroll',t:'מגילת ניסיון',d:'50% יותר ניסיון למשך 30 דקות',cost:25000}];
 const RESET_SHOP=[{k:'charm',t:'3 קמעות הגנה',d:'שדרוג שנכשל לא מוריד דרגה',cost:4},{k:'bless',t:'ברכת נצח',d:'5% יותר ניסיון לתמיד לכל הדמויות, עד 10 פעמים',cost:8},{k:'pts',t:'50 נקודות סטט קבועות',d:'מתווספות בתחילת כל ריסט',cost:10},{k:'abox',t:'תיבה עתיקה',d:'פריט אגדי או עתיק מהמפה הגבוהה שפתחת',cost:12},{k:'wing',t:'כנפיים בדרגה הבאה',d:'כנפיים נדירות, דרגה אחת מעל הלבושות',cost:25}];
 const SEASON_SHOP=[{k:'sbox',t:'תיבת עונה',d:'15% לחלק סט עתיק, אחרת נדיר או אגדי',cost:60},{k:'box',t:'תיבת אוצר',d:'',cost:30},{k:'gem5',t:'5 אבני נשמה',d:'',cost:20},{k:'ticket',t:'כרטיס זירה',d:'',cost:10}];
@@ -360,7 +365,7 @@ function adopt(o){
 }
 function findIt(A,S,id){for(const k of SLOTS)if(S.eq[k]&&S.eq[k].id===id)return {it:S.eq[k],eq:k};const i=A.inv.findIndex(x=>x.id===id);return i>=0?{it:A.inv[i],i:i}:null;}
 // Highest kill rate a legitimate client can reach in a zone, skills and buffs included.
-function maxKps(S,zi){const c=calc(S),z=zs(zi,afkFloor(S,zi));return Math.min(2.1,1/Math.max(.35,z.hp/(c.dps*2.8)+.3));}
+function maxKps(S,zi,au){const c=calc(S,au),z=zs(zi,afkFloor(S,zi));return Math.min(2.1,1/Math.max(.35,z.hp/(c.dps*2.8)+.3));}
 const BOTN=['שומר השער','נודד האפר','בת הסער','צל ראשון','להב שקט','עין הנץ'];
 function buildOpps(A,S,players,selfId){
   const me=fighter(S),out=[];
@@ -390,7 +395,7 @@ function apply(A,kind,args,ctx){
   // Time since the previous call decides how many kills may be claimed (token bucket) or, after a long gap, AFK progress.
   const el=Math.max(0,(now-(A.tk||now))/1000);A.tk=now;
   if(el>90){S.last=now-el*1000;const rep=offline(S,el);A.allow=0;A.bossAt=null;if(rep.kills>0)r.afk=[{name:S.name,zone:S.zone,rep:rep}];}
-  else if(S.zone>=0)A.allow=Math.min(40,(A.allow||0)+el*maxKps(S,afkZone(S)));
+  else if(S.zone>=0)A.allow=Math.min(40,(A.allow||0)+el*maxKps(S,afkZone(S),cleanAuras(ctx.auras)));
   S.last=now;
   switch(kind){
     case 'sync':{
@@ -413,7 +418,7 @@ function apply(A,kind,args,ctx){
       if(!canEnter(S,z))return fail('המפה נעולה');
       if(!canFloor(S,z,f))return fail('צריך רמה '+floorMin(z,f)+' לקומה הזו');
       if(z!==S.zone||f!==(S.floor|0)){S.zone=z;S.floor=f;A.bossAt=null;A.allow=Math.min(A.allow||0,3);}
-      const zd=zs(z,f),rep={},em=evMods(now),c=calc(S),pn=int(ctx.partyN,0,3),gl=int(ctx.guildLvl,0,10),cs=ctx.castle?1:0,pb=(1+PARTY_XP*pn)*em.xp*(1+gl*.01+cs*.1);c.dropM*=em.drop*zd.drop;c.goldM*=zd.gold*(1+cs*.1);r.partyN=pn;r.guildLvl=gl;r.castle=cs;
+      const zd=zs(z,f),rep={},em=evMods(now),au=cleanAuras(ctx.auras),c=calc(S,au),pn=int(ctx.partyN,0,4),gl=int(ctx.guildLvl,0,10),cs=ctx.castle?1:0,pb=(1+partyXp(pn))*em.xp*(1+gl*.01+cs*.1);c.dropM*=em.drop*zd.drop*(au.includes('hunter')?1.15:1);r.auras=au;c.goldM*=zd.gold*(1+cs*.1);r.partyN=pn;r.guildLvl=gl;r.castle=cs;
       const k=Math.min(int(args.kills,0,1000),Math.floor(A.allow||0));r.claimed=int(args.kills,0,1000);r.kills=k;
       A.casts=(A.casts||0)+int(args.casts,0,30);
       if(k>0){A.allow-=k;rep.levels=addXp(S,k*zd.xp*c.xpM*pb);rollLoot(S,z,k,c,rep);evAdd(A,now,'k',k);
@@ -482,4 +487,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

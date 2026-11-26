@@ -7,7 +7,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
     limit: "אפשר להציע עד 8 פריטים", not_found: "הפריט לא בתיק", bad_price: "מחיר לא תקין", no_account: "אין חשבון",
     in_guild: "אתה כבר בגילדה", no_guild: "לא נמצאה גילדה בשם הזה", guild_full: "הגילדה מלאה", bad_name: "שם: 3 עד 14 אותיות וספרות. תג: 2 עד 4",
     taken: "השם או התג כבר תפוסים", not_leader: "רק מוביל הגילדה יכול", muted: "הושתקת בצ'אט", slow: "לאט יותר, רגע בין הודעות", empty: "הודעה ריקה", forbidden: "אין הרשאה",
-    not_party: "אפשר למכור ישירות רק לחבר פארטי", in_party: "אתה כבר בפארטי", no_party: "לא נמצא פארטי עם הקוד הזה", full: "הפארטי מלא",
+    not_party: "אפשר למכור ישירות רק לחבר פארטי", in_party: "אתה כבר בפארטי", no_party: "לא נמצא פארטי עם הקוד הזה", full: "הפארטי מלא, עד חמישה שחקנים",
   };
   const MAX_CALLS_PER_MIN = 240;
   const errMsg = (res) => MARKET_MSG[String(res.error && res.error.message || "").trim()] || "הפעולה נכשלה";
@@ -143,8 +143,9 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
       let players = null;
       if (kind === "opps") { players = await board(uid); ctx.players = players; }
       if (kind === "tick" && Number(args.z) >= 0) {
-        const pb = await admin.rpc("party_bonus", { p_user: uid, p_zone: Math.floor(Number(args.z)) });
-        ctx.partyN = pb.error ? 0 : Number(pb.data) || 0;
+        const pm = await admin.rpc("party_mates", { p_user: uid, p_zone: Math.floor(Number(args.z)) });
+        const mates = pm.error || !Array.isArray(pm.data) ? [] : pm.data;
+        ctx.partyN = mates.length; ctx.auras = mates; // one entry per active member on this map: their class
         const gt = await admin.rpc("guild_tick", { p_user: uid, p_kills: 0, p_siege: false, p_key: G.siegeInfo(now).key });
         if (!gt.error && gt.data) { ctx.guildLvl = Number(gt.data.lvl) || 0; ctx.castle = !!gt.data.castle; }
       }

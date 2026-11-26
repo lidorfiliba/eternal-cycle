@@ -75,12 +75,15 @@ test('reset maps open by reset count and level, never by editing the opened-map 
   now.add(10);const r=G.apply(A,'tick',{z:9,kills:5});assert.ok(r.ok&&r.kills>0);
   assert.equal(G.apply(A,'travel',{z:99}).ok,false);assert.equal(G.apply(A,'travel',{z:-7}).ok,true,'clamped to the village');
 });
-test('party bonus comes only from the server context and is capped at three members',()=>{
+test('party: experience from the third player on, class buffs from the server context only',()=>{
   const xpFor=(ctx,args)=>{const {A,now}=fresh();G.apply(A,'travel',{z:0});now.add(10);const s=A.chars[0];s.autoPts=false;const before=s.xp;
     G.setEnv(()=>.5,now);const r=G.apply(A,'tick',Object.assign({z:0,kills:1},args||{}),ctx||{});let xp=s.xp;for(let l=1;l<s.lvl;l++)xp+=G.need(l);return xp-before;};
-  const solo=xpFor({}),two=xpFor({partyN:1}),max=xpFor({partyN:3}),over=xpFor({partyN:50}),forged=xpFor({}, {partyN:3});
-  assert.ok(Math.abs(two/solo-1.08)<.02,'one member adds 8%: '+two/solo);assert.ok(Math.abs(max/solo-1.24)<.02);
-  assert.equal(over,max,'capped');assert.equal(forged,solo,'a client-supplied bonus is ignored');
+  const solo=xpFor({}),two=xpFor({partyN:1}),three=xpFor({partyN:2}),max=xpFor({partyN:4}),over=xpFor({partyN:50}),forged=xpFor({}, {partyN:4,auras:['blade']});
+  assert.equal(two,solo,'a pair gets buffs, not extra experience');assert.ok(Math.abs(three/solo-1.05)<.02,'third player adds 5%: '+three/solo);assert.ok(Math.abs(max/solo-1.15)<.02,'five players: 15%');
+  assert.equal(over,max,'capped at a party of five');assert.equal(forged,solo,'client-supplied values are ignored');
+  const {A}=fresh(),s=A.chars[0],base=G.calc(s),all=G.calc(s,['blade','storm','hunter','blade']);
+  assert.ok(Math.abs(all.dmg/base.dmg-1.12)<1e-9);assert.ok(Math.abs(all.aspd/base.aspd-1.1)<1e-9);assert.ok(Math.abs(all.crit-base.crit-.08)<1e-9);assert.ok(all.dps>base.dps*1.25);
+  assert.deepEqual(G.cleanAuras(['blade','blade','nope',7,'hunter']),['blade','hunter']);assert.ok(G.maxKps(s,0,['blade','storm'])>=G.maxKps(s,0));
 });
 test('floors: deeper floors need more levels, pay more, and cannot be forged',()=>{
   const {A,now}=fresh();const s=A.chars[0];now.add(5);
