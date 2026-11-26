@@ -169,6 +169,7 @@ h2{font-family:var(--display);font-weight:400;font-size:17px;margin:4px 0 0;colo
 #panel>*{flex-shrink:0}
 #joy{position:absolute;left:14px;bottom:16px;width:116px;height:116px;border-radius:50%;background:radial-gradient(circle,rgba(125,249,255,.10),rgba(20,14,44,.55));border:2px solid rgba(125,249,255,.45);z-index:5;touch-action:none;user-select:none;-webkit-user-select:none}
 #joy i{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#bff,#3aa8c8);box-shadow:0 0 12px rgba(125,249,255,.7);pointer-events:none}
+#useBtn{position:absolute;bottom:150px;inset-inline:0;margin:auto;width:max-content;max-width:92%;font-weight:800;font-size:15px;color:#1a1030;background:linear-gradient(90deg,#ffd75e,#ffb23e);border:2px solid #fff3c4;border-radius:14px;padding:10px 18px;box-shadow:0 0 16px #ffd75eaa;z-index:6}
 #brBtn{top:134px!important;background:linear-gradient(90deg,#6a3fd0,#c77dff)!important;border-color:#e6d0ff!important;box-shadow:0 0 14px #c77dff99!important}
 #keepBtn,#brBtn{position:absolute;top:98px;inset-inline:0;margin:auto;width:max-content;max-width:92%;font-weight:700;font-size:13.5px;color:#fff;background:linear-gradient(90deg,#b3123a,#e0473a);border:1.5px solid #ffb0b0;border-radius:12px;padding:6px 14px;box-shadow:0 0 14px #ff5c7a99;z-index:4;animation:tierPulse 1.4s ease-in-out infinite}
 .resgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}.resgrid div{display:flex;align-items:center;gap:6px;font-size:13.5px}.resgrid span{flex:1;color:var(--dim)}.resgrid b{color:var(--ink)}
@@ -249,6 +250,7 @@ input[type=text],input[type=password],select{width:100%;background:#0a0818;borde
     <button id="resetNow" data-act="reset">ריסט מוכן</button>
     <button id="keepBtn" data-act="keepGo" style="display:none"></button>
     <button id="brBtn" data-act="brJoin" style="display:none"></button>
+    <button id="useBtn" data-act="sgUse" style="display:none"></button>
     <button id="autoBtn" data-act="auto"></button>
     <button id="bigBtn" data-act="big">הגדל</button>
     <button id="fsBtn" data-act="fs" style="display:none">מסך מלא</button>

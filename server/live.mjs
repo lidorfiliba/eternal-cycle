@@ -149,7 +149,8 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
   let sg = null, sgDone = '';
   const r3 = (v) => Math.round(v * 1000) / 1000;
   const sgAll = (m) => { if (!sg) return; const s = JSON.stringify(m); for (const uid of sg.idx.keys()) { const o = socks.get(uid); if (o && o.readyState === 1) o.send(s); } };
-  const sgView = (B) => ({ gate: B.sg.gate.map(r3), sw: B.sg.sw, swp: B.sg.swp.map((p) => [p[0], r3(p[1])]), crown: [B.sg.crown[0], r3(B.sg.crown[1])], holder: B.sg.holder, left: Math.max(0, Math.round((B.sg.time || G.SG.TIME) - B.t)) });
+  const who = (B, i) => (i >= 0 && B.f[i] ? [B.f[i].n, B.f[i].tag] : null);
+  const sgView = (B) => ({ gate: B.sg.gate.map(r3), sw: B.sg.sw, swn: B.sg.swBy.map((i) => who(B, i)), swp: B.sg.swp.map((p) => [p[0], r3(p[1]), p[2]]), crown: [B.sg.crown[0], r3(B.sg.crown[1]), B.sg.crown[2]], holder: B.sg.holder, left: Math.max(0, Math.round((B.sg.time || G.SG.TIME) - B.t)) });
   const sgState = (B) => ({ t: 'brS', T: B.t, sg: sgView(B), s: B.f.map((f) => [Math.round(f.x), Math.round(f.y), r3(f.hp), f.alive ? 1 : 0, f.sh > B.t ? 1 : 0, f.stun > B.t ? 1 : 0, f.face < 0 ? -1 : 1, f.kills, f.inv > B.t ? 1 : 0, 0, 0, 0, f.pots]) });
   const sgPub = (B, i, x) => { const f = B.f[i], p = x.prof[i] || {}; return Object.assign(pub(p), { n: f.n, c: f.c, bot: f.bot ? 1 : 0, g: f.g, tag: f.tag }); };
   async function sgFinish(x) {
@@ -166,7 +167,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     const x = { key: key || 'test', test: !!test, B, idx: new Map(), names: new Map(), prof: [], last: clock(), done: false, scaled: true }; sg = x;
     if (!test) (async () => { // Saturday's siege begins with the castle in the hands of whoever holds it now
       const prev = (await admin.from('castle').select('guild_id,at').order('at', { ascending: false }).limit(1)).data, gid = prev && prev[0] && prev[0].guild_id != null ? Number(prev[0].guild_id) : 0; if (!gid || x.done || B.sg.caps) return;
-      const g = (await admin.from('guilds').select('id,name').eq('id', gid).maybeSingle()).data; if (!g) return; x.names.set(gid, String(g.name)); B.sg.holder = gid; B.sg.sw = [gid, gid]; for (const f of B.f) if (f.g === gid && f.alive) G.sgSpawn(B, f, rnd);
+      const g = (await admin.from('guilds').select('id,name').eq('id', gid).maybeSingle()).data; if (!g) return; x.names.set(gid, String(g.name)); B.sg.holder = gid; for (const f of B.f) if (f.g === gid && f.alive) G.sgSpawn(B, f, rnd);
     })().catch((e) => console.error(e));
     x.timer = setInterval(() => { const now = clock(), dt = Math.max(0, Math.min(.5, (now - x.last) / 1000)); x.last = now; const ev = G.sgStep(B, dt, rnd), m = sgState(B); if (ev.length) m.ev = ev; sgAll(m); if (B.over) sgFinish(x); }, 200); x.timer.unref();
     all({ t: 'sgOpen', left: secs * 1000, test: test ? 1 : 0 }); return x;
@@ -178,13 +179,13 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
       let i = x.idx.get(uid);
       if (i == null) {
         const gm = (await admin.from('guild_members').select('guild_id').eq('user_id', uid).maybeSingle()).data; if (!gm) return send(uid, { t: 'sgNo', why: 'guild' });
-        const g = (await admin.from('guilds').select('id,name,tag').eq('id', gm.guild_id).maybeSingle()).data, p = await snap(uid); if (!g || !p || sg !== x || x.done) return send(uid, { t: 'sgNo', why: 'closed' });
+        const g = (await admin.from('guilds').select('id,name,tag,leader').eq('id', gm.guild_id).maybeSingle()).data, p = await snap(uid); if (!g || !p || sg !== x || x.done) return send(uid, { t: 'sgNo', why: 'closed' });
         if (x.idx.has(uid)) return; const gid = Number(g.id); x.names.set(gid, String(g.name));
         if (!x.scaled) { x.scaled = true; for (const f of x.B.f) if (f.g === 0) { f.d = p.d * .8; f.pool = Math.max(1, p.h * 5 * .9); f.def = p.f * .8; } } // the guards measure up to the first to arrive
-        i = G.sgAdd(x.B, p, gid, g.tag, rnd); x.idx.set(uid, i); x.prof[i] = p;
+        i = G.sgAdd(x.B, p, gid, g.tag, rnd, String(g.leader) === String(uid)); x.idx.set(uid, i); x.prof[i] = p;
         const add = JSON.stringify({ t: 'sgAdd', i, f: sgPub(x.B, i, x), xy: [x.B.f[i].x, x.B.f[i].y] }); for (const u of x.idx.keys()) if (u !== uid) { const o = socks.get(u); if (o && o.readyState === 1) o.send(add); }
       }
-      return send(uid, { t: 'brStart', sg: sgView(x.B), test: x.test ? 1 : 0, me: i, f: x.B.f.map((_, q) => sgPub(x.B, q, x)), T: x.B.t, xy: x.B.f.map((f) => [f.x, f.y]), loot: [], guilds: [...x.names.entries()] });
+      return send(uid, { t: 'brStart', sg: sgView(x.B), lead: x.B.f[i].lead ? 1 : 0, test: x.test ? 1 : 0, me: i, f: x.B.f.map((_, q) => sgPub(x.B, q, x)), T: x.B.t, xy: x.B.f.map((f) => [f.x, f.y]), loot: [], guilds: [...x.names.entries()] });
     }
     if (!x || x.done) return; const i = x.idx.get(uid); if (i == null) return; const B = x.B, f = B.f[i];
     if (m.t === 'sgLeave') { x.idx.delete(uid); f.alive = false; f.resp = 0; return; }
@@ -194,7 +195,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
       const lim = G.BR.spd * 1.3 * el + (f.inv > B.t ? 190 : 24), dx = (Number(m.x) || 0) - f.x, dy = (Number(m.y) || 0) - f.y, d = Math.hypot(dx, dy) || 1, st = Math.min(d, lim);
       G.sgMove(B, f, f.x + dx / d * st, f.y + dy / d * st); f.face = Number(m.f) < 0 ? -1 : 1; return;
     }
-    if (m.t === 'sgAct') { const o = G.sgAct(B, i, String(m.k), rnd); if (!o) return; const out = sgState(B); out.ev = [o]; sgAll(out); return send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t }); }
+    if (m.t === 'sgAct') { const o = G.sgAct(B, i, String(m.k), rnd); if (!o) return; if (o.no) return send(uid, { t: 'sgHint', no: o.no }); const out = sgState(B); out.ev = [o]; sgAll(out); return send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t }); }
   }
 
   async function onMsg(ws, m) {

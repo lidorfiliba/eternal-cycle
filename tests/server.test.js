@@ -501,7 +501,7 @@ test('castle siege over the socket: guild members join a running siege, the serv
     const uid=(await db.query('select user_id from users where username=$1',[n])).rows[0].user_id;return {tok:r.token,uid,key:createHash('md5').update(uid+'peer').digest('hex').slice(0,10)};};
   const open=async u=>{const ws=new WebSocket('ws://127.0.0.1:'+port+'/ws');u.q=[];u.wait=t=>new Promise((res,rej)=>{const go=()=>{const i=u.q.findIndex(m=>m.t===t);if(i>=0)return res(u.q.splice(i,1)[0]);setTimeout(go,10);};go();setTimeout(()=>rej(new Error('no '+t+' message')),4000);});
     ws.on('message',d=>u.q.push(JSON.parse(String(d))));await new Promise(r=>ws.on('open',r));ws.send(JSON.stringify({t:'hello',token:u.tok}));await u.wait('hi');u.ws=ws;u.send=m=>ws.send(JSON.stringify(m));};
-  const a=await mkUser('lamed','blade'),b=await mkUser('mem','storm'),c=await mkUser('nun','blade');const G=await import('../supabase/functions/act/core.js');
+  const a=await mkUser('lamed','blade'),b=await mkUser('mem','storm'),c=await mkUser('nun','blade');let c2=null;const G=await import('../supabase/functions/act/core.js');
   try{
     const gid=(await db.query("insert into guilds (name,tag,leader) values ('אריות','AR',$1) returning id",[a.uid])).rows[0].id;await db.query('insert into guild_members (user_id,guild_id) values ($1,$2),($3,$2)',[a.uid,gid,b.uid]);
     await open(a);await open(b);await open(c);a.send({t:'sgJoin'});assert.equal((await a.wait('sgNo')).why,'closed');
@@ -509,10 +509,13 @@ test('castle siege over the socket: guild members join a running siege, the serv
     c.send({t:'sgJoin'});assert.equal((await c.wait('sgNo')).why,'guild','no guild, no siege');
     a.send({t:'sgJoin'});const sa=await a.wait('brStart');assert.ok(sa.sg&&sa.f.length===1,'no guards: only players');assert.equal(sa.f[sa.me].tag,'AR');assert.equal(sa.guilds[0][1],'אריות');
     b.send({t:'sgJoin'});const sb=await b.wait('brStart'),add=await a.wait('sgAdd');assert.equal(add.i,sb.me);assert.equal(add.f.g,Number(gid));
-    const B=x.B;B.t=1;const fa=B.f[sa.me],fb=B.f[sb.me];a.send({t:'sgPos',x:0,y:-300,f:1});await new Promise(r=>setTimeout(r,300));a.send({t:'sgPos',x:0,y:-300,f:1});await new Promise(r=>setTimeout(r,150));assert.ok(fa.y>130&&fa.y<400,'he walks, and the gate stops him: '+fa.y);
-    for(const f of B.f)if(f.g===0){f.alive=false;f.resp=1e9;}B.sg.sw=[Number(gid),Number(gid)];fa.x=G.SG.crown[0];fa.y=G.SG.crown[1];B.sg.crown=[Number(gid),G.SG.crownT-.3];
-    let taken=null;for(let i=0;i<30&&!taken;i++){const m=await b.wait('brS');if(m.ev&&m.ev.some(e=>e.k==='taken'))taken=m;}assert.ok(taken&&taken.sg.holder===Number(gid));
+    const B=x.B;B.t=1;const fa=B.f[sa.me],fb=B.f[sb.me];assert.ok(fa.y>1700,'the camp is far from the castle');fa.x=0;fa.y=185;a.send({t:'sgPos',x:0,y:-300,f:1});await new Promise(r=>setTimeout(r,300));a.send({t:'sgPos',x:0,y:-300,f:1});await new Promise(r=>setTimeout(r,150));assert.ok(fa.y>130&&fa.y<185,'he walks, and the gate stops him: '+fa.y);
+    assert.equal(sa.lead,1,'the guild leader is known to the server');assert.equal(sb.lead,0);a.send({t:'sgAct',k:'use'});await new Promise(r=>setTimeout(r,200));fa.x=G.SG.crown[0];fa.y=G.SG.crown[1];await new Promise(r=>setTimeout(r,1100));a.send({t:'sgAct',k:'use'});assert.equal((await a.wait('sgHint')).no,'sw','the crown needs both switches held');
+    c2=await mkUser('samekh','hunter');await db.query('insert into guild_members (user_id,guild_id) values ($1,$2)',[c2.uid,gid]);await open(c2);c2.send({t:'sgJoin'});const sc=await c2.wait('brStart');const fc=B.f[sc.me];
+    fb.x=G.SG.sw[0][0];fb.y=G.SG.sw[0][1];fc.x=G.SG.sw[1][0];fc.y=G.SG.sw[1][1];b.send({t:'sgAct',k:'use'});c2.send({t:'sgAct',k:'use'});await new Promise(r=>setTimeout(r,G.SG.swT*1000+700));assert.deepEqual(B.sg.sw,[Number(gid),Number(gid)]);
+    a.send({t:'sgAct',k:'use'});await new Promise(r=>setTimeout(r,500));assert.ok(B.sg.crown[1]>0,'now the leader may take it');B.sg.crown[1]=G.SG.crownT-.3;
+    let taken=null;for(let i=0;i<400&&!taken;i++){const m=await b.wait('brS');if(m.ev&&m.ev.some(e=>e.k==='taken'))taken=m;}assert.ok(taken&&taken.sg.holder===Number(gid));
     B.sg.time=B.t+.2;const ea=await a.wait('brEnd'),eb=await b.wait('brEnd');assert.ok(ea.sg&&ea.won===1&&eb.won===1);assert.equal(ea.win,'אריות');
     const row=(await db.query("select * from castle where siege='s-test-key'")).rows[0];assert.equal(String(row.guild_id),String(gid),'the castle is theirs for the week');assert.equal((await db.query('select state from accounts where user_id=$1',[a.uid])).rows[0].state.coins,30);assert.equal(srv.live.sgNow(),null);
-  }finally{for(const u of [a,b,c])if(u.ws)u.ws.close();srv.live.close();srv.close();}
+  }finally{for(const u of [a,b,c,c2])if(u&&u.ws)u.ws.close();srv.live.close();srv.close();}
 });

@@ -461,24 +461,31 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
   let seed=3;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};G.setEnv(rnd,()=>1.8e12);
   const P=(n,m,c)=>G.cleanPlayer(n,{n:n,c:c||'blade',l:100,d:400*(m||1),a:1.2,h:5000,f:200,cr:0,cd:2});
   const B=G.sgNew(rnd,{});assert.equal(B.f.length,0,'nobody but players: the castle starts empty');assert.equal(B.sg.holder,0);
-  const a=G.sgAdd(B,P('a'),7,'AA',rnd),b=G.sgAdd(B,P('b'),7,'AA',rnd),e=G.sgAdd(B,P('e'),9,'BB',rnd),s=G.sgAdd(B,P('s',10),9,'BB',rnd);B.t=0;const fa=B.f[a],fb=B.f[b],fe=B.f[e],fs=B.f[s];fs.x=700;fs.y=450;
-  assert.ok(fa.y>300,'everyone starts in the camp outside');G.sgMove(B,fa,0,0);assert.ok(fa.y>130,'a standing gate stops him: '+fa.y);
+  const a=G.sgAdd(B,P('a'),7,'AA',rnd),b=G.sgAdd(B,P('b'),7,'AA',rnd),e=G.sgAdd(B,P('e'),9,'BB',rnd),s=G.sgAdd(B,P('s',10),9,'BB',rnd);B.t=0;const fa=B.f[a],fb=B.f[b],fe=B.f[e],fs=B.f[s];fs.x=700;fs.y=1900;
+  assert.ok(fa.y>1700,'everyone starts in the far camp');G.sgMove(B,fa,fa.x,0);assert.ok(fa.y>1300,'a rampart crosses the road: the way is through its passes: '+fa.y);fa.x=0;fa.y=200;G.sgMove(B,fa,0,0);assert.ok(fa.y>130&&fa.y<200,'a standing gate stops him: '+fa.y);
   fe.x=fa.x+30;fe.y=fa.y;fb.x=fa.x-30;fb.y=fa.y;const h=G.sgAct(B,a,'atk',rnd);assert.equal(h.to,e,'a guildmate is never hit, an enemy is');
   { // real strength: ten times the damage is ten times the blow
-    const X=G.sgNew(rnd,{}),w=G.sgAdd(X,P('w',1),1,'',rnd),st=G.sgAdd(X,P('st',10),2,'',rnd),v=G.sgAdd(X,P('v',1),3,'',rnd);X.t=5;for(const i of [w,st,v]){X.f[i].x=0;X.f[i].y=400;}X.f[v].x=30;X.f[w].x=-600;
+    const X=G.sgNew(rnd,{}),w=G.sgAdd(X,P('w',1),1,'',rnd),st=G.sgAdd(X,P('st',10),2,'',rnd),v=G.sgAdd(X,P('v',1),3,'',rnd);X.t=5;for(const i of [w,st,v]){X.f[i].x=0;X.f[i].y=1900;}X.f[v].x=30;X.f[w].x=-600;
     const big=G.sgAct(X,st,'s0',rnd).dm;X.f[st].x=-600;X.f[w].x=0;const small=G.sgAct(X,w,'s0',rnd).dm;assert.ok(big>small*7,'strong '+big+' weak '+small);}
   fe.x=fa.x;fe.y=fa.y-90;B.t+=2;assert.ok(G.sgAct(B,a,'atk',rnd).gate===0,'an enemy behind the gate is out of reach: the blow lands on the gate');
-  fe.x=600;fe.y=400;let n=0;while(B.sg.gate[0]>0&&n++<300){B.t+=1.3;G.sgAct(B,a,'atk',rnd);}assert.ok(B.sg.gate[0]<=0&&n>10,'the blows fall on the gate until it breaks: '+n);
+  fe.x=600;fe.y=1900;let n=0;while(B.sg.gate[0]>0&&n++<300){B.t+=1.3;G.sgAct(B,a,'atk',rnd);}assert.ok(B.sg.gate[0]<=0&&n>10,'the blows fall on the gate until it breaks: '+n);
   G.sgMove(B,fa,0,0);assert.ok(Math.abs(fa.y)<2,'and then the way is open');G.sgMove(B,fa,-600,-300);assert.ok(fa.x>-440,'the wall still stands: '+fa.x);
-  fa.x=G.SG.sw[0][0];fa.y=G.SG.sw[0][1];fb.x=G.SG.sw[1][0];fb.y=G.SG.sw[1][1];let ev=[];for(let i=0;i<20;i++)ev=ev.concat(G.sgStep(B,.2,rnd));assert.deepEqual(B.sg.sw,[7,7]);assert.equal(ev.filter(x=>x.k==='sw').length,2);assert.equal(ev.filter(x=>x.k==='try').length,2,'everyone is told when a switch is being taken');
-  fe.x=G.SG.crown[0];fe.y=G.SG.crown[1];for(let i=0;i<100;i++)G.sgStep(B,.2,rnd);assert.equal(B.sg.holder,0,'the crown ignores a guild that does not hold both switches');
-  fa.x=G.SG.crown[0];fa.y=G.SG.crown[1];for(let i=0;i<100;i++)G.sgStep(B,.2,rnd);assert.equal(B.sg.holder,0,'and stays put while two guilds stand on it');
-  fe.x=600;fe.y=400;ev=[];for(let i=0;i<60;i++)ev=ev.concat(G.sgStep(B,.2,rnd));assert.ok(B.sg.crown[1]>5&&B.sg.holder===0,'the crown takes half a minute, not less');assert.ok(ev.some(x=>x.k==='ctry'&&x.g===7));
-  { // the one who turned the right switch is killed: the switch falls back and the crown starts over
-    fe.x=fb.x+20;fe.y=fb.y;fb.hp=.0001;B.t+=30;fe.at.s3=0;const kk=G.sgAct(B,e,'s3',rnd);assert.ok(kk.dead);assert.equal(B.sg.sw[1],0);assert.equal(B.sg.crown[1],0);const e2=G.sgStep(B,.2,rnd);assert.ok(e2.some(x=>x.k==='swLost'&&x.q===1));
-    fe.x=600;fe.y=400;fb.alive=true;fb.hp=1;fb.x=G.SG.sw[1][0];fb.y=G.SG.sw[1][1];for(let i=0;i<20;i++)G.sgStep(B,.2,rnd);assert.deepEqual(B.sg.sw,[7,7]);}
-  ev=[];for(let i=0;i<160;i++)ev=ev.concat(G.sgStep(B,.2,rnd));assert.equal(B.sg.holder,7,'alone on the crown for long enough, the castle is theirs');assert.ok(ev.some(x=>x.k==='taken'&&x.g===7));
-  assert.deepEqual(B.sg.gate,G.SG.gates.map(()=>G.SG.gateHp),'the gates are whole again');
+  // switches are pressed, load, and are held only while their taker stands on them
+  const L=G.sgAdd(B,P('lead'),7,'AA',rnd,true),fl=B.f[L];fl.x=600;fl.y=1900;
+  fa.x=G.SG.sw[0][0];fa.y=G.SG.sw[0][1];fb.x=G.SG.sw[1][0];fb.y=G.SG.sw[1][1];let ev=[];for(let i=0;i<30;i++)ev=ev.concat(G.sgStep(B,.2,rnd));assert.deepEqual(B.sg.sw,[0,0],'standing there is not enough: the switch must be pressed');
+  B.t+=2;const u1=G.sgAct(B,a,'use',rnd);assert.ok(u1&&u1.q===0);for(let i=0;i<8;i++)G.sgStep(B,.2,rnd);assert.equal(B.sg.sw[0],0,'it loads first');for(let i=0;i<10;i++)ev=ev.concat(G.sgStep(B,.2,rnd));assert.equal(B.sg.sw[0],7);assert.equal(B.sg.swBy[0],a);assert.ok(ev.some(x=>x.k==='sw'&&x.by===a));
+  fa.x+=200;ev=G.sgStep(B,.2,rnd);assert.equal(B.sg.sw[0],0,'walking off the switch gives it up');assert.ok(ev.some(x=>x.k==='swLost'&&x.q===0));fa.x=G.SG.sw[0][0];
+  B.t+=2;G.sgAct(B,a,'use',rnd);fa.x+=200;for(let i=0;i<20;i++)G.sgStep(B,.2,rnd);assert.equal(B.sg.sw[0],0,'and leaving while it loads cancels it');fa.x=G.SG.sw[0][0];
+  B.t+=2;G.sgAct(B,a,'use',rnd);B.t+=2;G.sgAct(B,b,'use',rnd);for(let i=0;i<20;i++)G.sgStep(B,.2,rnd);assert.deepEqual(B.sg.sw,[7,7]);assert.deepEqual(B.sg.swBy,[a,b]);
+  fe.x=fa.x+10;fe.y=fa.y;B.t+=2;assert.equal(G.sgAct(B,e,'use',rnd).no,'held','a held switch cannot be pressed by another');fe.x=600;fe.y=1900;
+  // the crown: the leader only, and only while two others hold the switches
+  fe.x=G.SG.crown[0];fe.y=G.SG.crown[1];B.t+=2;assert.equal(G.sgAct(B,e,'use',rnd).no,'lead');B.f[e].lead=true;B.t+=2;assert.equal(G.sgAct(B,e,'use',rnd).no,'sw','a leader whose guild does not hold the switches gets nothing');B.f[e].lead=false;fe.x=600;fe.y=1900;
+  fl.x=G.SG.crown[0];fl.y=G.SG.crown[1];B.t+=2;const uc=G.sgAct(B,L,'use',rnd);assert.ok(uc&&uc.c===1);for(let i=0;i<60;i++)G.sgStep(B,.2,rnd);assert.ok(B.sg.crown[1]>5&&B.sg.holder===0,'the crown takes half a minute, not less');
+  { // the one holding the right switch is killed: the switch is free again and the crown stops
+    fe.x=fb.x+20;fe.y=fb.y;fb.hp=.0001;B.t+=30;fe.at.s3=0;const kk=G.sgAct(B,e,'s3',rnd);assert.ok(kk.dead);const e2=G.sgStep(B,.2,rnd);assert.equal(B.sg.sw[1],0);assert.equal(B.sg.crown[1],0);assert.ok(e2.some(x=>x.k==='swLost'&&x.q===1)&&e2.some(x=>x.k==='cstop'));
+    fe.x=600;fe.y=1900;fb.alive=true;fb.hp=1;fb.x=G.SG.sw[1][0];fb.y=G.SG.sw[1][1];B.t+=2;G.sgAct(B,b,'use',rnd);for(let i=0;i<20;i++)G.sgStep(B,.2,rnd);assert.deepEqual(B.sg.sw,[7,7]);}
+  B.t+=2;G.sgAct(B,L,'use',rnd);ev=[];for(let i=0;i<160;i++)ev=ev.concat(G.sgStep(B,.2,rnd));assert.equal(B.sg.holder,7,'the leader on the crown for long enough, with both switches held: the castle is theirs');assert.ok(ev.some(x=>x.k==='taken'&&x.g===7&&x.by===L));
+  assert.deepEqual(B.sg.gate,G.SG.gates.map(()=>G.SG.gateHp),'the gates are whole again');assert.deepEqual(B.sg.sw,[0,0]);
   { // a combo: three different blows in a row, the third bursts
     fe.alive=true;fe.hp=1;fe.x=fa.x+20;fe.y=fa.y;fe.pool=1e9;B.t+=40;fa.at={atk:0,s0:0,s1:0,s2:0,s3:0,dash:0,pot:0};
     const h1=G.sgAct(B,a,'atk',rnd);B.t+=.5;const h2=G.sgAct(B,a,'s0',rnd);B.t+=.5;fe.stun=0;const h3=G.sgAct(B,a,'s1',rnd);assert.ok(!h1.combo&&h2.cb===2&&h3.combo&&h3.stun,'atk, skill, skill: combo');
@@ -487,7 +494,7 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
   { // guild buffs by class
     const X=G.sgNew(rnd,{});G.sgAdd(X,P('b1',1,'blade'),5,'',rnd);assert.deepEqual(G.sgAura(X,5),{dmg:1.12,spd:1,crit:0,def:1});G.sgAdd(X,P('s1',1,'storm'),5,'',rnd);G.sgAdd(X,P('h1',1,'hunter'),5,'',rnd);assert.deepEqual(G.sgAura(X,5),{dmg:1.12,spd:.9,crit:.08,def:.9});assert.deepEqual(G.sgAura(X,6),{dmg:1,spd:1,crit:0,def:1});}
   fe.pool=25000;fe.hp=.0001;B.t+=30;fa.at.s3=0;fe.x=fa.x+20;fe.y=fa.y;const k=G.sgAct(B,a,'s3',rnd);assert.ok(k.dead&&!fe.alive&&fe.resp>B.t);
-  for(let i=0;i<60;i++)G.sgStep(B,.2,rnd);assert.ok(fe.alive&&fe.hp===1&&fe.y>300,'the fallen return at their camp');
+  for(let i=0;i<60;i++)G.sgStep(B,.2,rnd);assert.ok(fe.alive&&fe.hp===1&&fe.y>1700,'the fallen return at their far camp');
   fe.pots=0;fe.x=G.SG.shops[0][0];fe.y=G.SG.shops[0][1];for(let i=0;i<100;i++)G.sgStep(B,.2,rnd);assert.ok(fe.pots>=30&&fe.bought===fe.pots,'a great many potions can be carried: '+fe.pots);
   fe.hp=.1;B.t+=10;assert.ok(G.sgAct(B,e,'pot',rnd));B.t+=G.SG.potCd+.1;assert.ok(G.sgAct(B,e,'pot',rnd),'and drunk every few seconds');
   B.sg.time=B.t+1;for(let i=0;i<10;i++)G.sgStep(B,.2,rnd);assert.ok(B.over);
