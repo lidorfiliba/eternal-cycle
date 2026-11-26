@@ -336,3 +336,16 @@ test('world boss: everyone\'s kills take from one health pool, and each collects
   const c2=await handle(U(2),'claimWorld',{});assert.ok(c2.result.ok);assert.equal(c2.result.rank,2);assert.ok(c2.result.share<.5);
   assert.equal((await handle(U(3),'claimWorld',{})).result.ok,false);
 });
+test('the Node server speaks the same protocol as the edge function',async()=>{
+  const {makeServer}=await import('../server/index.mjs');const {db}=await world();
+  const srv=makeServer(fakeAdmin(db),'test-secret','https://example.test');await new Promise(r=>srv.listen(0,r));const base='http://127.0.0.1:'+srv.address().port;
+  const post=async(body,tok)=>{const r=await fetch(base,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},tok?{'x-ec-token':tok}:{}),body:JSON.stringify(body)});return {status:r.status,j:await r.json(),cors:r.headers.get('access-control-allow-origin')};};
+  try{
+    assert.equal((await (await fetch(base)).json()).ok,true,'health check');
+    assert.equal((await post({kind:'tick',args:{}})).status,401);
+    const reg=await post({kind:'register',args:{user:'nodeuser',pass:'correct-horse-9',q:0,a:'rex'}});assert.ok(reg.j.token,JSON.stringify(reg.j));assert.equal(reg.cors,'https://example.test');
+    const c=await post({kind:'create',args:{name:'נוד',cls:'blade'}},reg.j.token);assert.ok(c.j.result.ok);assert.equal(c.j.state.chars[0].name,'נוד');
+    const l=await post({kind:'login',args:{user:'nodeuser',pass:'correct-horse-9'}});assert.ok(l.j.token);assert.ok((await post({kind:'sync',args:{}},l.j.token)).j.state.chars.length===1);
+    assert.equal((await fetch(base,{method:'POST',body:'x'.repeat(5000)})).status,413);
+  }finally{srv.close();}
+});

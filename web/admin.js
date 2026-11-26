@@ -5,7 +5,7 @@
   const when=t=>t?new Date(t).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}):'';
   let ses=null;try{ses=JSON.parse(localStorage.getItem('eternal-cycle-session')||'null');}catch(e){}
   async function call(kind,args){
-    const r=await fetch(CFG.url+'/functions/v1/act',{method:'POST',headers:{'Content-Type':'application/json',apikey:CFG.anon,'x-ec-token':ses.token},body:JSON.stringify({kind:kind,args:args||{}})});
+    const r=await fetch((CFG.api||CFG.url+'/functions/v1/act'),{method:'POST',headers:{'Content-Type':'application/json',apikey:CFG.anon,'x-ec-token':ses.token},body:JSON.stringify({kind:kind,args:args||{}})});
     return r.json();
   }
   const btn=(label,a,u,h,cls)=>'<button data-a="'+a+'" data-u="'+esc(u)+'"'+(h?' data-h="'+h+'"':'')+(cls?' class="'+cls+'"':'')+'>'+label+'</button>';

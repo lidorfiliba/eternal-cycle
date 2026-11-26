@@ -1,0 +1,17 @@
+# The game server on Render. The site itself stays a static site; this is the process the game talks to.
+services:
+  - type: web
+    name: eternal-cycle-server
+    runtime: node
+    region: frankfurt
+    plan: starter
+    buildCommand: npm install --omit=dev
+    startCommand: node server/index.mjs
+    healthCheckPath: /
+    envVars:
+      - key: SUPABASE_URL
+        value: https://bejsjjzvmjhlxyvaoono.supabase.co
+      - key: ALLOWED_ORIGIN
+        value: https://eternal-cycle.onrender.com
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false   # secret: set by hand in the Render dashboard, never committed

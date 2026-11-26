@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126165512';
+const BUILD='20261126165946';
 const {worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -32,7 +32,7 @@ function initServer(){
 function setSession(o){session=o;try{if(o)localStorage.setItem(SKEY,JSON.stringify(o));else localStorage.removeItem(SKEY);}catch(e){}}
 async function post(body,token){
   const h={'Content-Type':'application/json'};if(CFG.anon)h.apikey=CFG.anon;if(token)h['x-ec-token']=token;
-  const res=await fetch(CFG.url+'/functions/v1/act',{method:'POST',headers:h,body:JSON.stringify(body)});
+  const res=await fetch((CFG.api||CFG.url+'/functions/v1/act'),{method:'POST',headers:h,body:JSON.stringify(body)});
   return {status:res.status,j:await res.json().catch(()=>null)};
 }
 async function rpc(kind,args){
@@ -792,6 +792,33 @@ function paceTick(){
   const el=$('paceTag');if(el.dataset.t!==t){el.dataset.t=t;el.innerHTML=t;}el.style.display=t?'':'none';
 }
 // The side quest picked up on the road, if there is one.
+// The gear guide: every tier and set with real numbers, computed from the same formulas the game uses.
+function showGuide(){
+  const cls=S.cls,main=CLS[cls].main,mk=(sl,t,r,p)=>({s:sl,t:t,r:r,p:p,z:0,af:[]}),arm=(t,r,p)=>{let hp=0,df=0;for(const sl of ['h','a','p','l','b']){const v=itemVals(mk(sl,t,r,p));hp+=v.hp;df+=v.def;}return [hp,df];};
+  const myT=S.eq.w?S.eq.w.t:1;let rows='';
+  for(let t=1;t<=TIERN.length;t++){let zi=-1;for(let i=0;i<ZONES.length;i++)if(tierOf(i)===t){zi=i;break;}if(zi<0)continue;
+    const a0=arm(t,3,0),a15=arm(t,4,15),q=reqOf(mk('w',t,3,0),cls),qa=reqOf(mk('a',t,3,0),cls);
+    rows+='<div class="card" style="display:block'+(t===myT?';border-color:var(--gold)':'')+'"><div class="kv"><b style="color:var(--gold)">דרגה '+L(t)+' · '+TIERN[t-1]+'</b><span>'+(ZONES[zi].req?'מפות ריסט':'מ'+zoneName(zi))+'</span></div>'+
+      '<div class="kv"><span>סט עתיק</span><b style="color:var(--r4)">'+SETN[t-1]+'</b></div>'+
+      '<div class="kv"><span>נשק אגדי '+L('+0')+' / '+L('+9')+' / '+L('+15')+'</span><b class="num">'+L(fmt(itemVals(mk('w',t,3,0)).atk)+' / '+fmt(itemVals(mk('w',t,3,9)).atk)+' / '+fmt(itemVals(mk('w',t,3,15)).atk))+'</b></div>'+
+      '<div class="kv"><span>נשק עתיק '+L('+15')+'</span><b class="num" style="color:var(--r4)">'+L(fmt(itemVals(mk('w',t,4,15)).atk))+'</b></div>'+
+      '<div class="kv"><span>5 חלקי שריון אגדי '+L('+0')+'</span><b class="num">'+L(fmt(a0[0])+' חיים · '+fmt(a0[1])+' הגנה')+'</b></div>'+
+      '<div class="kv"><span>סט עתיק מלא '+L('+15')+'</span><b class="num" style="color:var(--r4)">'+L(fmt(a15[0])+' חיים · '+fmt(a15[1])+' הגנה')+'</b></div>'+
+      '<div class="kv"><span>דרישות</span><b class="num">'+STATN[main][0]+' '+L(fmt(q[main]))+' · '+STATN.vit[0]+' '+L(fmt(qa.vit))+'</b></div></div>';}
+  const up=[6,7,8,9,10,11,12,13,14].map(p=>L('+'+(p+1))+': '+L(Math.round(upChance({p:p})*100)+'%')).join(' · ');
+  openModal('<h3 style="color:var(--gold)">מדריך ציוד</h3><div style="display:flex;flex-direction:column;gap:8px;max-height:62vh;overflow-y:auto;text-align:start">'+
+    '<div class="card" style="display:block"><b>מה חזק יותר, בקצרה</b><p class="hint" style="margin-top:4px">'+
+      '1. <b>נדירות</b> מכפילה את הפריט: '+RAR.map(r=>'<span style="color:'+r.c+'">'+r.n+' ×'+L(r.m)+'</span>').join(' · ')+'.<br>'+
+      '2. <b>כל + מוסיף 8%</b>. '+L('+9')+' שווה 72% יותר, ו-'+L('+15')+' שווה 120% יותר.<br>'+
+      '3. <b>דרגה אחת למעלה</b> שווה בערך 15% עד 25% לנשק. לכן אגדי '+L('+9')+' מדרגה נמוכה מנצח רגיל '+L('+0')+' משתי דרגות מעליו.<br>'+
+      '4. <b>עתיק מול אגדי</b>: עתיק חזק ב-33%, ורק חלקים עתיקים נספרים לסט.<br>'+
+      '5. <b>אקסלנט</b> מוסיף אופציות (נזק, קריטי, מהירות ועוד) שלא קיימות בפריט רגיל, ואקסלנט מלא הוא הטוב ביותר באותה דרגה ונדירות.<br>'+
+      '6. הכפתור "לבש את הכי חזק" בתיק מחשב את כל זה בשבילך.</p></div>'+
+    '<div class="card" style="display:block"><b>בונוס סט עתיק</b><p class="hint" style="margin-top:4px">חלקים עתיקים מאותה דרגה: '+SETB.map(b=>L(b[0])+' חלקים: '+AFF[b[1]][0]+' '+L('+'+b[2]+'%')).join(' · ')+'. הנשק נספר כחלק השישי.</p></div>'+
+    '<div class="card" style="display:block"><b>סיכויי שדרוג</b><p class="hint" style="margin-top:4px">עד '+L('+6')+' תמיד מצליח. אחר כך: '+up+'. מ-'+L('+7')+' כישלון מוריד דרגה, אלא אם יש קמע הגנה.</p></div>'+
+    '<p class="hint">המספרים לפי המקצוע שלך. הדרגה שהנשק שלך בה מסומנת בזהב.</p>'+rows+
+    '</div><div class="acts"><button class="btn pri" data-act="closeModal">סגור</button></div>');
+}
 // The world boss: one health bar for the whole server.
 const worldWin=()=>evWindows(Date.now(),0).find(w=>w.e.world&&w.live);
 function loadWorld(){if(!ONLINE||demo||Date.now()-worldAt<8000)return;worldAt=Date.now();rpc('wget',{}).then(j=>{if(j&&j.world!==undefined){world=j.world;panelDirty=true;}}).catch(()=>{});}
@@ -1009,7 +1036,7 @@ function renderGear(){
   const sp=armorPlus(S),gtier=glowTier(sp),gn=GLOW_NAME.find(x=>gtier>=x[0]);
   const res=[['זהב',fmt(A.gold),'var(--gold)'],['אבני נשמה',A.gems,'var(--arc)'],['אותות ריסט',A.cred,'var(--ember)'],['מטבעות עונה',A.coins,'var(--r2)'],['קרדיטים',fmt(A.prem||0),'#7df9ff'],['נוצות נצח',A.feathers||0,'#ffd75e'],['אבני שלמות',A.jewels||0,'#7dffb0'],
     ['קמעות הגנה',A.charms,'#ffd75e'],['שברי ארגמן',A.shards||0,'#ff6b8a'],['מפתחות מצודה',A.keys||0,'#ffb23e'],['תיבות אוצר',A.boxes,'#c9a66b'],['תיבות עונה',A.sboxes,'#c77dff'],['כרטיסי זירה',A.tickets,'#8fd3ff']];
-  let h='<h2>מה יש לך</h2><div class="card resgrid">'+res.map(x=>'<div><i class="dot" style="background:'+x[2]+'"></i><span>'+x[0]+'</span><b class="num">'+L(x[1])+'</b></div>').join('')+'</div><h2>ציוד לבוש</h2><button class="btn pri" data-act="bestEq">הלבש את הציוד הכי חזק מהתיק</button><p class="hint">בודק את התיק ומחליף כל חלק בחזק ממנו. ציוד שלבוש על דמות אחרת בחשבון לא זז ממנה. כדי להעביר אותו, צריך קודם להסיר אותו שם.</p><div class="card"><div class="kv"><span>זוהר השריון</span><b style="color:var(--gold)">'+(gn?gn[1]:'עדיין אין')+'</b></div><p class="hint">חמשת חלקי השריון קובעים את הזוהר על הגוף. ממוצע השדרוג שלך '+L('+'+sp[1])+', והחלק הנמוך ביותר '+L('+'+sp[0])+'. נצנוץ בממוצע '+L('+7')+', זוהר ב-'+L('+9')+', זוהר פועם ב-'+L('+11')+'. כשכל החלקים ב-'+L('+13')+' נדלקת הילת להבה סביב כל הגוף, וב-'+L('+15')+' היא מחליפה צבעים.</p>'+
+  let h='<button class="btn" data-act="guide">מדריך ציוד: מה הכי חזק ומה כדאי ללבוש</button><h2>מה יש לך</h2><div class="card resgrid">'+res.map(x=>'<div><i class="dot" style="background:'+x[2]+'"></i><span>'+x[0]+'</span><b class="num">'+L(x[1])+'</b></div>').join('')+'</div><h2>ציוד לבוש</h2><button class="btn pri" data-act="bestEq">הלבש את הציוד הכי חזק מהתיק</button><p class="hint">בודק את התיק ומחליף כל חלק בחזק ממנו. ציוד שלבוש על דמות אחרת בחשבון לא זז ממנה. כדי להעביר אותו, צריך קודם להסיר אותו שם.</p><div class="card"><div class="kv"><span>זוהר השריון</span><b style="color:var(--gold)">'+(gn?gn[1]:'עדיין אין')+'</b></div><p class="hint">חמשת חלקי השריון קובעים את הזוהר על הגוף. ממוצע השדרוג שלך '+L('+'+sp[1])+', והחלק הנמוך ביותר '+L('+'+sp[0])+'. נצנוץ בממוצע '+L('+7')+', זוהר ב-'+L('+9')+', זוהר פועם ב-'+L('+11')+'. כשכל החלקים ב-'+L('+13')+' נדלקת הילת להבה סביב כל הגוף, וב-'+L('+15')+' היא מחליפה צבעים.</p>'+
     '<div class="kv" style="margin-top:6px"><span>אבני שלמות</span><b class="num" style="color:#7dffb0">'+L(A.jewels||0)+'</b></div><p class="hint">פריט אקסלנט נופל לעיתים רחוקות ונושא אופציות נוספות, עד כל האופציות של החלק. אבן שלמות מוסיפה לו אופציה חסרה. האבנים נופלות מבוסים ונמכרות בחנות הריסט ובחנות העונה.</p></div><div class="items">';
   for(const k of SLOTS)h+=S.eq[k]?itemCard(S.eq[k]):'<div class="it empty">'+SLOTN[k]+'</div>';
   h+='</div>';
@@ -1312,6 +1339,7 @@ document.addEventListener('click',async e=>{
       (up?'<p class="hint" style="color:var(--bad)">שים לב: '+L(up)+' מהם משודרגים.</p>':'')+(q>=3?'<p class="hint" style="color:var(--bad)">אלה פריטים '+(q===4?'עתיקים':'אגדיים')+'. ודא שאתה לא צריך אותם.</p>':'')+
       '<div class="acts"><button class="btn" data-act="closeModal">ביטול</button><button class="btn pri" data-act="sellRar" data-r="'+q+'">מכור '+L(list.length)+' פריטים</button></div>');return;}
   if(a==='respecAsk'){openModal('<h3>לאפס את נקודות הסטט?</h3><p class="hint">כל הנקודות שחילקת חוזרות אליך ואפשר לחלק אותן מחדש. המחיר: '+L(RESPEC_COST)+' אותות ריסט. יש לך '+L(A.cred)+'. ציוד שכבר לבוש נשאר עליך.'+(S.autoPts?' החלוקה האוטומטית פעילה ותחלק אותן מיד מחדש. כבה אותה קודם אם אתה רוצה לחלק לבד.':'')+'</p><div class="acts"><button class="btn" data-act="closeModal">ביטול</button><button class="btn pri" data-act="respec">אפס נקודות</button></div>');return;}
+  if(a==='guide'){showGuide();return;}
   if(a==='big'){setBig(!prefs.big);return;}
   if(a==='fs'){fsToggle();return;}
   if(a==='install'){if(installEvt){const ev=installEvt;installEvt=null;ev.prompt();}renderPanel();return;}
