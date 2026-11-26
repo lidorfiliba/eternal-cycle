@@ -24,9 +24,9 @@ const MHP=[90,400,880,1540,2420,3400,4480,5450,1900,4100,6700,9000], MATK=[13,37
 const ZSPR=['mush','gob','eye','worm','skel_f','gob_r','eye_p','skel_g','mush_d','worm_i','gob_g','skel_d'],ZMON=['פטריית טחב','גובלין מערות','עין מרחפת','תולעת אש','שלד כפור','גובלין גחלת','עין צל','שלד נצח','פטריית תהום','תולעת קרח','גובלין זהב','שלד דם'];
 ZONES.forEach((z,i)=>{z.spr=ZSPR[i];z.m=ZMON[i];z.fly=ZSPR[i].indexOf('eye')===0;z.hp=MHP[i];z.atk=MATK[i];z.xp=Math.round(10*Math.pow(1+z.min/50,1.6));z.gold=Math.round(3*Math.pow(i+1,1.5));if(z.req){z.xp=z.xpo;z.gold=z.go;}});
 const CLS={
- blade:{n:'לוחם להב',main:'str',coef:1.5,combo:'סערת להבים',c:'#ff8a4d',wn:'להב',range:50,sk:['סערת להבים','שרשרת ברזל','זעם הקרב'],al:{str:.6,agi:.15,vit:.25}},
- storm:{n:'מכשפת סער',main:'ene',coef:1.5,combo:'ברק שרשרת',c:'#6fd3ff',wn:'מטה',range:175,sk:['ברק שרשרת','מערבולת','הארת סער'],al:{ene:.6,agi:.15,vit:.25}},
- hunter:{n:'צייד צללים',main:'agi',coef:0.62,combo:'מטר חניתות',c:'#8be28b',wn:'חנית',range:235,sk:['מטר חניתות','רשת צללים','עין הנץ'],al:{agi:.7,vit:.3}}
+ blade:{n:'לוחם להב',main:'str',coef:1.5,combo:'סערת להבים',c:'#ff8a4d',wn:'להב',range:50,sk:['סערת להבים','שרשרת ברזל','זעם הקרב','מכת מחץ','חומת פלדה','אלף להבים'],al:{str:.6,agi:.15,vit:.25}},
+ storm:{n:'מכשפת סער',main:'ene',coef:1.5,combo:'ברק שרשרת',c:'#6fd3ff',wn:'מטה',range:175,sk:['ברק שרשרת','מערבולת','הארת סער','כדור אש','מגן קסם','מטר מטאורים'],al:{ene:.6,agi:.15,vit:.25}},
+ hunter:{n:'צייד צללים',main:'agi',coef:0.62,combo:'מטר חניתות',c:'#8be28b',wn:'חנית',range:235,sk:['מטר חניתות','רשת צללים','עין הנץ','חנית חודרת','צעד צל','מטח הציידים'],al:{agi:.7,vit:.3}}
 };
 const STATN={str:['כוח','נזק ללוחם להב'],agi:['זריזות','מהירות, קריטי, הגנה'],vit:['חיוניות','חיים והגנה'],ene:['אנרגיה','נזק למכשפת סער']};
 const RAR=[{n:'רגיל',c:'#b9b4c7',m:1},{n:'קסום',c:'#5aa9ff',m:1.25},{n:'נדיר',c:'#c77dff',m:1.6},{n:'אגדי',c:'#ffb23e',m:2.1},{n:'עתיק',c:'#3df5c8',m:2.8}];
@@ -50,7 +50,7 @@ function tzParts(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerus
 const dayKey=()=>{const o=tzParts();return o.year+'-'+(+o.month)+'-'+(+o.day);};
 const seasonKey=()=>{const o=tzParts();return o.year+'-'+(+o.month);};
 
-const AFK=.7, SKLV=[1,20,60], SKCD=[4,12,30];
+const AFK=.7, SKLV=[1,20,60,110,180,260], SKCD=[4,12,30,10,25,45];
 const SHARED=['gold','gems','cred','coins','boxes','sboxes','charms','bless','bonusPts','boost','inv','nid','kills','killAcc','pass','day','daily','rating','tickets','autoEq','autoSell','open','zk'];
 function newAccount(){
   return {v:2,gold:0,gems:3,cred:0,coins:0,boxes:1,sboxes:0,charms:0,bless:0,bonusPts:0,boost:0,inv:[],nid:1,kills:0,killAcc:0,
@@ -350,7 +350,7 @@ function adopt(o){
 }
 function findIt(A,S,id){for(const k of SLOTS)if(S.eq[k]&&S.eq[k].id===id)return {it:S.eq[k],eq:k};const i=A.inv.findIndex(x=>x.id===id);return i>=0?{it:A.inv[i],i:i}:null;}
 // Highest kill rate a legitimate client can reach in a zone, skills and buffs included.
-function maxKps(S,zi){const c=calc(S),z=zs(zi,afkFloor(S,zi));return Math.min(2.1,1/Math.max(.35,z.hp/(c.dps*2.2)+.3));}
+function maxKps(S,zi){const c=calc(S),z=zs(zi,afkFloor(S,zi));return Math.min(2.1,1/Math.max(.35,z.hp/(c.dps*2.8)+.3));}
 const BOTN=['שומר השער','נודד האפר','בת הסער','צל ראשון','להב שקט','עין הנץ'];
 function buildOpps(A,S,players,selfId){
   const me=fighter(S),out=[];
@@ -410,7 +410,7 @@ function apply(A,kind,args,ctx){
       if(args.boss){
         const b=A.bossAt;
         // The boss must have been spawned by the server, and enough time must have passed to deal its HP in damage.
-        if(b&&b.z===z&&(now-b.t)/1000*c.dps*2.2>=zd.hp*30*.9){
+        if(b&&b.z===z&&(now-b.t)/1000*c.dps*2.8>=zd.hp*30*.9){
           A.bossAt=null;rep.levels=(rep.levels||0)+addXp(S,zd.xp*40*c.xpM*pb);rollLoot(S,z,1,c,rep);
           const it=makeItem(S,rslot(),z+1,rollRar([0,0,70,25,5]),z);gainItem(S,it,rep);(rep.notable=rep.notable||[]).push(it);
           const g=2+Math.floor(_rnd()*3);A.gems+=g;rep.gems=(rep.gems||0)+g;if(_rnd()<.3){A.boxes++;rep.boxes=(rep.boxes||0)+1;}
