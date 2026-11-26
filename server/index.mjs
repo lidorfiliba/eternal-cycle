@@ -17,7 +17,7 @@ export function makeServer(admin, secret, origin = '*') {
   const send = (res, body, status = 200) => { res.writeHead(status, { ...cors, 'Content-Type': 'application/json' }); res.end(JSON.stringify(body)); };
   const server = http.createServer(async (req, res) => {
     if (req.method === 'OPTIONS') { res.writeHead(204, cors); return res.end(); }
-    if (req.method === 'GET') return send(res, { ok: true, name: 'eternal-cycle' }); // health check
+    if (req.method === 'GET') return send(res, { ok: true, name: 'eternal-cycle', sockets: server.live ? server.live.socks.size : 0, duels: server.live ? server.live.duels.size : 0 }); // health check, with how many live connections
     if (req.method !== 'POST') return send(res, { error: 'method' }, 405);
     try {
       let text = ''; for await (const chunk of req) { text += chunk; if (text.length > 4000) return send(res, { error: 'too_large' }, 413); }
