@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126142145';
-const {PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126142811';
+const {KEY_SHARDS,KEY_GOLD,EV_XP,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -56,11 +56,11 @@ const pend={kills:0,casts:0,boss:false,t:0};
 function flushTick(){
   if(!ONLINE||demo||!S)return Promise.resolve();
   if(!pend.kills&&!pend.casts&&!pend.boss&&!(party.code&&SC.zi>=0))return chain; // in a party, keep checking in: that is how shared experience arrives
-  const a={z:SC.zi,f:SC.fl,kills:pend.kills,casts:pend.casts,boss:pend.boss},l0=S.lvl;pend.kills=0;pend.casts=0;pend.boss=false;pend.t=0;
+  const a={z:SC.zi,f:SC.fl,kills:pend.kills,casts:pend.casts,boss:pend.boss,ev:SC.ev?1:0},l0=S.lvl;pend.kills=0;pend.casts=0;pend.boss=false;pend.t=0;
   return send('tick',a).then(r=>afterTick(r,null,l0));
 }
 async function act(kind,args){await flushTick();return send(kind,args);}
-function localTick(a){a.f=SC.fl;a.casts=pend.casts;pend.casts=0;const r=apply(A,'tick',a,{});localDirty=true;return r;}
+function localTick(a){a.f=SC.fl;a.ev=SC.ev?1:0;a.casts=pend.casts;pend.casts=0;const r=apply(A,'tick',a,{});localDirty=true;return r;}
 
 /* ---------- player market (online only) ---------- */
 function loadMarket(){if(ONLINE&&!demo)send('mget',{});}
@@ -470,7 +470,7 @@ function snd(n){
 /* ---------- world ---------- */
 function newMon(home,zi){const z=zs(zi,SC.fl);return {home:home,x:home,y:gy(),hp:z.hp,max:z.hp,hit:0,die:0,ph:Math.random()*6,resp:0,stun:0,atkT:1,pull:null};}
 function enterZone(z,side,f){
-  const h=SC.hero;SC.zi=z;SC.fl=z<0?0:clamp(f|0,0,FLOORS-1);SC.mons=[];SC.boss=null;SC.drops=[];SC.fx=[];SC.nums=[];SC.parts=[];h.tgt=null;h.goal=null;h.tx=null;h.manual=0;
+  const h=SC.hero;SC.ev=false;SC.zi=z;SC.fl=z<0?0:clamp(f|0,0,FLOORS-1);SC.mons=[];SC.boss=null;SC.drops=[];SC.fx=[];SC.nums=[];SC.parts=[];h.tgt=null;h.goal=null;h.tx=null;h.manual=0;
   h.x=side==='R'?mapW()-110:110;h.face=side==='R'?-1:1;
   if(h.climb&&h.climb.ph==='wait'){h.climb.ph='in';h.climb.t=.45;h.x=side==='R'?mapW()-50:50;}else h.climb=null;
   if(z>=0)for(let i=0;i<8;i++)SC.mons.push(newMon(300+i*140+Math.random()*50,z));
@@ -486,6 +486,7 @@ function dropOrbs(m,rep){
   add('#f2c14e',3);if(rep.gems)add('#5fd4ff',4);if(rep.boxes)add('#ff6b3d',5);
   if(rep.notable)for(const it of rep.notable){add(RAR[it.r].c,5.5);SC.fx.push({k:'beam',x:m.x,y:m.y,life:1.2,c:RAR[it.r].c});toast((it.ex?'':RAR[it.r].n+': ')+itemName(it,S.cls),it.ex?4:it.r);}
   if(rep.jewel)toast('אבן שלמות נפלה מהבוס',4);
+  if(rep.shards&&(A.shards||0)>=KEY_SHARDS&&(A.shards||0)-rep.shards<KEY_SHARDS)toast('יש לך מספיק שברים למפתח מצודה',3);
   else if(rep.items)add('#b9b4c7',4);
 }
 function afterXp(ups){
@@ -504,6 +505,7 @@ function syncBoss(){
 function afterTick(r,m,l0){
   if(!r||!r.ok){bossPending=false;if(r&&r.msg&&r.msg!=='net')send('sync',{}).then(()=>syncBoss());return;}
   if(r.afk)showOffline(r.afk);
+  if(r.evOver&&SC.ev){leaveKeep(true);return;}
   const rep=r.rep||{},src=m||{x:SC.hero.x+SC.hero.face*26,y:gy()};
   if(!ONLINE||rep.items||rep.gems||rep.boxes||rep.notable)dropOrbs(src,rep);
   if(rep.items||rep.boxes)panelDirty=true;
@@ -566,6 +568,7 @@ function cast(i,auto){
 }
 function portalState(dir){ // what stands at the left (-1) or right (+1) end of the current floor
   const zi=SC.zi,fl=SC.fl;
+  if(SC.ev)return dir<0?{to:-1,f:0,ok:true,txt:'יציאה מהמצודה',ev:1}:null;
   if(zi>=0){const upDir=fl%2===0?1:-1; // ladders zigzag: up on the right of floor 1, on the left of floor 2
     if(fl<FLOORS-1&&dir===upDir){const need=floorMin(zi,fl+1);return {kind:'up',to:zi,f:fl+1,ok:S.lvl>=need,txt:'קומה '+(fl+2)+(S.lvl>=need?'':' · רמה '+need),why:'צריך רמה '+need+' כדי לטפס לקומה הבאה'};}
     if(fl>0&&dir===-upDir)return {kind:'down',to:zi,f:fl-1,ok:true,txt:'קומה '+fl};
@@ -581,6 +584,7 @@ function afkTop(z){let f=FLOORS-1;while(f>0&&S.lvl<floorMin(z,f))f--;return f;}
 function arrive(g){
   if(g.npc){openTab(g.npc.tab);toast(g.npc.n);return;}
   const p=portalState(g.dir);if(!p)return;if(!p.ok){toast(p.why);return;}
+  if(p.ev){leaveKeep(false);return;}
   if(p.kind){const h=SC.hero,side=g.dir<0?'L':'R';h.dir=0;h.tgt=null;h.tx=null;h.goal=null;h.x=g.dir<0?50:mapW()-50;h.face=g.dir;snd('click');
     h.climb={kind:p.kind,ph:'out',t:.45,go:()=>travelTo(p.to,side,p.f)};return;}
   travelTo(p.to,g.dir<0?'R':'L',p.f);
@@ -705,6 +709,7 @@ function frame(dt){
   ctx.save();if(SC.shake>0){SC.shake-=dt;ctx.translate((Math.random()-.5)*7,(Math.random()-.5)*5);}
   const cam=SC.cam;if(SC.mode==='duel')SC.cam=0;
   drawBg(SC.zi,SC.t);
+  if(SC.ev&&SC.mode==='farm'){const gr=ctx.createLinearGradient(0,0,0,H);gr.addColorStop(0,'rgba(150,10,40,.42)');gr.addColorStop(1,'rgba(60,0,20,.25)');ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);}
   if(SC.mode==='farm')drawWorld();
   else{const d=SC.duel,sc=clamp(H/300,.8,1.45);
     drawHero(W*.26,gy(),sc,lookOf(S),SC.t,d.an[0],false,d.end>0&&d.r.win===1?1.8-d.end:0);
@@ -739,9 +744,10 @@ function renderHud(){
   $('hXp').style.width=(S.lvl>=CAP?100:S.xp/need(S.lvl)*100)+'%';
   $('cGold').textContent=fmt(A.gold);$('cGem').textContent=fmt(A.gems);$('cCred').textContent=fmt(A.cred);$('cCoin').textContent=fmt(A.coins);
   const duel=SC.mode==='duel',zi=SC.zi;
-  $('zoneTag').textContent=duel?'זירה':zoneName(zi)+(zi>=0?' · קומה '+(SC.fl+1):'')+(partyN>0&&zi>=0?' · פארטי '+(partyN+1)+(partyXp(partyN)?' · '+Math.round(partyXp(partyN)*100)+'%+':''):'');
+  $('zoneTag').textContent=duel?'זירה':SC.ev?'מצודת הארגמן '+SC.evTier+' · '+mmss((SC.evEnd-Date.now())/1000):zoneName(zi)+(zi>=0?' · קומה '+(SC.fl+1):'')+(partyN>0&&zi>=0?' · פארטי '+(partyN+1)+(partyXp(partyN)?' · '+Math.round(partyXp(partyN)*100)+'%+':''):'');
   $('rateTag').textContent=duel||zi<0?'':SC.boss?'בוס במפה':'בוס: '+(A.bossM[zi]||0)+'/'+BOSSN;
   {const left=(A.boost-Date.now())/1000,bt=left>0&&!duel?'ניסיון '+L('+50%')+' · '+mmss(left):'';if($('boostTag').dataset.t!==bt){$('boostTag').dataset.t=bt;$('boostTag').innerHTML=bt;}}
+  {const kw=!duel&&!SC.ev&&S&&!demo?keepWin():null,kb=$('keepBtn');kb.style.display=kw?'':'none';if(kw){const t=(A.keys>0||(A.ev&&A.ev[kw.key]&&A.ev[kw.key].in)?'שגר למצודה':'המצודה פתוחה · אין מפתח')+' · '+mmss((kw.end-Date.now())/1000);if(kb.textContent!==t)kb.textContent=t;}}
   $('resetNow').style.display=canReset(S)&&!duel?'block':'none';
   $('autoBtn').style.display=$('skills').style.display=duel||zi<0?'none':'';$('mv').style.display=duel?'none':'';
   $('sndBtn').textContent=prefs.mute?'צליל כבוי':'צליל פעיל';$('sndBtn').classList.toggle('on',!prefs.mute);
@@ -794,7 +800,9 @@ function renderChar(){
 function setLines(z,n){return SETB.map(b=>'<div class="kv"'+(n>=b[0]?' style="color:var(--r4)"':'')+'><span style="color:inherit">'+L(b[0])+' חלקים</span><b>'+AFF[b[1]][0]+' '+L('+'+b[2]+'%')+'</b></div>').join('');}
 function renderGear(){
   const sp=armorPlus(S),gtier=glowTier(sp),gn=GLOW_NAME.find(x=>gtier>=x[0]);
-  let h='<h2>ציוד לבוש</h2><div class="card"><div class="kv"><span>זוהר השריון</span><b style="color:var(--gold)">'+(gn?gn[1]:'עדיין אין')+'</b></div><p class="hint">חמשת חלקי השריון קובעים את הזוהר על הגוף. ממוצע השדרוג שלך '+L('+'+sp[1])+', והחלק הנמוך ביותר '+L('+'+sp[0])+'. נצנוץ בממוצע '+L('+7')+', זוהר ב-'+L('+9')+', זוהר פועם ב-'+L('+11')+'. כשכל החלקים ב-'+L('+13')+' נדלקת הילת להבה סביב כל הגוף, וב-'+L('+15')+' היא מחליפה צבעים.</p>'+
+  const res=[['זהב',fmt(A.gold),'var(--gold)'],['אבני נשמה',A.gems,'var(--arc)'],['אותות ריסט',A.cred,'var(--ember)'],['מטבעות עונה',A.coins,'var(--r2)'],['קרדיטים',fmt(A.prem||0),'#7df9ff'],['אבני שלמות',A.jewels||0,'#7dffb0'],
+    ['קמעות הגנה',A.charms,'#ffd75e'],['שברי ארגמן',A.shards||0,'#ff6b8a'],['מפתחות מצודה',A.keys||0,'#ffb23e'],['תיבות אוצר',A.boxes,'#c9a66b'],['תיבות עונה',A.sboxes,'#c77dff'],['כרטיסי זירה',A.tickets,'#8fd3ff']];
+  let h='<h2>מה יש לך</h2><div class="card resgrid">'+res.map(x=>'<div><i class="dot" style="background:'+x[2]+'"></i><span>'+x[0]+'</span><b class="num">'+L(x[1])+'</b></div>').join('')+'</div><h2>ציוד לבוש</h2><button class="btn pri" data-act="bestEq">הלבש את הציוד הכי חזק מהתיק</button><p class="hint">בודק את התיק ומחליף כל חלק בחזק ממנו. ציוד שלבוש על דמות אחרת בחשבון לא זז ממנה. כדי להעביר אותו, צריך קודם להסיר אותו שם.</p><div class="card"><div class="kv"><span>זוהר השריון</span><b style="color:var(--gold)">'+(gn?gn[1]:'עדיין אין')+'</b></div><p class="hint">חמשת חלקי השריון קובעים את הזוהר על הגוף. ממוצע השדרוג שלך '+L('+'+sp[1])+', והחלק הנמוך ביותר '+L('+'+sp[0])+'. נצנוץ בממוצע '+L('+7')+', זוהר ב-'+L('+9')+', זוהר פועם ב-'+L('+11')+'. כשכל החלקים ב-'+L('+13')+' נדלקת הילת להבה סביב כל הגוף, וב-'+L('+15')+' היא מחליפה צבעים.</p>'+
     '<div class="kv" style="margin-top:6px"><span>אבני שלמות</span><b class="num" style="color:#7dffb0">'+L(A.jewels||0)+'</b></div><p class="hint">פריט אקסלנט נופל לעיתים רחוקות ונושא אופציות נוספות, עד כל האופציות של החלק. אבן שלמות מוסיפה לו אופציה חסרה. האבנים נופלות מבוסים ונמכרות בחנות הריסט ובחנות העונה.</p></div><div class="items">';
   for(const k of SLOTS)h+=S.eq[k]?itemCard(S.eq[k]):'<div class="it empty">'+SLOTN[k]+'</div>';
   h+='</div>';
@@ -846,7 +854,7 @@ function renderEvents(){
         tierLine='<div class="tiers">'+TIER_MIN.map((m,i)=>'<i class="'+(i+1===t?'on':i+1<t?'past':'')+'">'+(i+1)+'</i>').join('')+'</div><p class="hint"><b style="color:var(--gold)">דרגה '+L(t)+'</b> · רמות '+L(rg[0]+'-'+rg[1])+' · פרס: '+L(rw.lv)+' רמות, '+L(rw.gems)+' אבני נשמה, '+L(rw.coins)+' מטבעות עונה</p>'+
           (nx<=7&&!rec.tr?'<p class="hint" style="color:#8fd3ff">עוד '+L(TIER_MIN[nx-1]-S.lvl)+' רמות לדרגה '+L(nx)+', שנותנת '+L(tierReward(nx).lv)+' רמות. תגיע לפני שהשער נפתח.</p>':'');}}
     h+='<div class="card'+(live?' zone cur':'')+'" style="display:block"><div class="kv"><b'+(live?' style="color:var(--gold)"':'')+'>'+e.n+tn+'</b><b class="num" style="color:var(--'+(live?'good':'dim')+')">'+(live?'פעיל · '+L(mmss((w.end-now)/1000)):'בעוד '+fmtT(evNext(e,now)))+'</b></div>'+
-      '<p class="hint">'+e.d+' · '+e.when+(e.rt&&!e.tiered?' · פרס: '+e.rt:'')+'</p>'+tierLine;
+      '<p class="hint">'+e.d+' · '+e.when+(e.rt&&!e.tiered?' · פרס: '+e.rt:'')+'</p>'+tierLine+(e.tiered?keepCard(e,w,rec,live):'');
     if(w&&e.obj){
       const have=Math.min(rec[e.obj[0]]||0,e.obj[1]),done=have>=e.obj[1];
       if(e.id==='quiz'&&live&&!rec.t){const q=quizFor(w.key);h+='<p style="margin:8px 0 6px;font-weight:700">'+q.q+'</p><div class="grid2">'+q.o.map((o,i)=>'<button class="btn sm" data-act="answer" data-i="'+i+'">'+L(o)+'</button>').join('')+'</div>';}
@@ -1076,6 +1084,7 @@ document.addEventListener('click',async e=>{
   if(a==='acct'){acctModal(b.dataset.k);return;}
   if(a==='acctGo'){acctGo(b.dataset.k);return;}
   if(a==='tut'){tutNext();return;}
+  if(a==='keepGo'){enterKeep();return;}
   if(a==='credBuy'){loadOrders().then(()=>showPacks());return;}
   if(a==='ordSend'){ordSend();return;}
   if(a==='ordCancel'){rpc('ocancel',{id:+b.dataset.id}).then(j=>{if(j.orders)myOrders=j.orders;renderPanel();}).catch(()=>{});return;}
@@ -1127,6 +1136,9 @@ document.addEventListener('click',async e=>{
     else if(a==='zone'){if(SC.mode==='farm'){clickBusy=false;await travelTo(+b.dataset.i,'L',+(b.dataset.f||0));}}
     else if(a==='reset'){if(SC.mode==='farm'&&canReset(S)){r=await act('reset',{});if(r.ok){enterZone(-1,'L',0);C=calc(S,auras);SC.hero.hp=C.hp;if(!calm)SC.shake=.4;burst(SC.hero.x,gy()-50,'#f2c14e',40);snd('lvl');toast('ריסט '+r.resets+'. קיבלת '+r.gain+' אותות ריסט');}}}
     else if(a==='equip'||a==='unequip'||a==='sell'){r=await act(a,{id:id});closeSheet();}
+    else if(a==='craftKey'){r=await act('craftKey',{});if(r.ok){snd('rare');toast('נוצר מפתח מצודה. יש לך '+r.keys);}}
+    else if(a==='bestEq'){$('spin').classList.add('on');await new Promise(z=>setTimeout(z,3000));r=await act('bestEq',{});$('spin').classList.remove('on');
+      if(r.ok){snd(r.n?'rare':'ok');toast(r.n?'הוחלפו '+r.n+' חלקים. כוח הלחימה עלה ב-'+fmt(r.gain):'כבר לבוש עליך הציוד הכי חזק שיש בתיק');}}
     else if(a==='sellRar'){closeModal();r=await act('sellRar',{r:+b.dataset.r});if(r.ok){snd('coin');toast(r.n+' פריטים נמכרו ב-'+fmt(r.gold)+' זהב');}}
     else if(a==='sellJunk'){r=await act('sellJunk',{});if(r.ok)toast('נמכר ב-'+fmt(r.gold)+' זהב');}
     else if(a==='upgrade'){r=await act('upgrade',{id:id});if(r.ok){const c=r.code;snd(c==='ok'?'ok':c==='poor'||c==='max'?'click':'fail');
@@ -1172,6 +1184,25 @@ function showPeer(p){
     (pet?'<div class="kv"><span>מלווה</span><b>'+pet[1]+'</b></div>':'')+
     (party.code?'<p class="hint" style="margin-top:8px">קוד הפארטי שלך: <b dir="ltr">'+esc(party.code)+'</b>. שלח לו אותו בצ\'אט כדי לצרף אותו.</p>':'')+
     '<div class="acts"><button class="btn pri" data-act="closeModal">סגור</button></div>');
+}
+/* ---------- the keep: a tiered event fought in its own place, entered with a crafted key ---------- */
+const keepWin=()=>evWindows(Date.now(),0).find(w=>w.e.tiered&&w.live);
+async function enterKeep(){
+  if(busy||SC.ev||SC.mode!=='farm'||!S||demo)return;busy=true;const r=await act('evEnter',{id:'crimson'});busy=false;
+  if(!r.ok){toast(r.msg==='net'?'אין חיבור לשרת':r.msg);if(!(A.keys>0))openTab('pass');return;}
+  snd('portal');enterZone(r.z,'L',0);SC.ev=true;SC.evEnd=r.end;SC.evTier=r.tier;announce('נכנסת למצודת הארגמן '+r.tier+'. חסל 80 לפני שהשער נסגר',true);saveLocal();
+}
+async function leaveKeep(told){
+  if(!SC.ev)return;SC.ev=false;if(!told){await flushTick();await send('evLeave',{});}
+  enterZone(-1,'L',0);if(S.zone!==-1&&!ONLINE)S.zone=-1;toast(told?'השער נסגר. חזרת לכפר':'יצאת מהמצודה');saveLocal();
+}
+function keepCard(e,w,rec,live){
+  const sh=A.shards||0,keys=A.keys||0;
+  let h='<div class="kv" style="margin-top:6px"><span>מפתחות מצודה</span><b class="num" style="color:var(--gold)">'+L(keys)+'</b></div><div class="kv"><span>שברי ארגמן</span><b class="num">'+L(sh+'/'+KEY_SHARDS)+'</b></div>'+
+    '<p class="hint"><b>איך נכנסים:</b> שברי ארגמן נופלים ממפלצות בכל מפה. מ-'+L(KEY_SHARDS)+' שברים ו-'+L(fmt(KEY_GOLD))+' זהב יוצרים מפתח. כשהשער נפתח, בשעה עגולה, המפתח משגר אותך לתוך המצודה. רק חיסולים בפנים נספרים, והם נותנים '+L(Math.round((EV_XP-1)*100)+'%')+' יותר ניסיון. מפתח אחד לכל פתיחה, ואפשר לצאת ולחזור.</p>'+
+    '<div class="grid2"><button class="btn sm'+(sh>=KEY_SHARDS&&A.gold>=KEY_GOLD?' pri':'')+'" data-act="craftKey"'+(sh>=KEY_SHARDS&&A.gold>=KEY_GOLD?'':' disabled')+'>צור מפתח</button>'+
+    '<button class="btn sm'+(live&&!SC.ev&&(keys>0||rec.in)?' pri glow':'')+'" data-act="keepGo"'+(live&&!SC.ev&&(keys>0||rec.in)?'':' disabled')+'>'+(SC.ev?'אתה בפנים':live?'שגר למצודה':'השער סגור')+'</button></div>';
+  return h;
 }
 /* ---------- paid credits ---------- */
 let myOrders=null,premSeen=null;
@@ -1224,7 +1255,7 @@ async function beat(){
   if(beatBusy||!ONLINE||demo||!S||document.hidden||SC.mode!=='farm')return;beatBusy=true;
   try{const h=SC.hero,j=await rpc('beat',{x:Math.round(h.x),f:h.face,a:SC.t-(h.lastAtk||-9)<3,s:chatSince}),b=j&&j.beat;
     if(b){if(b.banned){location.reload();return;}
-      if(b.peers)mergePeers(b.peers);if(b.chat&&b.chat.length)addChat(b.chat);if(b.online!=null)onlineN=b.online;renderChatBar();}
+      if(b.peers&&!SC.ev)mergePeers(b.peers);if(b.chat&&b.chat.length)addChat(b.chat);if(b.online!=null)onlineN=b.online;renderChatBar();}
   }catch(e){}finally{beatBusy=false;}
 }
 function mergePeers(list){
@@ -1352,8 +1383,9 @@ function updateAnnounce(dt){
   const now=Date.now(),list=EVENTS.map(e=>{const t=e.tiered?evTier(S.lvl):0;return {id:e.id,n:e.n+(t?' '+t:''),s:evNext(e,now),d:e.d,t:t,tiered:e.tiered};}),sg=siegeInfo(now);
   list.push({id:'siege',n:'מצור הטירה',s:sg.on?1e9:sg.next*60-new Date(now).getSeconds(),d:'כל חיסול של חבר גילדה נספר'});
   for(const e of list){const prev=annPrev[e.id];annPrev[e.id]=e.s;
-    if(prev!=null&&prev<=90&&e.s>prev+120){annMark[e.id]=0;announce(e.n+' התחיל! '+String(e.d).split('.')[0],true);continue;}
+    if(prev!=null&&prev<=90&&e.s>prev+120){annMark[e.id]=0;announce(e.tiered?e.n+' נפתחה! '+(A.keys>0?'לחץ על שגר למצודה':'צריך מפתח כדי להיכנס'):e.n+' התחיל! '+String(e.d).split('.')[0],true);continue;}
     if(e.s<=300&&e.s>5){const m=Math.ceil(e.s/60);if(annMark[e.id]!==m&&prev!=null){annMark[e.id]=m;announce(e.n+' מתחיל בעוד '+(m===1?'דקה':m+' דקות'));
+      if(e.tiered&&m===4&&e.t&&!(A.keys>0))announce('אין לך מפתח למצודה. '+((A.shards||0)>=KEY_SHARDS?'צור אחד באירועים':'חסרים '+(KEY_SHARDS-(A.shards||0))+' שברי ארגמן'));
       if(e.tiered&&(m===5||m===2)){if(!e.t)announce('הכניסה ל'+e.n+' מרמה '+TIER_MIN[0]+'. חסרות לך '+(TIER_MIN[0]-S.lvl)+' רמות');else if(e.t<7)announce('עוד '+(TIER_MIN[e.t]-S.lvl)+' רמות לדרגה '+(e.t+1)+'. תספיק?');}}}}
   // While an event runs: how much is left, the moment its goal is reached, and what was missed when it closes.
   const ev=A.ev||{},wins=evWindows(now,1);
@@ -1391,7 +1423,7 @@ function loop(ts){
   requestAnimationFrame(loop);if(!S)return;
   let dt=(ts-lastT)/1000;lastT=ts;if(!(dt>0))return;
   if(dt>3&&!demo){ // the tab was asleep: let the rules decide what happened meanwhile
-    if(!resyncing){resyncing=true;send('sync',{}).then(r=>{resyncing=false;if(!r.ok||SC.mode!=='farm')return;if(S.zone!==SC.zi||(S.floor|0)!==SC.fl)enterZone(S.zone,'L',S.floor);C=calc(S,auras);SC.hero.hp=C.hp;syncBoss();if(r.afk)showOffline(r.afk);saveLocal();});}
+    if(!resyncing){resyncing=true;send('sync',{}).then(r=>{resyncing=false;if(!r.ok||SC.mode!=='farm')return;if(SC.ev&&!S.evIn)leaveKeep(true);else if(!SC.ev&&(S.zone!==SC.zi||(S.floor|0)!==SC.fl))enterZone(S.zone,'L',S.floor);C=calc(S,auras);SC.hero.hp=C.hp;syncBoss();if(r.afk)showOffline(r.afk);saveLocal();});}
     return;
   }
   dt=Math.min(dt,.1);
@@ -1402,6 +1434,7 @@ function loop(ts){
     if(!demo&&(beatT+=dt)>(peers.length?2.5:5)){beatT=0;beat();}}
   else if((saveT+=dt)>8){saveT=0;if(localDirty){localDirty=false;saveLocal();}}
   updateTut(dt);updateAnnounce(dt);
+  if(SC.ev&&Date.now()>SC.evEnd+1500&&!busy){flushTick().then(()=>{if(SC.ev)leaveKeep(true);});SC.evEnd+=8000;}
 }
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&A&&!demo){if(ONLINE)flushTick();else saveLocal();}});
 window.addEventListener('pagehide',()=>{if(A&&!demo)saveLocal();});

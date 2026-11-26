@@ -148,6 +148,10 @@ h2{font-family:var(--display);font-weight:400;font-size:17px;margin:4px 0 0;colo
 .btn.glow{box-shadow:0 0 14px #f2c14e88;animation:tierPulse 1.4s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.tier.open,.btn.glow{animation:none}}
 #panel>*{flex-shrink:0}
+#keepBtn{position:absolute;top:98px;inset-inline:0;margin:auto;width:max-content;max-width:92%;font-weight:700;font-size:13.5px;color:#fff;background:linear-gradient(90deg,#b3123a,#e0473a);border:1.5px solid #ffb0b0;border-radius:12px;padding:6px 14px;box-shadow:0 0 14px #ff5c7a99;z-index:4;animation:tierPulse 1.4s ease-in-out infinite}
+.resgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}.resgrid div{display:flex;align-items:center;gap:6px;font-size:13.5px}.resgrid span{flex:1;color:var(--dim)}.resgrid b{color:var(--ink)}
+#spin{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(8,5,20,.72);z-index:40;color:#ffe9a6;font-weight:700}#spin.on{display:flex}
+#spin i{width:62px;height:62px;border-radius:50%;border:6px solid rgba(255,215,94,.2);border-top-color:#ffd75e;animation:spinR .9s linear infinite;box-shadow:0 0 18px #f2c14e55}@keyframes spinR{to{transform:rotate(360deg)}}
 .pack{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;margin:5px 0;background:#0f0b22}.pack input{width:18px;height:18px;margin:0;flex:none}.pack span{flex:1}.pack small{display:block;color:var(--good);font-size:12px}.pack:has(input:checked){border-color:#7df9ff;box-shadow:0 0 8px #7df9ff55}
 .tiers{display:flex;gap:4px;margin:8px 0 4px}.tiers i{flex:1;text-align:center;font-style:normal;font-weight:700;font-size:12px;padding:3px 0;border-radius:7px;background:#0a0818;border:1px solid var(--line);color:var(--dim)}.tiers i.past{color:var(--good);border-color:#2c6b4a}.tiers i.on{background:linear-gradient(#ffe9a6,#c9892a);color:#1a1230;border-color:#ffd75e;box-shadow:0 0 8px #f2c14e88}
 .sellrow{display:flex;flex-wrap:wrap;gap:6px}.sellrow .btn{flex:1 1 30%;background:#0f0b22}.sellrow .btn:disabled{opacity:.35}
@@ -188,9 +192,9 @@ input[type=text],input[type=password],select{width:100%;background:#0a0818;borde
 #chatList .cl{font-size:14px;line-height:1.35;overflow-wrap:anywhere}#chatList .cl b{color:var(--gold);font-weight:700}#chatList .cl.me b{color:#8fd3ff}
 .chatSend{display:flex;gap:6px;margin-bottom:6px}.chatSend input{flex:1}.seg{display:flex;gap:6px;align-items:center}.seg .hint{margin-inline-start:auto}
 .box input,.box select{margin:4px 0}a{color:#8fd3ff}
-#annc{position:absolute;top:56%;inset-inline:0;margin:auto;width:max-content;max-width:92%;text-align:center;font-family:'Suez One',Assistant,sans-serif;font-size:19px;line-height:1.25;color:#ffe9a6;text-shadow:0 0 10px rgba(255,180,60,.9),0 2px 3px #000,0 0 2px #000;background:linear-gradient(90deg,transparent,rgba(10,6,24,.78) 18%,rgba(10,6,24,.78) 82%,transparent);padding:8px 34px;opacity:0;pointer-events:none;z-index:6}
+#annc{position:absolute;top:56%;inset-inline:0;margin:auto;width:max-content;max-width:92%;text-align:center;font-family:'Suez One',Assistant,sans-serif;font-size:19px;line-height:1.25;color:#ffe9a6;text-shadow:0 0 10px rgba(255,180,60,.9),0 2px 3px #000,0 0 2px #000;background:linear-gradient(90deg,transparent,rgba(10,6,24,.5) 18%,rgba(10,6,24,.5) 82%,transparent);padding:6px 34px;opacity:0;pointer-events:none;z-index:6}
 #annc.on{opacity:1}#annc.live{color:#fff;text-shadow:0 0 12px rgba(255,92,122,.95),0 2px 3px #000,0 0 2px #000;font-size:21px}
-#tip{position:absolute;top:98px;inset-inline:0;margin:auto;width:max-content;max-width:88%;background:rgba(255,215,94,.95);color:#1a1230;border:0;border-radius:12px;padding:7px 12px;font-weight:700;font-size:13.5px;line-height:1.3;box-shadow:0 4px 16px rgba(0,0,0,.45);z-index:5}
+#tip{position:absolute;top:134px;inset-inline:0;margin:auto;width:max-content;max-width:88%;background:rgba(255,215,94,.95);color:#1a1230;border:0;border-radius:12px;padding:7px 12px;font-weight:700;font-size:13.5px;line-height:1.3;box-shadow:0 4px 16px rgba(0,0,0,.45);z-index:5}
 #tip small{display:block;font-weight:600;font-size:11px;opacity:.7;margin-top:2px}
 #net{position:fixed;bottom:6px;inset-inline-start:8px;font-size:11px;color:var(--dim);background:rgba(10,8,24,.7);padding:2px 8px;border-radius:8px;z-index:25;pointer-events:none}
 #toasts{position:fixed;top:10px;inset-inline:0;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;z-index:30}
@@ -220,6 +224,7 @@ input[type=text],input[type=password],select{width:100%;background:#0a0818;borde
     <button id="quest" data-act="quest"></button>
     <button id="evChip" data-act="evtab"></button>
     <button id="resetNow" data-act="reset">ריסט מוכן</button>
+    <button id="keepBtn" data-act="keepGo" style="display:none"></button>
     <button id="autoBtn" data-act="auto"></button>
     <button id="bigBtn" data-act="big">הגדל</button>
     <button id="fsBtn" data-act="fs" style="display:none">מסך מלא</button>
@@ -243,6 +248,7 @@ input[type=text],input[type=password],select{width:100%;background:#0a0818;borde
 </div>
 <div id="sheet"><div class="box" id="sheetBox"></div></div>
 <div id="modal"><div class="box" id="modalBox"></div></div>
+<div id="spin" role="status" aria-live="polite"><i></i><span>בודק את הציוד בתיק...</span></div>
 <div id="toasts"></div>
 <div id="net"></div>
 
