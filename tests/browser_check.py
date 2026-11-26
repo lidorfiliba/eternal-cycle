@@ -51,6 +51,7 @@ async def run(pg,online):
         await pg.evaluate("()=>{const d=EC.SC.duel;if(!d||d.sent)return;const me=d.f[0],en=d.f[1];EC.SC.hero.dir=Math.abs(en.x-me.x)>60?(en.x>me.x?1:-1):0;EC.SC.hero.dz=Math.abs(en.z-me.z)>.15?Math.sign(en.z-me.z):0;for(const k of ['s3','s1','s0','atk'])EC.duelAct(k);if(me.hp<.4)EC.duelAct('pot');}")
         await pg.wait_for_timeout(250)
         if i==14: await pg.screenshot(path='/tmp/duel.png')
+        if i==30: await pg.evaluate("()=>{if(EC.SC.duel)EC.SC.duel.f[1].hp=.01}")
     out['duelEnd']=await pg.evaluate("()=>[EC.SC.mode,EC.A.rating]")
     await pg.click('[data-tab=pass]');await pg.wait_for_timeout(1300)
     out['events']=await pg.evaluate("()=>[document.querySelectorAll('#panel .card').length,document.getElementById('evChip').textContent]")
