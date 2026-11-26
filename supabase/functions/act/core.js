@@ -58,7 +58,7 @@ function newAccount(){
     autoEq:true,autoSell:1,open:0,zk:{},bossM:{},q:0,casts:0,wins:0,boss7:0,maxLvl:1,chars:[],cur:0,last:_now()};
 }
 function newChar(name,cls){
-  return {name:name,cls:cls,lvl:1,xp:0,resets:0,pts:0,stats:{str:15,agi:15,vit:15,ene:15},zone:-1,autoPts:true,auto:true,eq:{w:null,h:null,a:null,p:null,l:null,b:null,g:null},last:_now()};
+  return {name:name,cls:cls,lvl:1,xp:0,resets:0,pts:0,stats:{str:15,agi:15,vit:15,ene:15},zone:-1,floor:0,autoPts:true,auto:true,eq:{w:null,h:null,a:null,p:null,l:null,b:null,g:null},last:_now()};
 }
 function bind(A,ch){
   for(const k of SHARED)Object.defineProperty(ch,k,{get(){return A[k];},set(v){A[k]=v;},enumerable:false,configurable:true});
@@ -103,8 +103,18 @@ function calc(s){
   return {dmg,aspd,crit,cdmg,hp,def,dps,power:Math.round(dps*.6+hp*.25+def*2),
     xpM:(1+a.xp/100)*(1+0.05*s.bless)*boost,goldM:1+a.gold/100,dropM:1+a.drop/100};
 }
-function zoneInfo(zi,c,f){
-  const z=ZONES[zi],kt=z.hp/c.dps+0.55,taken=z.atk*300/(300+c.def);
+// Every map has floors: each deeper floor has tougher monsters, more XP and gold, and a better drop chance.
+const FLOORS=3;
+function floorMin(z,f){
+  const d=ZONES[z];if(f<=0)return d.min;let nxt=CAP;
+  for(const o of ZONES)if(!!o.req===!!d.req&&o.min>d.min&&o.min<nxt)nxt=o.min;
+  return d.min+Math.round(f*(nxt-d.min)/FLOORS);
+}
+function zs(z,f){const d=ZONES[z];f=clamp(f|0,0,FLOORS-1);return {hp:Math.round(d.hp*(1+.4*f)),atk:Math.round(d.atk*(1+.3*f)),xp:Math.round(d.xp*(1+.3*f)),gold:1+.3*f,drop:1+.15*f};}
+function canFloor(s,z,f){return z<0?f===0:(f>=0&&f<FLOORS&&canEnter(s,z)&&s.lvl>=floorMin(z,f));}
+function afkFloor(s,z){let f=z===s.zone?clamp(s.floor|0,0,FLOORS-1):0;while(f>0&&s.lvl<floorMin(z,f))f--;return f;}
+function zoneInfo(zi,c,f,fl){
+  const z=zs(zi,fl),kt=z.hp/c.dps+0.55,taken=z.atk*300/(300+c.def);
   const e=clamp(c.hp/(taken*20),.3,1),kps=e/kt*(f||1);
   return {kps,xps:kps*z.xp*c.xpM,taken,e};
 }
@@ -171,7 +181,7 @@ function offline(s,secs){
   const perZone={};
   if(afkZone(s)<0)return rep;
   while(left>0.5&&guard++<900){
-    s._now=now;const c=calc(s),zi=afkZone(s),zf=zoneInfo(zi,c,AFK);
+    s._now=now;const c=calc(s),zi=afkZone(s),zf=zoneInfo(zi,c,AFK,afkFloor(s,zi));
     let step=left;
     if(s.boost>now)step=Math.min(step,(s.boost-now)/1000+0.01);
     if(s.lvl<CAP){const t=(need(s.lvl)-s.xp)/zf.xps;if(t<step)step=t+1e-6;}
@@ -180,7 +190,7 @@ function offline(s,secs){
     left-=step;now+=step*1000;
   }
   delete s._now;
-  const c=calc(s);
+  const c=calc(s),fz=zs(0,afkFloor(s,afkZone(s)));c.goldM*=fz.gold;c.dropM*=fz.drop;
   for(const zi in perZone){const k=Math.floor(perZone[zi]);if(k>0){rep.kills+=k;rollLoot(s,+zi,k,c,rep);}}
   return rep;
 }
@@ -189,7 +199,7 @@ function resetGain(s){return 10+2*Math.min(s.resets+1,10);}
 function doReset(s){
   if(!canReset(s))return false;const g=resetGain(s);
   s.resets++;s.lvl=1;s.xp=0;s.stats={str:15,agi:15,vit:15,ene:15};
-  s.pts=100*Math.min(s.resets,30)+s.bonusPts;s.cred+=g;s.coins+=5;s.pass.xp+=150;s.daily.resets++;s.zone=-1;
+  s.pts=100*Math.min(s.resets,30)+s.bonusPts;s.cred+=g;s.coins+=5;s.pass.xp+=150;s.daily.resets++;s.zone=-1;s.floor=0;
   if(s.autoPts)autoAlloc(s);return true;
 }
 function upCost(it){return {gems:1+Math.floor(it.p/3),gold:500*(it.s==='g'?it.t*2:it.t)*(it.p+1)};}
@@ -335,12 +345,12 @@ function cleanItem(o){
 function adopt(o){
   if(!o||o.v!==2||!Array.isArray(o.chars))return null;
   o.bossM=o.bossM||{};o.zk=o.zk||{};o.sboxes=o.sboxes||0;o.inv=o.inv||[];
-  o.chars.forEach(c=>{bind(o,c);for(const k of SLOTS)if(!(k in c.eq))c.eq[k]=null;});
+  o.chars.forEach(c=>{bind(o,c);c.floor=c.floor|0;for(const k of SLOTS)if(!(k in c.eq))c.eq[k]=null;});
   o.cur=o.chars.length?clamp(o.cur|0,0,o.chars.length-1):0;return o;
 }
 function findIt(A,S,id){for(const k of SLOTS)if(S.eq[k]&&S.eq[k].id===id)return {it:S.eq[k],eq:k};const i=A.inv.findIndex(x=>x.id===id);return i>=0?{it:A.inv[i],i:i}:null;}
 // Highest kill rate a legitimate client can reach in a zone, skills and buffs included.
-function maxKps(S,zi){const c=calc(S),z=ZONES[zi];return Math.min(2.1,1/Math.max(.35,z.hp/(c.dps*2.2)+.3));}
+function maxKps(S,zi){const c=calc(S),z=zs(zi,afkFloor(S,zi));return Math.min(2.1,1/Math.max(.35,z.hp/(c.dps*2.2)+.3));}
 const BOTN=['שומר השער','נודד האפר','בת הסער','צל ראשון','להב שקט','עין הנץ'];
 function buildOpps(A,S,players,selfId){
   const me=fighter(S),out=[];
@@ -382,14 +392,17 @@ function apply(A,kind,args,ctx){
       if(gap>5){const rep=offline(S,gap);if(rep.kills>0)r.afk=[{name:S.name,zone:S.zone,rep:rep}];}
       S.last=now;A.allow=0;A.bossAt=null;A.opps=null;break;}
     case 'travel':{
-      const z=int(args.z,-1,ZONES.length-1);if(!canEnter(S,z))return fail('המפה נעולה');
-      if(z!==S.zone){S.zone=z;A.bossAt=null;A.allow=Math.min(A.allow||0,3);}break;}
+      const z=int(args.z,-1,ZONES.length-1),f=z<0?0:int(args.f,0,FLOORS-1);if(!canEnter(S,z))return fail('המפה נעולה');
+      if(!canFloor(S,z,f))return fail('צריך רמה '+floorMin(z,f)+' לקומה הזו');
+      if(z!==S.zone||f!==(S.floor|0)){S.zone=z;S.floor=f;A.bossAt=null;A.allow=Math.min(A.allow||0,3);}break;}
     case 'tick':{
       const z=int(args.z,-1,ZONES.length-1);
-      if(z<0){if(S.zone!==-1){S.zone=-1;A.bossAt=null;}break;}
+      if(z<0){if(S.zone!==-1){S.zone=-1;S.floor=0;A.bossAt=null;}break;}
+      const f=int(args.f,0,FLOORS-1);
       if(!canEnter(S,z))return fail('המפה נעולה');
-      if(z!==S.zone){S.zone=z;A.bossAt=null;A.allow=Math.min(A.allow||0,3);}
-      const zd=ZONES[z],rep={},em=evMods(now),c=calc(S),pn=int(ctx.partyN,0,3),pb=(1+PARTY_XP*pn)*em.xp;c.dropM*=em.drop;r.partyN=pn;
+      if(!canFloor(S,z,f))return fail('צריך רמה '+floorMin(z,f)+' לקומה הזו');
+      if(z!==S.zone||f!==(S.floor|0)){S.zone=z;S.floor=f;A.bossAt=null;A.allow=Math.min(A.allow||0,3);}
+      const zd=zs(z,f),rep={},em=evMods(now),c=calc(S),pn=int(ctx.partyN,0,3),pb=(1+PARTY_XP*pn)*em.xp;c.dropM*=em.drop*zd.drop;c.goldM*=zd.gold;r.partyN=pn;
       const k=Math.min(int(args.kills,0,1000),Math.floor(A.allow||0));r.claimed=int(args.kills,0,1000);r.kills=k;
       A.casts=(A.casts||0)+int(args.casts,0,30);
       if(k>0){A.allow-=k;rep.levels=addXp(S,k*zd.xp*c.xpM*pb);rollLoot(S,z,k,c,rep);evAdd(A,now,'k',k);
@@ -458,4 +471,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

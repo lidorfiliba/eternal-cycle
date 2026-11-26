@@ -82,3 +82,13 @@ test('party bonus comes only from the server context and is capped at three memb
   assert.ok(Math.abs(two/solo-1.08)<.02,'one member adds 8%: '+two/solo);assert.ok(Math.abs(max/solo-1.24)<.02);
   assert.equal(over,max,'capped');assert.equal(forged,solo,'a client-supplied bonus is ignored');
 });
+test('floors: deeper floors need more levels, pay more, and cannot be forged',()=>{
+  const {A,now}=fresh();const s=A.chars[0];now.add(5);
+  assert.deepEqual([0,1,2].map(f=>G.floorMin(0,f)),[1,11,20]);assert.ok(G.zs(0,2).xp>G.zs(0,0).xp&&G.zs(0,2).hp>G.zs(0,0).hp);
+  assert.equal(G.apply(A,'travel',{z:0,f:2}).ok,false);assert.equal(G.apply(A,'tick',{z:0,f:2,kills:3}).ok,false);
+  s.lvl=25;s.stats.str=200;assert.ok(G.apply(A,'travel',{z:0,f:2}).ok);assert.equal(s.floor,2);
+  assert.equal(G.apply(A,'travel',{z:0,f:9}).ok,true,'clamped to the top floor');assert.equal(s.floor,2);
+  const xp=f=>{const t=fresh();const c=t.A.chars[0];c.lvl=25;c.stats.str=200;c.autoPts=false;G.apply(t.A,'travel',{z:0,f:f});t.now.add(10);G.setEnv(()=>.5,t.now);G.apply(t.A,'tick',{z:0,f:f,kills:1});return c.xp;};
+  assert.ok(xp(2)>xp(0)*1.5);
+  G.apply(A,'travel',{z:-1,f:2});assert.equal(s.floor,0,'the village has no floors');
+});

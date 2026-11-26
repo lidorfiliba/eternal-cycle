@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const {EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const {FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -52,11 +52,11 @@ const pend={kills:0,casts:0,boss:false,t:0};
 function flushTick(){
   if(!ONLINE||demo||!S)return Promise.resolve();
   if(!pend.kills&&!pend.casts&&!pend.boss)return chain;
-  const a={z:SC.zi,kills:pend.kills,casts:pend.casts,boss:pend.boss},l0=S.lvl;pend.kills=0;pend.casts=0;pend.boss=false;pend.t=0;
+  const a={z:SC.zi,f:SC.fl,kills:pend.kills,casts:pend.casts,boss:pend.boss},l0=S.lvl;pend.kills=0;pend.casts=0;pend.boss=false;pend.t=0;
   return send('tick',a).then(r=>afterTick(r,null,l0));
 }
 async function act(kind,args){await flushTick();return send(kind,args);}
-function localTick(a){a.casts=pend.casts;pend.casts=0;const r=apply(A,'tick',a,{});localDirty=true;return r;}
+function localTick(a){a.f=SC.fl;a.casts=pend.casts;pend.casts=0;const r=apply(A,'tick',a,{});localDirty=true;return r;}
 
 /* ---------- player market (online only) ---------- */
 function loadMarket(){if(ONLINE&&!demo)send('mget',{});}
@@ -87,7 +87,7 @@ window.addEventListener('resize',resize);
 const MW=1500,TW=1150;
 const TOWN={n:'כפר המעגל',sky:['#141033','#4a3a78'],sil:'#0c0a20',amb:'#ffe9a8',kind:'town'};
 const NPCS=[{x:270,n:'הנפח',tab:'gear',c:'blade',col:'#ff8a4d',spr:'n_smith'},{x:440,n:'הסוחרת',tab:'shop',c:'hunter',col:'#f2c14e',spr:'n_merch'},{x:610,n:'שומר המעגל',tab:'char',c:'storm',col:'#8be28b',spr:'n_guard'},{x:780,n:'כרוז העונה',tab:'pass',c:'hunter',col:'#5fd4ff',spr:'n_herald'},{x:950,n:'שומר הזירה',tab:'arena',c:'blade',col:'#6fe39a',spr:'n_arena'}];
-const SC={t:0,cam:0,mons:[],boss:null,hero:{x:110,face:1,dir:0,hp:1,atkT:0,anim:0,dead:0,mAtk:1,tgt:null,tx:null,goal:null,manual:0,buff:0,cds:[0,0,0],autoSk:0,mv:false},fx:[],parts:[],nums:[],drops:[],shake:0,mode:'farm',duel:null,zi:-1};
+const SC={t:0,cam:0,mons:[],boss:null,hero:{x:110,face:1,dir:0,hp:1,atkT:0,anim:0,dead:0,mAtk:1,tgt:null,tx:null,goal:null,manual:0,buff:0,cds:[0,0,0],autoSk:0,mv:false},fx:[],parts:[],nums:[],drops:[],shake:0,mode:'farm',duel:null,zi:-1,fl:0};
 const amb=[];for(let i=0;i<26;i++)amb.push({x:Math.random(),y:Math.random(),s:.5+Math.random()*1.5,v:.02+Math.random()*.05});
 const mapW=()=>SC.zi<0?TW:MW, gy=()=>H*.8;
 function lookOf(s){const g=it=>it?[it.t,it.r,it.p,it.season?1:0]:null;return {c:s.cls,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g)};}
@@ -164,6 +164,7 @@ function drawBg(zi,t){
     ctx.lineTo(W+8,g0);ctx.fill();}
   ctx.globalAlpha=1;
   const gg=ctx.createLinearGradient(0,g0,0,H);gg.addColorStop(0,z.sil);gg.addColorStop(1,'#050409');ctx.fillStyle=gg;ctx.fillRect(0,g0-1,W,H-g0+1);
+  if(SC.fl>0&&zi>=0){ctx.fillStyle='rgba(0,0,0,'+(.16*SC.fl)+')';ctx.fillRect(0,0,W,H);}
   ctx.strokeStyle='rgba(255,255,255,.07)';ctx.lineWidth=1;for(let x=-(SC.cam%60);x<W;x+=60){ctx.beginPath();ctx.moveTo(x,g0+6);ctx.lineTo(x+22,g0+6);ctx.stroke();}
   ctx.fillStyle=z.amb;
   for(const a of amb){a.y-=a.v*.016*(zi===4?-1.5:1);if(a.y<0)a.y=1;if(a.y>1)a.y=0;ctx.globalAlpha=.25+.35*Math.abs(Math.sin(t*2+a.x*20));ctx.beginPath();ctx.arc(a.x*W+Math.sin(t+a.y*9)*6,a.y*g0,a.s,0,7);ctx.fill();}
@@ -261,16 +262,16 @@ function snd(n){
 }
 
 /* ---------- world ---------- */
-function newMon(home,zi){const z=ZONES[zi];return {home:home,x:home,y:gy(),hp:z.hp,max:z.hp,hit:0,die:0,ph:Math.random()*6,resp:0,stun:0,atkT:1,pull:null};}
-function enterZone(z,side){
-  const h=SC.hero;SC.zi=z;SC.mons=[];SC.boss=null;SC.drops=[];SC.fx=[];SC.nums=[];SC.parts=[];h.tgt=null;h.goal=null;h.tx=null;h.manual=0;
+function newMon(home,zi){const z=zs(zi,SC.fl);return {home:home,x:home,y:gy(),hp:z.hp,max:z.hp,hit:0,die:0,ph:Math.random()*6,resp:0,stun:0,atkT:1,pull:null};}
+function enterZone(z,side,f){
+  const h=SC.hero;SC.zi=z;SC.fl=z<0?0:clamp(f|0,0,FLOORS-1);SC.mons=[];SC.boss=null;SC.drops=[];SC.fx=[];SC.nums=[];SC.parts=[];h.tgt=null;h.goal=null;h.tx=null;h.manual=0;
   h.x=side==='R'?mapW()-110:110;h.face=side==='R'?-1:1;
   if(z>=0)for(let i=0;i<8;i++)SC.mons.push(newMon(300+i*140+Math.random()*50,z));
   statsDirty=true;panelDirty=true;syncBoss();
 }
 function spawnBoss(){
   const zi=SC.zi,z=ZONES[zi];if(SC.boss||zi<0)return;
-  const b=newMon(MW-280,zi);b.boss=true;b.hp=b.max=z.hp*30;b.slamT=4;b.wind=0;SC.boss=b;SC.mons.push(b);snd('boss');toast('הבוס של '+z.n+' הופיע בקצה המפה');
+  const b=newMon(MW-280,zi);b.boss=true;b.hp=b.max=zs(zi,SC.fl).hp*30;b.slamT=4;b.wind=0;SC.boss=b;SC.mons.push(b);snd('boss');toast('הבוס של '+z.n+' הופיע בקצה המפה');
 }
 function dropOrbs(m,rep){
   const add=(c,s)=>SC.drops.push({x:m.x,y:m.y-24,vx:(Math.random()-.5)*160,vy:-160-Math.random()*90,c:c,s:s,age:0,life:4});
@@ -314,13 +315,13 @@ function onKill(m,zi){
   burst(m.x,m.y-24,z.c,10);
   if(ONLINE){ // predict XP now; loot and the real numbers arrive with the next server tick
     pend.kills++;snd('kill');SC.drops.push({x:m.x,y:m.y-24,vx:(Math.random()-.5)*160,vy:-200,c:'#f2c14e',s:3,age:0,life:4});
-    const l0=S.lvl;addXp(S,z.xp*C.xpM);afterXp(S.lvl-l0);if(pend.kills>=25)flushTick();
+    const l0=S.lvl;addXp(S,zs(zi,SC.fl).xp*C.xpM);afterXp(S.lvl-l0);if(pend.kills>=25)flushTick();
   }else{const l0=S.lvl;afterTick(localTick({z:zi,kills:1}),m,l0);}
 }
-async function travelTo(z,side){
-  if(busy)return;busy=true;const r=await act('travel',{z:z});busy=false;
+async function travelTo(z,side,f){
+  if(busy)return;busy=true;const r=await act('travel',{z:z,f:f|0});busy=false;
   if(!r.ok){toast(r.msg==='net'?'אין חיבור לשרת':r.msg);return;}
-  snd('portal');enterZone(z,side);saveLocal();
+  snd('portal');enterZone(z,side,f|0);saveLocal();
 }
 function strike(m,mult,col,big){
   const crit=Math.random()<C.crit,d=Math.round(C.dmg*(crit?C.cdmg:1)*mult*(.9+Math.random()*.2));
@@ -339,18 +340,25 @@ function cast(i,auto){
   else{snd('fury');h.buff=8;SC.fx.push({k:'ring',x:h.x,y:gy()-20,life:.4,c:'#ffd75e',r:120});burst(h.x,gy()-50,'#ffd75e',24);SC.nums.push({x:h.x,y:gy()-135,txt:CLS[S.cls].sk[2]+'!',c:'#ffd75e',s:18,life:1});}
   h.cds[i]=SKCD[i];if(!auto)pend.casts++;return true;
 }
-function portalState(dir){ // dir -1 / +1 from the current map
-  const zi=SC.zi,to=zi+dir;
-  if(dir<0){if(zi<0)return null;const back=zi>=BASEZ?-1:zi-1;return {to:back,ok:true,txt:back<0?TOWN.n:ZONES[back].n};}
+function portalState(dir){ // dir -1 / +1 from the current map and floor
+  const zi=SC.zi,fl=SC.fl;
+  if(dir<0){
+    if(zi<0)return null;
+    if(fl>0)return {to:zi,f:fl-1,ok:true,txt:'קומה '+fl};
+    const back=zi>=BASEZ||zi===0?-1:zi-1;return {to:back,f:back<0?0:afkTop(back),ok:true,txt:back<0?TOWN.n:ZONES[back].n};
+  }
+  if(zi>=0&&fl<FLOORS-1){const need=floorMin(zi,fl+1);return {to:zi,f:fl+1,ok:S.lvl>=need,txt:'קומה '+(fl+2)+(S.lvl>=need?'':' · רמה '+need),why:'צריך רמה '+need+' לקומה הבאה'};}
   if(zi>=BASEZ-1)return null;
-  if(to>A.open)return {to:to,ok:false,txt:'נעול: הבס את הבוס',why:'קודם צריך להביס את הבוס של '+ZONES[zi].n};
-  if(ZONES[to].min>S.lvl)return {to:to,ok:false,txt:ZONES[to].n+' · רמה '+ZONES[to].min,why:'צריך רמה '+ZONES[to].min+' כדי להיכנס'};
-  return {to:to,ok:true,txt:ZONES[to].n};
+  const to=zi+1;
+  if(to>A.open)return {to:to,f:0,ok:false,txt:'נעול: הבס את הבוס',why:'קודם צריך להביס את הבוס של '+ZONES[zi].n};
+  if(ZONES[to].min>S.lvl)return {to:to,f:0,ok:false,txt:ZONES[to].n+' · רמה '+ZONES[to].min,why:'צריך רמה '+ZONES[to].min+' כדי להיכנס'};
+  return {to:to,f:0,ok:true,txt:ZONES[to].n};
 }
+function afkTop(z){let f=FLOORS-1;while(f>0&&S.lvl<floorMin(z,f))f--;return f;}
 function arrive(g){
   if(g.npc){openTab(g.npc.tab);toast(g.npc.n);return;}
   const p=portalState(g.dir);if(!p)return;if(!p.ok){toast(p.why);return;}
-  travelTo(p.to,g.dir<0?'R':'L');
+  travelTo(p.to,g.dir<0?'R':'L',p.f);
 }
 function updateWorld(dt){
   const h=SC.hero,zi=SC.zi,z=zi>=0?ZONES[zi]:null,mw=mapW();
@@ -369,7 +377,7 @@ function updateWorld(dt){
     if(ad>420)m.ag=false;
     if(h.dead<=0&&(m.boss?ad<340:(m.ag||ad<110))){
       if(ad>reach){m.x+=Math.sign(dx)*(m.boss?45:58)*dt;m.mv=true;}
-      else if((m.atkT-=dt)<=0){m.atkT=m.boss?1.2:1;m.atkA=.5;const taken=z.atk*(m.boss?2:1)*300/(300+C.def);h.hp-=taken;snd('hurt');addNum(h.x,gy()-100,'-'+fmt(taken),'#ff5c7a');}
+      else if((m.atkT-=dt)<=0){m.atkT=m.boss?1.2:1;m.atkA=.5;const taken=zs(zi,SC.fl).atk*(m.boss?2:1)*300/(300+C.def);h.hp-=taken;snd('hurt');addNum(h.x,gy()-100,'-'+fmt(taken),'#ff5c7a');}
       if(m.boss&&(m.slamT-=dt)<=0&&ad<210){m.wind=1.2;m.slamX=m.x;}
     }else if(Math.abs(m.x-m.home)>4){m.x+=Math.sign(m.home-m.x)*40*dt;m.mv=true;m.back=true;}else m.back=false;
   }
@@ -381,7 +389,7 @@ function updateWorld(dt){
   const live=alive(),range=CLS[S.cls].range,spd=190*(1+(S.eq.g?S.eq.g.t*.08:0))*(h.buff>0?1.5:1);
   if(h.tgt&&(h.tgt.die>0||h.tgt.resp>0||h.tgt.gone))h.tgt=null;
   if(h.dir){h.tgt=null;h.tx=null;h.goal=null;h.manual=.5;h.face=h.dir;h.mv=true;h.x=clamp(h.x+h.dir*spd*dt,30,mw-30);
-    const atL=h.dir<0&&h.x<=66&&zi>=0,atR=h.dir>0&&h.x>=mw-66&&zi<BASEZ-1;
+    const atL=h.dir<0&&h.x<=66&&zi>=0,atR=h.dir>0&&h.x>=mw-66&&!!portalState(1);
     if(atL||atR){h.edgeT=(h.edgeT||0)+dt;if(h.edgeT>.3){h.edgeT=-1.5;arrive({dir:h.dir});SC.cam=clamp(h.x-W*.4,0,Math.max(0,mapW()-W));return;}}else if(h.edgeT>0)h.edgeT=0;
   }
   if(zi>=0&&!h.tgt&&h.manual<=0&&h.tx==null){
@@ -413,7 +421,7 @@ cv.addEventListener('pointerdown',e=>{
     for(const m of alive())if(Math.abs(wx-m.x)<(m.boss?60:32)&&py>g0-(m.boss?170:95)){h.tgt=m;return;}
     if(SC.zi<0)for(const n of NPCS)if(Math.abs(wx-n.x)<32){h.tx=n.x-60;h.goal={npc:n};return;}
     if(SC.zi>=0&&Math.abs(wx-50)<42){h.tx=60;h.goal={dir:-1};return;}
-    if(SC.zi<BASEZ-1&&Math.abs(wx-(mapW()-50))<42){h.tx=mapW()-60;h.goal={dir:1};return;}
+    if(portalState(1)&&Math.abs(wx-(mapW()-50))<42){h.tx=mapW()-60;h.goal={dir:1};return;}
   }
   h.tx=clamp(wx,30,mapW()-30);h.manual=2.5;
 });
@@ -495,7 +503,7 @@ function renderHud(){
   $('hXp').style.width=(S.lvl>=CAP?100:S.xp/need(S.lvl)*100)+'%';
   $('cGold').textContent=fmt(A.gold);$('cGem').textContent=fmt(A.gems);$('cCred').textContent=fmt(A.cred);$('cCoin').textContent=fmt(A.coins);
   const duel=SC.mode==='duel',zi=SC.zi;
-  $('zoneTag').textContent=duel?'זירה':zoneName(zi)+(partyN>0&&zi>=0?' · פארטי '+Math.round(PARTY_XP*100*partyN)+'%+':'');
+  $('zoneTag').textContent=duel?'זירה':zoneName(zi)+(zi>=0?' · קומה '+(SC.fl+1):'')+(partyN>0&&zi>=0?' · פארטי '+Math.round(PARTY_XP*100*partyN)+'%+':'');
   $('rateTag').textContent=duel||zi<0?'':SC.boss?'בוס במפה':'בוס: '+(A.bossM[zi]||0)+'/'+BOSSN;
   $('resetNow').style.display=canReset(S)&&!duel?'block':'none';
   $('autoBtn').style.display=$('skills').style.display=duel||zi<0?'none':'';$('mv').style.display=duel?'none':'';
@@ -561,7 +569,7 @@ function renderGear(){
   return h;
 }
 function renderZones(){
-  let h='<p class="hint">עוברים בין מפות דרך השערים שבקצוות, או בקפיצה מכאן. שער חדש נפתח אחרי ניצחון על הבוס של המפה. הבוס מופיע אחרי '+L(BOSSN)+' חיסולים כשאתה משחק בעצמך.</p>';
+  let h='<p class="hint">בכל מפה שלוש קומות: בכל קומה המפלצות חזקות יותר, ויש יותר ניסיון, זהב וסיכוי לשלל. עוברים בין קומות ומפות דרך השערים שבקצוות, או בקפיצה מכאן. שער חדש נפתח אחרי ניצחון על הבוס של המפה. הבוס מופיע אחרי '+L(BOSSN)+' חיסולים כשאתה משחק בעצמך.</p>';
   h+='<div class="card zone'+(SC.zi<0?' cur':'')+'"><div class="sw" style="background:linear-gradient('+TOWN.sky[0]+','+TOWN.sky[1]+')"></div><div class="z"><b>'+TOWN.n+'</b><small>נפח, סוחרת, שומר המעגל, כרוז העונה, שער הזירה</small></div><button class="btn sm" data-act="zone" data-i="-1"'+(SC.zi<0?' disabled':'')+'>'+(SC.zi<0?'כאן':'קפוץ')+'</button></div>';
   ZONES.forEach((z,i)=>{const opened=z.req?S.resets>=z.req:i<=A.open,lv=z.min<=S.lvl,zf=zoneInfo(i,C,AFK),cur=SC.zi===i;
     if(i===BASEZ)h+='<h2>מפות ריסט</h2><p class="hint">נפתחות לפי מספר הריסטים של הדמות. המפלצות חזקות יותר, הניסיון והזהב גבוהים יותר, והציוד בדרגות חדשות עם סטים עתיקים משלו. נכנסים אליהן מכאן.</p>';
@@ -569,7 +577,7 @@ function renderZones(){
       '<small>'+z.m+' · מרמה '+L(z.min)+(opened&&lv?' · '+L(fmt(zf.xps*60))+' ניסיון לדקה בלי לשחק'+(zf.e<1?' · מסוכן':''):'')+'</small>'+
       '<small>שלל: ציוד '+TIERN[i]+' עם בונוס '+AFF[z.sig][0]+(z.wing?' · '+WINGN[z.wing-1]:'')+' · סט '+SETN[i]+'</small>'+
       (!opened?'<small style="color:var(--bad)">'+(z.req?'נפתח אחרי '+L(z.req)+' ריסטים של הדמות (יש '+L(S.resets)+')':'נעול: הבס את הבוס של '+ZONES[i-1].n)+'</small>':!lv?'<small style="color:var(--bad)">צריך רמה '+z.min+'</small>':'')+'</div>'+
-      (opened&&lv?'<button class="btn sm" data-act="zone" data-i="'+i+'"'+(cur?' disabled':'')+'>'+(cur?'כאן':'קפוץ')+'</button>':'')+'</div>';});
+      (opened&&lv?'<div style="display:flex;flex-direction:column;gap:4px">'+[0,1,2].map(f=>{const ok=S.lvl>=floorMin(i,f),here=cur&&SC.fl===f;return '<button class="btn sm" data-act="zone" data-i="'+i+'" data-f="'+f+'"'+(ok&&!here?'':' disabled')+'>'+(here?'כאן':'קומה '+(f+1)+(ok?'':' · '+L(floorMin(i,f))))+'</button>';}).join('')+'</div>':'')+'</div>';});
   return h;
 }
 function shopList(name,list,have,curName){
@@ -687,7 +695,7 @@ function openTab(name){
 }
 function loadArena(){if(!demo&&S)act('opps',{}).then(()=>{panelDirty=true;});}
 function enterGame(r){
-  S=A.chars[A.cur];C=calc(S);enterZone(S.zone,'L');SC.hero.hp=C.hp;SC.hero.dead=0;SC.hero.cds=[0,0,0];touch();renderHud();renderPanel();
+  S=A.chars[A.cur];C=calc(S);enterZone(S.zone,'L',S.floor);SC.hero.hp=C.hp;SC.hero.dead=0;SC.hero.cds=[0,0,0];touch();renderHud();renderPanel();
   if(r&&r.afk)showOffline(r.afk);
 }
 async function switchTo(i){
@@ -749,8 +757,8 @@ document.addEventListener('click',async e=>{
     else if(a==='mbuy'){await buyListing(b.dataset.m);}
     else if(a==='mcancel'){await cancelListing(b.dataset.m);}
     else if(a==='mrefresh'){loadMarket();}
-    else if(a==='zone'){if(SC.mode==='farm'){clickBusy=false;await travelTo(+b.dataset.i,'L');}}
-    else if(a==='reset'){if(SC.mode==='farm'&&canReset(S)){r=await act('reset',{});if(r.ok){enterZone(-1,'L');C=calc(S);SC.hero.hp=C.hp;if(!calm)SC.shake=.4;burst(SC.hero.x,gy()-50,'#f2c14e',40);snd('lvl');toast('ריסט '+r.resets+'. קיבלת '+r.gain+' אותות ריסט');}}}
+    else if(a==='zone'){if(SC.mode==='farm'){clickBusy=false;await travelTo(+b.dataset.i,'L',+(b.dataset.f||0));}}
+    else if(a==='reset'){if(SC.mode==='farm'&&canReset(S)){r=await act('reset',{});if(r.ok){enterZone(-1,'L',0);C=calc(S);SC.hero.hp=C.hp;if(!calm)SC.shake=.4;burst(SC.hero.x,gy()-50,'#f2c14e',40);snd('lvl');toast('ריסט '+r.resets+'. קיבלת '+r.gain+' אותות ריסט');}}}
     else if(a==='equip'||a==='unequip'||a==='sell'){r=await act(a,{id:id});closeSheet();}
     else if(a==='sellJunk'){r=await act('sellJunk',{});if(r.ok)toast('נמכר ב-'+fmt(r.gold)+' זהב');}
     else if(a==='upgrade'){r=await act('upgrade',{id:id});if(r.ok){const c=r.code;snd(c==='ok'?'ok':c==='poor'||c==='max'?'click':'fail');
@@ -776,7 +784,7 @@ function loop(ts){
   requestAnimationFrame(loop);if(!S)return;
   let dt=(ts-lastT)/1000;lastT=ts;if(!(dt>0))return;
   if(dt>3&&!demo){ // the tab was asleep: let the rules decide what happened meanwhile
-    if(!resyncing){resyncing=true;send('sync',{}).then(r=>{resyncing=false;if(!r.ok||SC.mode!=='farm')return;if(S.zone!==SC.zi)enterZone(S.zone,'L');C=calc(S);SC.hero.hp=C.hp;syncBoss();if(r.afk)showOffline(r.afk);saveLocal();});}
+    if(!resyncing){resyncing=true;send('sync',{}).then(r=>{resyncing=false;if(!r.ok||SC.mode!=='farm')return;if(S.zone!==SC.zi||(S.floor|0)!==SC.fl)enterZone(S.zone,'L',S.floor);C=calc(S);SC.hero.hp=C.hp;syncBoss();if(r.afk)showOffline(r.afk);saveLocal();});}
     return;
   }
   dt=Math.min(dt,.1);
