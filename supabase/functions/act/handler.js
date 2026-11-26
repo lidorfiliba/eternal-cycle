@@ -198,6 +198,9 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
         const { data } = await admin.from("arena").select("user_id,snap").order("seen_at", { ascending: false }).limit(300);
         for (const row of data || []) { if (row.user_id !== uid && (await peerKey(row.user_id)) === args.k) { ctx.target = G.cleanPlayer(row.user_id, row.snap); break; } }
       }
+      if (kind === "travel" && G.ZONES[Math.floor(Number(args.z))] && G.ZONES[Math.floor(Number(args.z))].castle) { // the ancient city: only for the guild that holds the castle
+        const gt = await admin.rpc("guild_tick", { p_user: uid, p_kills: 0, p_siege: false, p_key: G.siegeInfo(now).key }); if (!gt.error && gt.data) ctx.castle = !!gt.data.castle;
+      }
       if (kind === "tick" && Number(args.z) >= 0) {
         const pm = await admin.rpc("party_mates", { p_user: uid, p_zone: Math.floor(Number(args.z)) });
         const mates = pm.error || !Array.isArray(pm.data) ? [] : pm.data;

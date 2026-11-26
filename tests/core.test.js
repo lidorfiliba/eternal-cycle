@@ -127,7 +127,7 @@ test('daily login reward: once a day, the streak grows only when collected on co
 test('resets: stats are kept, maps do not change with resets, a stat fills at its maximum, party experience',()=>{
   const {A}=fresh(),s=A.chars[0];s.lvl=G.CAP;s.stats.str=900;s.pts=37;s.autoPts=false;
   assert.ok(G.apply(A,'reset',{}).ok);assert.equal(s.lvl,1);assert.equal(s.stats.str,900);assert.equal(s.pts,37);assert.equal(s.resets,1);
-  assert.deepEqual(G.zs(3,1),G.zs(3,1,9),'a map is the same for everyone');assert.ok(G.ZONES[24].hp>G.ZONES[8].hp*4,'reset maps are the hard content');assert.equal(G.ZONES.length,36);assert.deepEqual([0,3,23,24,31].map(G.tierOf),[1,2,8,9,12]);
+  assert.deepEqual(G.zs(3,1),G.zs(3,1,9),'a map is the same for everyone');assert.ok(G.ZONES[24].hp>G.ZONES[8].hp*4,'reset maps are the hard content');assert.equal(G.ZONES.length,37);assert.deepEqual([0,3,23,24,31].map(G.tierOf),[1,2,8,9,12]);
   const sx=ctx=>{const B=G.adopt(JSON.parse(JSON.stringify(A)));G.setEnv(()=>.5,()=>B.last+20000);G.apply(B,'travel',{z:0});const r=G.apply(B,'tick',{z:0,kills:0},ctx);return [r.shared||0,B.chars[0].lvl];};
   assert.deepEqual(sx({}),[0,1]);assert.ok(sx({shareXp:5000})[1]>5,'experience handed over by the server levels the character');assert.equal(sx({shareXp:5000})[0],5000);
   s.stats.str=G.STAT_MAX-10;s.pts=50;assert.ok(G.apply(A,'pt',{k:'str',n:'all'}).ok);assert.equal(s.stats.str,G.STAT_MAX);assert.equal(s.pts,40);
@@ -466,7 +466,7 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
   fe.x=fa.x+30;fe.y=fa.y;fb.x=fa.x-30;fb.y=fa.y;const h=G.sgAct(B,a,'atk',rnd);assert.equal(h.to,e,'a guildmate is never hit, an enemy is');
   { // real strength: ten times the damage is ten times the blow
     const X=G.sgNew(rnd,{}),w=G.sgAdd(X,P('w',1),1,'',rnd),st=G.sgAdd(X,P('st',10),2,'',rnd),v=G.sgAdd(X,P('v',1),3,'',rnd);X.t=5;for(const i of [w,st,v]){X.f[i].x=0;X.f[i].y=1900;}X.f[v].x=30;X.f[w].x=-600;
-    const big=G.sgAct(X,st,'s0',rnd).dm;X.f[st].x=-600;X.f[w].x=0;const small=G.sgAct(X,w,'s0',rnd).dm;assert.ok(big>small*7,'strong '+big+' weak '+small);}
+    const big=G.sgAct(X,st,'s0',rnd).dm;X.f[st].x=-600;X.f[w].x=0;const small=G.sgAct(X,w,'s0',rnd).dm;assert.ok(big>small*1.2&&big<small*4,'strength counts, but the gap is pressed together: strong '+big+' weak '+small);}
   fe.x=fa.x;fe.y=fa.y-90;B.t+=2;assert.ok(G.sgAct(B,a,'atk',rnd).gate===0,'an enemy behind the gate is out of reach: the blow lands on the gate');
   fe.x=600;fe.y=1900;let n=0;while(B.sg.gate[0]>0&&n++<300){B.t+=1.3;G.sgAct(B,a,'atk',rnd);}assert.ok(B.sg.gate[0]<=0&&n>10,'the blows fall on the gate until it breaks: '+n);
   G.sgMove(B,fa,0,0);assert.ok(Math.abs(fa.y)<2,'and then the way is open');G.sgMove(B,fa,-600,-300);assert.ok(fa.x>-440,'the wall still stands: '+fa.x);
@@ -486,17 +486,27 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
     fe.x=600;fe.y=1900;fb.alive=true;fb.hp=1;fb.x=G.SG.sw[1][0];fb.y=G.SG.sw[1][1];B.t+=2;G.sgAct(B,b,'use',rnd);for(let i=0;i<20;i++)G.sgStep(B,.2,rnd);assert.deepEqual(B.sg.sw,[7,7]);}
   B.t+=2;G.sgAct(B,L,'use',rnd);ev=[];for(let i=0;i<160;i++)ev=ev.concat(G.sgStep(B,.2,rnd));assert.equal(B.sg.holder,7,'the leader on the crown for long enough, with both switches held: the castle is theirs');assert.ok(ev.some(x=>x.k==='taken'&&x.g===7&&x.by===L));
   assert.deepEqual(B.sg.gate,G.SG.gates.map(()=>G.SG.gateHp),'the gates are whole again');assert.deepEqual(B.sg.sw,[0,0]);
-  { // a combo: three different blows in a row, the third bursts
-    fe.alive=true;fe.hp=1;fe.x=fa.x+20;fe.y=fa.y;fe.pool=1e9;B.t+=40;fa.at={atk:0,s0:0,s1:0,s2:0,s3:0,dash:0,pot:0};
-    const h1=G.sgAct(B,a,'atk',rnd);B.t+=.5;const h2=G.sgAct(B,a,'s0',rnd);B.t+=.5;fe.stun=0;const h3=G.sgAct(B,a,'s1',rnd);assert.ok(!h1.combo&&h2.cb===2&&h3.combo&&h3.stun,'atk, skill, skill: combo');
-    B.t+=30;fa.at.s0=0;fa.at.s1=0;const base=G.sgAct(B,a,'s1',rnd);assert.ok(h3.dm>base.dm*1.8,'the third blow of a combo hits far harder: '+h3.dm+' vs '+base.dm);
-    B.t+=30;fa.at.atk=0;fa.at.s0=0;G.sgAct(B,a,'atk',rnd);B.t+=5;const slow=G.sgAct(B,a,'s0',rnd);assert.equal(slow.cb,1,'a pause breaks the chain');}
-  { // guild buffs by class
-    const X=G.sgNew(rnd,{});G.sgAdd(X,P('b1',1,'blade'),5,'',rnd);assert.deepEqual(G.sgAura(X,5),{dmg:1.12,spd:1,crit:0,def:1});G.sgAdd(X,P('s1',1,'storm'),5,'',rnd);G.sgAdd(X,P('h1',1,'hunter'),5,'',rnd);assert.deepEqual(G.sgAura(X,5),{dmg:1.12,spd:.9,crit:.08,def:.9});assert.deepEqual(G.sgAura(X,6),{dmg:1,spd:1,crit:0,def:1});}
+  { // a combo: one order, one rhythm, one enemy
+    const fresh=()=>{fe.alive=true;fe.hp=1;fe.x=fa.x+20;fe.y=fa.y;fe.pool=1e9;fe.stun=0;fe.sh=0;fe.wound=0;B.t+=40;fa.at={atk:0,s0:0,s1:0,s2:0,s3:0,dash:0,pot:0,use:0,buf:0};};
+    fresh();const h1=G.sgAct(B,a,'atk',rnd);B.t+=.5;const x0=fe.x,h2=G.sgAct(B,a,'s0',rnd);assert.ok(h2.px&&fe.x>x0+15&&fe.x<x0+40,'the quick skill throws the enemy back a little: '+(fe.x-x0));B.t+=.5;fe.stun=0;const h3=G.sgAct(B,a,'s1',rnd);assert.ok(!h1.combo&&h2.cb===2&&h3.combo&&h3.stun,'blow, quick skill, stunning skill: combo');
+    assert.ok(fe.wound>B.t&&G.sgAct(B,e,'pot',rnd)===null,'stunned');fe.stun=0;fe.pots=5;assert.equal(G.sgAct(B,e,'pot',rnd).no,'wound','and no potion for a moment after a combo');
+    fresh();const base=G.sgAct(B,a,'s1',rnd);assert.ok(!base.combo&&h3.dm>base.dm+.2,'the last blow of a combo takes a good part of anyone: '+h3.dm+' vs '+base.dm);
+    fresh();G.sgAct(B,a,'atk',rnd);B.t+=5;assert.equal(G.sgAct(B,a,'s0',rnd).cb,0,'too slow breaks it');
+    fresh();G.sgAct(B,a,'atk',rnd);B.t+=.05;assert.equal(G.sgAct(B,a,'s0',rnd).cb,0,'too fast breaks it: pressing everything at once gives nothing');B.t+=.05;assert.ok(!G.sgAct(B,a,'s1',rnd).combo);
+    fresh();G.sgAct(B,a,'atk',rnd);B.t+=.5;assert.ok(!G.sgAct(B,a,'s1',rnd).combo,'the wrong order is no combo');
+    fresh();G.sgAct(B,a,'atk',rnd);B.t+=.5;G.sgAct(B,a,'s0',rnd);B.t+=.5;fa.at.atk=0;G.sgAct(B,a,'atk',rnd);B.t+=.5;fe.x=fa.x+20;assert.ok(!G.sgAct(B,a,'s1',rnd).combo,'a blow in the middle breaks it');
+    fresh();fe.sh=B.t+9;const y0=fe.x;G.sgAct(B,a,'atk',rnd);B.t+=.5;const g2=G.sgAct(B,a,'s0',rnd);assert.ok(g2.guard&&!g2.px&&fe.x===y0,'a shield stands firm');fe.sh=0;}
+  { // party buffs are cast on those who stand near, and run out
+    const X=G.sgNew(rnd,{}),q1=G.sgAdd(X,P('b1',1,'blade'),5,'',rnd),q2=G.sgAdd(X,P('s1',1,'storm'),5,'',rnd),q3=G.sgAdd(X,P('h1',1,'hunter'),5,'',rnd),q4=G.sgAdd(X,P('far',1,'blade'),5,'',rnd);X.t=1;X.f.forEach(f=>{f.x=0;f.y=1900;});X.f[q4].x=600;
+    assert.equal(G.sgBuff(X.f[q1],X.t).n,0);const o=G.sgAct(X,q1,'buf',rnd);assert.equal(o.n,3,'the three who stand near');assert.equal(G.sgAct(X,q1,'buf',rnd),null,'it has a cooldown');G.sgAct(X,q2,'buf',rnd);G.sgAct(X,q3,'buf',rnd);
+    const bf=G.sgBuff(X.f[q2],X.t);assert.equal(bf.n,7);assert.ok(bf.dmg>1&&bf.def<.8&&bf.spd<1,'life, defense and power, and all three together speed');assert.equal(G.sgBuff(X.f[q4],X.t).n,0,'not the one far away');
+    X.t+=G.SG.buf.dur+1;assert.equal(G.sgBuff(X.f[q2],X.t).n,0,'they run out');}
+  { // the throne room: the switches and the crown stand behind an inner wall with one way in
+    const X=G.sgNew(rnd,{}),q=G.sgAdd(X,P('w'),5,'',rnd),f=X.f[q];f.x=250;f.y=-100;G.sgMove(X,f,250,-320);assert.ok(f.y>-205,'the inner wall stops him: '+f.y);f.x=0;f.y=-100;G.sgMove(X,f,0,-300);assert.ok(f.y<-290,'the door in its middle lets him through');}
   fe.pool=25000;fe.hp=.0001;B.t+=30;fa.at.s3=0;fe.x=fa.x+20;fe.y=fa.y;const k=G.sgAct(B,a,'s3',rnd);assert.ok(k.dead&&!fe.alive&&fe.resp>B.t);
   for(let i=0;i<60;i++)G.sgStep(B,.2,rnd);assert.ok(fe.alive&&fe.hp===1&&fe.y>1700,'the fallen return at their far camp');
   fe.pots=0;fe.x=G.SG.shops[0][0];fe.y=G.SG.shops[0][1];for(let i=0;i<100;i++)G.sgStep(B,.2,rnd);assert.ok(fe.pots>=30&&fe.bought===fe.pots,'a great many potions can be carried: '+fe.pots);
-  fe.hp=.1;B.t+=10;assert.ok(G.sgAct(B,e,'pot',rnd));B.t+=G.SG.potCd+.1;assert.ok(G.sgAct(B,e,'pot',rnd),'and drunk every few seconds');
+  fe.hp=.1;B.t+=10;fe.wound=0;assert.ok(G.sgAct(B,e,'pot',rnd));B.t+=G.SG.potCd+.1;assert.ok(G.sgAct(B,e,'pot',rnd),'and drunk every few seconds');
   B.sg.time=B.t+1;for(let i=0;i<10;i++)G.sgStep(B,.2,rnd);assert.ok(B.over);
   const A=G.newAccount();G.apply(A,'create',{name:'Sg',cls:'blade'},{});A.gold=1200;const c0=A.coins;G.sgReward(A,true,2);assert.equal(A.coins,c0+30);assert.equal(A.gold,200);G.sgReward(A,false,5);assert.equal(A.gold,0,'never below nothing');assert.equal(A.coins,c0+40);
   G.setEnv(Math.random,Date.now);
@@ -524,4 +534,11 @@ test('the bank holds items outside the bag, and a full bag does not eat a box',(
   A.inv.length=0;for(let i=0;i<G.BANK;i++){const x=G.makeItem(s,'h',1,0,0);A.inv.push(x);assert.ok(G.apply(A,'bankPut',{id:x.id},{}).ok);}const y=G.makeItem(s,'h',1,0,0);A.inv.push(y);assert.match(G.apply(A,'bankPut',{id:y.id},{}).msg,/הבנק מלא/);
   const back=G.adopt(JSON.parse(JSON.stringify(A)));assert.equal(back.bank.length,G.BANK,'the bank is saved with the account');
   G.setEnv(Math.random,Date.now);
+});
+test('the ancient city: only the guild that holds the castle may enter; ancient pieces a little more often, nothing extreme',()=>{
+  G.setEnv(Math.random,()=>1.8e12);const zi=G.ZONES.findIndex(z=>z.castle);assert.ok(zi>=0&&!G.ZONES[zi].req);
+  const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'x'},{});const S=A.chars[A.cur];S.lvl=380;
+  assert.equal(G.apply(A,'travel',{z:zi,f:0},{}).ok,false,'not without the castle');assert.equal(G.apply(A,'travel',{z:zi,f:0},{castle:true}).ok,true);assert.equal(S.zone,zi);
+  assert.equal(G.apply(A,'tick',{z:zi,f:0,kills:1,dt:5},{}).ok,false,'and out when the castle is lost');
+  assert.equal(G.tierOf(zi),G.CITY_TIER);assert.ok(G.CITY_RAR[4]>G.RESET_RAR[4]&&G.CITY_RAR[4]<G.RESET_RAR[4]*1.5,'a little more, not much more');assert.ok(G.CITY_PERFECT>1&&G.CITY_PERFECT<=1.3);
 });
