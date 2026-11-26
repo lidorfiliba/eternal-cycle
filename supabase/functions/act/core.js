@@ -182,10 +182,29 @@ function afkZone(s){
   if(s.zone<0)return -1;if(canEnter(s,s.zone))return s.zone;
   let z=Math.min(s.zone,s.open,BASEZ-1);while(z>0&&ZONES[z].min>s.lvl)z--;return z;
 }
+// What a piece asks of its wearer, as in MU: stats, never level, so gear stays wearable after a reset.
+// A weapon and wings ask for the class's main stat, armor for vitality and some of the main stat; the numbers follow
+// the level of the first map that drops the tier, and each + adds 3%. A character that lets the game place its points
+// always meets the requirements of gear from maps it can reach.
+const _tl={};
+function tierLvl(t){if(t>8)return CAP+(t-9)*120; // gear of the reset maps asks for what only a reset gives
+  if(_tl[t]==null){let m=1;for(let i=0;i<ZONES.length;i++)if(tierOf(i)===t){m=ZONES[i].min;break;}_tl[t]=m;}return _tl[t];}
+function reqOf(it,cls){
+  const main=CLS[cls].main,k=1+.03*(it.p|0),L=(it.s==='g'?Math.min(CAP,it.t*8):tierLvl(it.t))-1,q={};
+  if(ARM[it.s]){q.vit=Math.round(15+.9*L*k);q[main]=Math.max(q[main]||0,Math.round(15+1.2*L*k));}
+  else q[main]=Math.round(15+2.2*L*k);
+  return q;
+}
+function canWear(s,it){const q=reqOf(it,s.cls);for(const k in q)if(s.stats[k]<q[k])return false;return true;}
+function lacks(s,it){const q=reqOf(it,s.cls),o=[];for(const k in q)if(s.stats[k]<q[k])o.push(STATN[k][0]+' '+q[k]);return o.join(', ');}
 function autoAlloc(s){
   if(s.pts<=0)return;const al=CLS[s.cls].al;let left=s.pts;
-  const put=(k,n)=>{n=Math.max(0,Math.min(n,STAT_MAX-s.stats[k]));s.stats[k]+=n;left-=n;};
-  for(const k in al)put(k,Math.floor(s.pts*al[k]));
+  const put=(k,n)=>{n=Math.max(0,Math.min(n,left,STAT_MAX-s.stats[k]));s.stats[k]+=n;left-=n;};
+  // first whatever the gear it owns asks for, smallest gap first; then the class's usual split
+  {const want={};for(const it of Object.values(s.eq).concat(s.inv||[])){if(!it)continue;const q=reqOf(it,s.cls);for(const k in q)want[k]=Math.max(want[k]||0,q[k]);}
+    const gaps=Object.keys(want).map(k=>[k,want[k]-s.stats[k]]).filter(g=>g[1]>0).sort((a,b)=>a[1]-b[1]);for(const g of gaps)if(g[1]<=left)put(g[0],g[1]);}
+  const pool=left;
+  for(const k in al)put(k,Math.floor(pool*al[k]));
   for(const k of [CLS[s.cls].main,'vit','agi','ene','str'])if(left>0)put(k,left); // whatever a full stat cannot take goes to the next one
   s.pts=left;
 }
@@ -223,7 +242,7 @@ function stash(s,it,rep){
 }
 function gainItem(s,it,rep){
   const cur=s.eq[it.s];
-  if(s.autoEq&&(!cur||itemScore(it)>itemScore(cur))){s.eq[it.s]=it;if(rep)rep.equipped=(rep.equipped||0)+1;if(cur)stash(s,cur,rep);return 'eq';}
+  if(s.autoEq&&canWear(s,it)&&(!cur||itemScore(it)>itemScore(cur))){s.eq[it.s]=it;if(rep)rep.equipped=(rep.equipped||0)+1;if(cur)stash(s,cur,rep);return 'eq';}
   return stash(s,it,rep)?'bag':'sold';
 }
 function rollLoot(s,zi,kills,c,rep){
@@ -382,7 +401,7 @@ function siegeInfo(now){
 const PARTY_XP=.05; // extra XP for each active party member on the same map beyond the second player, party of up to 5
 const partyXp=n=>PARTY_XP*Math.max(0,Math.min(4,n|0)-1); // extra XP per active party member in the same map, up to 3
 const GOLD_SHOP=[{k:'gem',t:'אבן נשמה',d:'חומר לשדרוג ציוד',cost:5000},{k:'box',t:'תיבת אוצר',d:'פריט מהמפה הגבוהה שפתחת, אבנים או זהב',cost:40000},{k:'ticket',t:'כרטיס זירה',d:'קרב נוסף',cost:10000},{k:'scroll',t:'מגילת ניסיון',d:'50% יותר ניסיון למשך 30 דקות',cost:25000}];
-const RESET_SHOP=[{k:'charm',t:'3 קמעות הגנה',d:'שדרוג שנכשל לא מוריד דרגה',cost:4},{k:'bless',t:'ברכת נצח',d:'5% יותר ניסיון לתמיד לכל הדמויות, עד 10 פעמים',cost:8},{k:'pts',t:'50 נקודות סטט',d:'לדמות הנוכחית, נשארות לתמיד',cost:10},{k:'jewel',t:'אבן שלמות',d:'מוסיפה אופציה חסרה לפריט אקסלנט',cost:6},{k:'abox',t:'תיבה עתיקה',d:'פריט אגדי או עתיק מהמפה הגבוהה שפתחת',cost:12},{k:'wing',t:'כנפיים בדרגה הבאה',d:'כנפיים נדירות, דרגה אחת מעל הלבושות',cost:25}];
+const RESET_SHOP=[{k:'charm',t:'3 קמעות הגנה',d:'שדרוג שנכשל לא מוריד דרגה',cost:4},{k:'bless',t:'ברכת נצח',d:'5% יותר ניסיון לתמיד לכל הדמויות, עד 10 פעמים',cost:8},{k:'pts',t:'50 נקודות סטט',d:'לדמות הנוכחית, נשארות לתמיד',cost:10},{k:'jewel',t:'אבן שלמות',d:'מוסיפה אופציה חסרה לפריט אקסלנט',cost:6},{k:'abox',t:'תיבה עתיקה',d:'פריט אגדי או עתיק מהמפה הגבוהה שפתחת',cost:12},{k:'feather',t:'נוצת נצח',d:'מפתחת כנפיים +15 לדרגה הבאה',cost:12}];
 // Paid credits: the packs on sale (price in shekels) and what credits buy. Credits are added only by the server, after a payment is confirmed.
 const PACKS=[{k:'p1',credits:100,ils:10,note:''},{k:'p2',credits:550,ils:50,note:'10% תוספת'},{k:'p3',credits:1200,ils:100,note:'20% תוספת'},{k:'p4',credits:2600,ils:200,note:'30% תוספת'}];
 const PREM_SHOP=[{k:'vip7',t:'מעמד נצח לשבוע',d:'15% יותר ניסיון ו-15% יותר שלל, 7 ימים',cost:300},{k:'scroll3',t:'3 מגילות ניסיון',d:'שעה וחצי של 50% יותר ניסיון',cost:60},
@@ -409,7 +428,7 @@ const QUESTS=[
 function give(A,S,r){
   if(r.sboxes)A.sboxes+=r.sboxes;if(r.gold)A.gold+=r.gold;if(r.cred)A.cred+=r.cred;if(r.coins)A.coins+=r.coins;if(r.gems)A.gems+=r.gems;if(r.boxes)A.boxes+=r.boxes;if(r.feathers)A.feathers=(A.feathers||0)+r.feathers;
   if(r.wing){const it=makeItem(S,'g',r.wing[0],r.wing[1],-1,r.wing[2]?{season:true}:null);const cur=S.eq.g;
-    if(!cur||itemScore(it)>itemScore(cur)){S.eq.g=it;if(cur&&A.inv.length<BAG)A.inv.push(cur);}else if(A.inv.length<BAG)A.inv.push(it);else S.eq.g=it;}
+    if(canWear(S,it)&&(!cur||itemScore(it)>itemScore(cur))){S.eq.g=it;if(cur&&A.inv.length<BAG)A.inv.push(cur);}else if(A.inv.length<BAG)A.inv.push(it);else if(canWear(S,it))S.eq.g=it;}
 }
 
 /* ---------- timed events (server clock, Asia/Jerusalem) ---------- */
@@ -598,7 +617,7 @@ function apply(A,kind,args,ctx){
     case 'autoSell':A.autoSell=((A.autoSell|0)+1)%3;break;
     case 'setAuto':S.auto=!!args.on;break;
     case 'reset':{if(!canReset(S))return fail('צריך רמה 400');r.gain=resetGain(S);doReset(S);S.evIn=null;for(const w of evWindows(now,0))if(w.e.tiered)evRec(A,w.key).no=1;A.bossAt=null;A.allow=0;r.resets=S.resets;break;}
-    case 'equip':{const f=findIt(A,S,int(args.id,0,1e12));if(!f||f.i==null)return fail('הפריט לא בתיק');A.inv.splice(f.i,1);const old=S.eq[f.it.s];S.eq[f.it.s]=f.it;if(old)A.inv.push(old);break;}
+    case 'equip':{const f=findIt(A,S,int(args.id,0,1e12));if(!f||f.i==null)return fail('הפריט לא בתיק');if(!canWear(S,f.it))return fail('חסר לך: '+lacks(S,f.it));A.inv.splice(f.i,1);const old=S.eq[f.it.s];S.eq[f.it.s]=f.it;if(old)A.inv.push(old);break;}
     case 'unequip':{const f=findIt(A,S,int(args.id,0,1e12));if(!f||!f.eq)return fail('הפריט לא לבוש');if(A.inv.length>=BAG)return fail('התיק מלא');S.eq[f.eq]=null;A.inv.push(f.it);break;}
     case 'sell':{const f=findIt(A,S,int(args.id,0,1e12));if(!f||f.i==null)return fail('הפריט לא בתיק');A.inv.splice(f.i,1);A.gold+=sellVal(f.it);break;}
     case 'craftKey':{if((A.shards||0)<KEY_SHARDS)return fail('צריך '+KEY_SHARDS+' שברי ארגמן. יש לך '+(A.shards||0));if(A.gold<KEY_GOLD)return fail('צריך '+KEY_GOLD+' זהב');
@@ -611,7 +630,7 @@ function apply(A,kind,args,ctx){
     case 'evLeave':{S.evIn=null;break;}
     case 'bestEq':{ // wear the strongest piece in the bag for every slot; what was worn goes back to the bag
       const p0=calc(S).power;let n=0;
-      for(const sl of SLOTS){let bi=-1,bs=S.eq[sl]?itemScore(S.eq[sl]):0;A.inv.forEach((it,i)=>{if(it.s===sl){const sc=itemScore(it);if(sc>bs){bs=sc;bi=i;}}});
+      for(const sl of SLOTS){let bi=-1,bs=S.eq[sl]?itemScore(S.eq[sl]):0;A.inv.forEach((it,i)=>{if(it.s===sl&&canWear(S,it)){const sc=itemScore(it);if(sc>bs){bs=sc;bi=i;}}});
         if(bi>=0){const it=A.inv[bi],old=S.eq[sl];if(old)A.inv[bi]=old;else A.inv.splice(bi,1);S.eq[sl]=it;n++;}}
       r.n=n;r.gain=calc(S).power-p0;break;}
     case 'sellRar':{const q=int(args.r,0,4);let g=0,n=0;A.inv=A.inv.filter(it=>{if(it.r===q&&it.s!=='g'&&!it.ex){g+=sellVal(it);n++;return false;}return true;});if(!n)return fail('אין פריטים כאלה בתיק');A.gold+=g;r.gold=g;r.n=n;break;}
@@ -625,8 +644,7 @@ function apply(A,kind,args,ctx){
     case 'buy':{
       const shop=String(args.shop),k=String(args.k),list=shop==='gold'?GOLD_SHOP:shop==='reset'?RESET_SHOP:shop==='season'?SEASON_SHOP:shop==='prem'?PREM_SHOP:null,cur=shop==='gold'?'gold':shop==='reset'?'cred':shop==='prem'?'prem':'coins';
       const o=list&&list.find(x=>x.k===k);if(!o)return fail('המוצר לא קיים');if(!((A[cur]||0)>=o.cost))return fail('אין מספיק');
-      if(k==='wing'){const t=(S.eq.g?S.eq.g.t:0)+1;if(t>4)return fail('כבר בדרגה המרבית');if(A.inv.length>=BAG)return fail('התיק מלא');A[cur]-=o.cost;const it=makeItem(S,'g',t,2,-1);r.box={it:it,where:gainItem(S,it)};}
-      else if(k==='abox'){A[cur]-=o.cost;r.box=openBox(S,'a');}
+      if(k==='abox'){A[cur]-=o.cost;r.box=openBox(S,'a');}
       else{
         if(k==='bless'&&A.bless>=10)return fail('הגעת למקסימום');
         A[cur]-=o.cost;
@@ -673,4 +691,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

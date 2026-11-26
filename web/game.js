@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126160213';
-const {WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,duelCan,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126161028';
+const {reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,duelCan,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -918,7 +918,7 @@ function renderZones(){
   return h;
 }
 function shopList(name,list,have,curName){
-  return list.map(o=>{let dis=have<o.cost;if(o.k==='bless'&&A.bless>=10)dis=true;if(o.k==='wing'&&S.eq.g&&S.eq.g.t>=4)dis=true;
+  return list.map(o=>{let dis=have<o.cost;if(o.k==='bless'&&A.bless>=10)dis=true;
     return '<div class="card shop"><div class="z"><b>'+o.t+'</b>'+(o.d?'<small>'+o.d+'</small>':'')+'</div><button class="btn sm'+(dis?'':' pri')+'" data-act="buy" data-s="'+name+'" data-k="'+o.k+'"'+(dis?' disabled':'')+'>'+L(fmt(o.cost))+' '+curName+'</button></div>';}).join('');
 }
 function renderShop(){
@@ -1028,7 +1028,8 @@ function openSheet(id){
       '<p class="hint" style="margin-bottom:6px">'+(it.p<15?'כנפיים מתפתחות לדרגה הבאה רק ב-'+L('+15')+'. ':'')+'יש לך '+L(A.feathers||0)+' נוצות נצח. קונים אותן בחנות העונה, ומקבלים בפס העונה ולעיתים מבוסים. כישלון שורף את הנוצות, הכנפיים נשארות. דרגה '+L(it.t+'/'+WING_MAX)+'.</p>';}
   if(it.ex&&!isFull(it))h+='<button class="btn'+(A.jewels>0?' pri':'')+'" data-act="exAdd" data-id="'+it.id+'"'+(A.jewels>0?'':' disabled')+' style="width:100%;margin-bottom:6px">הוסף אופציה · אבני שלמות: '+L(A.jewels||0)+'</button>';
   if(it.p<15)h+='<p class="hint">שדרוג לדרגה '+L('+'+(it.p+1))+': '+L(uc.gems)+' אבני נשמה ו-'+L(fmt(uc.gold))+' זהב · סיכוי '+L(Math.round(upChance(it)*100)+'%')+(it.p>=7?' · כישלון מוריד דרגה אחת'+(A.charms?' (יש קמע הגנה)':''):'')+'</p>';
-  h+='<div class="acts">'+(f.eq!=null?'<button class="btn" data-act="unequip" data-id="'+it.id+'">הסר</button>':'<button class="btn pri" data-act="equip" data-id="'+it.id+'">לבש</button>')+
+  {const q=reqOf(it,S.cls);h+='<div class="kv" style="margin-bottom:6px"><span>דרישות</span><b>'+Object.keys(q).map(k=>'<span style="color:'+(S.stats[k]>=q[k]?'var(--good)':'#ff5c7a')+'">'+STATN[k][0]+' '+L(fmt(q[k]))+'</span>').join(' · ')+'</b></div>';}
+  h+='<div class="acts">'+(f.eq!=null?'<button class="btn" data-act="unequip" data-id="'+it.id+'">הסר</button>':'<button class="btn pri" data-act="equip" data-id="'+it.id+'"'+(canWear(S,it)?'':' disabled')+'>'+(canWear(S,it)?'לבש':'חסרים סטטים')+'</button>')+
     '<button class="btn" data-act="upgrade" data-id="'+it.id+'"'+(it.p>=15||A.gems<uc.gems||A.gold<uc.gold?' disabled':'')+'>'+(it.p>=15?'דרגה מרבית':'שדרג')+'</button>'+
     (f.eq==null?'<button class="btn" data-act="sell" data-id="'+it.id+'">מכור ב-'+L(fmt(sellVal(it)))+'</button>':'')+
     '<button class="btn" data-act="closeSheet">סגור</button></div>';

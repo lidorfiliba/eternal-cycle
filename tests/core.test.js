@@ -186,6 +186,7 @@ test('the keep: a crafted key, entry fixes the bracket, only kills inside count,
 });
 test('wear the best: strongest piece per slot from the shared bag; gear worn by another character is not touched',()=>{
   const {A}=fresh(),s=A.chars[0];A.inv=[];
+  s.stats={str:9000,agi:9000,vit:9000,ene:9000};
   s.eq.w=G.makeItem(s,'w',2,1,0);const strong=G.makeItem(s,'w',9,3,0),weak=G.makeItem(s,'w',1,0,0),helm=G.makeItem(s,'h',5,2,0);A.inv.push(weak,strong,helm);
   const other=G.bind(A,G.newChar('שני','storm'));other.eq.a=G.makeItem(s,'a',12,4,0);A.chars.push(other);
   const old=s.eq.w,r=G.apply(A,'bestEq',{});assert.ok(r.ok);assert.equal(r.n,2);assert.ok(r.gain>0);
@@ -245,4 +246,17 @@ test('wings: fifty ranks, each stronger; only +15 wings evolve, with feathers, a
   x=.01;const ok=G.apply(A,'wingEvolve',{id:w.id});assert.equal(ok.evolved,true);assert.equal(w.t,9);assert.equal(w.p,15,'the upgrade level is kept, so evolving never weakens');assert.equal(A.feathers,10-2*need);
   w.t=50;assert.equal(G.apply(A,'wingEvolve',{id:w.id}).ok,false);A.coins=100;assert.ok(G.apply(A,'buy',{shop:'season',k:'feather'}).ok);assert.equal(A.coins,60);
   assert.ok(G.wingChance(1)>G.wingChance(49)&&G.wingFeathers(49)>G.wingFeathers(1));
+});
+
+test('gear asks for stats: a weak character cannot wear strong gear, automatic points always can, resets do not strip gear',()=>{
+  const st={now:Date.parse('2026-11-26T12:20:00Z')};G.setEnv(()=>.5,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'a',cls:'blade'});const s=A.chars[0];
+  const top={id:5001,s:'w',t:8,r:3,p:0,z:21,af:[]};A.inv.push(top);s.autoPts=false;assert.match(G.apply(A,'equip',{id:5001}).msg,/כוח/);assert.equal(!!(s.eq.w&&s.eq.w.id===5001),false);
+  assert.equal(G.apply(A,'bestEq',{}).n,0,'the button does not put it on either');
+  s.pts=5000;G.apply(A,'autoPts',{});assert.ok(G.canWear(s,top),'automatic points go first to what the gear asks');assert.ok(G.apply(A,'equip',{id:5001}).ok);
+  assert.ok(G.reqOf({s:'w',t:8,p:15},'blade').str>G.reqOf({s:'w',t:8,p:0},'blade').str);assert.ok(G.reqOf({s:'w',t:9,p:0},'blade').str>G.reqOf({s:'w',t:8,p:0},'blade').str);
+  assert.deepEqual(Object.keys(G.reqOf({s:'a',t:3,p:0},'hunter')).sort(),['agi','vit']);assert.deepEqual(Object.keys(G.reqOf({s:'w',t:3,p:0},'storm')),['ene']);
+  for(const cls of ['blade','storm','hunter']){const B=G.newAccount();G.apply(B,'create',{name:'b',cls:cls});const c=B.chars[0];
+    for(let zi=0;zi<24;zi++){const L=G.ZONES[zi].min;c.stats={str:15,agi:15,vit:15,ene:15};c.pts=5*(L-1);c.autoPts=true;G.apply(B,'autoPts',{});G.apply(B,'autoPts',{});
+      for(const sl of ['w','a','h'])assert.ok(G.canWear(c,{s:sl,t:G.tierOf(zi),r:4,p:9,z:zi,af:[]}),cls+' at level '+L+' wears +9 '+sl+' of map '+zi);}}
+  s.lvl=400;assert.ok(G.apply(A,'reset',{}).ok);assert.equal(s.eq.w.id,5001);assert.ok(G.canWear(s,top));
 });
