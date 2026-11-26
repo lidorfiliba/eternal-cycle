@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126151127';
+const BUILD='20261126151818';
 const {tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -247,18 +247,19 @@ function silhouette(key,col){const im=IMG[key];if(!im||!im.complete||!im.natural
   if(Object.keys(TINT).length>80)for(const k in TINT)if(k.startsWith('sil'))delete TINT[k];
   return TINT[id]=c;}
 function drawArmorAura(key,an,fi,x,y,k,flip,tier,col,t,bh){ // behind the body
-  if(tier<9)return;const hueStep=tier>=15?Math.floor(t*6)%12:0,c=tier>=15?'hsl('+hueStep*30+',95%,66%)':col,sil=silhouette(key,c);if(!sil)return;
+  if(tier<7)return;const hueStep=tier>=15?Math.floor(t*6)%12:0,c=tier>=15?'hsl('+hueStep*30+',95%,66%)':col,sil=silhouette(key,c);if(!sil)return;
   ctx.save();ctx.globalCompositeOperation='lighter';ctx.shadowColor=c;
   if(tier>=13){ // flame: copies of the outline, taller and fainter, wavering upward
     for(let i=1;i<=4;i++){const w=Math.sin(t*7+i*1.7)*2.2*k*.5,up=i*(3.2+Math.sin(t*5+i)*1.2)*k*.5;ctx.shadowBlur=10+i*5;
       sprFrame(sil,key,an,fi,x,y,k,flip,.34-i*.06,w,-up*.35,1+i*.035,1+i*.075);}
     if(!calm)for(let n=0;n<2;n++)if(Math.random()<.5)SC.parts.push({x:x+(Math.random()-.5)*30*k*.5,y:y-Math.random()*bh*k,vx:(Math.random()-.5)*10,vy:-70-Math.random()*50,life:.7,c:c,s:Math.random()<.3?3:2});
-  }else{const pulse=tier>=11?.5+.5*Math.sin(t*5):.6;ctx.shadowBlur=tier>=11?16:10;sprFrame(sil,key,an,fi,x,y,k,flip,.16+.14*pulse,0,-1,1.05,1.04);}
+  }else{const pulse=.5+.5*Math.sin(t*(tier>=11?5:3)),n=tier>=11?3:2,base=tier>=11?.34:tier>=9?.3:.24;for(let i=1;i<=n;i++){ctx.shadowBlur=10+i*7;sprFrame(sil,key,an,fi,x,y,k,flip,(base+.14*pulse)/i,0,-i,1+i*.05,1+i*.04);}
+    if(!calm&&Math.random()<(tier>=9?.22:.12))SC.parts.push({x:x+(Math.random()-.5)*34*k*.5,y:y-Math.random()*bh*k*.8,vx:0,vy:-45-Math.random()*30,life:.7,c:c,s:2});}
   ctx.restore();
 }
 function drawArmorShine(key,an,fi,x,y,k,flip,tier,t,bh){ // over the body: sparkles, and from +11 a band of light that crosses it
   if(tier<7)return;
-  if(!calm&&Math.random()<(tier>=11?.22:tier>=9?.14:.07))SC.nums.push({x:x+(Math.random()-.5)*34*k*.5,y:y-Math.random()*bh*k,txt:'✦',c:'#ffffff',s:7+Math.random()*6,life:.35});
+  if(!calm&&Math.random()<(tier>=11?.28:tier>=9?.2:.13))SC.nums.push({x:x+(Math.random()-.5)*34*k*.5,y:y-Math.random()*bh*k,txt:'✦',c:'#ffffff',s:7+Math.random()*6,life:.35});
   if(tier<11)return;const sil=silhouette(key,'#ffffff');if(!sil)return;const m=SPR[key],per=tier>=13?1.6:2.4,u=(t%per)/per;if(u>.45)return;
   const span=m.w*k,bx=x-span/2+u/.45*span,bw=7*k;
   ctx.save();ctx.beginPath();ctx.moveTo(bx,y+4);ctx.lineTo(bx+bw,y+4);ctx.lineTo(bx+bw+bh*k*.5,y-m.h*k);ctx.lineTo(bx+bh*k*.5,y-m.h*k);ctx.closePath();ctx.clip();
@@ -325,8 +326,12 @@ function drawHero(x,y,sc,look,t,anim,flip,dead,mv,fury){
   const sheet=armorSheet(key,look),gt=look.spr||dead?0:glowTier(look.sp),ac=gt?armorGlowColor(look,t,gt):null;
   if(gt)drawArmorAura(key,an,fi,x,y,k,flip,gt,ac,t,m.bh);
   if(mv&&maxP>=11&&!dead&&!calm)spr(key,an,fi-1,x-(flip?-1:1)*12*sc,y,k,flip,null,0,.28,sheet); // afterimage at +11
-  spr(key,an,fi,x,y,k,flip,gt>=7?ac:gc,dead?0:Math.max(anim>0?Math.min(gl,6):gl,gt>=13?10:gt>=9?8:gt>=7?5:0),null,sheet);
+  spr(key,an,fi,x,y,k,flip,gt>=7?ac:gc,dead?0:Math.max(anim>0?Math.min(gl,6):gl,gt>=13?12:gt>=9?11:gt>=7?9:0),null,sheet);
   if(gt)drawArmorShine(key,an,fi,x,y,k,flip,gt,t,m.bh);
+  if(look.lu>0&&!dead){const u=look.lu,sil=silhouette(key,'#ffd75e'),w=silhouette(key,'#ffffff'); // level up: the body flares gold for a second
+    if(sil&&w){ctx.save();ctx.globalCompositeOperation='lighter';ctx.shadowColor='#ffd75e';ctx.shadowBlur=22;const e=1-u;
+      sprFrame(w,key,an,fi,x,y,k,flip,u*u*.3);for(let i=1;i<=3;i++)sprFrame(sil,key,an,fi,x,y,k,flip,u*.32/i,0,-e*i*5,1+(.06+e*.22)*i,1+(.05+e*.2)*i);ctx.restore();}
+    if(!calm)for(let n=0;n<2;n++)SC.parts.push({x:x+(Math.random()-.5)*46*sc,y:y-Math.random()*m.bh*k,vx:(Math.random()-.5)*30,vy:-90-Math.random()*70,life:.6,c:Math.random()<.4?'#fff':'#ffd75e',s:2+Math.random()*2});}
   if(maxP>=13&&!dead&&!calm&&Math.random()<.35)SC.parts.push({x:x+(Math.random()-.5)*44*sc,y:y-Math.random()*m.bh*k,vx:0,vy:-20,life:.8,c:gc,s:2});
 }
 function drawMon(m,zi,t,flip,sc){
@@ -501,7 +506,7 @@ function dropOrbs(m,rep){
 }
 function afterXp(ups){
   if(!(ups>0))return;snd('lvl');statsDirty=true;panelDirty=true;const h=SC.hero;
-  SC.fx.push({k:'lvl',x:h.x,y:gy(),life:.9,c:'#f2c14e'});addNum(h.x,gy()-120,'רמה '+S.lvl,'#f2c14e',true);
+  h.luAt=SC.t;SC.fx.push({k:'lvl',x:h.x,y:gy(),life:.9,c:'#f2c14e'});SC.fx.push({k:'rune',x:h.x,y:gy()-2,r:64,life:1,d:1,c:'#ffd75e'});SC.fx.push({k:'pillar',x:h.x,y:gy(),life:.7,d:.7,c:'#ffd75e'});addNum(h.x,gy()-120,'רמה '+S.lvl,'#f2c14e',true);
   for(let i=0;i<6;i++)if(S.lvl>=SKLV[i]&&S.lvl-ups<SKLV[i]&&i>0)toast('כישור חדש: '+CLS[S.cls].sk[i]);
   if(S.lvl>=CAP)toast('רמה 400. אפשר לבצע ריסט');
 }
@@ -685,7 +690,7 @@ function drawWorld(){
     ctx.save();ctx.globalAlpha=clamp(1-u*u,0,1);drawHero(h.x,g0+(above?-u*170:u*46),sc,lk,SC.t,0,h.face<0,0,true,false);ctx.restore();}
   else{
     if(h.shield>0){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle='#9fe8ff';ctx.shadowColor='#9fe8ff';ctx.shadowBlur=14;ctx.globalAlpha=.45+.25*Math.sin(SC.t*9);ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(h.x,g0-hk.bh*sc,34*sc,hk.bh*sc+8,0,0,7);ctx.stroke();ctx.restore();}
-    drawHero(h.x,g0,sc,lk,SC.t,h.anim,h.face<0,h.dead>0?3-h.dead:0,h.mv,h.buff>0);
+    lk.lu=h.luAt!=null?Math.max(0,1-(SC.t-h.luAt)/1.1):0;drawHero(h.x,g0,sc,lk,SC.t,h.anim,h.face<0,h.dead>0?3-h.dead:0,h.mv,h.buff>0);lk.lu=0;
     hpBar(h.x-30,g0-hk.bh*2*sc-16,60,h.hp/C.hp,'#6fe39a');nameTag(h.x,g0-hk.bh*2*sc-22,S.name,lk.r,guild.mine?guild.mine.tag:'',!!(guild.mine&&guild.mine.castle));}
   drawFx(SC.dt);ctx.restore();
   if(window.EC&&window.EC.gallery)window.EC.gallery(drawHero,ctx); // debug hook for looking at gear art
