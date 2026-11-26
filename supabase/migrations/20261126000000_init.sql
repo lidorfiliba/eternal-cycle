@@ -1,9 +1,11 @@
 -- Eternal Cycle: all game state lives here and only the server function may touch it.
 -- Row Level Security is on with no policies, so browser clients (anon / authenticated)
 -- cannot read or write any of these tables directly. The edge function uses the service role.
+-- Accounts are identified by an id the function derives from a secret key held by the player's
+-- browser (SHA-256 of the key); the key itself is never stored.
 
 create table public.accounts (
-  user_id    uuid primary key references auth.users(id) on delete cascade,
+  user_id    uuid primary key,
   state      jsonb       not null,
   version    bigint      not null default 1,
   calls      integer     not null default 0,
@@ -55,6 +57,15 @@ create table public.party_members (
   joined_at timestamptz not null default now()
 );
 create index party_members_party_idx on public.party_members (party_id);
+
+-- New-account throttle per network address.
+create table public.signups (
+  ip text not null,
+  at timestamptz not null default now()
+);
+create index signups_ip_idx on public.signups (ip, at desc);
+alter table public.signups enable row level security;
+revoke all on public.signups from anon, authenticated;
 
 alter table public.parties       enable row level security;
 alter table public.party_members enable row level security;
@@ -139,6 +150,20 @@ revoke execute on function public.market_cancel(uuid, bigint)        from public
 grant  execute on function public.market_list(uuid, bigint, bigint, uuid) to service_role;
 grant  execute on function public.market_buy(uuid, bigint)           to service_role;
 grant  execute on function public.market_cancel(uuid, bigint)        to service_role;
+
+-- At most 5 new accounts per address per hour. Records the attempt when allowed.
+create function public.signup_allowed(p_ip text) returns boolean
+language plpgsql set search_path = public as $$
+declare n integer;
+begin
+  delete from signups where at < now() - interval '1 day';
+  select count(*) into n from signups where ip = p_ip and at > now() - interval '1 hour';
+  if n >= 5 then return false; end if;
+  insert into signups (ip) values (p_ip);
+  return true;
+end $$;
+revoke execute on function public.signup_allowed(text) from public, anon, authenticated;
+grant  execute on function public.signup_allowed(text) to service_role;
 
 -- Parties: up to 4 players. Members who are active in the same map give each other bonus XP.
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; media-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self' https://*.supabase.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; media-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
 <meta name="referrer" content="same-origin">
 <title>מעגל הנצח</title>
 <meta name="description" content="משחק תפקידים בדפדפן: מפות, בוסים, סטים עתיקים וריסטים">
@@ -48,6 +48,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--arc);outline-of
 #resetNow{position:absolute;top:44px;inset-inline:0;margin:auto;width:max-content;display:none;font-family:var(--display);font-size:17px;padding:8px 22px;border-radius:22px;border:1px solid #fff3;background:linear-gradient(#ffcf5a,#d98a1c);color:#2a1500;animation:pulse 1.2s infinite}
 #quest{position:absolute;top:38px;inset-inline:0;margin:auto;width:max-content;max-width:92%;font-size:12.5px;font-weight:700;color:#fff;background:rgba(10,8,24,.72);padding:4px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.18)}
 #quest.done{border-color:var(--gold);color:var(--gold);animation:pulse 1.2s infinite}
+#evChip{position:absolute;top:68px;inset-inline:0;margin:auto;width:max-content;max-width:92%;font-size:12px;font-weight:700;color:var(--dim);background:rgba(10,8,24,.72);padding:3px 11px;border-radius:12px;border:1px solid rgba(255,255,255,.14)}
+#evChip.live{color:#fff;border-color:var(--ember)}
+#evChip.done{color:var(--gold);border-color:var(--gold);animation:pulse 1.2s infinite}
 #skills{position:absolute;right:8px;bottom:8px;display:flex;gap:6px;direction:rtl}
 #skills button{width:62px;height:50px;border-radius:12px;border:1.5px solid rgba(255,255,255,.35);background:rgba(24,19,49,.82);color:#fff;font-size:11.5px;font-weight:700;line-height:1.1;padding:2px}
 #skills button.cd{opacity:.5;border-color:rgba(255,255,255,.12)}
@@ -58,7 +61,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--arc);outline-of
 #mv{position:absolute;left:8px;bottom:8px;display:flex;gap:6px;direction:ltr}
 #mv button{width:56px;height:50px;border-radius:12px;border:1.5px solid rgba(255,255,255,.35);background:rgba(24,19,49,.82);color:#fff;font-size:22px;line-height:1;touch-action:none}
 #mv button.hold{background:rgba(95,212,255,.35)}
-#sndBtn{position:absolute;inset-inline-end:8px;top:72px;height:28px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(10,8,24,.6);color:var(--dim);font-size:12px;padding:0 9px}
+#sndBtn{position:absolute;left:8px;bottom:108px;height:28px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(10,8,24,.6);color:var(--dim);font-size:12px;padding:0 9px}
 #sndBtn.on{color:#fff}
 @keyframes pulse{50%{transform:scale(1.06);box-shadow:0 0 22px #f2c14e}}
 
@@ -164,6 +167,7 @@ input[type=text]{width:100%;background:#0a0818;border:1px solid var(--line);bord
     <canvas id="cv"></canvas>
     <div id="zoneTag"></div><div id="rateTag" class="num"></div>
     <button id="quest" data-act="quest"></button>
+    <button id="evChip" data-act="evtab"></button>
     <button id="resetNow" data-act="reset">ריסט מוכן</button>
     <button id="autoBtn" data-act="auto"></button>
     <button id="sndBtn" data-act="mute"></button>
@@ -175,7 +179,7 @@ input[type=text]{width:100%;background:#0a0818;border:1px solid var(--line);bord
     <button data-tab="gear">ציוד</button>
     <button data-tab="zones">מפה</button>
     <button data-tab="shop">חנות</button>
-    <button data-tab="pass">עונה</button>
+    <button data-tab="pass">אירועים</button>
     <button data-tab="arena">שחקנים</button>
   </nav>
   <main id="panel"></main>

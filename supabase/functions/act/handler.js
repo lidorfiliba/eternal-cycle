@@ -38,7 +38,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
     }) };
   }
 
-  async function handle(uid, kind, args) {
+  async function handle(uid, kind, args, meta = {}) {
     for (let attempt = 0; attempt < 4; attempt++) {
       const now = clock();
       const { data: row, error } = await admin.from("accounts").select("state,version,calls,calls_at").eq("user_id", uid).maybeSingle();
@@ -46,6 +46,8 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
 
       if (!row) {
         if (kind !== "create") return { result: { ok: false, msg: "new" }, state: null };
+        const okIp = await admin.rpc("signup_allowed", { p_ip: String(meta.ip || "unknown").slice(0, 64) });
+        if (okIp.error || okIp.data !== true) return { result: { ok: false, msg: "נוצרו יותר מדי חשבונות מהרשת הזו. נסה שוב בעוד שעה" }, state: null };
         G.setEnv(rnd, () => now);
         const A = G.newAccount();
         const r = G.apply(A, "create", args, { uid });

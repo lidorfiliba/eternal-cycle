@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
-import * as G from '../supabase/functions/_shared/core.js';
+import * as G from '../supabase/functions/act/core.js';
 import { makeHandler } from '../supabase/functions/act/handler.js';
 
 const JSONB=new Set(['state','snap','item','detail']);
@@ -105,6 +105,30 @@ test('party through the server: bonus only for active members in the same map',a
   await handle(U(2),'travel',{z:-1});clock.add(8);
   assert.equal((await handle(U(1),'tick',{z:0,kills:3})).result.partyN,0);
   assert.equal((await handle(U(1),'pleave',{})).party.code,'');
+});
+test('new accounts are throttled per network address',async()=>{
+  const {handle}=await world();const made=[];
+  for(let i=1;i<=7;i++){const id='00000000-0000-0000-0000-0000000001'+String(i).padStart(2,'0');made.push((await handle(id,'create',{name:'n'+i,cls:'blade'},{ip:'203.0.113.9'})).result.ok);}
+  assert.deepEqual(made,[true,true,true,true,true,false,false]);
+  assert.ok((await handle('00000000-0000-0000-0000-000000000199','create',{name:'z',cls:'blade'},{ip:'198.51.100.2'})).result.ok,'another address is unaffected');
+});
+test('timed events: bonus XP, objectives, rewards once, quiz once',async()=>{
+  const {handle,clock,row}=await world();await handle(U(1),'create',{name:'a',cls:'blade'});
+  clock.add((Date.UTC(2026,10,26,8,29,0)-clock())/1000);                 // 10:29 local, nothing live
+  await handle(U(1),'travel',{z:0});clock.add(20);const base=await handle(U(1),'tick',{z:0,kills:5});
+  assert.equal((await handle(U(1),'claimEvent',{id:'square'})).result.ok,false);
+  clock.add(60);                                                          // 10:30:20 — כיכר התוהו: double XP
+  let total=0;for(let i=0;i<12&&total<150;i++){clock.add(19);total+=(await handle(U(1),'tick',{z:0,kills:40})).result.kills;}
+  const key=Object.keys((await row(U(1))).state.ev).find(k=>k.startsWith('square:'));assert.ok(key);
+  assert.ok((await row(U(1))).state.ev[key].k>=150,'progress '+total);
+  const lvl=(await row(U(1))).state.chars[0].lvl,c=await handle(U(1),'claimEvent',{id:'square'});assert.ok(c.result.ok,c.result.msg);
+  assert.ok(c.state.chars[0].lvl>=lvl+6);assert.equal((await handle(U(1),'claimEvent',{id:'square'})).result.ok,false,'reward only once');
+  assert.equal((await handle(U(1),'answer',{a:0})).result.ok,false,'quiz not live');
+  clock.add((Date.UTC(2026,10,26,10,16,0)-clock())/1000);                // 12:16 local — quiz + שעת השפע
+  const a1=await handle(U(1),'answer',{a:99});assert.ok(a1.result.ok);assert.equal(a1.result.correct,false);
+  assert.equal((await handle(U(1),'answer',{a:1})).result.ok,false,'one attempt only');
+  assert.equal((await handle(U(1),'claimEvent',{id:'quiz'})).result.ok,false);
+  assert.equal((await handle(U(1),'claimEvent',{id:'bounty'})).result.ok,false,'bonus hours have no reward to claim');
 });
 test('rate limit per account',async()=>{
   const {handle}=await world();await handle(U(1),'create',{name:'a',cls:'blade'});let refused=0;

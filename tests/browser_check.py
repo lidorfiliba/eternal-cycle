@@ -37,6 +37,8 @@ async def run(pg,online):
     out['opps']=await pg.evaluate("()=>(EC.A.opps||[]).length")
     await pg.click('[data-tab=arena]');await pg.wait_for_timeout(300);await pg.click('[data-act=fight]');await pg.wait_for_timeout(1200)
     out['duel']=await pg.evaluate("()=>[EC.SC.mode,EC.A.tickets]")
+    await pg.click('[data-tab=pass]');await pg.wait_for_timeout(1300)
+    out['events']=await pg.evaluate("()=>[document.querySelectorAll('#panel .card').length,document.getElementById('evChip').textContent]")
     out['errors']=errs
     return out
 async def main():

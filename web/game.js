@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const {BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
-const CFG=window.EC_CONFIG||{},ONLINE=!!(CFG.url&&CFG.anon);
+const {EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
 /* ---------- state, storage, server ---------- */
@@ -21,19 +21,19 @@ function toast(txt,r){if(demo||!txt)return;const d=document.createElement('div')
 function setNet(ok){$('net').textContent=ONLINE?(ok?'מחובר לשרת':'אין חיבור לשרת'):'מצב מקומי, בלי הגנה';}
 
 // In online mode the server owns the account; the client only asks and displays.
-let sb=null,session=null,chain=Promise.resolve(),players=[],market=[],party={code:'',members:[]},partyN=0;
-async function initServer(){
-  if(window.EC_MOCK){session={access_token:'mock',user:{}};return;}
-  const m=await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm');
-  sb=m.createClient(CFG.url,CFG.anon);
-  const got=await sb.auth.getSession();session=got.data.session;
-  if(!session){const r=await sb.auth.signInAnonymously();if(r.error)throw r.error;session=r.data.session;}
-  sb.auth.onAuthStateChange((ev,s)=>{if(s)session=s;});
+let session=null,chain=Promise.resolve(),players=[],market=[],party={code:'',members:[]},partyN=0;
+// The account is a random secret key kept in this browser. The server only ever sees its hash as the account id.
+const AKEY='eternal-cycle-key';
+function newKey(){const a=new Uint8Array(32);crypto.getRandomValues(a);return btoa(String.fromCharCode.apply(null,a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+const keyOk=k=>/^[A-Za-z0-9_-]{40,128}$/.test(k);
+function initServer(){
+  let k='';try{k=localStorage.getItem(AKEY)||'';}catch(e){}
+  if(!keyOk(k)){k=newKey();try{localStorage.setItem(AKEY,k);}catch(e){}}
+  session={key:k};
 }
 async function rpc(kind,args){
-  const call=()=>fetch(CFG.url+'/functions/v1/act',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':CFG.anon},body:JSON.stringify({kind:kind,args:args||{}})});
-  let res=await call();
-  if(res.status===401&&sb){const rf=await sb.auth.refreshSession();if(rf.data&&rf.data.session){session=rf.data.session;res=await call();}}
+  const h={'Content-Type':'application/json','x-ec-key':session.key};if(CFG.anon){h.apikey=CFG.anon;h.Authorization='Bearer '+CFG.anon;}
+  const res=await fetch(CFG.url+'/functions/v1/act',{method:'POST',headers:h,body:JSON.stringify({kind:kind,args:args||{}})});
   const j=await res.json().catch(()=>null);if(!res.ok||!j)throw new Error(j&&j.error||('HTTP '+res.status));return j;
 }
 if(typeof window!=='undefined'&&window.EC_MOCK)rpc=window.EC_MOCK; // test hook: an in-page stand-in for the server
@@ -507,7 +507,13 @@ function renderHud(){
   const q=QUESTS[A.q],qe=$('quest');
   if(!q||duel){qe.style.display='none';}else{const p=q.p(A,S),done=p[0]>=p[1];qe.style.display='';qe.classList.toggle('done',done);
     qe.textContent=done?'המשימה הושלמה. לחץ לקבלת '+q.rt:'משימה: '+q.t+(p[1]>1?' ('+Math.min(p[0],p[1])+'/'+p[1]+')':'');}
-  const plv=passLevel(S),pb=plv>A.pass.claimed||TASKS.some(t=>A.daily[t.k]>=t.n&&!A.daily.done[t.k]);
+  const now=Date.now(),lw=evWindows(now,10),ec=$('evChip');let evReady=false,chip='';
+  for(const w of lw){const rec=(A.ev||{})[w.key]||{};if(w.e.obj&&(rec[w.e.obj[0]]||0)>=w.e.obj[1]&&!rec.c)evReady=true;}
+  const lv1=lw.filter(w=>w.live).sort((a,b)=>(b.e.obj?1:0)-(a.e.obj?1:0))[0];
+  if(lv1){const rec=(A.ev||{})[lv1.key]||{};chip=lv1.e.n+(lv1.e.obj&&lv1.e.obj[0]!=='q'?' · '+Math.min(rec[lv1.e.obj[0]]||0,lv1.e.obj[1])+'/'+lv1.e.obj[1]:'')+' · '+mmss((lv1.end-now)/1000);}
+  else{let best=null,bt=1e9;for(const e of EVENTS){const t=evNext(e,now);if(t<bt){bt=t;best=e;}}chip='הבא: '+best.n+' בעוד '+fmtT(bt);}
+  ec.style.display=duel?'none':'';ec.textContent=evReady?'פרס אירוע מחכה לך':chip;ec.classList.toggle('done',evReady);ec.classList.toggle('live',!!lv1);
+  const plv=passLevel(S),pb=evReady||plv>A.pass.claimed||TASKS.some(t=>A.daily[t.k]>=t.n&&!A.daily.done[t.k]);
   const bt=document.querySelector('#tabs [data-tab=pass]');let b=bt.querySelector('.badge');if(pb&&!b){b=document.createElement('i');b.className='badge';bt.appendChild(b);}else if(!pb&&b)b.remove();
 }
 function renderChar(){
@@ -576,9 +582,29 @@ function renderShop(){
   h+='<h2>חנות העונה</h2><p class="hint">מטבעות עונה מקבלים מהפס, מריסטים ומהזירה.</p>'+shopList('season',SEASON_SHOP,A.coins,'מטבעות');
   return h;
 }
+const mmss=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
+const OBJN={k:'חיסולים',b:'בוסים',w:'ניצחונות',q:'תשובה נכונה'};
+function renderEvents(){
+  const now=Date.now(),wins=evWindows(now,10),ev=A.ev||{};
+  let h='<h2>אירועים</h2><p class="hint">האירועים רצים לפי השעון, בשעון ישראל. בונוסים ומשימות נספרים רק כשמשחקים בפועל.</p>';
+  for(const e of EVENTS){
+    const w=wins.find(x=>x.e.id===e.id),rec=w&&ev[w.key]||{},live=w&&w.live;
+    h+='<div class="card'+(live?' zone cur':'')+'" style="display:block"><div class="kv"><b'+(live?' style="color:var(--gold)"':'')+'>'+e.n+'</b><b class="num" style="color:var(--'+(live?'good':'dim')+')">'+(live?'פעיל · '+L(mmss((w.end-now)/1000)):'בעוד '+fmtT(evNext(e,now)))+'</b></div>'+
+      '<p class="hint">'+e.d+' · '+e.when+(e.rt?' · פרס: '+e.rt:'')+'</p>';
+    if(w&&e.obj){
+      const have=Math.min(rec[e.obj[0]]||0,e.obj[1]),done=have>=e.obj[1];
+      if(e.id==='quiz'&&live&&!rec.t){const q=quizFor(w.key);h+='<p style="margin:8px 0 6px;font-weight:700">'+q.q+'</p><div class="grid2">'+q.o.map((o,i)=>'<button class="btn sm" data-act="answer" data-i="'+i+'">'+L(o)+'</button>').join('')+'</div>';}
+      else if(e.id==='quiz'&&rec.t&&!rec.q)h+='<p class="hint" style="color:var(--bad)">תשובה שגויה. נתראה בחידון הבא.</p>';
+      else h+='<div class="bar gold" style="margin:8px 0 6px"><i style="width:'+(have/e.obj[1]*100)+'%"></i></div><div class="kv"><span>'+OBJN[e.obj[0]]+'</span><b class="num">'+L(have+'/'+e.obj[1])+'</b></div>';
+      if(done)h+='<button class="btn pri" style="width:100%" data-act="claimEvent" data-k="'+e.id+'"'+(rec.c?' disabled':'')+'>'+(rec.c?'הפרס נאסף':'אסוף פרס')+'</button>';
+    }
+    h+='</div>';
+  }
+  return h;
+}
 function renderPass(){
   const lv=passLevel(S),d=new Date(),end=new Date(d.getFullYear(),d.getMonth()+1,1),days=Math.ceil((end-d)/864e5);
-  let h='<h2>פס העונה · רמה '+L(lv+'/30')+'</h2><p class="hint">העונה מסתיימת בעוד '+L(days)+' ימים. ניסיון לפס מגיע ממשימות יומיות, ריסטים, קרבות זירה וחיסולים.</p>'+
+  let h=renderEvents()+'<h2>פס העונה · רמה '+L(lv+'/30')+'</h2><p class="hint">העונה מסתיימת בעוד '+L(days)+' ימים. ניסיון לפס מגיע ממשימות יומיות, ריסטים, קרבות זירה וחיסולים.</p>'+
     '<div class="bar gold"><i style="width:'+(lv>=30?100:A.pass.xp%100)+'%"></i></div>';
   h+='<div class="track">';for(let i=1;i<=30;i++){const got=i<=A.pass.claimed,open=!got&&i<=lv;h+='<div class="tier'+(got?' got':open?' open':'')+'"><b>'+i+'</b>'+passReward(i).t+'</div>';}h+='</div>';
   h+='<button class="btn pri" data-act="claimPass"'+(lv>A.pass.claimed?'':' disabled')+'>'+(lv>A.pass.claimed?'אסוף פרס רמה '+(A.pass.claimed+1):'אין פרס לאיסוף')+'</button>';
@@ -677,13 +703,10 @@ function boxFx(r){
 }
 function accountHtml(){
   if(!ONLINE)return '<h2>העברה בין מכשירים</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">מצב מקומי: ההתקדמות שמורה במכשיר הזה. קוד השמירה מעביר אותה למכשיר אחר, וטעינה מחליפה את מה שיש כאן.</p><button class="btn" data-act="expSave">העתק קוד שמירה</button><input type="text" id="impCode" placeholder="הדבק כאן קוד שמירה" autocomplete="off"><button class="btn" data-act="impSave">טען קוד שמירה</button></div>';
-  const mail=session&&session.user&&session.user.email;
-  return '<h2>חשבון</h2><div class="card" style="display:flex;flex-direction:column;gap:8px">'+(mail?'<p class="hint">מחובר כ-'+esc(mail)+'. אפשר להיכנס עם האימייל הזה מכל מכשיר.</p>':
-    '<p class="hint">החשבון שמור כרגע רק בדפדפן הזה. קשר אימייל כדי לא לאבד אותו ולהיכנס ממכשירים אחרים.</p><input type="text" inputmode="email" id="linkMail" placeholder="האימייל שלך" autocomplete="email"><button class="btn" data-act="linkMail">קשר אימייל</button>')+'</div>';
+  return '<h2>חשבון</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">החשבון מזוהה לפי מפתח סודי ששמור בדפדפן הזה. העתק אותו ושמור במקום בטוח: הוא הדרך היחידה להיכנס ממכשיר אחר או לשחזר את החשבון. מי שמחזיק במפתח שולט בחשבון.</p><button class="btn" data-act="copyKey">העתק מפתח חשבון</button><input type="text" id="keyOut" readonly dir="ltr" style="display:none"></div>';
 }
-function loginHtml(){return '<p class="hint" style="margin-top:6px">כבר יש לך חשבון עם אימייל?</p><input type="text" inputmode="email" id="logMail" placeholder="האימייל של החשבון" autocomplete="email"><button class="btn" data-act="login">שלח לי קישור כניסה</button>';}
+function loginHtml(){return '<p class="hint" style="margin-top:6px">כבר יש לך חשבון? הדבק את מפתח החשבון:</p><input type="text" id="keyIn" placeholder="מפתח חשבון" autocomplete="off" dir="ltr"><button class="btn" data-act="useKey">כניסה עם מפתח</button>';}
 const failTxt=r=>{if(r&&!r.ok)toast(r.msg==='net'?'אין חיבור לשרת':r.msg);};
-const mailOk=m=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m);
 let clickBusy=false;
 document.addEventListener('click',async e=>{
   const t=e.target.closest('[data-tab]');if(t){openTab(t.dataset.tab);return;}
@@ -693,9 +716,8 @@ document.addEventListener('click',async e=>{
   if(a==='closeModal'){closeModal();return;}
   if(a==='closeSheet'){closeSheet();return;}
   if(a==='retry'){location.reload();return;}
-  if(a==='login'){const m=($('logMail').value||'').trim();if(!mailOk(m)||!sb)return;
-    const r=await sb.auth.signInWithOtp({email:m,options:{emailRedirectTo:location.origin+location.pathname,shouldCreateUser:false}});
-    $('logMail').value='';const d=document.createElement('p');d.className='hint';d.textContent=r.error?'לא נמצא חשבון עם האימייל הזה.':'נשלח קישור כניסה לאימייל. פתח אותו במכשיר הזה.';b.replaceWith(d);return;}
+  if(a==='useKey'){const k=($('keyIn').value||'').trim();if(!keyOk(k)){const d=document.createElement('p');d.className='hint';d.style.color='var(--bad)';d.textContent='המפתח לא תקין.';$('modalBox').appendChild(d);return;}
+    try{localStorage.setItem(AKEY,k);}catch(e2){}location.reload();return;}
   if(a==='create'){
     if(clickBusy)return;clickBusy=true;const nm=($('nm').value||'').trim().slice(0,14)||'גיבור',extra=!!b.dataset.x;
     const keep=A,wasDemo=demo;if(!extra){demo=false;if(!ONLINE)A=newAccount();}
@@ -713,8 +735,9 @@ document.addEventListener('click',async e=>{
     try{navigator.clipboard.writeText(code).then(done,fb);}catch(e2){fb();}return;}
   if(a==='impSave'){if(ONLINE)return;let o=null;try{o=adopt(JSON.parse(decodeURIComponent(escape(atob($('impCode').value.trim())))));}catch(e2){}
     if(!o||!o.chars.length){toast('הקוד לא תקין');return;}A=o;const r=await send('sync',{});enterGame(r);saveLocal();toast('ההתקדמות נטענה');return;}
-  if(a==='linkMail'){const m=($('linkMail').value||'').trim();if(!mailOk(m)||!sb){toast('אימייל לא תקין');return;}
-    const r=await sb.auth.updateUser({email:m},{emailRedirectTo:location.origin+location.pathname});toast(r.error?'הקישור נכשל: האימייל כבר בשימוש או לא תקין':'נשלח אימייל אישור. אשר אותו כדי להשלים.');return;}
+  if(a==='copyKey'){const out=$('keyOut'),done=()=>toast('מפתח החשבון הועתק. שמור אותו במקום בטוח'),fb=()=>{out.style.display='';out.value=session.key;out.focus();out.select();toast('סמן והעתק את המפתח מהשדה');};
+    try{navigator.clipboard.writeText(session.key).then(done,fb);}catch(e2){fb();}return;}
+  if(a==='evtab'){openTab('pass');return;}
   if(clickBusy||busy)return;clickBusy=true;
   try{
     let r=null;
@@ -735,6 +758,8 @@ document.addEventListener('click',async e=>{
     else if(a==='openBox'){r=await act('openBox',{k:b.dataset.k});if(r.ok)boxFx(r.box);}
     else if(a==='buy'){r=await act('buy',{shop:b.dataset.s,k:b.dataset.k});if(r.ok){if(r.box)boxFx(r.box);else{snd('coin');toast('נקנה: '+r.bought);}}}
     else if(a==='claimPass'){r=await act('claimPass',{});if(r.ok){snd('rare');toast('פרס עונה: '+r.t);}}
+    else if(a==='claimEvent'){r=await act('claimEvent',{id:b.dataset.k});if(r.ok){snd('rare');toast('פרס האירוע: '+r.rt);if(r.levels)afterXp(r.levels);}}
+    else if(a==='answer'){r=await act('answer',{a:+b.dataset.i});if(r.ok){snd(r.correct?'ok':'fail');toast(r.correct?'תשובה נכונה. אסוף את הפרס':'תשובה שגויה');}}
     else if(a==='claimTask'){r=await act('claimTask',{k:b.dataset.k});if(r.ok)toast(r.xp+' ניסיון לפס');}
     else if(a==='fight'){if(SC.mode==='farm'&&A.tickets>0){r=await act('duel',{i:+b.dataset.i});if(r.ok)startDuel(r.duel);}}
     else if(a==='reroll'){loadArena();}
@@ -746,7 +771,7 @@ document.addEventListener('click',async e=>{
 });
 
 /* ---------- loop ---------- */
-let lastT=0,hudT=0,saveT=0,resyncing=false;
+let lastT=0,hudT=0,saveT=0,evT=0,resyncing=false;
 function loop(ts){
   requestAnimationFrame(loop);if(!S)return;
   let dt=(ts-lastT)/1000;lastT=ts;if(!(dt>0))return;
@@ -757,6 +782,7 @@ function loop(ts){
   dt=Math.min(dt,.1);
   frame(dt);
   if((hudT+=dt)>.2){hudT=0;renderHud();const ae=document.activeElement;if(panelDirty&&!$('sheet').classList.contains('on')&&!(ae&&ae.tagName==='INPUT'&&$('panel').contains(ae)))renderPanel();}
+  if(tab==='pass'&&(evT+=dt)>1){evT=0;panelDirty=true;}
   if(ONLINE){pend.t+=dt;if(pend.t>8){pend.t=0;if(pend.kills||pend.casts)flushTick();}}
   else if((saveT+=dt)>8){saveT=0;if(localDirty){localDirty=false;saveLocal();}}
 }
@@ -775,7 +801,7 @@ async function boot(){
     A=o;S=A.chars[A.cur];demo=false;const r=await send('sync',{});enterGame(r);saveLocal();return;
   }
   openModal('<h3>מעגל הנצח</h3><p class="hint">מתחבר לשרת...</p>');
-  try{await initServer();}catch(e){openModal('<h3>אין חיבור לשרת</h3><p class="hint">לא הצלחתי להתחבר. בדוק את החיבור ונסה שוב.</p><div class="acts"><button class="btn pri" data-act="retry">נסה שוב</button></div>');setNet(false);return;}
+  try{initServer();}catch(e){openModal('<h3>אין חיבור לשרת</h3><p class="hint">לא הצלחתי להתחבר. בדוק את החיבור ונסה שוב.</p><div class="acts"><button class="btn pri" data-act="retry">נסה שוב</button></div>');setNet(false);return;}
   const r=await send('sync',{});
   if(r.ok){demo=false;closeModal();enterGame(r);return;}
   if(r.msg==='net'){openModal('<h3>אין חיבור לשרת</h3><p class="hint">השרת לא ענה. נסה שוב בעוד רגע.</p><div class="acts"><button class="btn pri" data-act="retry">נסה שוב</button></div>');return;}

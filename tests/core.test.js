@@ -7,7 +7,7 @@ function clock(t0){let t=t0;const f=()=>t;f.add=s=>{t+=s*1000;};return f;}
 function fresh(cls='blade'){const now=clock(1.8e12);G.setEnv(Math.random,now);const A=G.newAccount();const r=G.apply(A,'create',{name:'בדיקה',cls});assert.ok(r.ok);return {A,now};}
 
 test('server and client share one identical rules file',()=>{
-  assert.equal(fs.readFileSync('web/core.js','utf8'),fs.readFileSync('supabase/functions/_shared/core.js','utf8'));
+  assert.equal(fs.readFileSync('web/core.js','utf8'),fs.readFileSync('supabase/functions/act/core.js','utf8'));
 });
 test('a forged tick claiming far more kills than time allows is clamped',()=>{
   const {A,now}=fresh();G.apply(A,'travel',{z:0});now.add(10);

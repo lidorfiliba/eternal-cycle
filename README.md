@@ -5,8 +5,7 @@ A Hebrew, mobile-first browser RPG: walk the maps, fight, beat bosses, collect a
 ## Layout
 
 - `web/` — the static client (no build step). `web/core.js` is the complete rule set.
-- `supabase/functions/_shared/core.js` — the same rule file, byte for byte (`npm run sync` copies it; a test fails if they differ).
-- `supabase/functions/act/` — the single server function. `handler.js` holds the logic, `index.ts` is the thin Deno entry.
+- `supabase/functions/act/` — the single server function: `index.ts` (Deno entry), `handler.js` (request logic) and `core.js`, the same rule file byte for byte (`npm run sync` copies it; a test fails if they differ).
 - `supabase/migrations/` — tables, row-level security, market and party functions.
 - `tests/` — `npm test` runs the rules, the SQL and the request handler against an in-process Postgres. `tests/browser_check.py` drives the real client in headless Chrome.
 

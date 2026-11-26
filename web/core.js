@@ -264,6 +264,56 @@ function give(A,S,r){
     if(!cur||itemScore(it)>itemScore(cur)){S.eq.g=it;if(cur&&A.inv.length<BAG)A.inv.push(cur);}else if(A.inv.length<BAG)A.inv.push(it);else S.eq.g=it;}
 }
 
+/* ---------- timed events (server clock, Asia/Jerusalem) ---------- */
+// Bonuses and objectives count only while playing; AFK progress never gets them.
+const EVENTS=[
+ {id:'crimson',n:'מצודת הארגמן',d:'חסל 80 מפלצות לפני שהשער נסגר',when:'כל שעה עגולה',every:60,at:0,dur:12,obj:['k',80],rw:{lv:4,gems:3,coins:5},rt:'4 רמות, 3 אבני נשמה ו-5 מטבעות עונה'},
+ {id:'square',n:'כיכר התוהו',d:'ניסיון כפול לכולם. חסל 150 מפלצות לפרס',when:'כל שעתיים, בחצי',every:120,at:30,dur:15,mod:{xp:2},obj:['k',150],rw:{lv:6,boxes:1},rt:'6 רמות ותיבת אוצר'},
+ {id:'storm',n:'טירת הסערה',d:'הבס בוס מפה בזמן האירוע',when:'כל שעה, רבע לפני',every:60,at:45,dur:10,obj:['b',1],rw:{sboxes:1,gems:2},rt:'תיבת עונה ו-2 אבני נשמה'},
+ {id:'quiz',n:'חידון המעגל',d:'שאלה אחת על המשחק, ניסיון אחד',when:'כל שלוש שעות, ורבע',every:180,at:15,dur:6,obj:['q',1],rw:{gems:4,coins:6},rt:'4 אבני נשמה ו-6 מטבעות עונה'},
+ {id:'bounty',n:'שעת השפע',d:'סיכוי השלל כפול',when:'12:00, 18:00, 22:00',daily:[720,1080,1320],dur:30,mod:{drop:2}},
+ {id:'golden',n:'שעת הזהב',d:'50% יותר ניסיון',when:'כל יום ב-20:00',daily:[1200],dur:60,mod:{xp:1.5}},
+ {id:'royale',n:'קרב אחרון',d:'קרבות זירה בלי כרטיסים. נצח 3 קרבות לפרס',when:'כל יום ב-21:30',daily:[1290],dur:15,obj:['w',3],rw:{sboxes:1,coins:20},rt:'תיבת עונה ו-20 מטבעות עונה'}
+];
+const QUIZ=[
+ {q:'באיזו רמה אפשר לבצע ריסט?',o:['300','350','400','450'],c:2},
+ {q:'כמה חלקים יש בסט עתיק מלא?',o:['4','5','6','7'],c:2},
+ {q:'כמה ניסיון מוסיף כל חבר פארטי פעיל באותה מפה?',o:['5%','8%','10%','15%'],c:1},
+ {q:'אחרי כמה חיסולים מופיע בוס המפה?',o:['20','30','40','60'],c:2},
+ {q:'מה דרגת השדרוג המרבית לפריט?',o:['9','11','13','15'],c:3},
+ {q:'כמה אחוזים מהמחיר מקבל המוכר בשוק השחקנים?',o:['90%','95%','98%','100%'],c:1},
+ {q:'כמה שחקנים יכולים להיות בפארטי?',o:['3','4','5','6'],c:1},
+ {q:'מאיזו דרגת שדרוג כישלון מוריד דרגה?',o:['5','7','9','11'],c:1},
+ {q:'באיזה קצב מתקדמת דמות שלא משחקים בה?',o:['50%','60%','70%','100%'],c:2},
+ {q:'כמה ריסטים פותחים את מפת קרחון האלים?',o:['1','2','4','7'],c:1}
+];
+const _evFmt=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Jerusalem',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+function localMin(t){const o={};for(const x of _evFmt.formatToParts(new Date(t)))o[x.type]=+x.value;return {m:(o.hour%24)*60+o.minute,s:o.second};}
+function evStart(e,m){ // start minute of the window that contains local minute m, or null
+  if(e.daily){for(const s of e.daily)if(m>=s&&m<s+e.dur)return s;return null;}
+  const s=m-((((m-e.at)%e.every)+e.every)%e.every);return m-s<e.dur?s:null;
+}
+// Windows that are live now; with `grace`, also ones that ended up to that many minutes ago (for collecting a reward).
+function evWindows(now,grace){
+  const lm=localMin(now),out=[];
+  for(const e of EVENTS){
+    let s=evStart(e,lm.m),live=s!==null;
+    for(let g=1;s===null&&g<=(grace||0);g++)s=evStart(e,lm.m-g);
+    if(s===null)continue;
+    const start=now-((lm.m-s)*60+lm.s)*1000;
+    out.push({e:e,key:e.id+':'+Math.round(start/60000),live:live,end:start+e.dur*60000});
+  }
+  return out;
+}
+function evMods(now){const m={xp:1,drop:1};for(const w of evWindows(now,0))if(w.e.mod){m.xp*=w.e.mod.xp||1;m.drop*=w.e.mod.drop||1;}return m;}
+function evNext(e,now){const lm=localMin(now);for(let i=1;i<=1440;i++){const m=(lm.m+i)%1440;if(evStart(e,m)===m)return i*60-lm.s;}return 86400;}
+function quizFor(key){let h=0;for(let i=0;i<key.length;i++)h=(h*31+key.charCodeAt(i))>>>0;return QUIZ[h%QUIZ.length];}
+function evRec(A,key){
+  A.ev=A.ev||{};if(!A.ev[key]){const lim=Math.round(_now()/60000)-240;for(const k in A.ev)if(+k.split(':')[1]<lim)delete A.ev[k];A.ev[key]={k:0,b:0,w:0,q:0};}
+  return A.ev[key];
+}
+function evAdd(A,now,f,n){if(n>0)for(const w of evWindows(now,0))if(w.e.obj&&w.e.obj[0]===f)evRec(A,w.key)[f]+=n;}
+
 /* ---------- state helpers ---------- */
 const numOr=(v,d,lo,hi)=>{v=Number(v);return isFinite(v)?clamp(v,lo,hi):d;};
 const int=(v,lo,hi)=>{v=Math.floor(Number(v));return isFinite(v)?clamp(v,lo,hi):lo;};
@@ -339,10 +389,10 @@ function apply(A,kind,args,ctx){
       if(z<0){if(S.zone!==-1){S.zone=-1;A.bossAt=null;}break;}
       if(!canEnter(S,z))return fail('המפה נעולה');
       if(z!==S.zone){S.zone=z;A.bossAt=null;A.allow=Math.min(A.allow||0,3);}
-      const zd=ZONES[z],rep={},c=calc(S),pn=int(ctx.partyN,0,3),pb=1+PARTY_XP*pn;r.partyN=pn;
+      const zd=ZONES[z],rep={},em=evMods(now),c=calc(S),pn=int(ctx.partyN,0,3),pb=(1+PARTY_XP*pn)*em.xp;c.dropM*=em.drop;r.partyN=pn;
       const k=Math.min(int(args.kills,0,1000),Math.floor(A.allow||0));r.claimed=int(args.kills,0,1000);r.kills=k;
       A.casts=(A.casts||0)+int(args.casts,0,30);
-      if(k>0){A.allow-=k;rep.levels=addXp(S,k*zd.xp*c.xpM*pb);rollLoot(S,z,k,c,rep);
+      if(k>0){A.allow-=k;rep.levels=addXp(S,k*zd.xp*c.xpM*pb);rollLoot(S,z,k,c,rep);evAdd(A,now,'k',k);
         if(!A.bossAt){A.bossM[z]=(A.bossM[z]||0)+k;if(A.bossM[z]>=BOSSN){A.bossM[z]=0;A.bossAt={z:z,t:now};}}}
       if(args.boss){
         const b=A.bossAt;
@@ -351,7 +401,7 @@ function apply(A,kind,args,ctx){
           A.bossAt=null;rep.levels=(rep.levels||0)+addXp(S,zd.xp*40*c.xpM*pb);rollLoot(S,z,1,c,rep);
           const it=makeItem(S,rslot(),z+1,rollRar([0,0,70,25,5]),z);gainItem(S,it,rep);(rep.notable=rep.notable||[]).push(it);
           const g=2+Math.floor(_rnd()*3);A.gems+=g;rep.gems=(rep.gems||0)+g;if(_rnd()<.3){A.boxes++;rep.boxes=(rep.boxes||0)+1;}
-          if(z===7)A.boss7=1;if(A.open===z&&z<BASEZ-1){A.open=z+1;rep.opened=z+1;}rep.boss=true;
+          if(z===7)A.boss7=1;if(A.open===z&&z<BASEZ-1){A.open=z+1;rep.opened=z+1;}rep.boss=true;evAdd(A,now,'b',1);
         }else rep.bossDenied=true;
       }
       r.rep=rep;break;}
@@ -387,15 +437,25 @@ function apply(A,kind,args,ctx){
     case 'claimQuest':{const q=QUESTS[A.q|0];if(!q)return fail('אין משימה');const p=q.p(A,S);if(p[0]<p[1])return fail('המשימה לא הושלמה');give(A,S,q.rw);A.q=(A.q|0)+1;r.rt=q.rt;break;}
     case 'opps':A.opps=buildOpps(A,S,ctx.players,ctx.uid);break;
     case 'duel':{
-      const o=A.opps&&A.opps[int(args.i,0,3)];if(!o)return fail('רענן את רשימת היריבים');if(A.tickets<1)return fail('אין כרטיסים');
-      A.tickets--;const sim=simDuel(fighter(S),o),win=sim.win===0;let gain=0;
-      if(win){gain=clamp(Math.round(24-(A.rating-o.rt)/25),8,40);A.rating+=gain;A.coins+=8;A.pass.xp+=15;A.daily.wins++;A.wins=(A.wins||0)+1;}
+      const o=A.opps&&A.opps[int(args.i,0,3)];if(!o)return fail('רענן את רשימת היריבים');
+      const free=evWindows(now,0).some(w=>w.e.id==='royale');if(!free&&A.tickets<1)return fail('אין כרטיסים');
+      if(!free)A.tickets--;const sim=simDuel(fighter(S),o),win=sim.win===0;let gain=0;
+      if(win){gain=clamp(Math.round(24-(A.rating-o.rt)/25),8,40);A.rating+=gain;A.coins+=8;A.pass.xp+=15;A.daily.wins++;A.wins=(A.wins||0)+1;evAdd(A,now,'w',1);}
       else{A.rating=Math.max(0,A.rating-12);A.coins+=2;}
       A.opps=null;r.duel={ev:sim.ev,win:sim.win,ma:sim.ma,mb:sim.mb,opp:o,gain:gain};break;}
+    case 'answer':{
+      const w=evWindows(now,0).find(x=>x.e.id==='quiz');if(!w)return fail('החידון לא פעיל עכשיו');
+      const rec=evRec(A,w.key);if(rec.t)return fail('כבר ענית על השאלה');
+      rec.t=1;r.correct=int(args.a,-1,9)===quizFor(w.key).c;if(r.correct)rec.q=1;break;}
+    case 'claimEvent':{
+      const w=evWindows(now,10).find(x=>x.e.id===String(args.id)&&x.e.obj);if(!w)return fail('האירוע לא פעיל');
+      const rec=evRec(A,w.key),e=w.e;if(rec.c)return fail('הפרס כבר נאסף');if((rec[e.obj[0]]||0)<e.obj[1])return fail('המשימה לא הושלמה');
+      rec.c=1;if(e.rw.lv){let xp=0;for(let l=S.lvl;l<Math.min(CAP,S.lvl+e.rw.lv);l++)xp+=need(l);r.levels=addXp(S,xp);}
+      give(A,S,e.rw);r.rt=e.rt;break;}
     default:return fail('פעולה לא מוכרת');
   }
   A.maxLvl=Math.max(A.maxLvl||1,S.lvl);
   return r;
 }
 
-export {BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
