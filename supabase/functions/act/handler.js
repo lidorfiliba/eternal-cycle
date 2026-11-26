@@ -174,7 +174,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
 
       if (ARENA_KINDS.has(kind)) await saveArena(uid, A);
       const out = { result: r, state: next };
-      if (kind === "tick" && r.kills > 0 && r.partyN > 0 && r.base > 0) await admin.rpc("party_share_add", { p_user: uid, p_zone: Math.floor(Number(args.z)), p_xp: Math.round(r.base * G.PARTY_SHARE) });
+      if (kind === "tick" && r.kills > 0 && r.partyN > 0 && r.base > 0) await admin.rpc("party_share_add", { p_user: uid, p_zone: Math.floor(Number(args.z)), p_xp: Math.round(r.base * G.PARTY_SHARE), p_lvl: A.chars[A.cur].lvl });
       if (kind === "tick" && r.kills > 0) await admin.rpc("guild_tick", { p_user: uid, p_kills: r.kills, p_siege: G.siegeInfo(now).on, p_key: G.siegeInfo(now).key });
       if (kind === "tick" && r.claimed > r.kills + 5) {
         const detail = { claimed: r.claimed, allowed: r.kills, z: args.z };

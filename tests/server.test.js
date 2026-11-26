@@ -268,10 +268,13 @@ test('party training: a member\'s kills hand experience to the others on the sam
   const code=(await db.query('select party_create($1) c',[U(1)])).rows[0].c;for(const i of [2,3])await db.query('select party_join($1,$2)',[U(i),code]);
   await handle(U(1),'travel',{z:0});await handle(U(2),'travel',{z:0});await handle(U(3),'travel',{z:-1});
   clock.add(20);const t=await handle(U(1),'tick',{z:0,kills:30});assert.ok(t.result.kills>=20,'kills '+t.result.kills);assert.equal(t.result.partyN,1);
-  const waiting=Number((await db.query('select xp from party_share where user_id=$1',[U(2)])).rows[0].xp);assert.equal(waiting,Math.round(t.result.base*G.PARTY_SHARE));
+  const waiting=Number((await db.query('select xp from party_share where user_id=$1',[U(2)])).rows[0].xp);assert.equal(waiting,Math.round(Math.round(t.result.base*G.PARTY_SHARE)*.15),'a level 120 training a level 1: the gap leaves 15%');
+  await db.query("update arena set snap=jsonb_set(snap,'{l}','110') where user_id=$1",[U(2)]);await db.query('update party_share set xp=0');
+  clock.add(20);const t2=await handle(U(1),'tick',{z:0,kills:30});const near=Number((await db.query('select xp from party_share where user_id=$1',[U(2)])).rows[0].xp);
+  assert.equal(near,Math.round(t2.result.base*G.PARTY_SHARE),'close levels share in full');const waiting2=near;
   assert.equal((await db.query('select count(*)::int c from party_share where user_id=$1',[U(3)])).rows[0].c,0,'only members on the same map');
   const before=(await row(U(2))).state.chars[0].lvl;
-  const got=await handle(U(2),'tick',{z:0,kills:0});assert.equal(got.result.shared,waiting);assert.ok(got.state.chars[0].lvl>before,'the newcomer levelled without a kill');
+  const got=await handle(U(2),'tick',{z:0,kills:0});assert.equal(got.result.shared,waiting2);assert.ok(got.state.chars[0].lvl>before,'the newcomer levelled without a kill');
   assert.equal((await handle(U(2),'tick',{z:0,kills:0})).result.shared,undefined,'nothing left to take');
   assert.equal(Number((await db.query('select coalesce(sum(xp),0) s from party_share where user_id=$1',[U(1)])).rows[0].s),0,'no kills, nothing shared back');
 });
