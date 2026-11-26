@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126224605';
-const {TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126225637';
+const {TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
@@ -405,6 +405,26 @@ function drawMon(m,zi,t,flip,sc){
   if(m.stun>0){ctx.save();ctx.strokeStyle='#5fd4ff';ctx.lineWidth=2;ctx.globalAlpha=.85;ctx.beginPath();ctx.ellipse(m.x,y-sm.bh*k-6,16*sc,5*sc,0,(t*6)%6.28,(t*6)%6.28+4);ctx.stroke();ctx.restore();}
   if(m.die<=0&&!m.boss){const w=34,hpw=clamp(m.hp/m.max,0,1)*w,by=y-sm.bh*k-10;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(m.x-w/2,by,w,4);ctx.fillStyle='#ff5c7a';ctx.fillRect(m.x-w/2,by,hpw,4);}
 }
+// While the world boss lives it stands behind every map, huge, and strikes the ground now and then. Each of my kills
+// throws a spark up at it, so the fight is felt wherever I am.
+let wbForce=false; // for checks only: show the boss without waiting for its hour
+const wbOn=()=>{if(wbForce){if(!world)world={hp:.6,max:1,n:1,mine:0,key:''};return SC.zi>=0&&SC.mode==='farm';}const ww=worldWin();return !!(ww&&world&&world.key===ww.key&&!world.dead&&world.hp>0&&SC.zi>=0&&SC.mode==='farm'&&!SC.ev);};
+const WB={t:5,zone:null,hurt:0};
+function drawWorldBoss(dt){
+  if(!wbOn()){WB.zone=null;WB.t=5;return;}const t=SC.t,sc=clamp(H/300,.8,1.45),key=ZONES[BASEZ-1].spr,sm=SPR[key],k=gy()*.95/sm.bh,x=W*.62+Math.sin(t*.35)*W*.1,y=gy()+14*sc,low=world.hp<world.max*.3;
+  ctx.save();WB.hurt=Math.max(0,WB.hurt-dt*3);
+  {const R=sm.bh*k*.7,gr=ctx.createRadialGradient(x,y-sm.bh*k*.55,10,x,y-sm.bh*k*.55,R);gr.addColorStop(0,low?'rgba(255,60,90,.5)':'rgba(190,90,255,.42)');gr.addColorStop(1,'transparent');ctx.globalCompositeOperation='lighter';ctx.fillStyle=gr;ctx.beginPath();ctx.arc(x,y-sm.bh*k*.55,R,0,7);ctx.fill();}
+  ctx.restore();
+  const wind=WB.zone?1-clamp(WB.zone.t/1.5,0,1):0;spr(key,wind>0?'atk':'idle',wind>0?Math.floor(wind*frames(key,'atk')):Math.floor(t*5)%frames(key,'idle'),x,y+Math.sin(t*1.3)*6,k,false,WB.hurt>.3?'#fff':low?'#ff3b5c':'#b46bff',WB.hurt>.3?24:16,.5+.12*Math.sin(t*2)+WB.hurt*.25,tintedSheet(key,low?'#b0203a':'#5a2a9a',.8));
+}
+function worldBossStrike(dt,g0){ // in map coordinates: mark the ground, then strike it
+  if(!wbOn())return;const h=SC.hero,low=world.hp<world.max*.3;
+  if(!WB.zone){if((WB.t-=dt)<=0){WB.t=(low?5:8)+Math.random()*3;WB.zone={x:clamp(h.x+(Math.random()-.5)*260,160,mapW()-160),t:1.5,w:low?230:180};snd('growl');}return;}
+  const z=WB.zone,u=1-clamp(z.t/1.5,0,1);ctx.save();ctx.globalAlpha=.2+.45*u;ctx.fillStyle='#c56bff';ctx.beginPath();ctx.ellipse(z.x,g0,z.w,22,0,0,7);ctx.fill();ctx.globalAlpha=.9;ctx.strokeStyle='#f0d0ff';ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(z.x,g0,z.w*u,22*u,0,0,7);ctx.stroke();
+  ctx.globalAlpha=.25+.4*u;ctx.fillStyle='#c56bff';ctx.fillRect(z.x-z.w*.5*u,0,z.w*u,g0);ctx.restore();label('בוס העולם מכה!',z.x,g0-150,'#f0d0ff',13);
+  if((z.t-=dt)<=0){WB.zone=null;for(let q=-2;q<=2;q++)SC.fx.push({k:'pillar',x:z.x+q*z.w*.4,y:g0,life:.5,d:.5,c:'#c56bff'});SC.fx.push({k:'ring',x:z.x,y:g0-10,life:.5,c:'#c56bff',r:z.w});SC.fx.push({k:'screen',life:.3,d:.3,c:'#c56bff'});if(!calm)SC.shake=.5;snd('slam');
+    if(h.dead<=0&&Math.abs(h.x-z.x)<z.w&&!h.up){const d=C.hp*.3*(h.shield>0?.3:1);h.hp-=d;addNum(h.x,g0-100,'-'+fmt(d),'#c56bff',true);}}
+}
 function drawBg(zi,t){
   const z=zi<0?TOWN:ZONES[zi],g0=gy();
   const g=ctx.createLinearGradient(0,0,0,g0);g.addColorStop(0,z.sky[0]);g.addColorStop(1,z.sky[1]);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
@@ -628,6 +648,7 @@ function afterTick(r,m,l0){
   statsDirty=true;syncBoss();syncElite();
 }
 function onKill(m,zi){
+  if(wbOn()){WB.hurt=1;const bx=SC.cam+W*.62+Math.sin(SC.t*.35)*W*.1;SC.fx.push({k:'line',x1:m.x,y1:m.y-30,x2:bx,y2:gy()-170,life:.3,c:'#f0d0ff',w:3});SC.fx.push({k:'flash',x:bx,y:gy()-170,r:36,life:.25,d:.25,c:'#c56bff'});}
   const z=ZONES[zi];
   if(demo){burst(m.x,m.y-24,z.c,10);if(m.boss)SC.boss=null;return;}
   if(m.elite){snd('bossdie');burst(m.x,m.y-36,'#ffd75e',30);addNum(m.x,m.y-120,'האלוף הובס!','#ffd75e',true);m.gone=true;if(ONLINE){pend.elite=true;flushTick();}else{const l0=S.lvl;afterTick(localTick({z:zi,kills:0,elite:true}),m,l0);}return;}
@@ -836,6 +857,7 @@ function drawWorld(){
     for(const lx of [DECK.x0+16,DECK.x1-16]){ctx.strokeStyle='#7a5a34';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(lx-9,y);ctx.lineTo(lx-9,g0);ctx.moveTo(lx+9,y);ctx.lineTo(lx+9,g0);ctx.stroke();ctx.strokeStyle='#c9a26a';ctx.lineWidth=2.5;ctx.beginPath();for(let q=y+10;q<g0-3;q+=13){ctx.moveTo(lx-9,q);ctx.lineTo(lx+9,q);}ctx.stroke();}
     ctx.fillStyle='#3a2a18';for(let px=DECK.x0+70;px<DECK.x1-40;px+=120)ctx.fillRect(px,y+8,7,dh-8);
     const gr=ctx.createLinearGradient(0,y,0,y+11);gr.addColorStop(0,'#b58a52');gr.addColorStop(1,'#5e4426');ctx.fillStyle=gr;ctx.fillRect(DECK.x0,y,DECK.x1-DECK.x0,11);ctx.fillStyle='rgba(0,0,0,.25)';for(let px=DECK.x0+38;px<DECK.x1;px+=38)ctx.fillRect(px,y,1.5,11);ctx.fillStyle='rgba(255,236,190,.35)';ctx.fillRect(DECK.x0,y,DECK.x1-DECK.x0,1.5);}
+  worldBossStrike(SC.dt||0,g0);
   for(const m of SC.mons){if(m.resp>0)continue;m.y=g0-(m.up?deckH():0);
     if(m.boss&&m.wind>0){ctx.save();ctx.globalAlpha=.25+.3*(1-m.wind/1.2);ctx.fillStyle='#ff5c7a';ctx.beginPath();ctx.ellipse(m.slamX,g0,125,16,0,0,7);ctx.fill();ctx.restore();}
     if(m.boss){for(const q of m.mets){const u=1-clamp(q.t/.95,0,1);ctx.save();ctx.globalAlpha=.2+.4*u;ctx.fillStyle='#ff9a4a';ctx.beginPath();ctx.ellipse(q.x,g0,58,12,0,0,7);ctx.fill();ctx.globalAlpha=.9;ctx.strokeStyle='#ffd0a0';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(q.x,g0,58*u,12*u,0,0,7);ctx.stroke();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.8;ctx.fillStyle='#ffb060';ctx.beginPath();ctx.arc(q.x+q.t*90,g0-q.t*520,7,0,7);ctx.fill();ctx.restore();}
@@ -1094,6 +1116,7 @@ function drawBr(dt){
     if(me.alive&&D.t>=0&&Math.hypot(me.x,me.y)>b.ring)label('אתה מחוץ למעגל! רוץ פנימה',W/2,H*.3,'#ff5c7a',15);
     else if(me.alive&&D.t>=0&&D.t<6)label('רוץ לאסוף ציוד. כולם שווים עד שמוצאים משהו',W/2,H*.3,'#7df9ff',12);}
 }
+const wGot={}; // world boss prizes collected in this visit, by fight
 function worldCard(w,live){
   if(!ONLINE)return '<p class="hint">בוס העולם קיים רק במצב מקוון.</p>';
   if(!world||!w||world.key!==w.key)return live?'<p class="hint">טוען את מצב הקרב...</p>':'';
@@ -1102,7 +1125,7 @@ function worldCard(w,live){
     '<div class="kv"><span>החלק שלך בנזק</span><b class="num" style="color:var(--gold)">'+L(Math.round(sh*100)+'%')+'</b></div>'+
     world.top.map((t,i)=>'<div class="kv"><span>'+L(i+1)+'. '+esc(t.n)+'</span><b class="num">'+L(fmt(Math.round(t.d)))+'</b></div>').join('')+
     '<p class="hint">מקום ראשון: 3 נוצות נצח, 2 תיבות עונה, 30 מטבעות. מ-10% מהנזק: 2 נוצות, תיבת עונה, 20 מטבעות. מ-1%: נוצה ו-10 מטבעות. אם הבוס שורד, מקבלים רק מטבעות.</p>';
-  if(over&&world.mine>0)h+='<button class="btn pri glow" style="width:100%" data-act="claimWorld">אסוף פרס</button>';
+  if(over&&world.mine>0)h+=world.claimed||wGot[world.key]?'<button class="btn" style="width:100%" disabled>הפרס נאסף</button>':'<button class="btn pri glow" style="width:100%" data-act="claimWorld">אסוף פרס</button>';
   return h;
 }
 function sideCard(){
@@ -1308,7 +1331,7 @@ function frame(dt){
   ctx.setTransform(DPR*ZM,0,0,DPR*ZM,0,0);
   ctx.save();if(SC.shake>0){SC.shake-=dt;ctx.translate((Math.random()-.5)*7,(Math.random()-.5)*5);}
   const cam=SC.cam;if(SC.mode==='duel')SC.cam=0;
-  drawBg(SC.zi,SC.t);
+  drawBg(SC.zi,SC.t);if(SC.mode==='farm')drawWorldBoss(dt);
   if(SC.ev&&SC.mode==='farm'){const gr=ctx.createLinearGradient(0,0,0,H);gr.addColorStop(0,'rgba(150,10,40,.42)');gr.addColorStop(1,'rgba(60,0,20,.25)');ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);}
   if(SC.mode==='farm')drawWorld();
   else drawDuel(dt);
@@ -1336,7 +1359,7 @@ function itemCard(it){
   return '<button class="it r'+it.r+gcls(it.p)+(it.pf?' ex full pf':it.ex?(isFull(it)?' ex full':' ex'):'')+'" data-act="item" data-id="'+it.id+'" style="color:var(--r'+it.r+')">'+SVG[it.s]+
     '<span class="nm">'+esc(itemName(it,S.cls))+(it.p?' '+L('+'+it.p):'')+'</span><span class="sub">'+mainLine(it)+'</span></button>';
 }
-function findItem(id){for(const k of SLOTS)if(S.eq[k]&&S.eq[k].id===id)return {it:S.eq[k],eq:k};const i=A.inv.findIndex(x=>x.id===id);return i>=0?{it:A.inv[i],i:i}:null;}
+function findItem(id){for(const k of SLOTS)if(S.eq[k]&&S.eq[k].id===id)return {it:S.eq[k],eq:k};const i=A.inv.findIndex(x=>x.id===id);if(i>=0)return {it:A.inv[i],i:i};const b=(A.bank||[]).findIndex(x=>x.id===id);return b>=0?{it:A.bank[b],bank:b}:null;}
 function tog(lbl,on,act){return '<div class="tog"><span>'+lbl+'</span><button class="btn sm'+(on?' on':'')+'" data-act="'+act+'">'+(on?'פעיל':'כבוי')+'</button></div>';}
 const zoneName=z=>z<0?TOWN.n:ZONES[z].n;
 const monName=(zi,fl)=>ZONES[zi].m+(fl===1?' זועם':fl===2?' קדמון':'');
@@ -1423,6 +1446,7 @@ function renderGear(){
     '<div class="tog"><span>תיבות אוצר: '+L(A.boxes)+'</span><button class="btn sm pri" data-act="openBox" data-k=""'+(A.boxes?'':' disabled')+'>פתח תיבה</button></div>'+
     '<div class="tog"><span>תיבות עונה: '+L(A.sboxes)+' · 15% לחלק סט עתיק</span><button class="btn sm pri" data-act="openBox" data-k="s"'+(A.sboxes?'':' disabled')+'>פתח תיבה</button></div>'+
     '<div class="kv"><span>קמעות הגנה</span><b>'+L(A.charms)+'</b></div></div>';
+  {const bk=A.bank||[];h+='<h2>בנק '+L(bk.length+'/'+BANK)+'</h2>'+(bk.length?'<div class="items">'+bk.slice().sort((a,b)=>b.r-a.r||b.t-a.t||b.p-a.p).map(it=>itemCard(it)).join('')+'</div>':'<p class="hint">הבנק ריק. לוחצים על פריט בתיק ואז על "לבנק" כדי לשמור אותו כאן. מה שבבנק לא נמכר במכירה מהירה ולא תופס מקום בתיק.</p>');}
   h+='<h2>תיק משותף '+L(A.inv.length+'/'+BAG)+'</h2>';
   if(!A.inv.length)h+='<p class="hint">התיק ריק. פריטים נופלים ממפלצות ומבוסים. פריט עתיק שייך לסט של המפה שבה נפל, ושישה חלקים נותנים את כל בונוסי הסט.</p>';
   else{const inv=A.inv.slice().sort((a,b)=>b.r-a.r||b.t-a.t||b.p-a.p);h+='<div class="items">'+inv.map(it=>itemCard(it)).join('')+'</div><p class="hint">מכירה מהירה לפי צבע. תופיע בקשת אישור לפני המכירה. פריטי אקסלנט וכנפיים לא נמכרים כך.</p><div class="sellrow">'+
@@ -1562,9 +1586,10 @@ function openSheet(id){
   if(it.ex&&!isFull(it))h+='<button class="btn'+(A.jewels>0?' pri':'')+'" data-act="exAdd" data-id="'+it.id+'"'+(A.jewels>0?'':' disabled')+' style="width:100%;margin-bottom:6px">הוסף אופציה · אבני שלמות: '+L(A.jewels||0)+'</button>';
   if(it.p<15)h+='<p class="hint">שדרוג לדרגה '+L('+'+(it.p+1))+': '+L(uc.gems)+' אבני נשמה ו-'+L(fmt(uc.gold))+' זהב · סיכוי '+L(Math.round(upChance(it)*100)+'%')+(it.p>=7?' · כישלון מוריד דרגה אחת'+(A.charms?' (יש קמע הגנה)':''):'')+'</p>';
   {const q=reqOf(it,S.cls);h+='<div class="kv" style="margin-bottom:6px"><span>דרישות</span><b>'+Object.keys(q).map(k=>'<span style="color:'+(S.stats[k]>=q[k]?'var(--good)':'#ff5c7a')+'">'+STATN[k][0]+' '+L(fmt(q[k]))+'</span>').join(' · ')+'</b></div>';}
+  if(f.bank!=null){h+='<div class="acts"><button class="btn pri" data-act="bankTake" data-id="'+it.id+'"'+(A.inv.length>=BAG?' disabled':'')+'>'+(A.inv.length>=BAG?'התיק מלא':'הוצא לתיק')+'</button><button class="btn" data-act="closeSheet">סגור</button></div>';$('sheet').innerHTML=h;$('sheet').classList.add('on');return;}
   h+='<div class="acts">'+(f.eq!=null?'<button class="btn" data-act="unequip" data-id="'+it.id+'">הסר</button>':'<button class="btn pri" data-act="equip" data-id="'+it.id+'"'+(canWear(S,it)?'':' disabled')+'>'+(canWear(S,it)?'לבש':'חסרים סטטים')+'</button>')+
     '<button class="btn" data-act="upgrade" data-id="'+it.id+'"'+(it.p>=15||A.gems<uc.gems||A.gold<uc.gold?' disabled':'')+'>'+(it.p>=15?'דרגה מרבית':'שדרג')+'</button>'+
-    (f.eq==null?'<button class="btn" data-act="sell" data-id="'+it.id+'">מכור ב-'+L(fmt(sellVal(it)))+'</button>':'')+
+    (f.eq==null?'<button class="btn" data-act="sell" data-id="'+it.id+'">מכור ב-'+L(fmt(sellVal(it)))+'</button><button class="btn" data-act="bankPut" data-id="'+it.id+'"'+((A.bank||[]).length>=BANK?' disabled':'')+'>לבנק</button>':'')+
     '<button class="btn" data-act="closeSheet">סגור</button></div>';
   if(f.eq==null)h+='<div class="tog"><label for="mprice">מחיר בשוק השחקנים</label><input type="text" inputmode="numeric" id="mprice" value="'+sellVal(it)*10+'" style="width:110px;padding:6px 8px"><button class="btn sm" data-act="list" data-id="'+it.id+'"'+(ONLINE?'':' disabled')+'>הצע</button></div>'+(ONLINE&&party.members.length>1?'<div class="tog"><label for="mto">למי להציע</label><select id="mto" style="background:#0a0818;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:6px 8px;font:inherit"><option value="">לכל השחקנים</option>'+party.members.map((m,i)=>m.me?'':'<option value="'+i+'">רק ל-'+esc(m.n)+'</option>').join('')+'</select></div>':'')+(ONLINE?'':'<p class="hint">השוק זמין רק במצב מקוון.</p>');
   $('sheetBox').innerHTML=h;$('sheetBox').className='box r'+it.r+gcls(it.p);$('sheet').classList.add('on');
@@ -1803,7 +1828,7 @@ document.addEventListener('click',async e=>{
     else if(a==='mrefresh'){loadMarket();}
     else if(a==='zone'){if(SC.mode==='farm'){clickBusy=false;await travelTo(+b.dataset.i,'L',+(b.dataset.f||0));}}
     else if(a==='reset'){if(SC.mode==='farm'&&canReset(S)){r=await act('reset',{});if(r.ok){enterZone(-1,'L',0);C=calc(S,auras);SC.hero.hp=C.hp;if(!calm)SC.shake=.4;burst(SC.hero.x,gy()-50,'#f2c14e',40);snd('lvl');toast('ריסט '+r.resets+'. קיבלת '+r.gain+' אותות ריסט');}}}
-    else if(a==='equip'||a==='unequip'||a==='sell'){r=await act(a,{id:id});closeSheet();}
+    else if(a==='equip'||a==='unequip'||a==='sell'||a==='bankPut'||a==='bankTake'){r=await act(a,{id:id});closeSheet();if(r&&!r.ok)toast(r.msg==='net'?'אין חיבור לשרת':r.msg);}
     else if(a==='craftKey'){r=await act('craftKey',{});if(r.ok){snd('rare');toast('נוצר מפתח מצודה. יש לך '+r.keys);}}
     else if(a==='bestEq'){$('spin').classList.add('on');await new Promise(z=>setTimeout(z,3000));r=await act('bestEq',{});$('spin').classList.remove('on');
       if(r.ok){snd(r.n?'rare':'ok');toast(r.n?'הוחלפו '+r.n+' חלקים. כוח הלחימה עלה ב-'+fmt(r.gain):'כבר לבוש עליך הציוד הכי חזק שיש בתיק');}}
@@ -1820,7 +1845,7 @@ document.addEventListener('click',async e=>{
     else if(a==='exAdd'){const id=+b.dataset.id;r=await act('exAdd',{id:id});if(r.ok){snd('rare');toast(r.full?'הפריט הגיע לאקסלנט מלא':'נוספה אופציה: '+AFF[r.opt[0]][0]+' '+r.opt[1]+'%',4);openSheet(id);}}
     else if(a==='claimLogin'){r=await act('claimLogin',{});if(r.ok){snd('rare');closeModal();toast('פרס יום '+r.day+': '+r.t);}}
     else if(a==='claimTask'){r=await act('claimTask',{k:b.dataset.k});if(r.ok){snd('coin');toast(r.rt?'קיבלת '+r.rt:r.xp+' ניסיון לפס');}}
-    else if(a==='claimWorld'){r=await act('claimWorld',{});if(r.ok){snd('rare');toast('בוס העולם: מקום '+r.rank+'. קיבלת '+r.rt,4);if(world)world.mine=0;}else toast(r.msg);}
+    else if(a==='claimWorld'){r=await act('claimWorld',{});if(world&&(r.ok||/נאסף/.test(String(r.msg)))){wGot[world.key]=1;world.claimed=true;}if(r.ok){snd('rare');toast('בוס העולם: מקום '+r.rank+'. קיבלת '+r.rt,4);}else toast(r.msg);panelDirty=true;}
     else if(a==='claimWeek'){r=await act('claimWeek',{k:b.dataset.k});if(r.ok){snd('rare');toast('פרס שבועי: '+r.rt,4);}}
     else if(a==='sqClaim'){r=await act('sqClaim',{});if(r.ok){snd('rare');toast('משימת הצד הושלמה. הפרס אצלך',4);}}
     else if(a==='sqDrop'){r=await act('sqDrop',{});}
@@ -2194,6 +2219,6 @@ async function boot(){
   openModal('<h3>מעגל הנצח</h3><p class="hint">מתחבר לשרת...</p>');
   await startOnline();
 }
-if(typeof window!=='undefined')window.EC={brJoin,syncElite,spawnBoss,castArt,ARTS,duelAct,netSend,get peers(){return peers;},get ws(){return ws;},get A(){return A;},get S(){return S;},get C(){return C;},set C(v){C=v;},SC,G,send,act,frame,enterZone,pend,flushTick,syncBoss,spawnBoss,touch,get demo(){return demo;}};
+if(typeof window!=='undefined')window.EC={wbForce:v=>{wbForce=!!v;},brJoin,syncElite,spawnBoss,castArt,ARTS,duelAct,netSend,get peers(){return peers;},get ws(){return ws;},get A(){return A;},get S(){return S;},get C(){return C;},set C(v){C=v;},SC,G,send,act,frame,enterZone,pend,flushTick,syncBoss,spawnBoss,touch,get demo(){return demo;}};
 startLang();
 boot();

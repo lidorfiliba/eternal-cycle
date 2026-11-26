@@ -54,7 +54,9 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
     if (kind === "wget") { // where the world boss stands: the live opening, or the one that just ended
       const w = G.evWindows(clock(), 60).find((x) => x.e.world); if (!w) return { world: null };
       const r = await admin.rpc("world_hit", { p_user: uid, p_key: w.key, p_name: "", p_dmg: 0, p_base: G.WORLD_BASE });
-      return { world: r.error ? null : r.data };
+      if (r.error || !r.data) return { world: null };
+      const hit = (await admin.from("world_hits").select("claimed").eq("key", w.key).eq("user_id", uid).maybeSingle()).data; // so a collected prize is not offered again
+      return { world: Object.assign({}, r.data, { claimed: !!(hit && hit.claimed) }) };
     }
     if (kind === "say") {
       const r = await admin.rpc("chat_say", { p_user: uid, p_guild: !!args.g, p_msg: String(args.m == null ? "" : args.m).slice(0, 300) });

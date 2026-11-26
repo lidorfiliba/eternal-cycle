@@ -506,3 +506,15 @@ test('reset maps give no extra experience, only more ancient set pieces; full ex
   for(const k of G.DROPS){const it=s.eq[k];it.ex=1;it.af=G.POOL[k].map(x=>[x,0]);}assert.equal(G.exCount(s),6);assert.ok(G.calc(s).dmg>plain.dmg*1.14);
   G.setEnv(Math.random,Date.now);
 });
+
+test('the bank holds items outside the bag, and a full bag does not eat a box',()=>{
+  G.setEnv(()=>.5,()=>1.8e12);const A=G.newAccount();G.apply(A,'create',{name:'Bank',cls:'blade'},{});const s=A.chars[0];A.inv.length=0;
+  const it=G.makeItem(s,'h',3,2,6);A.inv.push(it);assert.ok(G.apply(A,'bankPut',{id:it.id},{}).ok);assert.equal(A.inv.length,0);assert.equal(A.bank.length,1);assert.equal(G.apply(A,'bankPut',{id:it.id},{}).ok,false);
+  assert.equal(G.apply(A,'equip',{id:it.id},{}).ok,false,'what is in the bank cannot be worn from there');assert.equal(G.apply(A,'sell',{id:it.id},{}).ok,false);
+  for(let i=0;i<G.BAG;i++)A.inv.push(G.makeItem(s,'h',1,0,0));assert.match(G.apply(A,'bankTake',{id:it.id},{}).msg,/התיק מלא/);
+  A.boxes=2;const b=G.apply(A,'openBox',{k:''},{});assert.match(b.msg,/התיק מלא/);assert.equal(A.boxes,2,'the box is kept');
+  A.inv.pop();assert.ok(G.apply(A,'bankTake',{id:it.id},{}).ok);assert.equal(A.bank.length,0);assert.ok(A.inv.includes(it));
+  A.inv.length=0;for(let i=0;i<G.BANK;i++){const x=G.makeItem(s,'h',1,0,0);A.inv.push(x);assert.ok(G.apply(A,'bankPut',{id:x.id},{}).ok);}const y=G.makeItem(s,'h',1,0,0);A.inv.push(y);assert.match(G.apply(A,'bankPut',{id:y.id},{}).msg,/הבנק מלא/);
+  const back=G.adopt(JSON.parse(JSON.stringify(A)));assert.equal(back.bank.length,G.BANK,'the bank is saved with the account');
+  G.setEnv(Math.random,Date.now);
+});

@@ -332,7 +332,7 @@ test('world boss: everyone\'s kills take from one health pool, and each collects
   const g=await handle(U(2),'wget',{});assert.equal(g.world.hp,w2.hp);
   await db.query("update world_boss set hp=0, killed_at=now()");
   const c1=await handle(U(1),'claimWorld',{});assert.ok(c1.result.ok,c1.result.msg);assert.equal(c1.result.rank,1);assert.equal(c1.state.feathers,3);
-  assert.equal((await handle(U(1),'claimWorld',{})).result.msg,'הפרס כבר נאסף');
+  assert.equal((await handle(U(1),'claimWorld',{})).result.msg,'הפרס כבר נאסף');assert.equal((await handle(U(1),'wget',{})).world.claimed,true,'and the screen is told, so it stops offering it');assert.equal((await handle(U(2),'wget',{})).world.claimed,false);
   const c2=await handle(U(2),'claimWorld',{});assert.ok(c2.result.ok);assert.equal(c2.result.rank,2);assert.ok(c2.result.share<.5);
   assert.equal((await handle(U(3),'claimWorld',{})).result.ok,false);
 });
