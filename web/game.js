@@ -619,6 +619,7 @@ function renderHud(){
   if(lv1){const rec=(A.ev||{})[lv1.key]||{};chip=lv1.e.n+(lv1.e.obj&&lv1.e.obj[0]!=='q'?' · '+Math.min(rec[lv1.e.obj[0]]||0,lv1.e.obj[1])+'/'+lv1.e.obj[1]:'')+' · '+mmss((lv1.end-now)/1000);}
   else{let best=null,bt=1e9;for(const e of EVENTS){const t=evNext(e,now);if(t<bt){bt=t;best=e;}}chip='הבא: '+best.n+' בעוד '+fmtT(bt);}
   ec.style.display=duel?'none':'';ec.textContent=evReady?'פרס אירוע מחכה לך':chip;ec.classList.toggle('done',evReady);ec.classList.toggle('live',!!lv1);
+  if(passSeen<0)passSeen=passLevel(S);else if(passLevel(S)>passSeen){passSeen=passLevel(S);announce('פס העונה: רמה '+passSeen+'! '+passReward(passSeen).t+' מחכה לך',true);panelDirty=true;}
   const plv=passLevel(S),pb=evReady||plv>A.pass.claimed||TASKS.some(t=>A.daily[t.k]>=t.n&&!A.daily.done[t.k]);
   const bt=document.querySelector('#tabs [data-tab=pass]');let b=bt.querySelector('.badge');if(pb&&!b){b=document.createElement('i');b.className='badge';bt.appendChild(b);}else if(!pb&&b)b.remove();
 }
@@ -708,16 +709,35 @@ function renderEvents(){
   }
   return h;
 }
+const PICON={
+  coins:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#b98cff" stroke="#f1e4ff" stroke-width="1.5"/><circle cx="12" cy="12" r="4.5" fill="none" stroke="#f1e4ff" stroke-width="1.5"/></svg>',
+  gems:'<svg viewBox="0 0 24 24"><path d="M6 4h12l4 6-10 11L2 10z" fill="#4fc3ff" stroke="#e6f8ff" stroke-width="1.2"/><path d="M2 10h20M9 4l-2 6 5 11 5-11-2-6" fill="none" stroke="#e6f8ff" stroke-width="1"/></svg>',
+  sboxes:'<svg viewBox="0 0 24 24"><rect x="3" y="10" width="18" height="10" rx="2" fill="#a637ee" stroke="#f3dcff" stroke-width="1.2"/><path d="M3 10c0-4 4-6 9-6s9 2 9 6z" fill="#7a22c4" stroke="#f3dcff" stroke-width="1.2"/><rect x="10.5" y="8.5" width="3" height="5" rx="1" fill="#ffd75e"/></svg>',
+  wing:'<svg viewBox="0 0 24 24"><path d="M12 19C9 12 5 9 1 8c1 4 3 6 5 7-2 0-3 0-4-1 1 3 4 5 10 5zM12 19c3-7 7-10 11-11-1 4-3 6-5 7 2 0 3 0 4-1-1 3-4 5-10 5z" fill="#ffd75e" stroke="#fff6cf" stroke-width="1"/></svg>'};
+let passSeen=-1,passScroll=null;
 function renderPass(){
-  const lv=passLevel(S),d=new Date(),end=new Date(d.getFullYear(),d.getMonth()+1,1),days=Math.ceil((end-d)/864e5);
-  let h=renderEvents()+'<h2>פס העונה · רמה '+L(lv+'/30')+'</h2><p class="hint">העונה מסתיימת בעוד '+L(days)+' ימים. ניסיון לפס מגיע ממשימות יומיות, ריסטים, קרבות זירה וחיסולים.</p>'+
-    '<div class="bar gold"><i style="width:'+(lv>=30?100:A.pass.xp%100)+'%"></i></div>';
-  h+='<div class="track">';for(let i=1;i<=30;i++){const got=i<=A.pass.claimed,open=!got&&i<=lv;h+='<div class="tier'+(got?' got':open?' open':'')+'"><b>'+i+'</b>'+passReward(i).t+'</div>';}h+='</div>';
-  h+='<button class="btn pri" data-act="claimPass"'+(lv>A.pass.claimed?'':' disabled')+'>'+(lv>A.pass.claimed?'אסוף פרס רמה '+(A.pass.claimed+1):'אין פרס לאיסוף')+'</button>';
-  h+='<h2>משימות יומיות</h2>';
+  const lv=passLevel(S),d=new Date(),end=new Date(d.getFullYear(),d.getMonth()+1,1),days=Math.ceil((end-d)/864e5),xp=lv>=30?100:A.pass.xp%100,wait=lv-A.pass.claimed;
+  let nextBig=0;for(const m of [10,20,30])if(m>A.pass.claimed){nextBig=m;break;}
+  let h=renderEvents()+'<h2>פס העונה</h2><div class="passHead"><div class="plv"><small>רמה</small><b>'+lv+'</b><small>מתוך 30</small></div><div class="pinfo">'+
+    '<div class="kv"><span>'+(lv>=30?'הגעת לרמה המרבית':'ניסיון לרמה '+(lv+1))+'</span><b class="num">'+L(lv>=30?'100%':xp+'/100')+'</b></div>'+
+    '<div class="bar gold big"><i style="width:'+xp+'%"></i></div>'+
+    '<small>'+(nextBig?'הפרס הגדול הבא: <b>'+passReward(nextBig).t+'</b> ברמה '+nextBig+(nextBig>lv?', עוד '+(nextBig-lv)+' רמות':', מחכה לאיסוף')+' · ':'')+'נשארו '+L(days)+' ימים לעונה</small></div></div>';
+  h+='<div class="track" id="passTrack">';
+  for(let i=1;i<=30;i++){const rw=passReward(i),got=i<=A.pass.claimed,open=!got&&i<=lv,cur=i===lv+1,big=!!rw.wing,ic=rw.wing?'wing':rw.sboxes?'sboxes':rw.gems?'gems':'coins';
+    h+='<div class="tier'+(got?' got':open?' open':cur?' cur':'')+(big?' big':'')+'"><b>'+i+'</b><span class="pic">'+PICON[ic]+'</span><em>'+rw.t+'</em><i>'+(got?'נאסף':open?'מוכן':cur?L(xp+'%'):'נעול')+'</i></div>';}
+  h+='</div>';
+  h+='<button class="btn pri'+(wait>0?' glow':'')+'" data-act="claimPass"'+(wait>0?'':' disabled')+'>'+(wait>1?'אסוף '+wait+' פרסים':wait===1?'אסוף פרס רמה '+(A.pass.claimed+1):'אין פרס לאיסוף כרגע')+'</button>';
+  h+='<h2>משימות יומיות</h2><p class="hint">כל משימה מקדמת את הפס. המשימות מתאפסות בחצות.</p>';
   for(const t of TASKS){const v=Math.min(A.daily[t.k],t.n),done=A.daily.done[t.k],ready=v>=t.n&&!done;
-    h+='<div class="card shop"><div class="z"><b>'+t.t+'</b><small>'+L(fmt(v)+'/'+fmt(t.n))+' · '+L(t.xp)+' ניסיון לפס</small></div><button class="btn sm'+(ready?' pri':'')+'" data-act="claimTask" data-k="'+t.k+'"'+(ready?'':' disabled')+'>'+(done?'נאסף':'אסוף')+'</button></div>';}
+    h+='<div class="card shop task'+(done?' done':'')+'"><div class="z"><b>'+t.t+'</b><div class="bar'+(ready||done?' gold':'')+'"><i style="width:'+Math.round(v/t.n*100)+'%"></i></div><small>'+L(fmt(v)+'/'+fmt(t.n))+' · '+L('+'+t.xp)+' ניסיון לפס</small></div><button class="btn sm'+(ready?' pri glow':'')+'" data-act="claimTask" data-k="'+t.k+'"'+(ready?'':' disabled')+'>'+(done?'נאסף':'אסוף')+'</button></div>';}
   return h;
+}
+// Keep the reward track where the player scrolled it; the first time, bring the current level into view.
+function passTrackFix(first){
+  const t=$('passTrack');if(!t)return;
+  if(passScroll!=null&&!first){t.scrollLeft=passScroll;}
+  else{const c=t.querySelector('.tier.open')||t.querySelector('.tier.cur');if(c)t.scrollLeft=c.offsetLeft-t.offsetLeft-(t.clientWidth-c.offsetWidth)/2;}
+  passScroll=t.scrollLeft;t.addEventListener('scroll',()=>{passScroll=t.scrollLeft;},{passive:true});
 }
 function renderParty(){
   let h='<h2>פארטי</h2>';
@@ -746,6 +766,7 @@ function renderArena(){
 function renderPanel(){
   panelDirty=false;const p=$('panel');
   p.innerHTML=tab==='char'?renderChar():tab==='gear'?renderGear():tab==='zones'?renderZones():tab==='shop'?renderShop():tab==='pass'?renderPass():tab==='chat'?renderChat():renderArena();
+  if(tab==='pass')passTrackFix(false);
   if(tab==='chat'){const l=$('chatList');if(l)l.scrollTop=l.scrollHeight;renderChatBar();}
 }
 function openSheet(id){
@@ -791,7 +812,7 @@ function showCreate(extra){
 }
 function openTab(name){
   tab=name;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
-  if(tab==='arena'){loadArena();if(ONLINE&&!demo){send('pget',{});loadGuild();}}if(tab==='shop')loadMarket();renderPanel();$('panel').scrollTop=0;
+  if(tab==='arena'){loadArena();if(ONLINE&&!demo){send('pget',{});loadGuild();}}if(tab==='shop')loadMarket();passScroll=null;renderPanel();$('panel').scrollTop=0;
 }
 function loadArena(){if(!demo&&S)act('opps',{}).then(()=>{panelDirty=true;});}
 function enterGame(r){
@@ -911,7 +932,7 @@ document.addEventListener('click',async e=>{
         toast(c==='ok'?'השדרוג הצליח. דרגה '+r.p:c==='saved'?'נכשל. קמע ההגנה שמר על הדרגה':c==='down'?'נכשל. הדרגה ירדה ל-'+r.p:c==='fail'?'השדרוג נכשל':'חסרים חומרים',c==='ok'?r.r:null);touch();C=calc(S,auras);openSheet(id);}}
     else if(a==='openBox'){r=await act('openBox',{k:b.dataset.k});if(r.ok)boxFx(r.box);}
     else if(a==='buy'){r=await act('buy',{shop:b.dataset.s,k:b.dataset.k});if(r.ok){if(r.box)boxFx(r.box);else{snd('coin');toast('נקנה: '+r.bought);}}}
-    else if(a==='claimPass'){r=await act('claimPass',{});if(r.ok){snd('rare');toast('פרס עונה: '+r.t);}}
+    else if(a==='claimPass'){for(let n=0;n<30&&passLevel(S)>A.pass.claimed;n++){r=await act('claimPass',{});if(!r.ok)break;snd('rare');toast('פרס עונה: '+r.t);}passScroll=null;}
     else if(a==='claimEvent'){r=await act('claimEvent',{id:b.dataset.k});if(r.ok){snd('rare');toast('פרס האירוע: '+r.rt);if(r.levels)afterXp(r.levels);}}
     else if(a==='answer'){r=await act('answer',{a:+b.dataset.i});if(r.ok){snd(r.correct?'ok':'fail');toast(r.correct?'תשובה נכונה. אסוף את הפרס':'תשובה שגויה');}}
     else if(a==='claimTask'){r=await act('claimTask',{k:b.dataset.k});if(r.ok)toast(r.xp+' ניסיון לפס');}
