@@ -94,10 +94,10 @@ const PASS_MAX=60,PASS_STEP=200,PASS_DAY=250;
 function passAdd(s,n){const g=Math.max(0,Math.min(n,PASS_DAY-(s.daily.pxp||0)));s.daily.pxp=(s.daily.pxp||0)+g;s.pass.xp+=g;}
 
 const AFK=.7, SKLV=[1,20,60,110,180,260], SKCD=[4,12,30,10,25,45];
-const SHARED=['gold','gems','cred','coins','boxes','sboxes','charms','bless','bonusPts','boost','inv','nid','kills','killAcc','pass','day','daily','rating','tickets','autoEq','autoSell','open','zk','login','jewels','prem','vip','shards','keys','feathers'];
+const SHARED=['gold','gems','cred','coins','boxes','sboxes','charms','bless','bonusPts','boost','inv','nid','kills','killAcc','pass','day','daily','rating','tickets','autoEq','autoSell','open','zk','login','jewels','prem','vip','shards','keys','feathers','pick','week','sq','eggs'];
 function newAccount(){
   return {v:2,gold:0,gems:3,cred:0,coins:0,boxes:1,sboxes:0,charms:0,bless:0,bonusPts:0,boost:0,inv:[],nid:1,kills:0,killAcc:0,
-    pass:{key:seasonKey(),xp:0,claimed:0},day:dayKey(),daily:{kills:0,resets:0,wins:0,ups:0,done:{}},rating:1000,tickets:5,
+    pass:{key:seasonKey(),xp:0,claimed:0},day:dayKey(),daily:{kills:0,resets:0,wins:0,ups:0,boss:0,ev:0,done:{}},rating:1000,tickets:5,
     autoEq:true,autoSell:1,zv:2,open:0,zk:{},bossM:{},q:0,casts:0,wins:0,boss7:0,maxLvl:1,chars:[],cur:0,last:_now()};
 }
 function newChar(name,cls){
@@ -113,7 +113,7 @@ const dayNum=()=>{const o=tzParts();return Math.round(Date.UTC(+o.year,+o.month-
 function loginDay(A){const dn=dayNum();let lg=A.login;if(!lg||typeof lg!=='object')lg=A.login={n:0,s:0,got:1};
   if(lg.n!==dn){lg.s=lg.n===dn-1&&lg.got?(clamp(lg.s|0,1,7)%7)+1:1;lg.n=dn;lg.got=0;}}
 function ensureDay(s){
-  if(s.day!==dayKey()){s.day=dayKey();s.daily={kills:0,resets:0,wins:0,ups:0,done:{}};s.tickets=Math.max(s.tickets,5);}
+  if(s.day!==dayKey()){s.day=dayKey();s.daily={kills:0,resets:0,wins:0,ups:0,boss:0,ev:0,done:{}};s.tickets=Math.max(s.tickets,5);}
   if(s.pass.key!==seasonKey())s.pass={key:seasonKey(),xp:0,claimed:0};
 }
 function itemVals(it){
@@ -235,13 +235,20 @@ function makeItem(s,slot,t,r,zi,extra){
 }
 function rollRar(tab){let x=_rnd()*100;for(let i=0;i<tab.length;i++){x-=tab[i];if(x<0)return i;}return 0;}
 const sellVal=it=>Math.round(20*(it.s==='g'?it.t*3:it.t)*(it.r+1)*(it.r+1)*(1+it.p*.3)*(it.ex?3:1));
+// What the character bends down for. Gold, soul stones, boxes and shards are always taken; gear is taken by rarity,
+// with ancient-set pieces, wings and excellent items as their own switches. What is not picked up stays on the ground.
+const PICK_KEYS=['0','1','2','3','4','set','g','ex'];
+const pickOf=A=>{const p=A.pick||{},o={};for(const k of PICK_KEYS)o[k]=p[k]!==false;return o;};
+function picks(s,it){const p=pickOf(s);if(it.ex)return p.ex;if(it.s==='g')return p.g;if(isSet(it))return p.set;return p[it.r];}
+const dropNote=(rep,it,cls,left)=>{if(rep){const l=rep.names=rep.names||[];if(l.length<8)l.push([itemName(it,cls),it.ex?5:it.r,left?1:0]);}};
 function stash(s,it,rep){
   const weak=it.r<s.autoSell&&!it.ex;
   if(weak||s.inv.length>=BAG){const g=sellVal(it);s.gold+=g;if(rep){rep.sold=(rep.sold||0)+1;rep.gold=(rep.gold||0)+g;}return false;}
   s.inv.push(it);return true;
 }
 function gainItem(s,it,rep){
-  const cur=s.eq[it.s];
+  if(rep&&!picks(s,it)){rep.left=(rep.left||0)+1;dropNote(rep,it,s.cls,true);return 'left';}
+  dropNote(rep,it,s.cls,false);const cur=s.eq[it.s];
   if(s.autoEq&&canWear(s,it)&&(!cur||itemScore(it)>itemScore(cur))){s.eq[it.s]=it;if(rep)rep.equipped=(rep.equipped||0)+1;if(cur)stash(s,cur,rep);return 'eq';}
   return stash(s,it,rep)?'bag':'sold';
 }
@@ -253,11 +260,11 @@ function rollLoot(s,zi,kills,c,rep){
   const ni=Math.min(80,pois(kills*.03*c.dropM));
   const exc=z.req?.03:.012;
   for(let i=0;i<ni;i++){const it=makeItem(s,rslot(),tierOf(zi),rollRar([62,25,9,3.3,.7]),zi);if(_rnd()<exc)makeExcellent(it);
-    const where=gainItem(s,it,rep);rep.items=(rep.items||0)+1;if((it.r>=2||it.ex)&&where!=='sold'){(rep.notable=rep.notable||[]).push(it);}}
+    const where=gainItem(s,it,rep);if(where!=='left')rep.items=(rep.items||0)+1;if((it.r>=2||it.ex)&&where!=='sold'&&where!=='left'){(rep.notable=rep.notable||[]).push(it);}}
   if(z.wing){const nw=Math.min(4,pois(kills*.0006*c.dropM));
     for(let i=0;i<nw;i++){const it=makeItem(s,'g',z.wing,rollRar([62,28,8,1.7,.3]),zi);if(_rnd()<exc*2)makeExcellent(it);gainItem(s,it,rep);(rep.notable=rep.notable||[]).push(it);}}
   {const ns=pois(kills*.012);if(ns){s.shards=(s.shards||0)+ns;rep.shards=(rep.shards||0)+ns;}}
-  s.kills+=kills;s.daily.kills+=kills;s.killAcc+=kills;s.zk[zi]=(s.zk[zi]||0)+kills;
+  s.kills+=kills;s.daily.kills+=kills;if(s.week)s.week.kills=(s.week.kills||0)+kills;s.killAcc+=kills;s.zk[zi]=(s.zk[zi]||0)+kills;
   if(s.killAcc>=100){const n=Math.floor(s.killAcc/100);s.killAcc-=n*100;passAdd(s,n*5);}
 }
 function offline(s,secs){
@@ -284,7 +291,7 @@ function resetGain(s){return 10+2*Math.min(s.resets+1,10);}
 function doReset(s){
   if(!canReset(s))return false;const g=resetGain(s);
   // Stats and unspent points stay: every run through the levels adds five points a level on top of what was there.
-  s.resets++;s.lvl=1;s.xp=0;s.cred+=g;s.coins+=5;passAdd(s,150);s.daily.resets++;s.zone=-1;s.floor=0;
+  s.resets++;s.lvl=1;s.xp=0;s.cred+=g;s.coins+=5;passAdd(s,150);s.daily.resets++;if(s.week)s.week.resets=(s.week.resets||0)+1;s.zone=-1;s.floor=0;
   if(s.autoPts)autoAlloc(s);return true;
 }
 function upCost(it){return {gems:1+Math.floor(it.p/3),gold:500*(it.s==='g'?it.t*2:it.t)*(it.p+1)};}
@@ -316,7 +323,25 @@ function passReward(lv){
   return {t:'15 מטבעות עונה',coins:15};
 }
 const passLevel=s=>Math.min(PASS_MAX,Math.floor(s.pass.xp/PASS_STEP));
-const TASKS=[{k:'kills',n:1500,t:'חסל 1,500 מפלצות',xp:60},{k:'resets',n:1,t:'בצע ריסט',xp:100},{k:'wins',n:2,t:'נצח 2 קרבות זירה',xp:60},{k:'ups',n:3,t:'נסה 3 שדרוגים',xp:40}];
+const RESPEC_COST=15;
+const TASKS=[{k:'kills',n:1500,t:'חסל 1,500 מפלצות',xp:60},{k:'resets',n:1,t:'בצע ריסט',xp:100},{k:'wins',n:2,t:'נצח 2 קרבות זירה',xp:60},{k:'ups',n:3,t:'נסה 3 שדרוגים',xp:40},
+  {k:'boss',n:3,t:'הבס 3 בוסים',xp:0,rw:{gems:6},rt:'6 אבני נשמה'},{k:'ev',n:2,t:'אסוף פרס מ-2 אירועים',xp:0,rw:{coins:12},rt:'12 מטבעות עונה'},{k:'big',f:'kills',n:6000,t:'חסל 6,000 מפלצות',xp:0,rw:{boxes:1,gold:3000},rt:'תיבת אוצר ו-3,000 זהב'}];
+// Weekly tasks: larger, for the week (Sunday to Saturday, Israel time), paid in what the long chase needs.
+const WEEKLY=[{k:'kills',n:40000,t:'חסל 40,000 מפלצות',rw:{feathers:1,gems:15},rt:'נוצת נצח ו-15 אבני נשמה'},{k:'resets',n:5,t:'בצע 5 ריסטים',rw:{cred:25,sboxes:1},rt:'25 אותות ריסט ותיבת עונה'},
+  {k:'boss',n:25,t:'הבס 25 בוסים',rw:{feathers:1,boxes:2},rt:'נוצת נצח ו-2 תיבות אוצר'},{k:'wins',n:12,t:'נצח 12 קרבות זירה',rw:{coins:40},rt:'40 מטבעות עונה'},{k:'ev',n:10,t:'אסוף פרס מ-10 אירועים',rw:{sboxes:1,coins:20},rt:'תיבת עונה ו-20 מטבעות עונה'}];
+const weekKey=()=>String(Math.floor((dayNum()+4)/7));
+function ensureWeek(A){if(!A.week||A.week.key!==weekKey())A.week={key:weekKey(),kills:0,resets:0,boss:0,wins:0,ev:0,done:{}};return A.week;}
+const bump=(A,k,n)=>{A.daily[k]=(A.daily[k]||0)+n;ensureWeek(A)[k]=(A.week[k]||0)+n;};
+// Side quests turn up on the road: now and then, while fighting, a stranger asks for something in the map you are in.
+// One at a time, with a deadline; ignoring it costs nothing.
+const SIDEQ=[{k:'hunt',t:'ציד מהיר',d:n=>'חסל '+n+' מפלצות במפה הזו',n:[250,400,600],min:12,rw:m=>({gems:4+m*2,gold:1500*(m+1)})},
+  {k:'boss',t:'ראש הלהקה',d:()=>'הבס את הבוס של המפה הזו',n:[1,1,1],min:15,rw:m=>({boxes:1,coins:6+m*3})},
+  {k:'rare',t:'אספן',d:n=>'מצא '+n+' פריטים נדירים ומעלה במפה הזו',n:[2,3,4],min:20,rw:m=>({sboxes:m>1?1:0,gems:6+m*3,coins:5})}];
+function sideOffer(A,zi,now){const i=Math.floor(_rnd()*SIDEQ.length),q=SIDEQ[i],m=Math.floor(_rnd()*3);A.sq={i:i,m:m,z:zi,n:q.n[m],have:0,until:now+q.min*60000};return A.sq;}
+function sideAdd(A,k,zi,n,now,r){const q=A.sq;if(!q||q.done||n<=0)return;if(now>q.until){A.sq=null;if(r)r.sqLost=true;return;}if(q.z!==zi||SIDEQ[q.i].k!==k)return;q.have=Math.min(q.n,q.have+n);if(q.have>=q.n){q.done=1;if(r)r.sqDone=true;}}
+// Hidden finds. Each pays once per account; the game never lists them.
+const EGGS={moon:{rw:{gems:7},t:'הירח קרץ לך. 7 אבני נשמה'},dawn:{rw:{coins:15},t:'מי שקם בארבע בבוקר מקבל 15 מטבעות עונה'},circle:{rw:{gold:7777},t:'אמרת את מילת המעגל. 7,777 זהב'},
+  lucky:{rw:{sboxes:1},t:'7,777 חיסולים בדיוק ביד. תיבת עונה'},still:{rw:{gems:5},t:'עמדת בשקט בכפר והקשבת. 5 אבני נשמה'}};
 function fighter(s){const c=calc(s);const g=it=>it?[it.t,it.r,it.p,it.season?1:0,it.ex?(isFull(it)?2:1):0]:null;let mn=99,sum=0;for(const k in ARM){const p=s.eq[k]?s.eq[k].p|0:0;sum+=p;if(p<mn)mn=p;}
   return {n:s.name,c:s.cls,l:s.lvl,r:s.resets,p:c.power,d:Math.round(c.dmg),a:Math.round(c.aspd*100)/100,h:Math.round(c.hp),f:Math.round(c.def),cr:Math.round(c.crit*100)/100,cd:Math.round(c.cdmg*100)/100,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g),rt:s.rating,sp:[mn===99?0:mn,Math.round(sum/5)]};} // sp: lowest and average armor upgrade, for the glow others see
 function simDuel(A,B){
@@ -381,7 +406,7 @@ function duelAI(D,i){
 // Rating, coins and the rest for the account that fought as side `side`.
 function duelSettle(A,now,won,oppRt){
   let gain=0;
-  if(won){gain=clamp(Math.round(24-(A.rating-(oppRt||A.rating))/25),8,40);A.rating+=gain;A.coins+=8;passAdd(A,15);A.daily.wins++;A.wins=(A.wins||0)+1;evAdd(A,now,'w',1);}
+  if(won){gain=clamp(Math.round(24-(A.rating-(oppRt||A.rating))/25),8,40);A.rating+=gain;A.coins+=8;passAdd(A,15);A.daily.wins++;ensureWeek(A).wins++;A.wins=(A.wins||0)+1;evAdd(A,now,'w',1);}
   else{A.rating=Math.max(0,A.rating-12);A.coins+=2;}
   return gain;
 }
@@ -548,7 +573,7 @@ function buildOpps(A,S,players,selfId){
 // apply() is the only code that may change an account. The server runs it on the stored
 // state; the client runs it only in local (unprotected) mode. Arguments are untrusted.
 function apply(A,kind,args,ctx){
-  args=args||{};ctx=ctx||{};const now=_now(),r={ok:true};loginDay(A);
+  args=args||{};ctx=ctx||{};const now=_now(),r={ok:true};loginDay(A);ensureWeek(A);
   const fail=m=>({ok:false,msg:m});
   if(kind==='create'){
     const nm=String(args.name||'').replace(/[<>&"'\u2605\u0000-\u001f]/g,'').trim().slice(0,14)||'גיבור',cls=CLS[args.cls]?args.cls:'blade';
@@ -594,7 +619,9 @@ function apply(A,kind,args,ctx){
       A.casts=(A.casts||0)+int(args.casts,0,30);
       {const sh=Math.max(0,Math.min(Number(ctx.shareXp)||0,5e7));if(sh>0){r.shared=Math.round(sh);rep.levels=(rep.levels||0)+addXp(S,sh);}} // from party members' kills here; the server supplies it
       r.base=k*zd.xp;
-      if(k>0){const l0=S.lvl;A.allow-=k;rep.levels=(rep.levels||0)+addXp(S,k*zd.xp*c.xpM*pb);rollLoot(S,z,k,c,rep);evAdd(A,now,'k',k,inEv);
+      if(k>0){const l0=S.lvl;A.allow-=k;rep.levels=(rep.levels||0)+addXp(S,k*zd.xp*c.xpM*pb);rollLoot(S,z,k,c,rep);evAdd(A,now,'k',k,inEv);ensureWeek(A);
+        if(!inEv){sideAdd(A,'hunt',z,k,now,r);if(rep.notable)sideAdd(A,'rare',z,rep.notable.length,now,r);
+          if(!A.sq&&S.lvl>=20&&now-(A.sqAt||0)>25*60000&&_rnd()<k*.0009){A.sqAt=now;r.sqNew=sideOffer(A,z,now);}}
         if(!A.bossAt&&!inEv){A.bossM[z]=(A.bossM[z]||0)+k;if(A.bossM[z]>=BOSSN){A.bossM[z]=0;A.bossAt={z:z,t:now};}}}
       if(args.boss){
         const b=A.bossAt;
@@ -605,7 +632,7 @@ function apply(A,kind,args,ctx){
           A.bossAt=null;rep.levels=(rep.levels||0)+addXp(S,zd.xp*40*c.xpM*pb);rollLoot(S,z,1,c,rep);
           const it=makeItem(S,rslot(),tierOf(z),rollRar([0,0,70,25,5]),z);gainItem(S,it,rep);(rep.notable=rep.notable||[]).push(it);
           const g=2+Math.floor(_rnd()*3);A.gems+=g;rep.gems=(rep.gems||0)+g;if(_rnd()<.3){A.boxes++;rep.boxes=(rep.boxes||0)+1;}
-          if(z===BASEZ-1)A.boss7=1;if(A.open===z&&z<BASEZ-1){A.open=z+1;rep.opened=z+1;}rep.boss=true;evAdd(A,now,'b',1);
+          if(z===BASEZ-1)A.boss7=1;if(A.open===z&&z<BASEZ-1){A.open=z+1;rep.opened=z+1;}rep.boss=true;evAdd(A,now,'b',1);bump(A,'boss',1);sideAdd(A,'boss',z,1,now,r);
         }else rep.bossDenied=true;
       }
       r.rep=rep;break;}
@@ -613,6 +640,10 @@ function apply(A,kind,args,ctx){
       const k=String(args.k);if(['str','agi','vit','ene'].indexOf(k)<0)return fail('סטט לא קיים');
       const n=Math.min(args.n==='all'?S.pts:Math.min(S.pts,int(args.n,0,100000)),STAT_MAX-S.stats[k]);if(n<=0)return fail(S.stats[k]>=STAT_MAX?'הסטט הזה מלא':'אין נקודות לחלק');S.stats[k]+=n;S.pts-=n;break;}
     case 'autoPts':S.autoPts=!S.autoPts;if(S.autoPts)autoAlloc(S);break;
+    case 'pick':{const k=String(args.k);if(PICK_KEYS.indexOf(k)<0)return fail('אין קטגוריה כזו');const p=pickOf(A);p[k]=!p[k];A.pick=p;break;}
+    case 'respec':{ // all placed points come back; costs reset marks
+      const spent=S.stats.str+S.stats.agi+S.stats.vit+S.stats.ene-60;if(spent<=0)return fail('אין נקודות להחזיר');if(A.cred<RESPEC_COST)return fail('צריך '+RESPEC_COST+' אותות ריסט');
+      A.cred-=RESPEC_COST;S.stats={str:15,agi:15,vit:15,ene:15};S.pts+=spent;r.pts=spent;if(S.autoPts)autoAlloc(S);break;}
     case 'autoEq':A.autoEq=!A.autoEq;break;
     case 'autoSell':A.autoSell=((A.autoSell|0)+1)%3;break;
     case 'setAuto':S.auto=!!args.on;break;
@@ -660,7 +691,13 @@ function apply(A,kind,args,ctx){
       if(!addOpt(it))return fail('לפריט כבר יש את כל האופציות');A.jewels--;r.opt=it.af[it.af.length-1];r.full=isFull(it);break;}
     case 'claimLogin':{const lg=A.login;if(!lg||lg.got)return fail('את הפרס של היום כבר אספת');const day=clamp(lg.s|0,1,7),rw=LOGIN_RW[day-1];lg.got=1;
       A.gems+=rw.gems||0;A.boxes+=rw.boxes||0;A.sboxes+=rw.sboxes||0;A.coins+=rw.coins||0;A.charms+=rw.charms||0;if(rw.boost)A.boost=Math.max(A.boost,now)+18e5;r.t=rw.t;r.day=day;break;}
-    case 'claimTask':{const t=TASKS.find(x=>x.k===args.k);if(!t||A.daily[t.k]<t.n||A.daily.done[t.k])return fail('המשימה לא הושלמה');A.daily.done[t.k]=1;A.pass.xp+=t.xp;r.xp=t.xp;break;}
+    case 'claimTask':{const t=TASKS.find(x=>x.k===args.k);if(!t||(A.daily[t.f||t.k]||0)<t.n||A.daily.done[t.k])return fail('המשימה לא הושלמה');A.daily.done[t.k]=1;A.pass.xp+=t.xp;r.xp=t.xp;if(t.rw){give(A,S,t.rw);r.rt=t.rt;}break;}
+    case 'claimWeek':{const w=ensureWeek(A),t=WEEKLY.find(x=>x.k===args.k);if(!t||(w[t.k]||0)<t.n||w.done[t.k])return fail('המשימה לא הושלמה');w.done[t.k]=1;give(A,S,t.rw);A.pass.xp+=120;r.rt=t.rt;break;}
+    case 'sqClaim':{const q=A.sq;if(!q||!q.done)return fail('אין משימת צד שהושלמה');const rw=SIDEQ[q.i].rw(q.m);give(A,S,rw);A.sq=null;A.sqN=(A.sqN||0)+1;r.rw=rw;break;}
+    case 'sqDrop':{A.sq=null;break;}
+    case 'egg':{const k=String(args.k),e=EGGS[k];if(!e)return fail('אין כאן כלום');A.eggs=A.eggs||{};if(A.eggs[k])return fail('כבר מצאת את זה');
+      if(k==='dawn'&&localMin(now).m>=300||k==='dawn'&&localMin(now).m<240)return fail('אין כאן כלום');if(k==='lucky'&&A.kills%10000<7777)return fail('אין כאן כלום');
+      A.eggs[k]=1;give(A,S,e.rw);r.t=e.t;r.found=Object.keys(A.eggs).length;break;}
     case 'claimQuest':{const q=QUESTS[A.q|0];if(!q)return fail('אין משימה');const p=q.p(A,S);if(p[0]<p[1])return fail('המשימה לא הושלמה');give(A,S,q.rw);A.q=(A.q|0)+1;r.rt=q.rt;break;}
     case 'opps':A.opps=buildOpps(A,S,ctx.players,ctx.uid);break;
     case 'duel':return fail('אין יותר קרב אוטומטי. הקרב בזירה ידני');
@@ -683,7 +720,7 @@ function apply(A,kind,args,ctx){
       const w=evWindows(now,10).find(x=>x.e.id===String(args.id)&&x.e.obj);if(!w)return fail('האירוע לא פעיל');
       const rec=evRec(A,w.key),e=w.e;if(rec.c)return fail('הפרס כבר נאסף');if((rec[e.obj[0]]||0)<e.obj[1])return fail('המשימה לא הושלמה');
       const rw=e.tiered?tierReward(clamp(rec.tr|0,1,7)):e.rw;
-      rec.c=1;if(rw.lv){let xp=0;for(let l=S.lvl;l<Math.min(CAP,S.lvl+rw.lv);l++)xp+=need(l);r.levels=addXp(S,xp);}
+      rec.c=1;bump(A,'ev',1);if(rw.lv){let xp=0;for(let l=S.lvl;l<Math.min(CAP,S.lvl+rw.lv);l++)xp+=need(l);r.levels=addXp(S,xp);}
       give(A,S,rw);r.rt=e.tiered?rw.lv+' רמות, '+rw.gems+' אבני נשמה ו-'+rw.coins+' מטבעות עונה':e.rt;break;}
     default:return fail('פעולה לא מוכרת');
   }
@@ -691,4 +728,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

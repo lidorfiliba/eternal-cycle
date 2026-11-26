@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126161350';
-const {reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,duelCan,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126162338';
+const {RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,duelCan,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -446,9 +446,10 @@ function drawFx(dt){
   for(const p of SC.parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=160*dt;ctx.globalAlpha=clamp(p.life*2,0,1);ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,p.s,p.s);}
   // loot orbs fly to the hero
   const h=SC.hero;SC.drops=SC.drops.filter(d=>d.life>0);
-  for(const d of SC.drops){d.life-=dt;d.age+=dt;if(d.age<.45){d.x+=d.vx*dt;d.y+=d.vy*dt;d.vy+=500*dt;if(d.y>gy()-6){d.y=gy()-6;d.vy=0;d.vx=0;}}
+  for(const d of SC.drops){d.life-=dt;d.age+=dt;if(d.age<.45+(d.lie||0)){if(d.age>.45){d.vx=0;}d.x+=d.vx*dt;d.y+=d.vy*dt;d.vy+=500*dt;if(d.y>gy()-6){d.y=gy()-6;d.vy=0;d.vx=0;}}
     else{const dx=h.x-d.x,dy=gy()-45-d.y,dist=Math.hypot(dx,dy);if(dist<16){d.life=0;continue;}const v=Math.min(dist,520*dt*(1+d.age));d.x+=dx/dist*v;d.y+=dy/dist*v;}
-    ctx.globalAlpha=1;ctx.fillStyle=d.c;ctx.shadowColor=d.c;ctx.shadowBlur=10;ctx.beginPath();ctx.arc(d.x,d.y,d.s,0,7);ctx.fill();}
+    ctx.globalAlpha=d.left?clamp(d.life,0,.55):1;ctx.fillStyle=d.c;ctx.shadowColor=d.c;ctx.shadowBlur=10;ctx.beginPath();ctx.arc(d.x,d.y,d.s,0,7);ctx.fill();
+    if(d.txt&&d.age>.3&&d.age<.45+(d.lie||0)+.15){ctx.shadowBlur=0;ctx.font='700 10.5px system-ui';ctx.textAlign='center';const tw=ctx.measureText(d.txt).width+8;ctx.fillStyle='rgba(8,6,20,.72)';ctx.fillRect(d.x-tw/2,d.y-22-(d.row||0)*13,tw,12.5);ctx.fillStyle=d.left?'#8d87a8':d.c;ctx.fillText(d.txt,d.x,d.y-12.5-(d.row||0)*13);}}
   ctx.restore();
   SC.nums=SC.nums.filter(n=>(n.life-=dt)>0);ctx.textAlign='center';
   for(const n of SC.nums){n.y-=38*dt;ctx.globalAlpha=clamp(n.life*2.2,0,1);ctx.font='800 '+n.s+'px Assistant,Arial';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.75)';ctx.strokeText(n.txt,n.x,n.y);ctx.fillStyle=n.c;ctx.fillText(n.txt,n.x,n.y);}
@@ -518,6 +519,10 @@ function dropOrbs(m,rep){
   const add=(c,s)=>SC.drops.push({x:m.x,y:m.y-24,vx:(Math.random()-.5)*160,vy:-160-Math.random()*90,c:c,s:s,age:0,life:4});
   snd(rep.notable?'rare':'kill');if(!rep.notable&&(rep.items||rep.gems))snd('coin');
   add('#f2c14e',3);if(rep.gems)add('#5fd4ff',4);if(rep.boxes)add('#ff6b3d',5);
+  { // what fell lies on the ground for a moment with its name, then the character picks up what it was told to
+    let row=0;const lay=(txt,c,left)=>{if(SC.drops.length>70)return;SC.drops.push({x:m.x+(Math.random()-.5)*90,y:m.y-24,vx:(Math.random()-.5)*120,vy:-170-Math.random()*60,c:c,s:left?3:4.5,age:0,life:left?4.5:5,lie:left?4:1.5+row*.12,txt:txt,left:left,row:row%3});row++;};
+    if(rep.gold>0)lay(fmt(rep.gold)+' זהב','#f2c14e',false);if(rep.gems>0)lay(rep.gems+' אבני נשמה','#5fd4ff',false);if(rep.shards>0)lay(rep.shards+' שברי ארגמן','#ff5c7a',false);if(rep.feather)lay('נוצת נצח','#ffd75e',false);
+    if(rep.names)for(const n of rep.names)lay(n[0],n[1]>=5?'#7dffb0':RAR[n[1]].c,!!n[2]);}
   if(rep.notable)for(const it of rep.notable){add(RAR[it.r].c,5.5);SC.fx.push({k:'beam',x:m.x,y:m.y,life:1.2,c:RAR[it.r].c});toast((it.ex?'':RAR[it.r].n+': ')+itemName(it,S.cls),it.ex?4:it.r);}
   if(rep.jewel)toast('אבן שלמות נפלה מהבוס',4);
   if(rep.shards&&(A.shards||0)>=KEY_SHARDS&&(A.shards||0)-rep.shards<KEY_SHARDS)toast('יש לך מספיק שברים למפתח מצודה',3);
@@ -541,6 +546,7 @@ function afterTick(r,m,l0){
   if(!r||!r.ok){bossPending=false;if(r&&r.msg&&r.msg!=='net')send('sync',{}).then(()=>syncBoss());return;}
   if(r.afk)showOffline(r.afk);
   if(r.evOver&&SC.ev){leaveKeep(true);return;}
+  if(r.sqNew){const d=SIDEQ[r.sqNew.i];snd('portal');announce('משימת צד: '+d.t+' · '+d.d(r.sqNew.n),true);panelDirty=true;}if(r.sqDone){snd('rare');announce('משימת הצד הושלמה. אסוף את הפרס בלשונית אירועים',true);panelDirty=true;}if(r.sqLost)toast('משימת הצד פגה');
   const rep=r.rep||{},src=m||{x:SC.hero.x+SC.hero.face*26,y:gy()};
   if(!ONLINE||rep.items||rep.gems||rep.boxes||rep.notable)dropOrbs(src,rep);
   if(rep.items||rep.boxes)panelDirty=true;
@@ -679,7 +685,14 @@ function updateWorld(dt){
     if(Math.abs(dx)>r){h.x+=Math.sign(dx)*spd*dt;h.mv=true;}
     else{
       if(S.auto&&h.autoSk<=0&&h.cds[0]<=0&&S.lvl>=SKLV[0]&&cast(0,true))h.autoSk=8;
-      if(h.atkT<=0){h.atkT=1/(C.aspd*(h.buff>0?2:1));h.anim=1;h.lastAtk=SC.t;const col=gearColor(lookOf(S).w,SC.t,CLS[S.cls].c);attackFx(S.cls,h.x,gy(),h.face,[m],false,col);strike(m,1,col,false);splash(m,col);if(m.dead)h.atkT=Math.max(h.atkT,.3);}
+      if(h.atkT<=0){h.atkT=1/(C.aspd*(h.buff>0?2:1));h.anim=1;h.lastAtk=SC.t;const col=gearColor(lookOf(S).w,SC.t,CLS[S.cls].c);h.chain=SC.t-(h.chainT||0)>2.5?1:(h.chain||0)+1;h.chainT=SC.t;const step=h.chain%4; // the ordinary attack is a four-beat chain: jab, cross, jab, finisher
+        if(step===0){attackFx(S.cls,h.x,gy(),h.face,[m],true,col);h.skA=.25;
+          if(S.cls==='blade'){SC.fx.push({k:'cres',x:m.x,y:gy()-38,R:50,rot:h.face<0?3.14:0,sp:1.4*h.face,life:.28,d:.28,c:col});SC.fx.push({k:'wave',x:h.x+h.face*20,y:gy(),dir:h.face,dist:150,h:64,life:.3,d:.3,c:col});}
+          else if(S.cls==='storm'){SC.fx.push({k:'pillar',x:m.x,y:gy(),life:.35,d:.35,c:col});SC.fx.push({k:'rune',x:m.x,y:gy()-2,r:44,life:.5,d:.5,c:col});}
+          else for(let q=-1;q<=1;q++)SC.fx.push({k:'line',x1:h.x+18*h.face,y1:gy()-58+q*10,x2:m.x,y2:m.y-26+q*14,life:.16+Math.abs(q)*.04,c:col,w:2.5});
+          strike(m,1.8,col,true);}
+        else{attackFx(S.cls,h.x,gy(),h.face,[m],false,col);if(step===2&&S.cls==='blade')SC.fx.push({k:'cres',x:m.x-4*h.face,y:gy()-34,R:30,rot:(h.face<0?3.14:0)+.5,sp:-1.1*h.face,life:.2,d:.2,c:col});strike(m,1,col,false);}
+        splash(m,col);if(m.dead)h.atkT=Math.max(h.atkT,.3);}
     }
   }else if(h.tx!=null){const dx=h.tx-h.x;h.face=dx>=0?1:-1;
     if(Math.abs(dx)<6){h.tx=null;if(h.goal){const g=h.goal;h.goal=null;arrive(g);}}else{h.x+=Math.sign(dx)*Math.min(Math.abs(dx),spd*dt);h.mv=true;}}
@@ -695,6 +708,7 @@ window.addEventListener('blur',()=>{SC.hero.dir=0;});
 cv.addEventListener('pointerdown',e=>{
   if(!S||demo||busy||SC.mode!=='farm'||SC.hero.dead>0||SC.hero.climb)return;
   const r=cv.getBoundingClientRect(),wx=(e.clientX-r.left)/ZM+SC.cam,py=(e.clientY-r.top)/ZM,h=SC.hero,g0=gy();
+  if(Math.hypot((e.clientX-r.left)/ZM-W*.78,py-H*.2)<26){if(++egg.moon>=7)tryEgg('moon');return;}
   h.tgt=null;h.goal=null;h.tx=null;
   if(py>g0-170){
     for(const m of alive())if(Math.abs(wx-m.x)<(m.boss?60:32)&&py>g0-(m.boss?170:95)){h.tgt=m;return;}
@@ -738,6 +752,7 @@ function startDuel(pd,live){
 // Pace: levels gained over the last minutes, as experience per hour, kills per minute and time left to the reset.
 const pace={q:[],k:0};
 function paceTick(){
+  if(S&&!demo){const hr=new Date().getHours();if(hr===4)tryEgg('dawn');if(A.kills%10000>=7777&&A.kills%10000<7900)tryEgg('lucky');if(SC.zi<0&&!SC.hero.mv){if((egg.still+=5)>=180)tryEgg('still');}else egg.still=0;}
   if(!S||SC.mode!=='farm')return;const now=Date.now(),lv=S.resets*CAP+S.lvl+(S.lvl>=CAP?0:S.xp/need(S.lvl));
   if(pace.q.length&&(lv<pace.q[pace.q.length-1][1]||lv-pace.q[pace.q.length-1][1]>50))pace.q=[];
   pace.q.push([now,lv,A.kills+pend.kills]);while(pace.q.length>2&&now-pace.q[0][0]>300000)pace.q.shift();
@@ -746,6 +761,16 @@ function paceTick(){
     if(lph>0||kpm>0)t=L(fmt(Math.round(kpm)))+' חיסולים בדקה · '+L(lph>=10?Math.round(lph):lph.toFixed(1))+' רמות בשעה'+(S.lvl<CAP&&lph>0?' · ריסט בעוד '+fmtT((CAP-(S.lvl+S.xp/need(S.lvl)))/lph*3600):'');}
   const el=$('paceTag');if(el.dataset.t!==t){el.dataset.t=t;el.innerHTML=t;}el.style.display=t?'':'none';
 }
+// The side quest picked up on the road, if there is one.
+function sideCard(){
+  const q=A.sq;if(!q)return '<h2>משימת צד</h2><p class="hint">אין כרגע. משימות צד צצות מדי פעם תוך כדי לחימה במפות, מרמה 20.</p>';
+  const d=SIDEQ[q.i],left=Math.max(0,(q.until-Date.now())/1000);
+  return '<h2>משימת צד</h2><div class="card shop task"><div class="z"><b>'+d.t+' · '+zoneName(q.z)+'</b><div class="bar'+(q.done?' gold':'')+'"><i style="width:'+Math.round(q.have/q.n*100)+'%"></i></div><small>'+d.d(q.n)+' · '+L(q.have+'/'+q.n)+(q.done?'':' · נשארו '+L(mmss(left)))+'</small></div>'+
+    (q.done?'<button class="btn sm pri glow" data-act="sqClaim">אסוף</button>':'<button class="btn sm" data-act="sqDrop">ותר</button>')+'</div>';
+}
+// Hidden finds: the client notices the moment, the server decides whether it counts and pays once.
+const egg={moon:0,still:0,tried:{}};
+async function tryEgg(k){if(!S||demo||egg.tried[k]||(A.eggs&&A.eggs[k]))return;egg.tried[k]=1;const r=await send('egg',{k:k});if(r&&r.ok){snd('rare');announce('\u2726 '+r.t,true);toast('מצאת סוד נסתר ('+r.found+'/5)',4);}}
 function renderDuelBar(){
   const d=SC.duel,bar=$('duelBar');if(!d){bar.style.display='none';return;}bar.style.display='grid';const me=d.D.f[0],wait=d.busy||d.end>0||(d.live&&d.live.sent);
   bar.querySelectorAll('button').forEach(b=>{const a=b.dataset.a,ok=duelCan(me,a),t=DACT[a][0]+(a==='p'?' ×'+me.pots:'')+'<small>'+(a==='c'?'קומבו '+Math.min(3,me.combo)+'/3':DACT[a][1])+'</small>';
@@ -865,12 +890,12 @@ function renderChar(){
    '<div class="kv"><span>הגנה</span><b class="num">'+fmt(c.def)+'</b></div>'+
    '<div class="kv"><span>בונוס ניסיון</span><b class="num">'+L('+'+Math.round((c.xpM-1)*100)+'%')+'</b></div>'+
    '<div class="kv"><span>טווח תקיפה</span><b>'+(S.cls==='blade'?'קרוב':'רחוק')+'</b></div></div></div>';
-  h+='<h2>נקודות סטט: '+L(S.pts)+'</h2><div class="card">';
+  h+='<h2>נקודות סטט: '+L(S.pts)+'</h2><div class="card">';const spentPts=S.stats.str+S.stats.agi+S.stats.vit+S.stats.ene-60;
   for(const k of ['str','agi','vit','ene'])h+='<div class="stat"><div class="n">'+STATN[k][0]+'<small>'+STATN[k][1]+'</small></div><b class="num"'+(S.stats[k]>=STAT_MAX?' style="color:var(--gold)"':'')+'>'+(S.stats[k]>=STAT_MAX?'מלא':fmt(S.stats[k]))+'</b>'+
     '<button class="btn sm" data-act="pt" data-k="'+k+'" data-n="1"'+(S.pts<1?' disabled':'')+'>'+L('+1')+'</button>'+
     '<button class="btn sm" data-act="pt" data-k="'+k+'" data-n="10"'+(S.pts<10?' disabled':'')+'>'+L('+10')+'</button>'+
     '<button class="btn sm" data-act="pt" data-k="'+k+'" data-n="all"'+(S.pts<1?' disabled':'')+'>הכל</button></div>';
-  h+='</div><div class="card">'+tog('חלוקת נקודות אוטומטית',S.autoPts,'autoPts')+'</div>';
+  h+='</div><div class="card" style="display:flex;flex-direction:column;gap:8px">'+tog('חלוקת נקודות אוטומטית',S.autoPts,'autoPts')+'<button class="btn sm" data-act="respecAsk"'+(spentPts>0&&A.cred>=RESPEC_COST?'':' disabled')+'>איפוס נקודות · '+L(RESPEC_COST)+' אותות ריסט</button></div>';
   h+='<h2>ריסט</h2><div class="card"><p class="hint">ברמה 400 חוזרים לרמה 1 בכפר. הסטטים, הציוד והשערים הפתוחים נשארים, ובדרך חזרה למעלה מקבלים שוב 5 נקודות סטט בכל רמה. כל ריסט מוסיף גם '+L('+4%')+' נזק לתמיד ו-'+L(resetGain(S))+' אותות ריסט. המפות הרגילות זהות לכולם. האתגר למי שעשה ריסט נמצא במפות הריסט: מפלצות חזקות בהרבה, ויותר ניסיון וזהב. כל סטט מתמלא ב-'+L(fmt(STAT_MAX))+'.</p>'+
     '<div class="bar gold" style="margin:8px 0"><i style="width:'+(S.lvl/CAP*100)+'%"></i></div>'+
     '<button class="btn pri" style="width:100%" data-act="reset"'+(canReset(S)?'':' disabled')+'>'+(canReset(S)?'בצע ריסט':'רמה '+S.lvl+' מתוך 400')+'</button></div>';
@@ -894,6 +919,7 @@ function renderGear(){
   h+='</div>';
   const sc=setCounts(S);for(const z in sc)h+='<div class="card r4"><b style="color:var(--r4)">סט עתיק: '+SETN[z]+' · '+L(sc[z]+'/6')+'</b>'+setLines(z,sc[z])+'</div>';
   h+='<div class="card" style="display:flex;flex-direction:column;gap:8px">'+tog('לבש אוטומטית ציוד חזק יותר',A.autoEq,'autoEq')+
+    '<div><span style="font-size:13px">מה להרים מהרצפה</span><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:5px">'+[['0','רגיל'],['1','קסום'],['2','נדיר'],['3','אגדי'],['4','עתיק'],['set','חלקי סט'],['g','כנפיים'],['ex','אקסלנט']].map(x=>'<button class="btn sm'+(pickOf(A)[x[0]]?' on':'')+'" data-act="pick" data-k="'+x[0]+'">'+x[1]+'</button>').join('')+'</div><p class="hint" style="margin-top:4px">זהב, אבני נשמה, תיבות ושברים נאספים תמיד. מה שכבוי נשאר על הרצפה.</p></div>'+
     '<div class="tog"><span>מכירה אוטומטית</span><button class="btn sm" data-act="autoSell">'+['כבויה','רגיל','רגיל וקסום'][A.autoSell]+'</button></div>'+
     '<div class="tog"><span>תיבות אוצר: '+L(A.boxes)+'</span><button class="btn sm pri" data-act="openBox" data-k=""'+(A.boxes?'':' disabled')+'>פתח תיבה</button></div>'+
     '<div class="tog"><span>תיבות עונה: '+L(A.sboxes)+' · 15% לחלק סט עתיק</span><button class="btn sm pri" data-act="openBox" data-k="s"'+(A.sboxes?'':' disabled')+'>פתח תיבה</button></div>'+
@@ -972,9 +998,14 @@ function renderPass(){
     h+='<div class="tier'+(got?' got':open?' open':cur?' cur':'')+(big?' big':'')+'"><b>'+i+'</b><span class="pic">'+PICON[ic]+'</span><em>'+rw.t+'</em><i>'+(got?'נאסף':open?'מוכן':cur?L(xp+'%'):'נעול')+'</i></div>';}
   h+='</div>';
   h+='<button class="btn pri'+(wait>0?' glow':'')+'" data-act="claimPass"'+(wait>0?'':' disabled')+'>'+(wait>1?'אסוף '+wait+' פרסים':wait===1?'אסוף פרס רמה '+(A.pass.claimed+1):'אין פרס לאיסוף כרגע')+'</button>';
-  h+='<h2>משימות יומיות</h2><p class="hint">כל משימה מקדמת את הפס. המשימות מתאפסות בחצות.</p>';
-  for(const t of TASKS){const v=Math.min(A.daily[t.k],t.n),done=A.daily.done[t.k],ready=v>=t.n&&!done;
-    h+='<div class="card shop task'+(done?' done':'')+'"><div class="z"><b>'+t.t+'</b><div class="bar'+(ready||done?' gold':'')+'"><i style="width:'+Math.round(v/t.n*100)+'%"></i></div><small>'+L(fmt(v)+'/'+fmt(t.n))+' · '+L('+'+t.xp)+' ניסיון לפס</small></div><button class="btn sm'+(ready?' pri glow':'')+'" data-act="claimTask" data-k="'+t.k+'"'+(ready?'':' disabled')+'>'+(done?'נאסף':'אסוף')+'</button></div>';}
+  h+=sideCard();
+  h+='<h2>משימות יומיות</h2><p class="hint">מתאפסות בחצות. חלק מקדמות את הפס וחלק נותנות פרס מיידי.</p>';
+  const taskRow=(t,v,done,act)=>{v=Math.min(v||0,t.n);const ready=v>=t.n&&!done;
+    return '<div class="card shop task'+(done?' done':'')+'"><div class="z"><b>'+t.t+'</b><div class="bar'+(ready||done?' gold':'')+'"><i style="width:'+Math.round(v/t.n*100)+'%"></i></div><small>'+L(fmt(v)+'/'+fmt(t.n))+' · '+(t.rt?t.rt:L('+'+t.xp)+' ניסיון לפס')+'</small></div><button class="btn sm'+(ready?' pri glow':'')+'" data-act="'+act+'" data-k="'+t.k+'"'+(ready?'':' disabled')+'>'+(done?'נאסף':'אסוף')+'</button></div>';};
+  for(const t of TASKS)h+=taskRow(t,A.daily[t.f||t.k],A.daily.done[t.k],'claimTask');
+  const wk=A.week||{done:{}},wd=new Date(),left=7-wd.getDay();
+  h+='<h2>משימות שבועיות</h2><p class="hint">מתאפסות במוצאי שבת, בעוד '+L(left)+' ימים. כל אחת נותנת גם '+L(120)+' ניסיון לפס.</p>';
+  for(const t of WEEKLY)h+=taskRow(t,wk[t.k],wk.done&&wk.done[t.k],'claimWeek');
   return h;
 }
 // Keep the reward track where the player scrolled it; the first time, bring the current level into view.
@@ -1184,6 +1215,7 @@ document.addEventListener('click',async e=>{
     openModal('<h3 style="color:var(--r'+q+')">למכור את כל ה'+RAR[q].n+'?</h3><p class="hint">'+L(list.length)+' פריטים יימכרו תמורת '+L(fmt(gold))+' זהב. אי אפשר לבטל אחרי המכירה.</p>'+
       (up?'<p class="hint" style="color:var(--bad)">שים לב: '+L(up)+' מהם משודרגים.</p>':'')+(q>=3?'<p class="hint" style="color:var(--bad)">אלה פריטים '+(q===4?'עתיקים':'אגדיים')+'. ודא שאתה לא צריך אותם.</p>':'')+
       '<div class="acts"><button class="btn" data-act="closeModal">ביטול</button><button class="btn pri" data-act="sellRar" data-r="'+q+'">מכור '+L(list.length)+' פריטים</button></div>');return;}
+  if(a==='respecAsk'){openModal('<h3>לאפס את נקודות הסטט?</h3><p class="hint">כל הנקודות שחילקת חוזרות אליך ואפשר לחלק אותן מחדש. המחיר: '+L(RESPEC_COST)+' אותות ריסט. יש לך '+L(A.cred)+'. ציוד שכבר לבוש נשאר עליך.'+(S.autoPts?' החלוקה האוטומטית פעילה ותחלק אותן מיד מחדש. כבה אותה קודם אם אתה רוצה לחלק לבד.':'')+'</p><div class="acts"><button class="btn" data-act="closeModal">ביטול</button><button class="btn pri" data-act="respec">אפס נקודות</button></div>');return;}
   if(a==='big'){setBig(!prefs.big);return;}
   if(a==='fs'){fsToggle();return;}
   if(a==='install'){if(installEvt){const ev=installEvt;installEvt=null;ev.prompt();}renderPanel();return;}
@@ -1243,7 +1275,12 @@ document.addEventListener('click',async e=>{
     else if(a==='wingEvolve'){const id=+b.dataset.id;r=await act('wingEvolve',{id:id});if(r.ok){if(r.evolved){snd('rare');toast('הכנפיים התפתחו: '+WINGN[r.t-1],4);announce('הכנפיים שלך התפתחו ל'+WINGN[r.t-1],true);}else{snd('slam');toast('הפיתוח נכשל. '+r.need+' נוצות נשרפו');}openSheet(id);}else toast(r.msg);}
     else if(a==='exAdd'){const id=+b.dataset.id;r=await act('exAdd',{id:id});if(r.ok){snd('rare');toast(r.full?'הפריט הגיע לאקסלנט מלא':'נוספה אופציה: '+AFF[r.opt[0]][0]+' '+r.opt[1]+'%',4);openSheet(id);}}
     else if(a==='claimLogin'){r=await act('claimLogin',{});if(r.ok){snd('rare');closeModal();toast('פרס יום '+r.day+': '+r.t);}}
-    else if(a==='claimTask'){r=await act('claimTask',{k:b.dataset.k});if(r.ok)toast(r.xp+' ניסיון לפס');}
+    else if(a==='claimTask'){r=await act('claimTask',{k:b.dataset.k});if(r.ok){snd('coin');toast(r.rt?'קיבלת '+r.rt:r.xp+' ניסיון לפס');}}
+    else if(a==='claimWeek'){r=await act('claimWeek',{k:b.dataset.k});if(r.ok){snd('rare');toast('פרס שבועי: '+r.rt,4);}}
+    else if(a==='sqClaim'){r=await act('sqClaim',{});if(r.ok){snd('rare');toast('משימת הצד הושלמה. הפרס אצלך',4);}}
+    else if(a==='sqDrop'){r=await act('sqDrop',{});}
+    else if(a==='pick'){r=await act('pick',{k:b.dataset.k});}
+    else if(a==='respec'){closeModal();r=await act('respec',{});if(r.ok){snd('rare');toast(fmt(r.pts)+' נקודות חזרו אליך');}else toast(r.msg);}
     else if(a==='fight'){if(SC.mode==='farm'&&(A.tickets>0||A.pd)){r=await act('duelStart',{i:+b.dataset.i});if(r.ok)startDuel(r.pd);}}
     else if(a==='da'){duelAct(b.dataset.a);return;}
     else if(a==='reroll'){loadArena();}
@@ -1385,7 +1422,7 @@ function renderChat(){
     '<p class="hint">שמור על שפה מכבדת. קללות, הטרדה ופרסום מביאים להשתקה.</p>';
 }
 async function say(){
-  const el=$('chatIn');if(!el)return;const m=el.value.trim();if(!m)return;el.value='';
+  const el=$('chatIn');if(!el)return;const m=el.value.trim();if(!m)return;el.value='';if(m==='מעגל הנצח'){tryEgg('circle');return;}
   let j=null;try{j=await rpc('say',{m:m,g:chatCh==='g'});}catch(e){}
   const r=j&&j.result;if(!r||!r.ok){toast(r&&r.msg||'ההודעה לא נשלחה');if(!el.value)el.value=m;return;}
   beatT=99;

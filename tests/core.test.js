@@ -260,3 +260,18 @@ test('gear asks for stats: a weak character cannot wear strong gear, automatic p
       for(const sl of ['w','a','h'])assert.ok(G.canWear(c,{s:sl,t:G.tierOf(zi),r:4,p:9,z:zi,af:[]}),cls+' at level '+L+' wears +9 '+sl+' of map '+zi);}}
   s.lvl=400;assert.ok(G.apply(A,'reset',{}).ok);assert.equal(s.eq.w.id,5001);assert.ok(G.canWear(s,top));
 });
+
+test('respec, pickup filter, weekly tasks, side quests and hidden finds',()=>{
+  const st={now:Date.parse('2026-11-26T12:20:00Z')};let x=.5;G.setEnv(()=>x,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'a',cls:'blade'});const s=A.chars[0];
+  s.autoPts=false;s.stats.str=500;s.stats.vit=300;assert.match(G.apply(A,'respec',{}).msg,/אותות/);A.cred=20;const r=G.apply(A,'respec',{});assert.ok(r.ok);assert.equal(r.pts,770);assert.equal(s.pts,770);assert.deepEqual(s.stats,{str:15,agi:15,vit:15,ene:15});assert.equal(A.cred,20-G.RESPEC_COST);
+  assert.equal(G.apply(A,'respec',{}).ok,false);
+  s.lvl=300;s.stats.str=9000;s.stats.vit=9000;A.autoSell=0;A.autoEq=false;assert.ok(G.pickOf(A)['0']);G.apply(A,'pick',{k:'0'});G.apply(A,'pick',{k:'1'});assert.equal(G.pickOf(A)['0'],false);assert.equal(G.apply(A,'pick',{k:'zz'}).ok,false);
+  G.apply(A,'travel',{z:0});let left=0,names=0;for(let i=0;i<200;i++){st.now+=20000;x=(i*.6180339)%1;const t=G.apply(A,'tick',{z:0,kills:40});left+=t.rep.left||0;names+=(t.rep.names||[]).length;}x=.5;
+  assert.ok(left>20,'left on the ground: '+left);assert.ok(names>0);assert.ok(A.inv.every(it=>it.r>=2||it.ex||it.s==='g'),'nothing common or magic was picked up');
+  assert.ok(A.week.kills>5000);A.week.kills=40000;const f0=A.feathers||0;assert.ok(G.apply(A,'claimWeek',{k:'kills'}).ok);assert.equal(A.feathers,f0+1);assert.equal(G.apply(A,'claimWeek',{k:'kills'}).ok,false);
+  st.now+=8*86400000;G.apply(A,'sync',{});assert.deepEqual(A.week.done,{},'a new week starts clean');
+  A.daily.boss=3;const g0=A.gems;assert.ok(G.apply(A,'claimTask',{k:'boss'}).ok);assert.equal(A.gems,g0+6);A.daily.kills=6000;assert.ok(G.apply(A,'claimTask',{k:'big'}).ok);
+  A.sq={i:0,m:0,z:0,n:250,have:0,until:st.now+600000};G.apply(A,'travel',{z:0});let done=false;for(let i=0;i<20&&!done;i++){st.now+=20000;done=!!G.apply(A,'tick',{z:0,kills:40}).sqDone;}assert.ok(done);assert.ok(G.apply(A,'sqClaim',{}).ok);assert.equal(A.sq,null);
+  A.sq={i:0,m:0,z:0,n:250,have:0,until:st.now-1};st.now+=20000;assert.ok(G.apply(A,'tick',{z:0,kills:10}).sqLost);
+  assert.ok(G.apply(A,'egg',{k:'moon'}).ok);assert.equal(G.apply(A,'egg',{k:'moon'}).ok,false);assert.equal(G.apply(A,'egg',{k:'dawn'}).ok,false,'only at four in the morning');assert.equal(G.apply(A,'egg',{k:'nope'}).ok,false);
+});
