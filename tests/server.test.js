@@ -474,3 +474,21 @@ test('phone notifications: a subscription is checked, the message goes out once 
     await db.query("update push_subs set notify_at=now()-interval '1 minute' where user_id=$1",[a.uid]);fail=410;await srv.push.tick();assert.equal((await post({kind:'pushget',args:{}},a.tok)).on,false,'a subscription the push service no longer knows is dropped');
   }finally{if(a.ws)a.ws.close();srv.live.close();srv.close();}
 });
+
+test('players on one map see each other\'s hits, held to what the character could do',async()=>{
+  const {makeServer}=await import('../server/index.mjs');const {WebSocket}=await import('ws');const {createHash}=await import('node:crypto');const {db}=await world();
+  const srv=makeServer(fakeAdmin(db),'test-secret');await new Promise(r=>srv.listen(0,r));const port=srv.address().port,base='http://127.0.0.1:'+port;
+  const post=async(body,tok)=>(await (await fetch(base,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},tok?{'x-ec-token':tok}:{}),body:JSON.stringify(body)})).json());
+  const mkUser=async(n,cls)=>{const r=await post({kind:'register',args:{user:n,pass:'correct-horse-9',q:0,a:'rex'}});await post({kind:'create',args:{name:n,cls:cls}},r.token);await post({kind:'travel',args:{z:0}},r.token);
+    const uid=(await db.query('select user_id from users where username=$1',[n])).rows[0].user_id;return {tok:r.token,uid,key:createHash('md5').update(uid+'peer').digest('hex').slice(0,10)};};
+  const open=async u=>{const ws=new WebSocket('ws://127.0.0.1:'+port+'/ws');u.q=[];u.wait=t=>new Promise((res,rej)=>{const go=()=>{const i=u.q.findIndex(m=>m.t===t);if(i>=0)return res(u.q.splice(i,1)[0]);setTimeout(go,10);};go();setTimeout(()=>rej(new Error('no '+t+' message')),4000);});
+    ws.on('message',d=>u.q.push(JSON.parse(String(d))));await new Promise(r=>ws.on('open',r));ws.send(JSON.stringify({t:'hello',token:u.tok}));await u.wait('hi');u.ws=ws;u.send=m=>ws.send(JSON.stringify(m));};
+  const a=await mkUser('yod','blade'),b=await mkUser('kaf','blade');
+  try{
+    await open(a);await open(b);b.send({t:'mv',z:0,fl:0,x:100,f:1,a:false,v:0});await new Promise(r=>setTimeout(r,80));
+    a.send({t:'mv',z:0,fl:0,x:200,f:1,a:true,v:0,h:1e15,c:1});const m1=await b.wait('mv');assert.equal(m1.h,undefined,'nothing is shown before the server knows his strength');
+    await new Promise(r=>setTimeout(r,300));a.send({t:'mv',z:0,fl:0,x:210,f:1,a:true,v:0,h:1e15,c:1});const m2=await b.wait('mv');assert.ok(m2.h>=2&&m2.h<1e6,'a claimed hit is cut to what he could do: '+m2.h);assert.equal(m2.c,1);
+    await new Promise(r=>setTimeout(r,80));a.send({t:'mv',z:0,fl:0,x:220,f:1,a:true,v:0,h:5});assert.equal((await b.wait('mv')).h,5);
+    await new Promise(r=>setTimeout(r,80));a.send({t:'mv',z:3,fl:0,x:220,f:1,a:true,v:0,h:5});await new Promise(r=>setTimeout(r,150));assert.equal(b.q.filter(m=>m.t==='mv').length,0,'another map hears nothing');
+  }finally{for(const u of [a,b])if(u.ws)u.ws.close();srv.live.close();srv.close();}
+});

@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126214452';
+const BUILD='20261126215022';
 const {TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -645,8 +645,10 @@ async function travelTo(z,side,f){
   if(!r.ok){SC.hero.climb=null;toast(r.msg==='net'?'אין חיבור לשרת':r.msg);return;}
   snd('portal');enterZone(z,side,f|0);saveLocal();
 }
+let hitOut=[0,0],hitT=0; // my hardest hit since I last told the others on my map, so they see my numbers too
 function strike(m,mult,col,big){
   const crit=Math.random()<C.crit,d=Math.round(C.dmg*(crit?C.cdmg:1)*mult*(m.weak>0?1.5:1)*(.9+Math.random()*.2));
+  if(d>hitOut[0])hitOut=[d,crit?1:0];
   snd(crit?'crit':'hit');m.hp-=d;m.hit=1;m.ag=true;addNum(m.x,m.y-(m.boss?130:60),fmt(d),crit?'#ffd75e':big?col:'#fff',crit||big);
   if(m.hp<=0&&m.die<=0){m.die=.45;m.dead=true;onKill(m,SC.zi);}
 }
@@ -1210,7 +1212,7 @@ function netMsg(m){
   else if(m.t==='watching'){if(SC.mode!=='farm')return;flushTick();const p0=G.cleanPlayer('a',m.p[0]),p1=G.cleanPlayer('b',m.p[1]);startDuel({o:p1,live:m.L},{side:0,id:m.id,cls:m.cls,spec:p0});const D=SC.duel.D;D.t=+m.T||0;for(let i=0;i<2;i++){const s=m.f[i],f=D.f[i];f.hp=+s.hp;f.stun=+s.stun;f.sh=+s.sh;f.inv=+s.inv;f.pots=s.pots|0;f.x=+m.xz[i][0];f.z=+m.xz[i][1];}}
   else if(m.t==='over'){if(d&&d.spec){d.winner=m.win?d.opp.n:d.spec.n;d.sent=true;d.win=!m.win;d.local=!m.win;d.end=2.4;SC.nums.push({x:W/2,y:H*.4,txt:d.winner+' ניצח',c:'#f2c14e',s:26,life:2.4});}}
   else if(m.t==='emote'){const p=peers.find(q=>q.k===m.k);if(p&&EMO[m.e|0])p.say={m:EMO[m.e|0],t:SC.t+3.5};}
-  else if(m.t==='mv'){const p=peers.find(q=>q.k===m.k);if(p&&SC.mode==='farm'){p.v=clamp(+m.v||0,-1200,1200);p.vT=.5;p.tx=clamp((+m.x||0)+p.v*.1,30,mapW()-30);p.f=m.f<0?-1:1;p.a=!!m.a;}}
+  else if(m.t==='mv'){const p=peers.find(q=>q.k===m.k);if(p&&SC.mode==='farm'){p.v=clamp(+m.v||0,-1200,1200);p.vT=.5;p.tx=clamp((+m.x||0)+p.v*.1,30,mapW()-30);p.f=m.f<0?-1:1;p.a=!!m.a;if(m.h>0){const big=!!m.c;SC.nums.push({x:p.x+p.f*46,y:gy()-(hasDeck(SC.zi)&&p.up?deckH():0)-78,txt:fmt(Math.round(+m.h)),c:big?'#ffb23e':'#c9b8ff',s:big?19:15,life:1});if(+m.h>(p.top||0))p.top=+m.h;}}}
   else if(m.t==='ev'){if(!d||!d.net||!m.o||!m.f)return;const D=d.D;D.t=+m.T||D.t;for(let i=0;i<2;i++){const s=m.f[i],f=D.f[i];f.hp=+s.hp;f.stun=+s.stun;f.sh=+s.sh;f.inv=+s.inv;f.pots=s.pots|0;if(s.at)for(const k in f.at)f.at[k]=+s.at[k]||0;}dShow(d,m.o);renderDuelBar();}
   else if(m.t==='end'){if(d&&d.net){d.why=m.why;showResult(d,!!m.win,m.gain|0,false);}}
   else if(m.t==='who'){const was=friendsOn,now={};for(const k of m.on||[])now[String(k)]=1;friendsOn=now;for(const f of A.friends||[])if(now[f.k]&&!was[f.k]&&whoT++>0)toast(f.n+' התחבר');if(!whoT)whoT=1;if(tab==='arena')panelDirty=true;}
@@ -1930,7 +1932,7 @@ function openStall(q){
 function drawPeers(g0,sc){
   if(SC.zi<0&&ONLINE)drawStalls(g0,sc);
   for(const p of peers){ctx.save();ctx.globalAlpha=.9;drawHero(p.x,g0,sc,p.s,SC.t+p.k.charCodeAt(0),p.an,(p.mv?p.dir:p.f)<0,0,p.mv,false);ctx.restore();
-    nameTag(p.x,g0-SPR[CLSSPR[p.s.c]].bh*2*sc-10,p.s.n,p.s.r,p.g,false);if(p.say&&p.say.t>SC.t)bubble(p.x,g0-SPR[CLSSPR[p.s.c]].bh*2*sc-40,p.say.m);}
+    nameTag(p.x,g0-SPR[CLSSPR[p.s.c]].bh*2*sc-10,p.s.n,p.s.r,p.g,false);if(p.top)label('מכה: '+fmt(Math.round(p.top)),p.x,g0+16,'#c9b8ff',9.5);if(p.say&&p.say.t>SC.t)bubble(p.x,g0-SPR[CLSSPR[p.s.c]].bh*2*sc-40,p.say.m);}
 }
 function addChat(list){
   const first=chatSince===0;if(!first&&list.length)chatAt=Date.now();
@@ -2096,7 +2098,7 @@ function loop(ts){
   if(tab==='pass'&&(evT+=dt)>1){evT=0;panelDirty=true;}
   if(ONLINE){pend.t+=dt;if(pend.t>8){pend.t=0;if(pend.kills||pend.casts||(party.code&&SC.zi>=0&&SC.mode==='farm'&&!document.hidden))flushTick();}
     if(!demo&&(beatT+=dt)>(peers.length?(ws&&ws.readyState===1?4:2.5):5)){beatT=0;beat();}
-    if(!demo&&ws&&ws.readyState===1&&SC.mode==='farm'&&!SC.ev&&(mvT+=dt)>.08){const h=SC.hero,at=SC.t-(h.lastAtk||-9)<1.5,x=Math.round(h.x),v=Math.round(clamp((x-mvLast[0])/mvT,-1200,1200));if(peers.length&&(x!==mvLast[0]||at!==mvLast[1]||h.face!==mvLast[2]||v!==mvLast[3])){mvLast=[x,at,h.face,v];netSend({t:'mv',z:SC.zi,fl:SC.fl,x:x,f:h.face,a:at,v:v});}mvT=0;}}
+    if(!demo&&ws&&ws.readyState===1&&SC.mode==='farm'&&!SC.ev&&(mvT+=dt)>.08){const h=SC.hero,at=SC.t-(h.lastAtk||-9)<1.5,x=Math.round(h.x),v=Math.round(clamp((x-mvLast[0])/mvT,-1200,1200));hitT+=.08;const say=hitOut[0]>0&&hitT>.3;if(peers.length&&(say||x!==mvLast[0]||at!==mvLast[1]||h.face!==mvLast[2]||v!==mvLast[3])){mvLast=[x,at,h.face,v];const m={t:'mv',z:SC.zi,fl:SC.fl,x:x,f:h.face,a:at,v:v};if(say){m.h=hitOut[0];m.c=hitOut[1];hitT=0;}netSend(m);}if(say||!peers.length)hitOut=[0,0];mvT=0;}}
   else if((saveT+=dt)>8){saveT=0;if(localDirty){localDirty=false;saveLocal();}}
   updateTut(dt);updateAnnounce(dt);
   if(SC.ev&&Date.now()>SC.evEnd+1500&&!busy){flushTick().then(()=>{if(SC.ev)leaveKeep(true);});SC.evEnd+=8000;}

@@ -157,7 +157,12 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     if (m.t === 'mv') { // where I am on my map, passed straight to the others on the same map and floor, between heartbeats
       const now = clock(); if (now - (ws.lastMv || 0) < 55) return; ws.lastMv = now;
       ws.room = (Math.floor(Number(m.z)) || 0) + ':' + (Math.floor(Number(m.fl)) || 0);
-      const out = JSON.stringify({ t: 'mv', k: ws.key, x: Math.max(0, Math.min(4000, Math.round(Number(m.x)) || 0)), f: Number(m.f) < 0 ? -1 : 1, a: !!m.a, v: Math.max(-1200, Math.min(1200, Math.round(Number(m.v)) || 0)) });
+      const o = { t: 'mv', k: ws.key, x: Math.max(0, Math.min(4000, Math.round(Number(m.x)) || 0)), f: Number(m.f) < 0 ? -1 : 1, a: !!m.a, v: Math.max(-1200, Math.min(1200, Math.round(Number(m.v)) || 0)) };
+      if (Number(m.h) > 0) { // the hit he says he landed, shown to the others on his map: held to what his character could do
+        if (!ws.hitCap || now - ws.hitAt > 60000) { ws.hitAt = now; ws.hitCap = ws.hitCap || 1; snap(uid).then((p) => { if (p) ws.hitCap = Math.max(1, p.d * p.cd * 9); }).catch(() => {}); }
+        o.h = Math.round(Math.min(Number(m.h), ws.hitCap)); o.c = m.c ? 1 : 0; if (o.h < 2) delete o.h;
+      }
+      const out = JSON.stringify(o);
       for (const o of socks.values()) if (o !== ws && o.room === ws.room && o.readyState === 1) o.send(out);
       return;
     }
