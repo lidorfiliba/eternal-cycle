@@ -5,9 +5,14 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
   const MARKET_MSG = {
     sold: "הפריט כבר נמכר", own: "זה פריט שלך", no_gold: "אין מספיק זהב", bag_full: "התיק מלא",
     limit: "אפשר להציע עד 8 פריטים", not_found: "הפריט לא בתיק", bad_price: "מחיר לא תקין", no_account: "אין חשבון",
+    in_guild: "אתה כבר בגילדה", no_guild: "לא נמצאה גילדה בשם הזה", guild_full: "הגילדה מלאה", bad_name: "שם: 3 עד 14 אותיות וספרות. תג: 2 עד 4",
+    taken: "השם או התג כבר תפוסים", not_leader: "רק מוביל הגילדה יכול", muted: "הושתקת בצ'אט", slow: "לאט יותר, רגע בין הודעות", empty: "הודעה ריקה", forbidden: "אין הרשאה",
     not_party: "אפשר למכור ישירות רק לחבר פארטי", in_party: "אתה כבר בפארטי", no_party: "לא נמצא פארטי עם הקוד הזה", full: "הפארטי מלא",
   };
   const MAX_CALLS_PER_MIN = 240;
+  const errMsg = (res) => MARKET_MSG[String(res.error && res.error.message || "").trim()] || "הפעולה נכשלה";
+  const guildView = async (uid, now) => (await admin.rpc("guild_info", { p_user: uid, p_key: G.siegeInfo(now).key })).data || { mine: null, top: [], holder: null };
+  const banText = (until) => "החשבון מושעה עד " + new Intl.DateTimeFormat("he-IL", { timeZone: "Asia/Jerusalem", dateStyle: "short", timeStyle: "short" }).format(new Date(until));
   const ARENA_KINDS = new Set(["create", "sync", "travel", "tick", "reset", "duel", "switch", "equip", "unequip", "upgrade"]);
 
   async function market(uid) {
@@ -23,7 +28,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
     const S = A.chars[A.cur]; if (!S) return;
     const f = G.fighter(S); f.r = G.totalResets(A);
     const t = new Date(clock()).toISOString();
-    await admin.from("arena").upsert({ user_id: uid, snap: f, resets: f.r, power: f.p, zone: S.zone, seen_at: t, updated_at: t });
+    await admin.from("arena").upsert({ user_id: uid, snap: f, resets: f.r, power: f.p, zone: S.zone, floor: S.zone < 0 ? 0 : S.floor | 0, seen_at: t, updated_at: t });
   }
   // Raw party record (with member ids) for server use, and the id-free view sent to the browser.
   async function partyRaw(uid) {
@@ -39,10 +44,29 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
   }
 
   async function handle(uid, kind, args, meta = {}) {
+    // Light paths that never load the account: the heartbeat, chat and the admin screen.
+    if (kind === "beat") {
+      const r = await admin.rpc("beat", { p_user: uid, p_x: Math.round(Number(args.x)) || 0, p_face: Number(args.f) < 0 ? -1 : 1, p_act: !!args.a, p_since: Math.max(0, Math.floor(Number(args.s)) || 0) });
+      return { beat: r.data || {} };
+    }
+    if (kind === "say") {
+      const r = await admin.rpc("chat_say", { p_user: uid, p_guild: !!args.g, p_msg: String(args.m == null ? "" : args.m).slice(0, 300) });
+      return { result: r.error ? { ok: false, msg: errMsg(r) } : { ok: true } };
+    }
+    if (kind === "aview") { const r = await admin.rpc("admin_view", { p_user: uid }); return r.error ? { result: { ok: false, msg: errMsg(r) } } : { result: { ok: true }, admin: r.data }; }
+    if (kind === "aact") {
+      const r = await admin.rpc("admin_act", { p_user: uid, p_action: String(args.action || "").slice(0, 12), p_target: String(args.target || "").slice(0, 64), p_hours: Math.floor(Number(args.hours)) || 24 });
+      if (r.error) return { result: { ok: false, msg: errMsg(r) } };
+      return { result: { ok: true }, admin: (await admin.rpc("admin_view", { p_user: uid })).data };
+    }
+    let guildMade = false;
     for (let attempt = 0; attempt < 4; attempt++) {
       const now = clock();
-      const { data: row, error } = await admin.from("accounts").select("state,version,calls,calls_at").eq("user_id", uid).maybeSingle();
+      const { data: row, error } = await admin.from("accounts").select("state,version,calls,calls_at,banned_until,pw_at").eq("user_id", uid).maybeSingle();
       if (error) throw error;
+      if (row && row.banned_until && Date.parse(row.banned_until) > now) return { result: { ok: false, msg: banText(row.banned_until) }, banned: true, state: null };
+      // A session opened before the last password change is no longer valid.
+      if (row && row.pw_at && meta.iat && meta.iat < Date.parse(row.pw_at) - 1000) return { result: { ok: false, msg: "auth" }, expired: true, state: null };
 
       if (!row) {
         if (kind !== "create") return { result: { ok: false, msg: "new" }, state: null };
@@ -73,6 +97,21 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
           : await admin.rpc("party_leave", { p_user: uid });
         const key = res.error ? String(res.error.message || "").trim() : "";
         return { result: res.error ? { ok: false, msg: MARKET_MSG[key] || "הפעולה נכשלה" } : { ok: true }, party: partyView(uid, await partyRaw(uid)) };
+      }
+      if (kind === "gget") { await bump(); return { result: { ok: true }, guild: await guildView(uid, now) }; }
+      if (kind === "gjoin" || kind === "gleave" || kind === "gkick" || kind === "gnotice") {
+        await bump();
+        const res = kind === "gjoin" ? await admin.rpc("guild_join", { p_user: uid, p_name: String(args.name || "").slice(0, 20) })
+          : kind === "gleave" ? await admin.rpc("guild_leave", { p_user: uid })
+          : kind === "gkick" ? await admin.rpc("guild_kick", { p_user: uid, p_pos: Math.floor(Number(args.i)) || 0 })
+          : await admin.rpc("guild_notice", { p_user: uid, p_text: String(args.text || "").slice(0, 200) });
+        return { result: res.error ? { ok: false, msg: errMsg(res) } : { ok: true }, guild: await guildView(uid, now) };
+      }
+      if (kind === "gcreate" && !guildMade) {
+        if (!(row.state && row.state.gold >= G.GUILD_FEE)) { await bump(); return { result: { ok: false, msg: "פתיחת גילדה עולה " + G.GUILD_FEE.toLocaleString("en-US") + " זהב" }, state: row.state }; }
+        const res = await admin.rpc("guild_create", { p_user: uid, p_name: String(args.name || "").slice(0, 20), p_tag: String(args.tag || "").slice(0, 8) });
+        if (res.error) { await bump(); return { result: { ok: false, msg: errMsg(res) }, state: row.state, guild: await guildView(uid, now) }; }
+        guildMade = true;
       }
       if (kind === "mlist" || kind === "mbuy" || kind === "mcancel") {
         const id = Math.floor(Number(args.id));
@@ -106,6 +145,8 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
       if (kind === "tick" && Number(args.z) >= 0) {
         const pb = await admin.rpc("party_bonus", { p_user: uid, p_zone: Math.floor(Number(args.z)) });
         ctx.partyN = pb.error ? 0 : Number(pb.data) || 0;
+        const gt = await admin.rpc("guild_tick", { p_user: uid, p_kills: 0, p_siege: false, p_key: G.siegeInfo(now).key });
+        if (!gt.error && gt.data) { ctx.guildLvl = Number(gt.data.lvl) || 0; ctx.castle = !!gt.data.castle; }
       }
       G.setEnv(rnd, () => now); // set right before the synchronous rules call; no await in between
       const r = G.apply(A, kind, args, ctx);
@@ -119,10 +160,15 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
       if (!upd.data || !upd.data.length) continue; // another request saved first; redo on fresh state
 
       if (ARENA_KINDS.has(kind)) await saveArena(uid, A);
-      if (kind === "tick" && r.claimed > r.kills + 5) {
-        await admin.from("audit").insert({ user_id: uid, kind: "clamp", detail: { claimed: r.claimed, allowed: r.kills, z: args.z } });
-      }
       const out = { result: r, state: next };
+      if (kind === "tick" && r.kills > 0) await admin.rpc("guild_tick", { p_user: uid, p_kills: r.kills, p_siege: G.siegeInfo(now).on, p_key: G.siegeInfo(now).key });
+      if (kind === "tick" && r.claimed > r.kills + 5) {
+        const detail = { claimed: r.claimed, allowed: r.kills, z: args.z };
+        // A claim far beyond anything the real client can send counts toward an automatic suspension.
+        if (r.claimed >= r.kills * 3 && r.claimed - r.kills >= 50) { const st = await admin.rpc("cheat_strike", { p_user: uid, p_detail: detail }); if (st.data === true) out.banned = true; }
+        else await admin.from("audit").insert({ user_id: uid, kind: "clamp", detail });
+      }
+      if (kind === "gcreate") out.guild = await guildView(uid, now);
       if (players) out.players = players.map((p) => ({ n: p.n, r: p.r, l: p.l, me: p.id === uid }));
       return out;
     }
@@ -154,17 +200,83 @@ export function makeAuth(admin, secret, clock = Date.now) {
     return b64(enc.encode(body)) + "." + b64(new Uint8Array(await crypto.subtle.sign("HMAC", await hmacKey(), enc.encode(body))));
   }
   // Returns the account id for a valid, unexpired token, otherwise null.
-  async function verify(tok) {
+  async function verify(tok) { const s = await session(tok); return s ? s.uid : null; }
+  async function session(tok) {
     try {
       const p = String(tok || "").split("."); if (p.length !== 2 || tok.length > 400) return null;
       const body = dec.decode(unb64(p[0]));
       if (!await crypto.subtle.verify("HMAC", await hmacKey(), unb64(p[1]), enc.encode(body))) return null;
       const [uid, exp] = body.split("."); if (!(+exp > clock())) return null;
-      return /^[0-9a-f-]{36}$/.test(uid) ? uid : null;
+      return /^[0-9a-f-]{36}$/.test(uid) ? { uid, iat: +exp - TTL } : null;
     } catch { return null; }
   }
-  async function register(user, pass, ip) {
-    const u = norm(user), pw = String(pass == null ? "" : pass);
+  const normAns = (a) => String(a == null ? "" : a).normalize("NFKC").trim().toLowerCase().replace(/\s+/g, " ").slice(0, 60);
+  const okQ = (q) => Number.isInteger(q) && q >= 0 && q < 4;
+  async function secretCols(q, a) { const salt = crypto.getRandomValues(new Uint8Array(16)); return { secret_q: q, secret_hash: await hashPass(a, salt), secret_salt: b64(salt) }; }
+  async function userBy(uid) { return (await admin.from("users").select("username,user_id,pass_hash,salt").eq("user_id", uid).maybeSingle()).data; }
+  async function passOk(row, pass) { return !!row && same(await hashPass(String(pass == null ? "" : pass).slice(0, 72), unb64(row.salt)), row.pass_hash); }
+  async function setPass(uid, pw) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    await admin.from("users").update({ pass_hash: await hashPass(pw, salt), salt: b64(salt) }).eq("user_id", uid);
+    await admin.from("accounts").update({ pw_at: new Date(clock()).toISOString() }).eq("user_id", uid);
+  }
+  // Which question to show for a username. Unknown names get a stable made-up one, so the answer does not reveal who exists.
+  async function forgot(user) {
+    const u = norm(user).slice(0, 64);
+    const row = (await admin.from("users").select("secret_q").eq("username", u).maybeSingle()).data;
+    let q = row && row.secret_q != null ? row.secret_q : null;
+    if (q == null) { let h = 0; for (const c of u) h = (h * 31 + c.codePointAt(0)) >>> 0; q = h % 4; }
+    return { ok: true, q };
+  }
+  async function recover(user, answer, pass, ip) {
+    const u = norm(user).slice(0, 64), pw = String(pass == null ? "" : pass), a = normAns(answer), addr = String(ip || "unknown").slice(0, 64);
+    if (pw.length < 8 || pw.length > 72) return fail("סיסמה: 8 עד 72 תווים");
+    const blk = await admin.rpc("login_blocked", { p_user: u, p_ip: addr });
+    if (blk.error || blk.data === true) return fail("יותר מדי ניסיונות. נסה שוב בעוד רבע שעה");
+    const row = (await admin.from("users").select("user_id,secret_hash,secret_salt").eq("username", u).maybeSingle()).data;
+    const has = !!(row && row.secret_hash);
+    const h = await hashPass(a, has ? unb64(row.secret_salt) : new Uint8Array(16));
+    if (!has || a.length < 2 || !same(h, row.secret_hash)) { await admin.rpc("login_fail", { p_user: u, p_ip: addr }); return fail("התשובה לא נכונה, או שלא הוגדרה שאלת שחזור לחשבון"); }
+    await setPass(row.user_id, pw);
+    return { ok: true, token: await token(row.user_id), user: u };
+  }
+  async function setSecret(uid, pass, q, answer) {
+    const row = await userBy(uid), a = normAns(answer); q = Number(q);
+    if (!await passOk(row, pass)) return fail("הסיסמה שגויה");
+    if (!okQ(q) || a.length < 2) return fail("בחר שאלה וכתוב תשובה של 2 תווים לפחות");
+    await admin.from("users").update(await secretCols(q, a)).eq("user_id", uid);
+    return { ok: true };
+  }
+  async function chpass(uid, oldPass, newPass) {
+    const row = await userBy(uid), pw = String(newPass == null ? "" : newPass);
+    if (!await passOk(row, oldPass)) return fail("הסיסמה הנוכחית שגויה");
+    if (pw.length < 8 || pw.length > 72) return fail("סיסמה: 8 עד 72 תווים");
+    await setPass(uid, pw);
+    return { ok: true, token: await token(uid), user: row.username };
+  }
+  async function delacct(uid, pass) {
+    const row = await userBy(uid);
+    if (!await passOk(row, pass)) return fail("הסיסמה שגויה");
+    const r = await admin.rpc("account_delete", { p_user: uid });
+    return r.error ? fail("המחיקה נכשלה") : { ok: true };
+  }
+  // An admin gives a player a one-time password after checking who they are some other way.
+  async function adminReset(adminUid, user) {
+    const ok = await admin.rpc("is_admin", { p_user: adminUid });
+    if (ok.error || ok.data !== true) return fail("אין הרשאה");
+    const row = (await admin.from("users").select("user_id").eq("username", norm(user).slice(0, 64)).maybeSingle()).data;
+    if (!row) return fail("המשתמש לא נמצא");
+    const temp = b64(crypto.getRandomValues(new Uint8Array(9)));
+    await setPass(row.user_id, temp);
+    return { ok: true, temp };
+  }
+  async function whoami(uid) {
+    const row = (await admin.from("users").select("username,secret_q,is_admin").eq("user_id", uid).maybeSingle()).data;
+    return row ? { ok: true, user: row.username, secret: row.secret_q != null, admin: !!row.is_admin } : fail("auth");
+  }
+  async function register(user, pass, ip, q, answer) {
+    const u = norm(user), pw = String(pass == null ? "" : pass), a = normAns(answer); q = Number(q);
+    if (!okQ(q) || a.length < 2) return fail("בחר שאלת שחזור וכתוב תשובה. בלעדיה אי אפשר לשחזר סיסמה");
     if (!USER_RE.test(u)) return fail("שם משתמש: 3 עד 16 תווים, אותיות, ספרות וקו תחתון");
     if (pw.length < 8 || pw.length > 72) return fail("סיסמה: 8 עד 72 תווים");
     const ex = await admin.from("users").select("username").eq("username", u).maybeSingle();
@@ -172,7 +284,7 @@ export function makeAuth(admin, secret, clock = Date.now) {
     const okIp = await admin.rpc("signup_allowed", { p_ip: String(ip || "unknown").slice(0, 64) });
     if (okIp.error || okIp.data !== true) return fail("נוצרו יותר מדי חשבונות מהרשת הזו. נסה שוב בעוד שעה");
     const salt = crypto.getRandomValues(new Uint8Array(16)), uid = crypto.randomUUID();
-    const ins = await admin.from("users").insert({ username: u, user_id: uid, pass_hash: await hashPass(pw, salt), salt: b64(salt) });
+    const ins = await admin.from("users").insert({ username: u, user_id: uid, pass_hash: await hashPass(pw, salt), salt: b64(salt), ...(await secretCols(q, a)) });
     if (ins.error) return fail("שם המשתמש תפוס");
     return { ok: true, token: await token(uid), user: u };
   }
@@ -186,5 +298,5 @@ export function makeAuth(admin, secret, clock = Date.now) {
     if (!row || !same(h, row.pass_hash)) { await admin.rpc("login_fail", { p_user: u, p_ip: addr }); return fail("שם משתמש או סיסמה שגויים"); }
     return { ok: true, token: await token(row.user_id), user: u };
   }
-  return { register, login, verify };
+  return { register, login, verify, session, forgot, recover, setSecret, chpass, delacct, adminReset, whoami };
 }

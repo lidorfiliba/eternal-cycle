@@ -247,6 +247,16 @@ function simDuel(A,B){
 
 /* ---------- economy tables ---------- */
 const BOSSN=40;
+const GUILD_FEE=20000; // gold to found a guild
+const SECRET_Q=['שם חיית המחמד הראשונה שלך','שם בית הספר היסודי שלך','העיר שבה נולדה אמא שלך','הכינוי שלך בילדות'];
+// Weekly guild siege: Saturday 21:00 to 21:30, Israel time. `key` names the last siege that has ended.
+const _sgFmt=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jerusalem',weekday:'short',hour:'numeric',minute:'numeric',hourCycle:'h23'});
+function siegeInfo(now){
+  const o={};for(const x of _sgFmt.formatToParts(new Date(now)))o[x.type]=x.value;
+  const cur=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(o.weekday)*1440+(+o.hour%24)*60+(+o.minute),S0=6*1440+21*60,W=10080;
+  const on=cur>=S0&&cur<S0+30,since=((cur-(S0+30))%W+W)%W;
+  return {on:on,left:on?S0+30-cur:0,next:on?0:((S0-cur)%W+W)%W,key:'s'+Math.floor((now-since*60000)/3600000)};
+}
 const PARTY_XP=.08; // extra XP per active party member in the same map, up to 3
 const GOLD_SHOP=[{k:'gem',t:'אבן נשמה',d:'חומר לשדרוג ציוד',cost:5000},{k:'box',t:'תיבת אוצר',d:'פריט מהמפה הגבוהה שפתחת, אבנים או זהב',cost:40000},{k:'ticket',t:'כרטיס זירה',d:'קרב נוסף',cost:10000},{k:'scroll',t:'מגילת ניסיון',d:'50% יותר ניסיון למשך 30 דקות',cost:25000}];
 const RESET_SHOP=[{k:'charm',t:'3 קמעות הגנה',d:'שדרוג שנכשל לא מוריד דרגה',cost:4},{k:'bless',t:'ברכת נצח',d:'5% יותר ניסיון לתמיד לכל הדמויות, עד 10 פעמים',cost:8},{k:'pts',t:'50 נקודות סטט קבועות',d:'מתווספות בתחילת כל ריסט',cost:10},{k:'abox',t:'תיבה עתיקה',d:'פריט אגדי או עתיק מהמפה הגבוהה שפתחת',cost:12},{k:'wing',t:'כנפיים בדרגה הבאה',d:'כנפיים נדירות, דרגה אחת מעל הלבושות',cost:25}];
@@ -391,6 +401,7 @@ function apply(A,kind,args,ctx){
       A.cur=i;S=A.chars[i];const gap=(now-(S.last||now))/1000;
       if(gap>5){const rep=offline(S,gap);if(rep.kills>0)r.afk=[{name:S.name,zone:S.zone,rep:rep}];}
       S.last=now;A.allow=0;A.bossAt=null;A.opps=null;break;}
+    case 'gcreate':{if(A.gold<GUILD_FEE)return fail('פתיחת גילדה עולה '+GUILD_FEE+' זהב');A.gold-=GUILD_FEE;break;}
     case 'travel':{
       const z=int(args.z,-1,ZONES.length-1),f=z<0?0:int(args.f,0,FLOORS-1);if(!canEnter(S,z))return fail('המפה נעולה');
       if(!canFloor(S,z,f))return fail('צריך רמה '+floorMin(z,f)+' לקומה הזו');
@@ -402,7 +413,7 @@ function apply(A,kind,args,ctx){
       if(!canEnter(S,z))return fail('המפה נעולה');
       if(!canFloor(S,z,f))return fail('צריך רמה '+floorMin(z,f)+' לקומה הזו');
       if(z!==S.zone||f!==(S.floor|0)){S.zone=z;S.floor=f;A.bossAt=null;A.allow=Math.min(A.allow||0,3);}
-      const zd=zs(z,f),rep={},em=evMods(now),c=calc(S),pn=int(ctx.partyN,0,3),pb=(1+PARTY_XP*pn)*em.xp;c.dropM*=em.drop*zd.drop;c.goldM*=zd.gold;r.partyN=pn;
+      const zd=zs(z,f),rep={},em=evMods(now),c=calc(S),pn=int(ctx.partyN,0,3),gl=int(ctx.guildLvl,0,10),cs=ctx.castle?1:0,pb=(1+PARTY_XP*pn)*em.xp*(1+gl*.01+cs*.1);c.dropM*=em.drop*zd.drop;c.goldM*=zd.gold*(1+cs*.1);r.partyN=pn;r.guildLvl=gl;r.castle=cs;
       const k=Math.min(int(args.kills,0,1000),Math.floor(A.allow||0));r.claimed=int(args.kills,0,1000);r.kills=k;
       A.casts=(A.casts||0)+int(args.casts,0,30);
       if(k>0){A.allow-=k;rep.levels=addXp(S,k*zd.xp*c.xpM*pb);rollLoot(S,z,k,c,rep);evAdd(A,now,'k',k);
@@ -471,4 +482,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

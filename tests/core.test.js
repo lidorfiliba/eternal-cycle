@@ -92,3 +92,11 @@ test('floors: deeper floors need more levels, pay more, and cannot be forged',()
   assert.ok(xp(2)>xp(0)*1.5);
   G.apply(A,'travel',{z:-1,f:2});assert.equal(s.floor,0,'the village has no floors');
 });
+
+test('siege window: Saturday 21:00 to 21:30 Israel time, one key per finished siege',()=>{
+  const at=t=>G.siegeInfo(Date.parse(t));
+  assert.equal(at('2026-11-28T19:10:00Z').on,true);assert.equal(at('2026-11-28T19:10:00Z').left,20);
+  assert.equal(at('2026-11-28T18:59:00Z').on,false);assert.equal(at('2026-11-28T18:59:00Z').next,1);assert.equal(at('2026-11-28T19:30:00Z').on,false);
+  const k=at('2026-11-28T19:31:10Z').key;assert.equal(at('2026-12-05T19:29:50Z').key,k);assert.equal(at('2026-12-02T08:00:00Z').key,k);
+  assert.notEqual(at('2026-11-28T19:29:00Z').key,k);assert.notEqual(at('2026-12-05T19:30:30Z').key,k);
+});

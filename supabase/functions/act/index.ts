@@ -31,11 +31,21 @@ Deno.serve(async (req) => {
     const kind = String(body && body.kind || "").slice(0, 20);
     const args = body && body.args && typeof body.args === "object" && !Array.isArray(body.args) ? body.args : {};
     const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim();
-    if (kind === "register") return json(await auth.register(args.user, args.pass, ip));
+    if (kind === "register") return json(await auth.register(args.user, args.pass, ip, args.q, args.a));
+    if (kind === "forgot") return json(await auth.forgot(args.user));
+    if (kind === "recover") return json(await auth.recover(args.user, args.a, args.pass, ip));
     if (kind === "login") return json(await auth.login(args.user, args.pass, ip));
-    const uid = await auth.verify(req.headers.get("x-ec-token") || "");
-    if (!uid) return json({ error: "auth" }, 401);
-    return json(await handle(uid, kind, args, { ip }));
+    const ses = await auth.session(req.headers.get("x-ec-token") || "");
+    if (!ses) return json({ error: "auth" }, 401);
+    const uid = ses.uid;
+    if (kind === "whoami") return json(await auth.whoami(uid));
+    if (kind === "setsecret") return json(await auth.setSecret(uid, args.pass, args.q, args.a));
+    if (kind === "chpass") return json(await auth.chpass(uid, args.pass, args.next));
+    if (kind === "delacct") return json(await auth.delacct(uid, args.pass));
+    if (kind === "aresetpw") return json(await auth.adminReset(uid, args.user));
+    const out = await handle(uid, kind, args, { ip, iat: ses.iat });
+    if (out && out.expired) return json({ error: "auth" }, 401);
+    return json(out);
   } catch (e) {
     console.error(e);
     return json({ error: "server" }, 500);
