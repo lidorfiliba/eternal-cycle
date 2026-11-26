@@ -441,3 +441,18 @@ test('time until an absent character stands at the reset level',()=>{
   const C=G.adopt(JSON.parse(snap));C.chars[0].lvl=G.CAP;assert.equal(G.afkEta(C),0);C.chars[0].lvl=2;C.chars[0].stats.str=15;C.chars[0].zone=0;const far=G.afkEta(C);assert.ok(far===null||far>3600);
   G.setEnv(Math.random,Date.now);
 });
+
+test('pets: rare in boxes, timed from the first wear, a small bonus, sell what the filter leaves, tradeable while unworn',()=>{
+  let t=1.8e12,x=.5;G.setEnv(()=>x,()=>t);const A=G.newAccount();G.apply(A,'create',{name:'Pet',cls:'blade'},{});const s=A.chars[0];
+  assert.ok(G.PET_BOX[4]<=.00005&&G.PET_BOX.reduce((a,b)=>a+b,0)<.04,'pets are rare, the best one almost never');
+  x=.999;assert.equal(G.petRoll(s,1),null);x=0;assert.equal(G.petRoll(s,1).r,4);x=G.PET_BOX[4]+G.PET_BOX[3]+G.PET_BOX[2]+G.PET_BOX[1]+.001;assert.equal(G.petRoll(s,1).r,0);
+  const base=G.calc(s),p=G.makePet(s,3);assert.equal(G.itemName(p,'blade'),G.PETN[3]);assert.equal(p.until,undefined);A.inv.push(p);
+  assert.ok(G.apply(A,'equip',{id:p.id},{}).ok);assert.ok(G.apply(A,'sync',{},{}).ok);assert.equal(s.eq.y.until,t+14*864e5,'its time starts when it is first worn');
+  const c=G.calc(s);assert.ok(c.dmg>base.dmg*1.04&&c.hp>base.hp*1.04&&c.goldM>base.goldM);assert.equal(G.apply(A,'upgrade',{id:p.id},{}).ok,false);
+  A.pick={'0':false};const junk=G.makeItem(s,'h',1,0,0),g0=A.gold,rep={};assert.equal(G.gainItem(s,junk,rep),'sold','the pet sells what the filter would leave');assert.ok(A.gold>g0&&rep.petGold>0&&!rep.left);
+  t+=14*864e5+1000;const r=G.apply(A,'sync',{},{});assert.equal(r.petGone,G.PETN[3]);assert.equal(s.eq.y,null);assert.ok(Math.abs(G.calc(s).dmg-base.dmg)<1);
+  const rep2={};assert.equal(G.gainItem(s,G.makeItem(s,'h',1,0,0),rep2),'left','no pet, no fetching');
+  const ci=G.cleanItem({s:'y',r:4,t:9,p:15,af:[['dmg',999]],dur:1e15});assert.equal(ci.t,1);assert.equal(ci.p,0);assert.deepEqual(ci.af,G.PET_AF[4]);assert.equal(ci.dur,90*864e5,'a traded pet is rebuilt from its rarity alone');
+  x=0;A.boxes=1;const b=G.apply(A,'openBox',{k:''},{});assert.ok(b.ok&&b.box.pet&&b.box.it.s==='y');
+  G.setEnv(Math.random,Date.now);
+});

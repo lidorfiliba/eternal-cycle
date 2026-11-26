@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126213413';
-const {TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126214452';
+const {TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
@@ -97,7 +97,7 @@ const SC={t:0,cam:0,mons:[],boss:null,hero:{x:110,face:1,dir:0,hp:1,atkT:0,anim:
 const amb=[];for(let i=0;i<26;i++)amb.push({x:Math.random(),y:Math.random(),s:.5+Math.random()*1.5,v:.02+Math.random()*.05});
 const mapW=()=>SC.zi<0?TW:MW, gy=()=>Math.min(H*.8,H-112);
 function lookOf(s){const g=it=>it?[it.t,it.r,it.p,it.season?1:0,it.ex?(isFull(it)?2:1):0]:null,o={c:s.cls,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g),sp:armorPlus(s),r:A&&A.chars&&A.chars.includes(s)?totalResets(A):s.resets|0};
-  const sc=setCounts(s);let bz=-1,bn=0;for(const z in sc)if(sc[z]>bn){bn=sc[z];bz=parseInt(z);}if(bn>=4)o.set=[bn,TCOL[clamp(bz,0,11)]];let pf=0;for(const k in s.eq)if(s.eq[k]&&s.eq[k].pf)pf++;if(pf)o.pf=pf;return o;}
+  const sc=setCounts(s);let bz=-1,bn=0,bk='';for(const z in sc)if(sc[z]>bn){bn=sc[z];bz=parseInt(z);bk=z;}if(bn>=4)o.set=[bn,(String(bk).slice(-1)==='b'?TCOL2:TCOL)[clamp(bz,0,TCOL.length-1)]];{const p=petOn(s,Date.now());if(p)o.pet=p.r+1;}let pf=0;for(const k in s.eq)if(s.eq[k]&&s.eq[k].pf)pf++;if(pf)o.pf=pf;return o;}
 function glowAmt(p,r,t){let g=p>=13?24:p>=11?16+5*Math.sin(t*6):p>=9?12:p>=7?7:0;if(r>=3)g=Math.max(g,6);return g;}
 function gearColor(g,t,fallback){if(!g)return fallback;if(g[2]>=15)return 'hsl('+((t*90)%360)+',95%,68%)';return RAR[g[1]].c;}
 const WPAL={1:['#2f7a45','#b6ef86'],2:['#2260c9','#a8e8ff'],3:['#c42d18','#ffbe55'],4:['#caa02e','#fff8d2'],5:['#35106b','#d596ff'],6:['#1b6ea8','#effcff'],7:['#a8740a','#fff1a8'],8:['#ff4fa3','#7df9ff'],s:['#a637ee','#62f3e2']};
@@ -202,7 +202,9 @@ function tintedSheet(key,col,amt){
   x.globalAlpha=1;x.globalCompositeOperation='destination-in';x.drawImage(im,0,0);
   return TINT[id]=c;
 }
-function armorSheet(key,look){const a=look.ar;if(!a||look.spr||a[0]<3&&a[1]<4)return null;return a[1]===4?tintedSheet(key,look.set?look.set[1]:RAR[4].c,.6):tintedSheet(key,TCOL[clamp(a[0],1,12)-1],.42);}
+// The body takes the colour of the armor's tier (or of the set, when four pieces are worn), so two characters of one
+// class in different gear do not look alike. Ancient armor colours more strongly.
+function armorSheet(key,look){const a=look.ar;if(!a||look.spr||a[0]<2&&a[1]<3)return null;return tintedSheet(key,look.set?look.set[1]:TCOL[clamp(a[0],1,TCOL.length)-1],a[1]===4?.66:a[1]===3?.56:.46);}
 // A full ancient set: a turning rune circle under the feet, in the set's color.
 function drawSetAura(x,y,sc,set,t){
   const n=set[0],c=set[1],R=(30+n*2)*sc;
@@ -293,7 +295,7 @@ function drawArmorShine(key,an,fi,x,y,k,flip,tier,t,bh){ // over the body: spark
   ctx.globalCompositeOperation='lighter';sprFrame(sil,key,an,fi,x,y,k,flip,.5);ctx.restore();
 }
 // The weapon carried on the back: its shape follows the item tier (six designs per class), its glow the upgrade level.
-const TCOL=['#9aa3ad','#c9d2dc','#bfe3ff','#e8c27a','#9fe8ff','#ff8a4d','#a487ff','#ffd75e','#b07cff','#8fe6ff','#ffe27a','#ff6b8a'];
+const TCOL=['#9aa3ad','#c9d2dc','#bfe3ff','#e8c27a','#9fe8ff','#ff8a4d','#a487ff','#ffd75e','#b07cff','#8fe6ff','#ffe27a','#ff6b8a','#ff9a3d','#f4f0ff'],TCOL2=['#7f8c5a','#b9a37c','#8fb7ff','#ffb36b','#6fd0c8','#ff5c5c','#7a6cd6','#ffe9a0','#5c8dff','#b7f0ff','#d9b24a','#ff9ad0','#c96a2a','#ffd0f0'];
 function drawBackWeapon(x,y,look,t,k,flip){
   const w=look.w;if(!w)return;const tier=clamp(w[0]|0,1,12),st=Math.floor((tier-1)/2),p=w[2]|0,base=TCOL[tier-1],ex=w[4]|0,edge=p>=15||ex===2?'hsl('+((t*90)%360)+',95%,72%)':ex?'#7dffb0':RAR[w[1]].c,gl=Math.max(glowAmt(p,w[1],t),ex?8+ex*3:0);
   ctx.save();ctx.translate(x,y+Math.sin(t*2.2)*1.5*k);ctx.scale(flip?-k:k,k);ctx.rotate(look.c==='hunter'?-.95:-.62);
@@ -362,6 +364,7 @@ function drawHero(x,y,sc,look,t,anim,flip,dead,mv,fury){
     ctx.save();ctx.translate(x,y);ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.4+.15*Math.sin(t*5);ctx.scale(1,.3);ctx.fillStyle=gr;ctx.beginPath();ctx.arc(0,0,50,0,7);ctx.fill();ctx.restore();}
   ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(x,y+1,20*sc,5*sc,0,0,7);ctx.fill();
   if(look.set&&!dead)drawSetAura(x,y,sc,look.set,t);
+  if(!dead&&!look.spr&&look.pet){const px=x+(flip?-1:1)*30*sc,py=y-14*sc,pc=RAR[clamp(look.pet-1,0,4)].c;ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.35+.15*Math.sin(t*4);ctx.fillStyle=pc;ctx.beginPath();ctx.ellipse(px,y+1,12*sc,4*sc,0,0,7);ctx.fill();ctx.restore();drawPet(px,py,sc*(look.pet>=4?1.15:.9),[1,1,2,3,4][clamp(look.pet-1,0,4)],t+2.3,!flip);}
   if(!dead&&!look.spr&&petTier(look.r|0))drawPet(x-(flip?-1:1)*38*sc,y-m.bh*k*.92,sc,petTier(look.r|0),t+(look.c==='storm'?1:0),flip);
   let an='idle',fi=Math.floor(t*8);
   if(dead){an='die';fi=Math.min(frames(key,'die')-1,Math.floor((dead===true?9:dead)*8));}
@@ -606,6 +609,7 @@ function syncBoss(){
 }
 function afterTick(r,m,l0){
   if(!r||!r.ok){bossPending=false;if(r&&r.msg&&r.msg!=='net')send('sync',{}).then(()=>syncBoss());return;}
+  if(r.petGone)toast(r.petGone+' עזב אותך. הזמן שלו נגמר',5);
   if(r.afk)showOffline(r.afk);
   if(r.evOver&&SC.ev){leaveKeep(true);return;}
   if(r.sqNew){const d=SIDEQ[r.sqNew.i];snd('portal');announce('משימת צד: '+d.t+' · '+d.d(r.sqNew.n),true);panelDirty=true;}if(r.sqDone){snd('rare');announce('משימת הצד הושלמה. אסוף את הפרס בלשונית אירועים',true);panelDirty=true;}if(r.sqLost)toast('משימת הצד פגה');
@@ -1252,12 +1256,14 @@ const SVG={
  l:'<svg viewBox="0 0 40 40"><path d="M12 34V19l-4-6 3-2 4 5V7h4v9h1V5h4v11h1V8h4v15l-3 11z" fill="currentColor"/></svg>',
  b:'<svg viewBox="0 0 40 40"><path d="M14 6h9v16l10 5v7H12z" fill="currentColor"/></svg>',
  g:'<svg viewBox="0 0 40 40"><path d="M20 30C12 30 3 22 3 8c6 2 11 6 17 16C26 14 31 10 37 8c0 14-9 22-17 22z" fill="currentColor"/><path d="M20 24v10" stroke="#fff8" stroke-width="2"/></svg>',
+ y:'<svg viewBox="0 0 40 40"><circle cx="20" cy="26" r="8" fill="currentColor"/><circle cx="9" cy="16" r="4" fill="currentColor"/><circle cx="17" cy="9" r="4" fill="currentColor"/><circle cx="26" cy="10" r="4" fill="currentColor"/><circle cx="32" cy="18" r="4" fill="currentColor"/></svg>',
  r:'<svg viewBox="0 0 40 40"><circle cx="20" cy="25" r="10" fill="none" stroke="currentColor" stroke-width="4"/><path d="M20 4l6 7-6 6-6-6z" fill="#ff5c7a"/></svg>',
  q:'<svg viewBox="0 0 40 40"><circle cx="20" cy="25" r="10" fill="none" stroke="currentColor" stroke-width="4"/><path d="M20 4l6 7-6 6-6-6z" fill="#6fe39a"/></svg>',
  n:'<svg viewBox="0 0 40 40"><path d="M6 6c0 14 6 20 14 20s14-6 14-20" fill="none" stroke="currentColor" stroke-width="3"/><path d="M20 24l6 7-6 7-6-7z" fill="#ffd75e"/></svg>'
 };
 const gcls=p=>p>=13?' g13':p>=11?' g11':p>=9?' g9':p>=7?' g7':'';
-function mainLine(it){const v=itemVals(it);return it.s==='w'?'נזק '+fmt(v.atk):ARM[it.s]?'חיים '+fmt(v.hp)+' · הגנה '+v.def:JEWV[it.s]?[v.wd?'נזק '+L('+'+v.wd+'%'):'',v.wh?'חיים '+L('+'+v.wh+'%'):''].filter(Boolean).join(' · '):'נזק '+L('+'+v.wd+'%');}
+const petLeft=it=>it.until?'נשארו '+fmtT(Math.max(0,(it.until-Date.now())/1000)):L(PET_DAYS[it.r])+' ימים מהרגע שתלבש';
+function mainLine(it){if(it.s==='y')return petLeft(it);const v=itemVals(it);return it.s==='w'?'נזק '+fmt(v.atk):ARM[it.s]?'חיים '+fmt(v.hp)+' · הגנה '+v.def:JEWV[it.s]?[v.wd?'נזק '+L('+'+v.wd+'%'):'',v.wh?'חיים '+L('+'+v.wh+'%'):''].filter(Boolean).join(' · '):'נזק '+L('+'+v.wd+'%');}
 function itemCard(it){
   return '<button class="it r'+it.r+gcls(it.p)+(it.pf?' ex full pf':it.ex?(isFull(it)?' ex full':' ex'):'')+'" data-act="item" data-id="'+it.id+'" style="color:var(--r'+it.r+')">'+SVG[it.s]+
     '<span class="nm">'+esc(itemName(it,S.cls))+(it.p?' '+L('+'+it.p):'')+'</span><span class="sub">'+mainLine(it)+'</span></button>';
@@ -1343,6 +1349,7 @@ function renderGear(){
   h+='<div class="card" style="display:flex;flex-direction:column;gap:8px">'+tog('לבש אוטומטית ציוד חזק יותר',A.autoEq,'autoEq')+
     '<div><span style="font-size:13px">מה להרים מהרצפה</span><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:5px">'+[['0','רגיל'],['1','קסום'],['2','נדיר'],['3','אגדי'],['4','עתיק'],['set','חלקי סט'],['g','כנפיים'],['ex','אקסלנט']].map(x=>'<button class="btn sm pk'+(pickOf(A)[x[0]]?' on':'')+'" data-act="pickup" data-k="'+x[0]+'">'+(pickOf(A)[x[0]]?'\u2713 ':'\u2715 ')+x[1]+'</button>').join('')+'</div><p class="hint" style="margin-top:4px">ירוק עם \u2713: הדמות מרימה. אפור עם \u2715: נשאר על הרצפה. זהב, אבני נשמה, תיבות ושברים נאספים תמיד.</p></div>'+
     '<div class="tog"><span>מכירה אוטומטית</span><button class="btn sm" data-act="autoSell">'+['כבויה','רגיל','רגיל וקסום'][A.autoSell]+'</button></div>'+
+    '<p class="hint">בכל תיבה יש סיכוי קטן לחיית מחמד: '+PETN.map((n,i)=>'<span style="color:'+RAR[i].c+'">'+n+' '+L((PET_BOX[i]*100)+'%')+' · '+L(PET_DAYS[i])+' ימים</span>').join(' · ')+'. בתיבת עונה הסיכוי כפול.</p>'+
     '<div class="tog"><span>תיבות אוצר: '+L(A.boxes)+'</span><button class="btn sm pri" data-act="openBox" data-k=""'+(A.boxes?'':' disabled')+'>פתח תיבה</button></div>'+
     '<div class="tog"><span>תיבות עונה: '+L(A.sboxes)+' · 15% לחלק סט עתיק</span><button class="btn sm pri" data-act="openBox" data-k="s"'+(A.sboxes?'':' disabled')+'>פתח תיבה</button></div>'+
     '<div class="kv"><span>קמעות הגנה</span><b>'+L(A.charms)+'</b></div></div>';
@@ -1473,6 +1480,7 @@ function openSheet(id){
     (it.pf?'<p class="extag" style="color:#ffd75e">עתיק מושלם · כל האופציות · בסיס חזק ב-'+L(Math.round((PERFECT_M-1)*100)+'%')+'</p>':it.ex?'<p class="extag">'+(isFull(it)?'אקסלנט מלא · כל ':'אקסלנט · ')+L(it.af.length+'/'+POOL[it.s].length)+' אופציות</p>':'')+'<div>';
   if(it.s==='w')h+='<div class="kv"><span>נזק נשק</span><b class="num">'+fmt(v.atk)+'</b></div>';
   if(ARM[it.s])h+='<div class="kv"><span>חיים</span><b class="num">'+fmt(v.hp)+'</b></div><div class="kv"><span>הגנה</span><b class="num">'+v.def+'</b></div>';
+  if(it.s==='y')h+='<div class="kv"><span>זמן</span><b class="num">'+petLeft(it)+'</b></div><p class="hint">חיית מחמד הולכת איתך, נותנת את הבונוסים שלמטה, ומוכרת בשבילך את מה שמסנן האיסוף היה משאיר על הרצפה. הזמן מתחיל בפעם הראשונה שלובשים אותה וממשיך לרוץ גם בתיק. חיה שעוד לא נלבשה אפשר למכור בשוק השחקנים.</p>';
   if(JEWV[it.s])h+=(v.wd?'<div class="kv"><span>נזק</span><b class="num">'+L('+'+v.wd+'%')+'</b></div>':'')+(v.wh?'<div class="kv"><span>חיים</span><b class="num">'+L('+'+v.wh+'%')+'</b></div>':'');
   if(it.s==='g')h+='<div class="kv"><span>נזק</span><b class="num">'+L('+'+v.wd+'%')+'</b></div><div class="kv"><span>חיים</span><b class="num">'+L('+'+v.wh+'%')+'</b></div><div class="kv"><span>מהירות הליכה</span><b class="num">'+L('+'+it.t*8+'%')+'</b></div>';
   for(const a of it.af)h+='<div class="kv aff"><span style="color:inherit">'+AFF[a[0]][0]+'</span><b class="num">'+L('+'+a[1]+'%')+'</b></div>';
@@ -1593,6 +1601,7 @@ async function switchTo(i){
 }
 function boxFx(r){
   if(!r)return;const h=SC.hero,c=r.it?RAR[r.it.r].c:'#f2c14e';snd(r.it&&r.it.r>=3?'rare':'coin');
+  if(r.pet){announce('חיית מחמד יצאה מהתיבה: '+itemName(r.it,S.cls),true);}
   if(r.it)toast(RAR[r.it.r].n+' · '+itemName(r.it,S.cls)+(r.where==='eq'?' (נלבש)':r.where==='sold'?' (נמכר)':''),r.it.r);else toast('מהתיבה: '+r.txt);
   if(SC.mode!=='farm')return;SC.fx.push({k:'beam',x:h.x+30*h.face,y:gy(),life:1.2,c:c});burst(h.x+30*h.face,gy()-10,c,26);
   for(let i=0;i<5;i++)SC.drops.push({x:h.x+30*h.face,y:gy()-10,vx:(Math.random()-.5)*220,vy:-200-Math.random()*120,c:c,s:4.5,age:0,life:4});
@@ -1889,7 +1898,7 @@ async function beat(){
 function mergePeers(list){
   const old={};for(const p of peers)old[p.k]=p;
   peers=list.slice(0,20).map(o=>{const k=String(o.k),x=clamp(+o.x||110,30,mapW()-30),p=old[k]||{x:x,an:0,sw:Math.random()*2,dir:1};
-    p.k=k;p.s=G.cleanPlayer(k,o.s);if(p.s.ar&&p.s.ar[1]===4)p.s.set=[4,RAR[4].c];p.tx=x;p.f=o.f<0?-1:1;p.a=!!o.a;p.g=String(o.g||'').slice(0,4);return p;});
+    p.k=k;p.s=G.cleanPlayer(k,o.s);if(p.s.ar&&p.s.ar[1]===4)p.s.set=[4,TCOL[clamp(p.s.ar[0],1,TCOL.length)-1]];p.tx=x;p.f=o.f<0?-1:1;p.a=!!o.a;p.g=String(o.g||'').slice(0,4);return p;});
 }
 function updatePeers(dt){
   for(const p of peers){if(p.v&&p.vT>0){p.vT-=dt;p.tx=clamp(p.tx+p.v*dt,30,mapW()-30);} // keep walking the way he was walking until the next report

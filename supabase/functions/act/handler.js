@@ -163,6 +163,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
           if (!m || m.id === uid) return { result: { ok: false, msg: MARKET_MSG.not_party }, state: row.state };
           to = m.id;
         }
+        if (kind === "mlist") { const it = (row.state.inv || []).find((x) => x && x.id === id); if (it && it.s === "y" && it.until) return { result: { ok: false, msg: "חיית מחמד שכבר ליוותה אותך לא נמכרת" }, state: row.state }; }
         const call = kind === "mlist"
           ? admin.rpc("market_list", { p_user: uid, p_item_id: id, p_price: Math.floor(Number(args.price)) || 0, p_to: to })
           : admin.rpc(kind === "mbuy" ? "market_buy" : "market_cancel", { p_user: uid, p_listing: id });
@@ -225,6 +226,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
         else if (kind === "reset" && r.ok) feat = nm + " השלים ריסט " + r.resets;
         else if (kind === "exAdd" && r.full) feat = nm + " השלים פריט אקסלנט מלא";
         else if (kind === "tick" && rep.notable) { const it = rep.notable.find((x) => x.pf) || rep.notable.find((x) => x.ex || x.r >= 4); if (it) feat = nm + " מצא " + G.itemName(it, ch.cls); }
+        else if (kind === "openBox" && r.box && r.box.pet && r.box.it.r >= 2) feat = nm + " מצא בתיבה חיית מחמד: " + G.PETN[r.box.it.r];
         else if (kind === "towerEnd" && r.perfect && r.notable) feat = nm + " מצא " + G.itemName(r.notable[0], ch.cls) + " במגדל הנצח";
         else if (kind === "duelAct" && r.win === true && A.rating >= 1200) feat = nm + " ניצח בזירה והגיע לדירוג " + A.rating;
         if (feat && nm) { try { await admin.from("chat").insert({ ch: "w", user_id: null, name: "\u2605", tag: "", msg: feat.slice(0, 160) }); } catch (_e) { /* not worth failing for */ } }
