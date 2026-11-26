@@ -1,6 +1,7 @@
 import * as G from './core.js';
-const BUILD='20261126174446';
+const BUILD='20261126175403';
 const {LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+import {tr,getLang,setLang,startLang} from './i18n.js';
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -392,7 +393,7 @@ function drawBg(zi,t){
   for(const a of amb){a.y-=a.v*.016*(zi===4?-1.5:1);if(a.y<0)a.y=1;if(a.y>1)a.y=0;ctx.globalAlpha=.25+.35*Math.abs(Math.sin(t*2+a.x*20));ctx.beginPath();ctx.arc(a.x*W+Math.sin(t+a.y*9)*6,a.y*g0,a.s,0,7);ctx.fill();}
   ctx.globalAlpha=1;
 }
-function label(txt,x,y,c,size){ctx.font='700 '+(size||12)+'px Assistant,Arial';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.75)';ctx.strokeText(txt,x,y);ctx.fillStyle=c||'#fff';ctx.fillText(txt,x,y);}
+function label(txt,x,y,c,size){txt=tr(txt);ctx.font='700 '+(size||12)+'px Assistant,Arial';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.75)';ctx.strokeText(txt,x,y);ctx.fillStyle=c||'#fff';ctx.fillText(txt,x,y);}
 function drawPortal(x,open,txt,t){
   const y=gy()-44,c=open?'#5fd4ff':'#6b6488';
   ctx.save();ctx.translate(x,y);ctx.globalCompositeOperation='lighter';ctx.strokeStyle=c;ctx.shadowColor=c;ctx.shadowBlur=open?16:0;
@@ -455,10 +456,10 @@ function drawFx(dt){
   for(const d of SC.drops){d.life-=dt;d.age+=dt;if(d.age<.45+(d.lie||0)){if(d.age>.45){d.vx=0;}d.x+=d.vx*dt;d.y+=d.vy*dt;d.vy+=500*dt;if(d.y>gy()-6){d.y=gy()-6;d.vy=0;d.vx=0;}}
     else{const dx=h.x-d.x,dy=gy()-45-d.y,dist=Math.hypot(dx,dy);if(dist<16){d.life=0;continue;}const v=Math.min(dist,520*dt*(1+d.age));d.x+=dx/dist*v;d.y+=dy/dist*v;}
     ctx.globalAlpha=d.left?clamp(d.life,0,.55):1;ctx.fillStyle=d.c;ctx.shadowColor=d.c;ctx.shadowBlur=10;ctx.beginPath();ctx.arc(d.x,d.y,d.s,0,7);ctx.fill();
-    if(d.txt&&d.age>.3&&d.age<.45+(d.lie||0)+.15){ctx.shadowBlur=0;ctx.font='700 10.5px system-ui';ctx.textAlign='center';const tw=ctx.measureText(d.txt).width+8;ctx.fillStyle='rgba(8,6,20,.72)';ctx.fillRect(d.x-tw/2,d.y-22-(d.row||0)*13,tw,12.5);ctx.fillStyle=d.left?'#8d87a8':d.c;ctx.fillText(d.txt,d.x,d.y-12.5-(d.row||0)*13);}}
+    if(d.txt&&d.age>.3&&d.age<.45+(d.lie||0)+.15){ctx.shadowBlur=0;ctx.font='700 10.5px system-ui';ctx.textAlign='center';const tw=ctx.measureText(tr(d.txt)).width+8;ctx.fillStyle='rgba(8,6,20,.72)';ctx.fillRect(d.x-tw/2,d.y-22-(d.row||0)*13,tw,12.5);ctx.fillStyle=d.left?'#8d87a8':d.c;ctx.fillText(tr(d.txt),d.x,d.y-12.5-(d.row||0)*13);}}
   ctx.restore();
   SC.nums=SC.nums.filter(n=>(n.life-=dt)>0);ctx.textAlign='center';
-  for(const n of SC.nums){n.y-=38*dt;ctx.globalAlpha=clamp(n.life*2.2,0,1);ctx.font='800 '+n.s+'px Assistant,Arial';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.75)';ctx.strokeText(n.txt,n.x,n.y);ctx.fillStyle=n.c;ctx.fillText(n.txt,n.x,n.y);}
+  for(const n of SC.nums){n.y-=38*dt;ctx.globalAlpha=clamp(n.life*2.2,0,1);ctx.font='800 '+n.s+'px Assistant,Arial';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.75)';{const tx=tr(n.txt);ctx.strokeText(tx,n.x,n.y);ctx.fillStyle=n.c;ctx.fillText(tx,n.x,n.y);}}
   ctx.globalAlpha=1;
 }
 function hpBar(x,y,w,frac,c,lbl){ctx.fillStyle='rgba(0,0,0,.6)';rr(x,y,w,7,3);ctx.fill();ctx.fillStyle=c;rr(x,y,Math.max(3,w*clamp(frac,0,1)),7,3);ctx.fill();if(lbl)label(lbl,x+w/2,y-5);}
@@ -1084,7 +1085,7 @@ function renderGear(){
   h+='</div>';
   const sc=setCounts(S);for(const z in sc)h+='<div class="card r4"><b style="color:var(--r4)">סט עתיק: '+SETN[z]+' · '+L(sc[z]+'/6')+'</b>'+setLines(z,sc[z])+'</div>';
   h+='<div class="card" style="display:flex;flex-direction:column;gap:8px">'+tog('לבש אוטומטית ציוד חזק יותר',A.autoEq,'autoEq')+
-    '<div><span style="font-size:13px">מה להרים מהרצפה</span><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:5px">'+[['0','רגיל'],['1','קסום'],['2','נדיר'],['3','אגדי'],['4','עתיק'],['set','חלקי סט'],['g','כנפיים'],['ex','אקסלנט']].map(x=>'<button class="btn sm'+(pickOf(A)[x[0]]?' on':'')+'" data-act="pick" data-k="'+x[0]+'">'+x[1]+'</button>').join('')+'</div><p class="hint" style="margin-top:4px">זהב, אבני נשמה, תיבות ושברים נאספים תמיד. מה שכבוי נשאר על הרצפה.</p></div>'+
+    '<div><span style="font-size:13px">מה להרים מהרצפה</span><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:5px">'+[['0','רגיל'],['1','קסום'],['2','נדיר'],['3','אגדי'],['4','עתיק'],['set','חלקי סט'],['g','כנפיים'],['ex','אקסלנט']].map(x=>'<button class="btn sm'+(pickOf(A)[x[0]]?' on':'')+'" data-act="pickup" data-k="'+x[0]+'">'+x[1]+'</button>').join('')+'</div><p class="hint" style="margin-top:4px">זהב, אבני נשמה, תיבות ושברים נאספים תמיד. מה שכבוי נשאר על הרצפה.</p></div>'+
     '<div class="tog"><span>מכירה אוטומטית</span><button class="btn sm" data-act="autoSell">'+['כבויה','רגיל','רגיל וקסום'][A.autoSell]+'</button></div>'+
     '<div class="tog"><span>תיבות אוצר: '+L(A.boxes)+'</span><button class="btn sm pri" data-act="openBox" data-k=""'+(A.boxes?'':' disabled')+'>פתח תיבה</button></div>'+
     '<div class="tog"><span>תיבות עונה: '+L(A.sboxes)+' · 15% לחלק סט עתיק</span><button class="btn sm pri" data-act="openBox" data-k="s"'+(A.sboxes?'':' disabled')+'>פתח תיבה</button></div>'+
@@ -1317,7 +1318,7 @@ function boxFx(r){
 function accountHtml(){return installHtml()+accountHtml2();}
 function accountHtml2(){
   if(!ONLINE)return '<h2>העברה בין מכשירים</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">מצב מקומי: ההתקדמות שמורה במכשיר הזה. קוד השמירה מעביר אותה למכשיר אחר, וטעינה מחליפה את מה שיש כאן.</p><button class="btn" data-act="expSave">העתק קוד שמירה</button><input type="text" id="impCode" placeholder="הדבק כאן קוד שמירה" autocomplete="off"><button class="btn" data-act="impSave">טען קוד שמירה</button></div>';
-  return '<h2>חשבון</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">מחובר כ-<b dir="auto">'+esc(session&&session.user||'')+'</b>. אפשר להיכנס עם אותו שם וסיסמה מכל מכשיר.</p>'+
+  return '<h2>שפה · Language</h2>'+'<div class="seg notr" style="justify-content:center"><button class="btn sm'+(getLang()==='he'?' pri':'')+'" data-act="lang" data-l="he">עברית</button><button class="btn sm'+(getLang()==='en'?' pri':'')+'" data-act="lang" data-l="en">English</button></div>'+'<h2>חשבון</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">מחובר כ-<b dir="auto">'+esc(session&&session.user||'')+'</b>. אפשר להיכנס עם אותו שם וסיסמה מכל מכשיר.</p>'+
     (me.secret?'':'<p class="hint" style="color:var(--bad)">עוד לא הוגדרה שאלת שחזור. בלעדיה אי אפשר לשחזר סיסמה שנשכחה.</p>')+
     '<button class="btn'+(me.secret?'':' pri')+'" data-act="acct" data-k="secret">שאלת שחזור</button><button class="btn" data-act="acct" data-k="pass">שינוי סיסמה</button>'+
     (me.admin?'<a class="btn" href="admin.html" style="text-align:center;text-decoration:none;color:inherit">מסך ניהול</a>':'')+
@@ -1327,7 +1328,7 @@ function accountHtml2(){
 let authMode='login';
 function showAuth(msg){
   const reg=authMode==='register';
-  openModal('<h3>מעגל הנצח</h3><p class="hint">'+(reg?'בחר שם משתמש וסיסמה. איתם נכנסים לחשבון מכל מכשיר.':'היכנס עם שם המשתמש והסיסמה שלך.')+'</p>'+
+  openModal('<h3>מעגל הנצח</h3>'+'<div class="seg notr" style="justify-content:center"><button class="btn sm'+(getLang()==='he'?' pri':'')+'" data-act="lang" data-l="he">עברית</button><button class="btn sm'+(getLang()==='en'?' pri':'')+'" data-act="lang" data-l="en">English</button></div>'+'<p class="hint">'+(reg?'בחר שם משתמש וסיסמה. איתם נכנסים לחשבון מכל מכשיר.':'היכנס עם שם המשתמש והסיסמה שלך.')+'</p>'+
     '<label for="auUser" class="hint">שם משתמש</label><input type="text" id="auUser" maxlength="16" autocomplete="username" autocapitalize="none" placeholder="3 עד 16 תווים">'+
     '<label for="auPass" class="hint">סיסמה</label><input type="password" id="auPass" maxlength="72" autocomplete="'+(reg?'new-password':'current-password')+'" placeholder="לפחות 8 תווים">'+
     (reg?'<label for="auQ" class="hint">שאלת שחזור, למקרה שתשכח את הסיסמה</label>'+qSelect('auQ')+'<input type="text" id="auA" maxlength="60" placeholder="התשובה שלך" autocomplete="off">':'')+
@@ -1381,6 +1382,7 @@ document.addEventListener('click',async e=>{
       (up?'<p class="hint" style="color:var(--bad)">שים לב: '+L(up)+' מהם משודרגים.</p>':'')+(q>=3?'<p class="hint" style="color:var(--bad)">אלה פריטים '+(q===4?'עתיקים':'אגדיים')+'. ודא שאתה לא צריך אותם.</p>':'')+
       '<div class="acts"><button class="btn" data-act="closeModal">ביטול</button><button class="btn pri" data-act="sellRar" data-r="'+q+'">מכור '+L(list.length)+' פריטים</button></div>');return;}
   if(a==='respecAsk'){openModal('<h3>לאפס את נקודות הסטט?</h3><p class="hint">כל הנקודות שחילקת חוזרות אליך ואפשר לחלק אותן מחדש. המחיר: '+L(RESPEC_COST)+' אותות ריסט. יש לך '+L(A.cred)+'. ציוד שכבר לבוש נשאר עליך.'+(S.autoPts?' החלוקה האוטומטית פעילה ותחלק אותן מיד מחדש. כבה אותה קודם אם אתה רוצה לחלק לבד.':'')+'</p><div class="acts"><button class="btn" data-act="closeModal">ביטול</button><button class="btn pri" data-act="respec">אפס נקודות</button></div>');return;}
+  if(a==='lang'){if(b.dataset.l!==getLang())setLang(b.dataset.l);return;}
   if(a==='guide'){showGuide();return;}
   if(a==='big'){setBig(!prefs.big);return;}
   if(a==='fs'){fsToggle();return;}
@@ -1448,7 +1450,7 @@ document.addEventListener('click',async e=>{
     else if(a==='claimWeek'){r=await act('claimWeek',{k:b.dataset.k});if(r.ok){snd('rare');toast('פרס שבועי: '+r.rt,4);}}
     else if(a==='sqClaim'){r=await act('sqClaim',{});if(r.ok){snd('rare');toast('משימת הצד הושלמה. הפרס אצלך',4);}}
     else if(a==='sqDrop'){r=await act('sqDrop',{});}
-    else if(a==='pick'){r=await act('pick',{k:b.dataset.k});}
+    else if(a==='pickup'){r=await act('pick',{k:b.dataset.k});}
     else if(a==='respec'){closeModal();r=await act('respec',{});if(r.ok){snd('rare');toast(fmt(r.pts)+' נקודות חזרו אליך');}else toast(r.msg);}
     else if(a==='fight'){if(SC.mode==='farm'&&(A.tickets>0||A.pd)){r=await act('duelStart',{i:+b.dataset.i});if(r.ok)startDuel(r.pd);}}
     else if(a==='da'){return;}
@@ -1797,4 +1799,5 @@ async function boot(){
   await startOnline();
 }
 if(typeof window!=='undefined')window.EC={duelAct,netSend,get peers(){return peers;},get ws(){return ws;},get A(){return A;},get S(){return S;},get C(){return C;},set C(v){C=v;},SC,G,send,act,frame,enterZone,pend,flushTick,syncBoss,spawnBoss,touch,get demo(){return demo;}};
+startLang();
 boot();

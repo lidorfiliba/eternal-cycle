@@ -303,3 +303,16 @@ test('live duel rules: range, lanes, cooldowns, shield, dodge, stun and potions 
   D.t=40;D.f[1].hp=.01;const k=G.liveAct(D,0,'s3',r);assert.ok(k.dm>0);assert.equal(D.over,1);assert.equal(D.win,0);assert.equal(G.liveAct(D,1,'atk',r),null);
   const E=G.liveNew(F('blade',1000,10000),F('blade',1000,10000));E.t=80;E.f[1].hp=.4;assert.equal(G.liveOver(E),1);assert.equal(E.win,0,'on time, the healthier side wins');
 });
+
+test('English: every Hebrew phrase in the game has a translation, and sentences built around names and numbers come out whole',async()=>{
+  const fs=await import('node:fs');const {EN}=await import('../web/en.js');
+  const RUN=/[֐-׿][֐-׿ "'׳״\-]*[֐-׿]|[֐-׿]/g,miss=new Set();
+  for(const f of ['web/core.js','web/game.js','web/index.html','supabase/functions/act/handler.js','server/live.mjs'])
+    for(const m of fs.readFileSync(f,'utf8').match(RUN)||[]){const k=m.replace(/\s+/g,' ').replace(/^[ '"\-]+|[ '"\-]+$/g,'');if(k&&EN[k]===undefined)miss.add(k);}
+  assert.deepEqual([...miss],[],'phrases without English: add them to web/en.js');
+  const store={'eternal-cycle-lang':'en'};globalThis.localStorage={getItem:k=>store[k]||null,setItem(){}};
+  const {tr}=await import('../web/i18n.js?en');
+  assert.equal(tr('חסל 1,500 מפלצות'),'Kill 1,500 monsters');assert.equal(tr('הבוס של ביצת הערפל הופיע בקצה המפה'),'The boss of Mist Marsh appeared at the edge of the map');
+  assert.equal(tr('Santrio · רמה 141'),'Santrio · Level 141');assert.equal(tr('abc 123'),'abc 123');assert.ok(!/[֐-׿]/.test(tr('צריך 5 שברי ארגמן. יש לך 2')));
+  delete globalThis.localStorage;
+});
