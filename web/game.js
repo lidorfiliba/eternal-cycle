@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126215022';
-const {TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126221708';
+const {TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,keepStart,keepGate,SG,sgMove,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
@@ -97,7 +97,7 @@ const SC={t:0,cam:0,mons:[],boss:null,hero:{x:110,face:1,dir:0,hp:1,atkT:0,anim:
 const amb=[];for(let i=0;i<26;i++)amb.push({x:Math.random(),y:Math.random(),s:.5+Math.random()*1.5,v:.02+Math.random()*.05});
 const mapW=()=>SC.zi<0?TW:MW, gy=()=>Math.min(H*.8,H-112);
 function lookOf(s){const g=it=>it?[it.t,it.r,it.p,it.season?1:0,it.ex?(isFull(it)?2:1):0]:null,o={c:s.cls,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g),sp:armorPlus(s),r:A&&A.chars&&A.chars.includes(s)?totalResets(A):s.resets|0};
-  const sc=setCounts(s);let bz=-1,bn=0,bk='';for(const z in sc)if(sc[z]>bn){bn=sc[z];bz=parseInt(z);bk=z;}if(bn>=4)o.set=[bn,(String(bk).slice(-1)==='b'?TCOL2:TCOL)[clamp(bz,0,TCOL.length-1)]];{const p=petOn(s,Date.now());if(p)o.pet=p.r+1;}let pf=0;for(const k in s.eq)if(s.eq[k]&&s.eq[k].pf)pf++;if(pf)o.pf=pf;return o;}
+  const sc=setCounts(s);let bz=-1,bn=0,bk='';for(const z in sc)if(sc[z]>bn){bn=sc[z];bz=parseInt(z);bk=z;}if(bn>=4)o.set=[bn,(String(bk).slice(-1)==='b'?TCOL2:TCOL)[clamp(bz,0,TCOL.length-1)],String(bk).slice(-1)==='b'?1:0];{const p=petOn(s,Date.now());if(p)o.pet=p.r+1;}let pf=0;for(const k in s.eq)if(s.eq[k]&&s.eq[k].pf)pf++;if(pf)o.pf=pf;return o;}
 function glowAmt(p,r,t){let g=p>=13?24:p>=11?16+5*Math.sin(t*6):p>=9?12:p>=7?7:0;if(r>=3)g=Math.max(g,6);return g;}
 function gearColor(g,t,fallback){if(!g)return fallback;if(g[2]>=15)return 'hsl('+((t*90)%360)+',95%,68%)';return RAR[g[1]].c;}
 const WPAL={1:['#2f7a45','#b6ef86'],2:['#2260c9','#a8e8ff'],3:['#c42d18','#ffbe55'],4:['#caa02e','#fff8d2'],5:['#35106b','#d596ff'],6:['#1b6ea8','#effcff'],7:['#a8740a','#fff1a8'],8:['#ff4fa3','#7df9ff'],s:['#a637ee','#62f3e2']};
@@ -204,7 +204,9 @@ function tintedSheet(key,col,amt){
 }
 // The body takes the colour of the armor's tier (or of the set, when four pieces are worn), so two characters of one
 // class in different gear do not look alike. Ancient armor colours more strongly.
-function armorSheet(key,look){const a=look.ar;if(!a||look.spr||a[0]<2&&a[1]<3)return null;return tintedSheet(key,look.set?look.set[1]:TCOL[clamp(a[0],1,TCOL.length)-1],a[1]===4?.66:a[1]===3?.56:.46);}
+// Strong, saturated colours only: a pale tint drains the body and makes it look like a ghost.
+const BODYC=['#8f8a80','#b0875a','#3f7fd6','#d69a2a','#2fa8bd','#e0622e','#7d5fd6','#d6a81e','#9b4fd6','#2a8fd0','#c79a1e','#d64a6e','#d6702a','#b04ad6'],BODYC2=['#6f8c3a','#a0703a','#2f5fc0','#e07a2a','#2f9a86','#c93a3a','#5a4cc0','#c0902a','#3a5fd6','#2ab0b0','#a8861e','#d64aa0','#b0541e','#d04a8a'];
+function armorSheet(key,look){const a=look.ar;if(!a||look.spr||a[0]<2&&a[1]<3)return null;const i=clamp(a[0],1,BODYC.length)-1;return tintedSheet(key,(look.set&&look.set[2]?BODYC2:BODYC)[i],a[1]===4?.5:a[1]===3?.42:.34);}
 // A full ancient set: a turning rune circle under the feet, in the set's color.
 function drawSetAura(x,y,sc,set,t){
   const n=set[0],c=set[1],R=(30+n*2)*sc;
@@ -586,7 +588,7 @@ function dropOrbs(m,rep){
   add('#f2c14e',3);if(rep.gems)add('#5fd4ff',4);if(rep.boxes)add('#ff6b3d',5);
   { // what fell lies on the ground for a moment with its name, then the character picks up what it was told to
     let row=0;const lay=(txt,c,left)=>{if(SC.drops.length>70)return;SC.drops.push({x:m.x+(Math.random()-.5)*90,y:m.y-24,vx:(Math.random()-.5)*120,vy:-170-Math.random()*60,c:c,s:left?3:4.5,age:0,life:left?4.5:5,lie:left?4:1.5+row*.12,txt:txt,left:left,row:row%3});row++;};
-    if(rep.gold>0)lay(fmt(rep.gold)+' זהב','#f2c14e',false);if(rep.gems>0)lay(rep.gems+' אבני נשמה','#5fd4ff',false);if(rep.shards>0)lay(rep.shards+' שברי ארגמן','#ff5c7a',false);if(rep.feather)lay('נוצת נצח','#ffd75e',false);
+    if(rep.gold>0)lay(fmt(rep.gold)+' זהב','#f2c14e',false);if(rep.gems>0)lay(rep.gems+' אבני נשמה','#5fd4ff',false);if(rep.jewels>0)lay(rep.jewels+' אבני שלמות','#ffd75e',false);if(rep.feathers>0)lay(rep.feathers+' נוצות נצח','#ffffff',false);if(rep.shards>0)lay(rep.shards+' שברי ארגמן','#ff5c7a',false);if(rep.feather)lay('נוצת נצח','#ffd75e',false);
     if(rep.names)for(const n of rep.names)lay(n[0],n[1]>=6?'#ffd75e':n[1]>=5?'#7dffb0':RAR[n[1]].c,!!n[2]);}
   if(rep.notable)for(const it of rep.notable){add(RAR[it.r].c,5.5);SC.fx.push({k:'beam',x:m.x,y:m.y,life:1.2,c:RAR[it.r].c});toast((it.ex?'':RAR[it.r].n+': ')+itemName(it,S.cls),it.ex?4:it.r);}
   if(rep.jewel)toast('אבן שלמות נפלה מהבוס',4);
@@ -854,6 +856,7 @@ function drawWorld(){
     hpBar(h.x-30,hg-hk.bh*2*sc-16,60,h.hp/C.hp,'#6fe39a');nameTag(h.x,hg-hk.bh*2*sc-22,S.name,lk.r,guild.mine?guild.mine.tag:'',!!(guild.mine&&guild.mine.castle));}
   drawFx(SC.dt);ctx.restore();
   if(window.EC&&window.EC.gallery)window.EC.gallery(drawHero,ctx); // debug hook for looking at gear art
+  if(SC.ev&&SC.evWait){label('המצודה מתחילה בעוד '+mmss(Math.max(0,(SC.evStart-Date.now())/1000)),W/2,H*.3,'#ff5c7a',20);label('השער ננעל כשהספירה נגמרת. מי שבחוץ מחכה למצודה הבאה',W/2,H*.3+24,'#c9c2ea',11);}
   if(SC.boss){hpBar(W*.2,92,W*.6,SC.boss.hp/SC.boss.max,'#ff5c7a','בוס: '+monName(zi,SC.ev?0:SC.fl));}
   {const ww=worldWin();if(ww&&world&&world.key===ww.key&&zi>=0){const y=SC.boss?124:92,tot=world.max-world.hp;
     hpBar(W*.14,y,W*.72,world.hp/world.max,world.dead?'#6fe39a':'#c56bff',world.dead?'בוס העולם הובס!':'בוס העולם · '+world.n+' לוחמים · החלק שלך '+(tot>0?Math.round(world.mine/tot*100):0)+'%');}}
@@ -926,21 +929,29 @@ function brEnter(n,left){
 }
 function brBegin(m){
   const d=SC.duel;if(!d||!d.br)return;const b=d.br,fs=Array.isArray(m.f)?m.f:[];d.me=m.me|0;b.phase='fight';b.looks=[];b.names=[];b.bot=[];b.tg=[];b.deadT=[];d.v=[];d.D.f=[];b.go=null;
-  fs.forEach((raw,i)=>{const p=G.cleanPlayer('f'+i,raw),xy=m.xy&&m.xy[i]||[0,0];b.looks.push(i===d.me?lookOf(S):p);b.names.push(p.n);b.bot.push(raw.bot?1:0);b.tg.push(null);b.deadT.push(0);
+  b.g=[];b.tag=[];
+  fs.forEach((raw,i)=>{const p=G.cleanPlayer('f'+i,raw),xy=m.xy&&m.xy[i]||[0,0];b.g.push(raw.g|0);b.tag.push(String(raw.tag||''));b.looks.push(i===d.me?lookOf(S):p);b.names.push(p.n);b.bot.push(raw.bot?1:0);b.tg.push(null);b.deadT.push(0);
     const f=brF(+xy[0],+xy[1]);f.cls=p.c;f.at={atk:0,s0:1,s1:3,s2:0,s3:8,dash:0,pot:0};d.D.f.push(f);d.v.push({anim:0,face:1,mv:false,hitT:0});});
   b.loot=(m.loot||[]).map(l=>({id:l[0],x:+l[1],y:+l[2],k:String(l[3])}));
   d.D.t=+m.T||-4;d.go=Math.max(.1,-d.D.t);b.cam=[d.D.f[d.me].x,d.D.f[d.me].y];snd('boss');renderDuelBar();
 }
 function brState(m){
-  const d=SC.duel;if(!d||!d.br||d.br.phase==='lobby')return;const b=d.br,D=d.D;D.t=+m.T;if(m.ring!=null)b.ring=+m.ring;
+  const d=SC.duel;if(!d||!d.br||d.br.phase==='lobby')return;const b=d.br,D=d.D;D.t=+m.T;if(m.ring!=null)b.ring=+m.ring;if(m.sg&&b.sg)b.sg=m.sg;
   (m.s||[]).forEach((q,i)=>{const f=D.f[i];if(!f)return;const was=f.alive;f.hp=+q[2];f.alive=!!q[3];f.sh=q[4]?D.t+.3:0;f.stun=q[5]?D.t+.3:0;f.kills=q[7]|0;f.inv=q[8]?D.t+.3:0;f.w=q[9]|0;f.ar=q[10]|0;f.bt=q[11]|0;f.pots=q[12]|0;
     if(i!==d.me){b.tg[i]=[+q[0],+q[1]];d.v[i].face=q[6]<0?-1:1;}
     else if(Math.hypot(f.x-q[0],f.y-q[1])>150){f.x=+q[0];f.y=+q[1];b.go=null;} // the server did not accept where I think I am
-    if(was&&!f.alive){b.deadT[i]=.01;const p=bP(f.x,f.y);burst(p[0],p[1]-40,'#ff5c7a',26);snd('bossdie');if(i===d.me){SC.nums.push({x:W/2,y:H*.4,txt:'נפלת',c:'#ff5c7a',s:30,life:2.2});renderDuelBar();}}});
+    if(!was&&f.alive){b.deadT[i]=0;if(i===d.me){f.x=+q[0];f.y=+q[1];b.go=null;renderDuelBar();}else{f.x=+q[0];f.y=+q[1];}}
+    if(was&&!f.alive){b.deadT[i]=.01;const p=bP(f.x,f.y);burst(p[0],p[1]-40,'#ff5c7a',26);snd('bossdie');if(i===d.me){SC.nums.push({x:W/2,y:H*.4,txt:b.sg?'נפלת. חוזרים בעוד כמה שניות':'נפלת',c:'#ff5c7a',s:b.sg?22:30,life:2.2});renderDuelBar();}}});
   for(const o of m.ev||[])brShow(d,o);
 }
 function brShow(d,o){
   const D=d.D,b=d.br;
+  if(b.sg){const gname=g=>g>0?(b.gn&&b.gn[g]||'גילדה'):'שומרי הטירה';
+    if(o.k==='sw'){snd('boss');announce('המתג ה'+(o.q?'ימני':'שמאלי')+' עבר לידי '+gname(o.g),true);return;}
+    if(o.k==='taken'){snd('rare');announce('הטירה נכבשה! הכתר בידי '+gname(o.g),true);if(!calm)SC.fx.push({k:'screen',life:1,d:1,c:'#ffd75e'});return;}
+    if(o.k==='buy'){if(o.by===d.me){snd('coin');const p=bP(D.f[d.me].x,D.f[d.me].y);addNum(p[0],p[1]-120,'+ שיקוי','#6fe39a',true);}return;}
+    if(o.k==='up'||o.k==='out'||o.k==='down')return;
+    if(o.gate!=null){const a=D.f[o.by],g=SG.gates[o.gate];if(!a)return;const pa=bP(a.x,a.y),pg=bP((g[0]+g[2])/2,(g[1]+g[3])/2);d.v[o.by].anim=1;attackFx(a.cls,pa[0],pa[1],d.v[o.by].face,[{x:pg[0],y:pg[1]-10}],o.k!=='atk',CLS[a.cls].c);addNum(pg[0],pg[1]-40,Math.max(1,Math.round(o.dm*100))+'%','#ffb23e',false);if(o.broke){snd('bossdie');announce('שער נפרץ!',true);if(!calm)SC.shake=.4;}return;}}
   if(o.k==='spawn'){const l=o.l;if(!b.loot.some(x=>x.id===l[0]))b.loot.push({id:l[0],x:+l[1],y:+l[2],k:String(l[3]),born:SC.t});if(o.big){snd('boss');announce('נשק אגדי נחת במרכז המעגל!',true);}return;}
   if(o.k==='pick'){const it=b.loot.find(x=>x.id===o.id);b.loot=b.loot.filter(x=>x.id!==o.id);const f=D.f[o.by];if(f){const p=bP(f.x,f.y);burst(p[0],p[1]-30,LOOTC[o.it]||'#fff',12);if(o.by===d.me){snd('rare');addNum(p[0],p[1]-120,'+ '+LOOTN[o.it],LOOTC[o.it],true);renderDuelBar();}else if(o.it==='W')addNum(p[0],p[1]-120,b.names[o.by]+' לקח את הנשק האגדי','#ffd75e',true);}return;}
   if(o.k==='ring'){const v=D.f[o.to];if(v){const p=bP(v.x,v.y);addNum(p[0],p[1]-110,b.names[o.to]+' נשרף מחוץ למעגל','#ff5c7a',false);}return;}
@@ -956,14 +967,16 @@ function brShow(d,o){
   if(o.miss){addNum(vx,ge-110,'חמק!','#9fe8ff',true);return;}
   d.v[o.to].hitT=.18;if(o.by===d.me||o.to===d.me)snd(o.crit?'crit':big?'skill':'hit');addNum(vx,ge-92,Math.max(1,Math.round(o.dm*100))+'%',o.to===d.me?'#ff5c7a':o.crit?'#ffd75e':'#fff',o.crit||big);
   if(o.stun)addNum(vx,ge-128,'הלם','#ffd75e',false);
-  if(o.dead)addNum(vx,ge-140,b.names[o.by]+' חיסל את '+b.names[o.to],'#ffd75e',true);
+  if(o.dead&&!(b.sg&&o.by!==d.me&&o.to!==d.me))addNum(vx,ge-140,b.names[o.by]+' חיסל את '+b.names[o.to],'#ffd75e',true);
 }
 function brOver(m){
   const d=SC.duel;if(!d||!d.br)return;const b=d.br,pl=m.place|0;b.phase='end';d.sent=true;d.holdAtk=false;d.end=4.5;b.res=m;renderDuelBar();
+  if(m.sg){SC.nums.push({x:W/2,y:H*.36,txt:m.win?'הטירה בידי '+m.win:'שומרי הטירה החזיקו מעמד',c:m.won?'#f2c14e':'#c9c2ea',s:24,life:4.4});snd(m.won?'rare':'slam');return;}
   SC.nums.push({x:W/2,y:H*.36,txt:pl===0?'ניצחת במעגל האחרון!':'מקום '+(pl+1)+' מתוך '+(m.n|0),c:pl===0?'#f2c14e':'#c9c2ea',s:pl===0?30:26,life:4.4});snd(pl===0?'rare':'slam');if(pl===0&&!calm)SC.fx.push({k:'screen',life:1,d:1,c:'#ffd75e'});
 }
 function brExit(msg){const d=SC.duel;if(!d||!d.br)return;const m=d.br.res;SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];SC.hero.dir=0;SC.hero.dz=0;renderDuelBar();
-  if(m){toast((m.place===0?'ניצחת במעגל האחרון. קיבלת ':'מקום '+((m.place|0)+1)+' במעגל האחרון. קיבלת ')+String(m.rt||''),7);send('sync',{});}else if(msg)toast(msg);touch();}
+  if(m&&m.sg){toast((m.test?'מצור הידידות נגמר. ':m.won?'הגילדה שלך מחזיקה בטירה. ':'המצור נגמר. ')+'קיבלת '+String(m.rt||''),7);send('sync',{});loadGuild&&loadGuild();}
+  else if(m){toast((m.place===0?'ניצחת במעגל האחרון. קיבלת ':'מקום '+((m.place|0)+1)+' במעגל האחרון. קיבלת ')+String(m.rt||''),7);send('sync',{});}else if(msg)toast(msg);touch();}
 function brTap(px,py){ // a tap on the field: walk there
   const d=SC.duel,b=d.br,k=BRS();b.go=[b.cam[0]+(px-W/2)/k,b.cam[1]+(py-(gy()-70))/(k*.55)];SC.fx.push({k:'ring',x:px,y:py,life:.3,c:'#7df9ff',r:26});
 }
@@ -976,17 +989,56 @@ function updateBr(dt){
   vm.mv=false;
   if(me.alive&&me.stun<=D.t&&(b.phase==='lobby'||D.t>=0)){
     let vx=SC.hero.dir,vy=SC.hero.dz;if(joy.v[0]||joy.v[1]){vx=joy.v[0];vy=joy.v[1];}if(vx||vy)b.go=null;else if(b.go){const gx=b.go[0]-me.x,gy2=b.go[1]-me.y,gd=Math.hypot(gx,gy2);if(gd<8)b.go=null;else{vx=gx/gd;vy=gy2/gd;}}
-    if(vx||vy){const n=Math.hypot(vx,vy),sp=BR.spd*(1+.12*(me.bt|0))*dt;me.x+=vx/n*sp;me.y+=vy/n*sp;const r=Math.hypot(me.x,me.y),lim=b.phase==='lobby'?240:BR.R;if(r>lim){me.x*=lim/r;me.y*=lim/r;}vm.mv=true;if(Math.abs(vx)>.15)vm.face=vx>0?1:-1;}}
+    if(vx||vy){const n=Math.hypot(vx,vy),sp=BR.spd*(1+.12*(me.bt|0))*dt;if(b.sg)sgMove({sg:b.sg},me,me.x+vx/n*sp,me.y+vy/n*sp);else{me.x+=vx/n*sp;me.y+=vy/n*sp;const r=Math.hypot(me.x,me.y),lim=b.phase==='lobby'?240:BR.R;if(r>lim){me.x*=lim/r;me.y*=lim/r;}}vm.mv=true;if(Math.abs(vx)>.15)vm.face=vx>0?1:-1;}}
   if(b.phase==='fight'){
     if(d.holdAtk||b.auto)duelAct('atk');
-    if(me.alive&&(d.posT-=dt)<=0&&(Math.abs(me.x-d.last[0])>.5||Math.abs(me.y-d.last[1])>.5)){d.posT=.08;d.last=[me.x,me.y];netSend({t:'brPos',x:Math.round(me.x),y:Math.round(me.y),f:vm.face});}
+    if(me.alive&&(d.posT-=dt)<=0&&(Math.abs(me.x-d.last[0])>.5||Math.abs(me.y-d.last[1])>.5)){d.posT=.08;d.last=[me.x,me.y];netSend({t:b.sg?'sgPos':'brPos',x:Math.round(me.x),y:Math.round(me.y),f:vm.face});}
     D.f.forEach((f,i)=>{if(i===d.me)return;const tg=b.tg[i],v=d.v[i];v.mv=false;if(tg&&f.alive){const ex=tg[0]-f.x,ey=tg[1]-f.y;if(Math.abs(ex)>1||Math.abs(ey)>1){f.x+=ex*Math.min(1,dt*10);f.y+=ey*Math.min(1,dt*10);v.mv=Math.hypot(ex,ey)>4;}}});
   }
   // the view follows me, or the middle of the circle once I am out
   const fx=me.alive||b.phase==='lobby'?me.x:0,fy=me.alive||b.phase==='lobby'?me.y:0;b.cam[0]+=(fx-b.cam[0])*Math.min(1,dt*7);b.cam[1]+=(fy-b.cam[1])*Math.min(1,dt*7);
   if((d.bt=(d.bt||0)+dt)>.25){d.bt=0;renderDuelBar();if(tab==='pass'&&b.phase==='lobby')panelDirty=true;}
 }
+function drawSg(dt){
+  const d=SC.duel,b=d.br,D=d.D,k=BRS(),sc=clamp(H/300,.8,1.45)*.74,me=D.f[d.me],S2=b.sg,myG=b.g[d.me],R=(r)=>{const p0=bP(r[0],r[1]),p1=bP(r[2],r[3]);return [p0[0],p0[1],p1[0]-p0[0],p1[1]-p0[1]];},gc=g=>g===myG?'#6fe39a':g>0?'#ff5c7a':'#d9c48a';
+  ctx.save();ctx.fillStyle='rgba(8,6,20,.6)';ctx.fillRect(0,0,W,H);
+  {const f=R([-SG.W/2,-SG.H/2,SG.W/2,SG.H/2]);const gr=ctx.createLinearGradient(0,f[1],0,f[1]+f[3]);gr.addColorStop(0,'rgba(60,50,110,.85)');gr.addColorStop(1,'rgba(40,70,60,.8)');ctx.fillStyle=gr;ctx.fillRect(f[0],f[1],f[2],f[3]);ctx.strokeStyle='rgba(255,215,94,.5)';ctx.lineWidth=2;ctx.strokeRect(f[0],f[1],f[2],f[3]);
+    const y=R([-438,-408,438,108]);ctx.fillStyle='rgba(120,104,150,.5)';ctx.fillRect(y[0],y[1],y[2],y[3]); // the yard
+    ctx.strokeStyle='rgba(255,255,255,.06)';ctx.lineWidth=1;for(let x=-SG.W/2;x<=SG.W/2;x+=100){const a=bP(x,-SG.H/2),c=bP(x,SG.H/2);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(c[0],c[1]);ctx.stroke();}for(let yy=-SG.H/2;yy<=SG.H/2;yy+=100){const a=bP(-SG.W/2,yy),c=bP(SG.W/2,yy);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(c[0],c[1]);ctx.stroke();}}
+  for(const sh of SG.shops){const p=bP(sh[0],sh[1]);ctx.fillStyle='rgba(111,227,154,.18)';ctx.strokeStyle='#6fe39a';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(p[0],p[1],SG.shopR*k,SG.shopR*k*.55,0,0,7);ctx.fill();ctx.stroke();label('שיקויים · '+SG.potPrice+' זהב',p[0],p[1]-6,'#6fe39a',10);}
+  SG.sw.forEach((s,q)=>{const p=bP(s[0],s[1]),c=gc(S2.sw[q]),pr=S2.swp[q];ctx.fillStyle=c;ctx.globalAlpha=.25+.1*Math.sin(SC.t*4);ctx.beginPath();ctx.ellipse(p[0],p[1],SG.zone*k,SG.zone*k*.55,0,0,7);ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle=c;ctx.lineWidth=2.5;ctx.stroke();
+    if(pr[1]>0){ctx.strokeStyle=gc(pr[0]);ctx.lineWidth=4;ctx.beginPath();ctx.ellipse(p[0],p[1],SG.zone*k,SG.zone*k*.55,0,-1.57,-1.57+6.283*pr[1]/SG.swT);ctx.stroke();}label('מתג '+(q?'ימני':'שמאלי'),p[0],p[1]-8,c,10.5);});
+  {const p=bP(SG.crown[0],SG.crown[1]),c=gc(S2.holder),pr=S2.crown;ctx.fillStyle='#ffd75e';ctx.globalAlpha=.3+.12*Math.sin(SC.t*3);ctx.beginPath();ctx.ellipse(p[0],p[1],SG.zone*k,SG.zone*k*.55,0,0,7);ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle='#ffd75e';ctx.lineWidth=2.5;ctx.stroke();
+    if(pr[1]>0){ctx.strokeStyle=gc(pr[0]);ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(p[0],p[1],SG.zone*k,SG.zone*k*.55,0,-1.57,-1.57+6.283*pr[1]/SG.crownT);ctx.stroke();}
+    ctx.fillStyle='#ffd75e';ctx.shadowColor='#ffd75e';ctx.shadowBlur=12;const cy=p[1]-22+Math.sin(SC.t*2)*3;ctx.beginPath();ctx.moveTo(p[0]-14,cy+8);ctx.lineTo(p[0]-14,cy-4);ctx.lineTo(p[0]-7,cy+2);ctx.lineTo(p[0],cy-9);ctx.lineTo(p[0]+7,cy+2);ctx.lineTo(p[0]+14,cy-4);ctx.lineTo(p[0]+14,cy+8);ctx.closePath();ctx.fill();ctx.shadowBlur=0;label('הכתר',p[0],p[1]+16,'#ffd75e',10.5);}
+  // walls cast forward so they read as standing stone; gates show how much is left of them
+  const wall=(r,col,top)=>{const q=R(r),h=26*k;ctx.fillStyle='rgba(20,16,36,.9)';ctx.fillRect(q[0],q[1]-h,q[2],q[3]+h);ctx.fillStyle=col;ctx.fillRect(q[0],q[1]-h,q[2],q[3]);ctx.fillStyle=top;ctx.fillRect(q[0],q[1]-h+q[3],q[2],h);};
+  for(const w of SG.walls)wall(w,'#8d86a8','#5d5878');
+  SG.gates.forEach((g,q)=>{const hp=S2.gate[q];if(hp>0)wall(g,'#b98a4a','#7a5a2e');const p=bP((g[0]+g[2])/2,(g[1]+g[3])/2);if(hp>0)hpBar(p[0]-24,p[1]-44*k-14,48,hp,'#ffb23e');label(hp>0?'שער':'שער פרוץ',p[0],p[1]-44*k-20,hp>0?'#ffb23e':'#8f88b8',10);});
+  ctx.restore();
+  let tgt=-1;if(me.alive){const rng=LIVE_RNG[me.cls]+14;let bd=1e9;D.f.forEach((f,i)=>{if(i===d.me||!f.alive||b.g[i]===myG)return;const q=Math.hypot(f.x-me.x,f.y-me.y);if(q<=rng&&q<bd){bd=q;tgt=i;}});
+    const p=bP(me.x,me.y);ctx.strokeStyle='rgba(125,249,255,.22)';ctx.lineWidth=1;ctx.setLineDash([5,6]);ctx.beginPath();ctx.ellipse(p[0],p[1],rng*k,rng*k*.55,0,0,7);ctx.stroke();ctx.setLineDash([]);}
+  if(b.go&&me.alive){const p=bP(b.go[0],b.go[1]);ctx.strokeStyle='rgba(125,249,255,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(p[0],p[1],9,4,0,0,7);ctx.stroke();}
+  const ord=D.f.map((_,i)=>i).sort((p,q)=>D.f[p].y-D.f[q].y);
+  for(const i of ord){const a=D.f[i],v=d.v[i];if(!a.alive&&!(b.deadT[i]>0&&b.deadT[i]<1.6))continue;const dead=a.alive?0:b.deadT[i],p=bP(a.x,a.y),ax=p[0],ya=p[1];if(ax<-80||ax>W+80||ya<-40||ya>H+140)continue;const x=ax+(v.hitT>0?(Math.random()-.5)*5:0),c=i===d.me?'#7df9ff':gc(b.g[i]);
+    ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(ax,ya+2,20*sc,6*sc,0,0,7);ctx.fill();
+    ctx.strokeStyle=i===tgt?'#ff5c7a':c;ctx.globalAlpha=i===tgt||i===d.me?.95:.55;ctx.lineWidth=i===tgt?2.5:1.5;ctx.beginPath();ctx.ellipse(ax,ya+2,26*sc,8*sc,0,0,7);ctx.stroke();ctx.globalAlpha=1;
+    if(a.sh>D.t){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle='#9fe8ff';ctx.globalAlpha=.6;ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(ax,ya-44*sc,28*sc,48*sc,0,0,7);ctx.stroke();ctx.restore();}
+    ctx.save();if(a.inv>D.t)ctx.globalAlpha=.45;drawHero(x,ya,sc,b.looks[i],SC.t+i*1.7,v.anim,v.face<0,dead>0?Math.max(.01,dead):0,v.mv,false);ctx.restore();
+    if(dead>0)continue;const top=ya-134*sc;hpBar(ax-26,top,52,a.hp,b.g[i]===myG?'#6fe39a':'#ff5c7a');label((b.tag[i]?'['+b.tag[i]+'] ':'')+b.names[i],ax,top-6,c,10.5);if(a.stun>D.t)label('✦',ax,top-20,'#ffd75e',12);}
+  drawFx(dt);
+  {const mw=84,mh=56,mx=W-mw-8,my=62,qx=mw/SG.W,qy=mh/SG.H,M=(x,y)=>[mx+mw/2+x*qx,my+mh/2+y*qy];ctx.save();ctx.fillStyle='rgba(8,6,20,.75)';ctx.strokeStyle='rgba(255,215,94,.6)';ctx.lineWidth=1.5;ctx.fillRect(mx,my,mw,mh);ctx.strokeRect(mx,my,mw,mh);
+    ctx.strokeStyle='#8d86a8';const a=M(-450,-420),c2=M(450,120);ctx.strokeRect(a[0],a[1],c2[0]-a[0],c2[1]-a[1]);SG.sw.forEach((s,q)=>{const p=M(s[0],s[1]);ctx.fillStyle=gc(S2.sw[q]);ctx.fillRect(p[0]-2.5,p[1]-2.5,5,5);});{const p=M(SG.crown[0],SG.crown[1]);ctx.fillStyle='#ffd75e';ctx.fillRect(p[0]-3,p[1]-3,6,6);}
+    D.f.forEach((f,i)=>{if(!f.alive)return;const p=M(f.x,f.y);ctx.fillStyle=i===d.me?'#7df9ff':gc(b.g[i]);ctx.beginPath();ctx.arc(p[0],p[1],i===d.me?2.8:1.9,0,7);ctx.fill();});ctx.restore();}
+  const hn=S2.holder>0?(b.gn&&b.gn[S2.holder]||'גילדה'):'שומרי הטירה';
+  label((b.test?'מצור ידידות':'מצור הטירה')+' · '+mmss(S2.left),W/2,30,'#ffd75e',13);label('מחזיקים בטירה: '+hn,W/2,48,gc(S2.holder),11);
+  if(S2.crown[1]>0)label('הכתר נכבש: '+Math.ceil(SG.crownT-S2.crown[1])+' שניות',W/2,H*.26,gc(S2.crown[0]),15);
+  else if(me.alive&&myG!==S2.holder)label(S2.sw[0]===myG&&S2.sw[1]===myG?'שני המתגים שלכם. עמדו על הכתר!':S2.gate.every(g=>g>0)?'פרצו שער, השתלטו על שני המתגים ועמדו על הכתר':'השתלטו על שני המתגים ואז עמדו על הכתר',W/2,66,'#dfe6f5',10.5);
+  else if(me.alive)label('הגנו על המתגים ועל הכתר עד סוף הזמן',W/2,66,'#dfe6f5',10.5);
+  if(!me.alive)label('חוזרים לקרב בעוד רגע',W/2,H*.3,'#ff5c7a',14);
+}
 function drawBr(dt){
+  if(SC.duel.br.sg)return drawSg(dt);
   const d=SC.duel,b=d.br,D=d.D,k=BRS(),sc=clamp(H/300,.8,1.45)*.78,me=D.f[d.me],c0=bP(0,0),RX=BR.R*k,RY=BR.R*k*.55;
   ctx.save();
   { // the plain: one wide disc, rings and spokes to read distance by, and scattered stones that give movement something to pass
@@ -1092,8 +1144,8 @@ function dashMove(d,i){const D=d.D,me=D.f[i],en=D.f[1-i],mine=i===d.me,side=mine
   me.x=clamp(me.x+dir*DUEL_LIVE.dash.d,20,LIVE_W-20);me.z=clamp(me.z+side*.55,0,1);}
 function duelAct(k){
   const d=SC.duel;if(!d||d.sent||d.go>0||d.spec)return;const D=d.D,me=D.f[d.me];
-  if(d.br){if(d.br.phase!=='fight'||!me.alive||D.t<0||me.stun>D.t||me.at[k]>D.t||(k==='pot'&&!me.pots))return;netSend({t:'brAct',k:k});
-    if(k==='dash'){me.at.dash=D.t+DUEL_LIVE.dash.cd;let vx=joy.v[0]||SC.hero.dir,vy=joy.v[1]||SC.hero.dz;if(!vx&&!vy){if(d.br.go){vx=d.br.go[0]-me.x;vy=d.br.go[1]-me.y;}else vx=d.v[d.me].face;}const n=Math.hypot(vx,vy)||1;me.x+=vx/n*DUEL_LIVE.dash.d;me.y+=vy/n*DUEL_LIVE.dash.d;const r=Math.hypot(me.x,me.y);if(r>BR.R){me.x*=BR.R/r;me.y*=BR.R/r;}netSend({t:'brPos',x:Math.round(me.x),y:Math.round(me.y),f:d.v[d.me].face});}else me.at[k]=D.t+(k==='atk'?.25:.5);return;}
+  if(d.br){if(d.br.phase!=='fight'||!me.alive||D.t<0||me.stun>D.t||me.at[k]>D.t||(k==='pot'&&!me.pots))return;netSend({t:d.br.sg?'sgAct':'brAct',k:k});
+    if(k==='dash'){me.at.dash=D.t+DUEL_LIVE.dash.cd;let vx=joy.v[0]||SC.hero.dir,vy=joy.v[1]||SC.hero.dz;if(!vx&&!vy){if(d.br.go){vx=d.br.go[0]-me.x;vy=d.br.go[1]-me.y;}else vx=d.v[d.me].face;}const n=Math.hypot(vx,vy)||1;if(d.br.sg)sgMove({sg:d.br.sg},me,me.x+vx/n*DUEL_LIVE.dash.d,me.y+vy/n*DUEL_LIVE.dash.d);else{me.x+=vx/n*DUEL_LIVE.dash.d;me.y+=vy/n*DUEL_LIVE.dash.d;const r=Math.hypot(me.x,me.y);if(r>BR.R){me.x*=BR.R/r;me.y*=BR.R/r;}}netSend({t:d.br.sg?'sgPos':'brPos',x:Math.round(me.x),y:Math.round(me.y),f:d.v[d.me].face});}else me.at[k]=D.t+(k==='atk'?.25:.5);return;}
   if(d.net){if(me.stun>D.t||me.at[k]>D.t)return;netSend({t:'act',k:k});if(k==='dash'){me.at.dash=D.t+DUEL_LIVE.dash.cd;dashMove(d,d.me);netSend({t:'pos',x:me.x,z:me.z});}else if(k==='atk')me.at.atk=D.t+D.T[d.me];return;}
   const o=liveAct(D,0,k,Math.random);if(!o)return;if(k==='dash')dashMove(d,0);dShow(d,o);renderDuelBar();if(k==='s1'||k==='s3')d.ai.threat=.5;
 }
@@ -1189,7 +1241,8 @@ let liveDuels=[];
 let mvT=0,mvLast=[0,false,1,0],ws=null,whisperTo=null,friendsOn={},whoT=0;
 const isBlocked=(k,n)=>(A&&A.blocked||[]).some(x=>x.k===k||(n&&x.n===n)),isFriend=k=>(A&&A.friends||[]).some(x=>x.k===k);
 function askWho(){const fr=A&&A.friends||[];if(fr.length&&ws&&ws.readyState===1)netSend({t:'who',ks:fr.map(f=>f.k)});}
-let brAsk=false,brLive=0;
+let brAsk=false,brLive=0,sgLive=0,sgTest=false;
+function sgJoin(){if(!netUp()||SC.mode!=='farm')return false;netSend({t:'sgJoin'});return true;}
 const netUp=()=>!!(ws&&ws.readyState===1);
 const brSign=()=>{const n=Date.now();if(brLive>n)return brLive;const w=ONLINE&&!demo?brWindow(n):null;return w&&w.phase==='sign'?w.signEnd:0;};
 function brJoin(){if(!(ws&&ws.readyState===1)||SC.mode!=='farm')return false;brAsk=true;netSend({t:'brJoin'});return true;}
@@ -1225,7 +1278,10 @@ function netMsg(m){
   else if(m.t==='gmSay'){snd('boss');announce('הודעת מנהל: '+String(m.m||'').slice(0,120),true);toast('הודעת מנהל: '+String(m.m||'').slice(0,120),6);}
   else if(m.t==='gmRes'){toast(String(m.msg||''),4);}
   else if(m.t==='brNo'){brAsk=false;toast('ההרשמה למעגל האחרון סגורה כרגע');}
-  else if(m.t==='brStart')brBegin(m);
+  else if(m.t==='brStart'){if(m.sg){if(!(d&&d.br)){if(SC.mode!=='farm')return;brEnter(0,0);}const b=SC.duel.br;b.sg=m.sg;b.test=!!m.test;b.gn={};for(const g of m.guilds||[])b.gn[g[0]]=String(g[1]);}brBegin(m);}
+  else if(m.t==='sgAdd'){if(d&&d.br&&d.br.sg&&m.f&&m.i===d.D.f.length){const b=d.br,p=G.cleanPlayer('f'+m.i,m.f),f=brF(+m.xy[0],+m.xy[1]);f.cls=p.c;f.pots=SG.pots;d.D.f.push(f);d.v.push({anim:0,face:1,mv:false,hitT:0});b.looks.push(p);b.names.push(p.n);b.bot.push(0);b.tg.push(null);b.deadT.push(0);b.g.push(m.f.g|0);b.tag.push(String(m.f.tag||''));addNum(W/2,H*.3,p.n+' הצטרף למצור','#c9c2ea',false);}}
+  else if(m.t==='sgOpen'){const left=+m.left||0;sgLive=left>0?Date.now()+left:0;sgTest=!!m.test;if(left>0&&!m.quiet){snd('boss');announce((m.test?'מצור ידידות נפתח':'מצור הטירה התחיל')+'! מצטרפים מלשונית הגילדה',true);}panelDirty=true;}
+  else if(m.t==='sgNo'){toast(m.why==='guild'?'רק חברי גילדה יכולים להצטרף למצור':'אין מצור פתוח כרגע');}
   else if(m.t==='brS')brState(m);
   else if(m.t==='brMe'){if(d&&d.br){const f=d.D.f[d.me];if(m.at)for(const k in f.at)f.at[k]=+m.at[k]||0;f.pots=m.pots|0;renderDuelBar();}}
   else if(m.t==='brEnd')brOver(m);
@@ -1283,8 +1339,9 @@ function renderHud(){
   $('zoneTag').textContent=duel?'זירה':SC.ev?'מצודת הארגמן '+SC.evTier+' · '+mmss((SC.evEnd-Date.now())/1000):zoneName(zi)+(zi>=0?' · קומה '+(SC.fl+1):'')+(partyN>0&&zi>=0?' · פארטי '+(partyN+1)+(partyXp(partyN)?' · '+Math.round(partyXp(partyN)*100)+'%+':''):'');
   $('rateTag').textContent=duel||zi<0?'':SC.boss?'בוס במפה':'בוס: '+(A.bossM[zi]||0)+'/'+BOSSN;
   {const left=(A.boost-Date.now())/1000,bt=left>0&&!duel?'ניסיון '+L('+50%')+' · '+mmss(left):'';if($('boostTag').dataset.t!==bt){$('boostTag').dataset.t=bt;$('boostTag').innerHTML=bt;}}
-  {const kw=!duel&&!SC.ev&&S&&!demo?keepWin():null,kb=$('keepBtn');kb.style.display=kw?'':'none';if(kw){const t=(A.keys>0||(A.ev&&A.ev[kw.key]&&A.ev[kw.key].in)?'שגר למצודה':'המצודה פתוחה · אין מפתח')+' · הכניסה נסגרת בעוד '+mmss((kw.end-(kw.e.dur-KEEP_GATE)*60000-Date.now())/1000);if(kb.textContent!==t)kb.textContent=t;}}
-  {const se=!duel&&S&&!demo&&ws&&ws.readyState===1?brSign():0,bb=$('brBtn');bb.style.display=se?'':'none';if(se){const t='המעגל האחרון נפתח · השתגר לזירה · '+mmss((se-Date.now())/1000);if(bb.textContent!==t)bb.textContent=t;}}
+  {const kg=S&&!demo?keepWin():null;if(kg&&kg.key!==keepAnn){keepAnn=kg.key;if(!SC.ev&&!duel){snd('boss');announce('מצודת הארגמן מתחילה בעוד '+Math.max(1,Math.ceil((keepStart(kg)-Date.now())/60000))+' דקות. נכנסים רק עכשיו, עד סוף הספירה',true);}}}
+  {const kw=!duel&&!SC.ev&&S&&!demo?keepWin():null,kb=$('keepBtn');kb.style.display=kw?'':'none';if(kw){const t=(A.keys>0||(A.ev&&A.ev[kw.key]&&A.ev[kw.key].in)?'שגר למצודה':'המצודה פתוחה · אין מפתח')+' · מתחילה בעוד '+mmss((keepStart(kw)-Date.now())/1000);if(kb.textContent!==t)kb.textContent=t;}}
+  {const up=!duel&&S&&!demo&&ws&&ws.readyState===1,sgo=up&&sgLive>Date.now()&&guild.mine,se=up&&!sgo?brSign():0,bb=$('brBtn');bb.style.display=se||sgo?'':'none';const act=sgo?'sgJoin':'brJoin';if(bb.dataset.act!==act)bb.dataset.act=act;if(se||sgo){const t=sgo?(sgTest?'מצור ידידות':'מצור הטירה')+' · הצטרף · '+mmss((sgLive-Date.now())/1000):'המעגל האחרון נפתח · השתגר לזירה · '+mmss((se-Date.now())/1000);if(bb.textContent!==t)bb.textContent=t;}}
   $('resetNow').style.display=canReset(S)&&!duel?'block':'none';
   $('autoBtn').style.display=$('skills').style.display=duel||zi<0?'none':'';$('paceTag').style.visibility=$('bigBtn').style.visibility=$('sndBtn').style.visibility=$('fsBtn').style.visibility=duel?'hidden':'';if(duel)renderDuelBar();{const brm=duel&&SC.duel&&SC.duel.br;$('joy').style.display=brm?'':'none';$('mv').style.display=brm?'none':'';if(!brm&&(joy.v[0]||joy.v[1]))joy.v=[0,0];}$('mvU').style.display=$('mvD').style.display=duel?'':'none';$('stage').classList.toggle('duel',duel);
   $('sndBtn').textContent=prefs.mute?'צליל כבוי':'צליל פעיל';$('sndBtn').classList.toggle('on',!prefs.mute);
@@ -1396,8 +1453,8 @@ function renderEvents(){
     if(e.tiered){const t=rec.tr||evTier(S.lvl),nx=evTier(S.lvl)+1;
       if(!t)tierLine='<p class="hint" style="color:var(--bad)">הכניסה מרמה '+L(TIER_MIN[0])+'. חסרות לך '+L(TIER_MIN[0]-S.lvl)+' רמות.</p>';
       else{const rg=tierRange(t),rw=tierReward(t);tn=' '+t;
-        tierLine='<div class="tiers">'+TIER_MIN.map((m,i)=>'<i class="'+(i+1===t?'on':i+1<t?'past':'')+'">'+(i+1)+'</i>').join('')+'</div><p class="hint"><b style="color:var(--gold)">דרגה '+L(t)+'</b> · רמות '+L(rg[0]+'-'+rg[1])+' · פרס: '+L(rw.lv)+' רמות, '+L(rw.gems)+' אבני נשמה, '+L(rw.coins)+' מטבעות עונה</p>'+
-          (nx<=7&&!rec.tr?'<p class="hint" style="color:#8fd3ff">עוד '+L(TIER_MIN[nx-1]-S.lvl)+' רמות לדרגה '+L(nx)+', שנותנת '+L(tierReward(nx).lv)+' רמות. תגיע לפני שהשער נפתח.</p>':'');}}
+        tierLine='<div class="tiers">'+TIER_MIN.map((m,i)=>'<i class="'+(i+1===t?'on':i+1<t?'past':'')+'">'+(i+1)+'</i>').join('')+'</div><p class="hint"><b style="color:var(--gold)">דרגה '+L(t)+'</b> · רמות '+L(rg[0]+'-'+rg[1])+'</p>'+
+          (nx<=7&&!rec.tr?'<p class="hint" style="color:#8fd3ff">עוד '+L(TIER_MIN[nx-1]-S.lvl)+' רמות לדרגה '+L(nx)+'. תגיע לפני שהשער נפתח.</p>':'');}}
     h+='<div class="card'+(live?' zone cur':'')+'" style="display:block"><div class="kv"><b'+(live?' style="color:var(--gold)"':'')+'>'+e.n+tn+'</b><b class="num" style="color:var(--'+(live?'good':'dim')+')">'+(live?'פעיל · '+L(mmss((w.end-now)/1000)):'בעוד '+fmtT(evNext(e,now)))+'</b></div>'+
       '<p class="hint">'+e.d+' · '+e.when+(e.rt&&!e.tiered?' · פרס: '+e.rt:'')+'</p>'+tierLine+(e.tiered?keepCard(e,w,rec,live):'')+(e.world?worldCard(w,live):'')+(e.br?brCard(live):'');
     if(w&&e.obj){
@@ -1617,6 +1674,7 @@ function accountHtml2(){
     (me.admin?'<a class="btn" href="admin.html" style="text-align:center;text-decoration:none;color:inherit">מסך ניהול</a>':'')+
     (me.admin?'<div class="card" style="display:flex;flex-direction:column;gap:6px;border-color:var(--gold)"><b style="color:var(--gold)">כלי מנהל המשחק</b><p class="hint">רק החשבון שלך רואה את זה, והשרת בודק את ההרשאה מחדש בכל לחיצה. כל פעולה מוכרזת בצ׳אט העולמי.</p>'+
       '<button class="btn pri" data-act="gm" data-a="br" data-sec="90">פתח את המעגל האחרון עכשיו · הרשמה 90 שניות</button><button class="btn sm" data-act="gm" data-a="br" data-sec="30">פתח לבדיקה מהירה · 30 שניות</button><button class="btn sm" data-act="gm" data-a="brStop">בטל הרשמה פתוחה</button>'+
+      '<button class="btn pri" data-act="gm" data-a="siege" data-min="10">פתח מצור ידידות ל-10 דקות</button><button class="btn sm" data-act="gm" data-a="siegeStop">סגור מצור שרץ</button>'+
       '<button class="btn" data-act="gm" data-a="boost" data-xp="2" data-drop="1" data-min="60">ניסיון כפול לכולם לשעה</button><button class="btn" data-act="gm" data-a="boost" data-xp="1" data-drop="2" data-min="60">שלל כפול לכולם לשעה</button><button class="btn" data-act="gm" data-a="boost" data-xp="2" data-drop="2" data-min="30">ניסיון ושלל כפולים לחצי שעה</button><button class="btn sm" data-act="gm" data-a="boost" data-min="0">בטל בונוס</button>'+
       '<input id="gmText" maxlength="120" placeholder="הודעה לכל המחוברים" autocomplete="off"><button class="btn" data-act="gm" data-a="say">שלח הודעה לכולם</button></div>':'')+
     '<button class="btn" data-act="logout">התנתק</button><button class="btn sm" data-act="acct" data-k="del" style="color:var(--bad)">מחיקת חשבון</button>'+
@@ -1682,8 +1740,9 @@ document.addEventListener('click',async e=>{
   if(a==='lang'){if(b.dataset.l!==getLang())setLang(b.dataset.l);return;}
   if(a==='emote'){const i=+b.dataset.i;if(EMO[i]){SC.hero.say={m:EMO[i],t:SC.t+3.5};netSend({t:'emote',z:SC.zi,fl:SC.fl,e:i});}return;}
   if(a==='gm'){if(!netUp())toast('אין חיבור חי לשרת');else netSend({t:'gm',a:b.dataset.a,sec:+b.dataset.sec||0,xp:+b.dataset.xp||1,drop:+b.dataset.drop||1,min:+b.dataset.min||0,m:b.dataset.a==='say'&&$('gmText')?$('gmText').value:''});return;}
+  if(a==='sgJoin'){if(!sgJoin())toast('אין חיבור חי לשרת');return;}
   if(a==='brJoin'){if(!brJoin())toast('אין חיבור חי לשרת');return;}
-  if(a==='brLeave'){netSend({t:'brLeave'});const dd=SC.duel;if(dd&&dd.br){dd.br.res=null;brExit('יצאת מהזירה');}return;}
+  if(a==='brLeave'){netSend({t:SC.duel&&SC.duel.br&&SC.duel.br.sg?'sgLeave':'brLeave'});const dd=SC.duel;if(dd&&dd.br){dd.br.res=null;brExit('יצאת מהזירה');}return;}
   if(a==='pushToggle'){pushToggle();return;}
   if(a==='watch'){netSend({t:'watch',id:+b.dataset.id});return;}
   if(a==='unwatch'){netSend({t:'unwatch'});if(SC.duel&&SC.duel.spec){SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];renderDuelBar();}return;}
@@ -1825,11 +1884,12 @@ function renderFriends(){
   return h;
 }
 /* ---------- the keep: a tiered event fought in its own place, entered with a crafted key ---------- */
-const keepWin=()=>{const n=Date.now();return evWindows(n,0).find(w=>w.e.tiered&&w.live&&keepOpen(w,n)&&!(A&&A.ev&&A.ev[w.key]&&A.ev[w.key].no));};
+let keepAnn='',keepT=0;
+const keepWin=()=>{const w=keepGate(Date.now());return w&&!(A&&A.ev&&A.ev[w.key]&&A.ev[w.key].no)?w:null;};
 async function enterKeep(){
   if(busy||SC.ev||SC.mode!=='farm'||!S||demo)return;busy=true;const r=await act('evEnter',{id:'crimson'});busy=false;
   if(!r.ok){toast(r.msg==='net'?'אין חיבור לשרת':r.msg);if(!(A.keys>0))openTab('pass');return;}
-  snd('portal');enterZone(r.z,'L',0,true);SC.evEnd=r.end;SC.evTier=r.tier;announce('נכנסת למצודת הארגמן '+r.tier+'. נחיל מפלצות. חסל 400 לפני הסגירה',true);saveLocal();
+  snd('portal');enterZone(r.z,'L',0,true);SC.evEnd=r.end;SC.evTier=r.tier;SC.evStart=r.start||0;SC.evWait=Date.now()<SC.evStart;if(SC.evWait)SC.mons=[];announce(SC.evWait?'אתה בתוך מצודת הארגמן '+r.tier+'. הנחיל יוצא כשהספירה נגמרת':'נכנסת למצודת הארגמן '+r.tier,true);saveLocal();
 }
 async function leaveKeep(told){
   if(!SC.ev)return;SC.ev=false;if(!told){await flushTick();await send('evLeave',{});}
@@ -1838,7 +1898,7 @@ async function leaveKeep(told){
 function keepCard(e,w,rec,live){
   const sh=A.shards||0,keys=A.keys||0,open=!!keepWin();
   let h='<div class="kv" style="margin-top:6px"><span>מפתחות מצודה</span><b class="num" style="color:var(--gold)">'+L(keys)+'</b></div><div class="kv"><span>שברי ארגמן</span><b class="num">'+L(sh+'/'+KEY_SHARDS)+'</b></div>'+
-    '<p class="hint"><b>איך נכנסים:</b> שברי ארגמן נופלים ממפלצות בכל מפה. מ-'+L(KEY_SHARDS)+' שברים ו-'+L(fmt(KEY_GOLD))+' זהב יוצרים מפתח. כשהשער נפתח, בשעה עגולה, המפתח משגר אותך לתוך המצודה. בפנים מחכה נחיל אדיר של מפלצות חלשות עם ניסיון רגיל, כך שעולים רמות מהר בזכות הכמות. <b>הכניסה פתוחה רק ב-'+L(KEEP_GATE)+' הדקות הראשונות.</b> מי שפספס, יצא, התנתק או עשה ריסט באמצע מחכה למצודה הבאה.</p>'+
+    '<p class="hint"><b>איך נכנסים:</b> שברי ארגמן נופלים ממפלצות בכל מפה. מ-'+L(KEY_SHARDS)+' שברים ו-'+L(fmt(KEY_GOLD))+' זהב יוצרים מפתח. השער נפתח חמש דקות לפני כל שעה עגולה, והמפתח משגר אותך פנימה לחכות. בפנים מחכה נחיל אדיר של מפלצות חלשות עם ניסיון רגיל, כך שעולים רמות מהר בזכות הכמות. <b>הכניסה פתוחה רק ב-'+L(KEEP_GATE)+' הדקות שלפני הפתיחה, והפרס הוא הכמות עצמה.</b> מי שפספס, יצא, התנתק או עשה ריסט באמצע מחכה למצודה הבאה.</p>'+
     '<div class="grid2"><button class="btn sm'+(sh>=KEY_SHARDS&&A.gold>=KEY_GOLD?' pri':'')+'" data-act="craftKey"'+(sh>=KEY_SHARDS&&A.gold>=KEY_GOLD?'':' disabled')+'>צור מפתח</button>'+
     '<button class="btn sm'+(open&&!SC.ev&&(keys>0||rec.in)?' pri glow':'')+'" data-act="keepGo"'+(open&&!SC.ev&&(keys>0||rec.in)?'':' disabled')+'>'+(SC.ev?'אתה בפנים':open?'שגר למצודה':live?'הכניסה נסגרה':'השער סגור')+'</button></div>';
   return h;
@@ -1970,12 +2030,12 @@ function renderChatBar(){
 function loadGuild(){if(ONLINE&&!demo)send('gget',{});}
 function siegeLine(){
   const s=siegeInfo(Date.now());
-  return s.on?'המצור פעיל עכשיו, נשארו '+s.left+' דקות. כל חיסול של חבר גילדה נספר.':'המצור הבא בשבת ב-21:00, בעוד '+(s.next>=1440?Math.floor(s.next/1440)+' ימים':s.next>=60?Math.floor(s.next/60)+' שעות':s.next+' דקות')+'.';
+  return s.on?'המצור פעיל עכשיו, נשארו '+s.left+' דקות.':'המצור הבא בשבת ב-21:00, בעוד '+(s.next>=1440?Math.floor(s.next/1440)+' ימים':s.next>=60?Math.floor(s.next/60)+' שעות':s.next+' דקות')+'.';
 }
 function renderGuild(){
   let h='<h2>גילדה</h2>';if(!ONLINE)return h+'<p class="hint">גילדות עובדות רק במצב מקוון, מול השרת.</p>';
   const g=guild.mine,hold=guild.holder;
-  h+='<div class="card"><p class="hint"><b>מצור הטירה</b> · '+siegeLine()+' הגילדה שמחסלת הכי הרבה בחצי השעה הזו מחזיקה בטירה שבוע, וכל חבריה מקבלים '+L('+10%')+' ניסיון וזהב.</p><div class="kv"><span>מחזיקה בטירה</span><b>'+(hold?esc(hold.name)+' ['+esc(hold.tag)+']':'אף גילדה')+'</b></div></div>';
+  h+='<div class="card"><p class="hint"><b>מצור הטירה</b> · '+siegeLine()+' קרב חי על טירה מוקפת חומה: פורצים שער, משתלטים על שני המתגים, ואז חבר גילדה עומד על הכתר רבע דקה בלי הפרעה. מי שמחזיק בכתר כשהזמן נגמר מחזיק בטירה שבוע, וכל חברי הגילדה מקבלים '+L('+10%')+' ניסיון וזהב. כאן הכוח האמיתי של הדמות קובע.</p>'+(sgLive>Date.now()?'<button class="btn pri glow" style="width:100%;margin-bottom:6px" data-act="sgJoin"'+(netUp()&&SC.mode==='farm'&&guild.mine?'':' disabled')+'>'+(guild.mine?(sgTest?'הצטרף למצור הידידות':'הצטרף למצור')+' · נשארו '+L(mmss((sgLive-Date.now())/1000)):'רק חברי גילדה יכולים להצטרף')+'</button>':'')+'<p class="hint" style="display:none"></p><div class="kv"><span>מחזיקה בטירה</span><b>'+(hold?esc(hold.name)+' ['+esc(hold.tag)+']':'אף גילדה')+'</b></div></div>';
   if(!g){
     h+='<div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">עד 20 חברים. כל רמת גילדה מוסיפה '+L('1%')+' ניסיון לכל החברים, עד '+L('10%')+'. הרמה עולה מהחיסולים של כולם.</p>'+
       '<input type="text" id="gname" maxlength="14" placeholder="שם הגילדה, 3 עד 14 תווים" autocomplete="off"><input type="text" id="gtag" maxlength="4" placeholder="תג, 2 עד 4 תווים" autocomplete="off" dir="ltr">'+
@@ -2047,7 +2107,7 @@ function updateAnnounce(dt){
     el.classList.add('on');annShow=50;annAge=0;snd(a.live?'boss':'ok');}
   if(!S||demo||(annT+=dt)<1)return;annT=0;
   const now=Date.now(),list=EVENTS.map(e=>{const t=e.tiered?evTier(S.lvl):0;return {id:e.id,n:e.n+(t?' '+t:''),s:evNext(e,now),d:e.d,t:t,tiered:e.tiered};}),sg=siegeInfo(now);
-  list.push({id:'siege',n:'מצור הטירה',s:sg.on?1e9:sg.next*60-new Date(now).getSeconds(),d:'כל חיסול של חבר גילדה נספר'});
+  list.push({id:'siege',n:'מצור הטירה',s:sg.on?1e9:sg.next*60-new Date(now).getSeconds(),d:'קרב חי על הטירה. מצטרפים מלשונית הגילדה'});
   for(const e of list){const prev=annPrev[e.id];annPrev[e.id]=e.s;
     if(prev!=null&&prev<=90&&e.s>prev+120){annMark[e.id]=0;announce(e.tiered?e.n+' נפתחה! '+(A.keys>0?'לחץ על שגר למצודה':'צריך מפתח כדי להיכנס'):e.n+' התחיל! '+String(e.d).split('.')[0],true);continue;}
     if(e.s<=300&&e.s>5){const m=Math.ceil(e.s/60);if(annMark[e.id]!==m&&prev!=null){annMark[e.id]=m;announce(e.n+' מתחיל בעוד '+(m===1?'דקה':m+' דקות'));
@@ -2101,6 +2161,7 @@ function loop(ts){
     if(!demo&&ws&&ws.readyState===1&&SC.mode==='farm'&&!SC.ev&&(mvT+=dt)>.08){const h=SC.hero,at=SC.t-(h.lastAtk||-9)<1.5,x=Math.round(h.x),v=Math.round(clamp((x-mvLast[0])/mvT,-1200,1200));hitT+=.08;const say=hitOut[0]>0&&hitT>.3;if(peers.length&&(say||x!==mvLast[0]||at!==mvLast[1]||h.face!==mvLast[2]||v!==mvLast[3])){mvLast=[x,at,h.face,v];const m={t:'mv',z:SC.zi,fl:SC.fl,x:x,f:h.face,a:at,v:v};if(say){m.h=hitOut[0];m.c=hitOut[1];hitT=0;}netSend(m);}if(say||!peers.length)hitOut=[0,0];mvT=0;}}
   else if((saveT+=dt)>8){saveT=0;if(localDirty){localDirty=false;saveLocal();}}
   updateTut(dt);updateAnnounce(dt);
+  if(SC.ev&&SC.evWait){SC.mons=[];if(Date.now()>=SC.evStart){SC.evWait=false;enterZone(SC.zi,'L',0,true);snd('boss');announce('המצודה נפתחה! השער ננעל',true);}else if((keepT+=dt)>25){keepT=0;send('tick',{ev:1,kills:0});}}
   if(SC.ev&&Date.now()>SC.evEnd+1500&&!busy){flushTick().then(()=>{if(SC.ev)leaveKeep(true);});SC.evEnd+=8000;}
 }
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&A&&!demo){if(ONLINE)flushTick();else saveLocal();}});

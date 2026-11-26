@@ -82,6 +82,8 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     const w = G.brWindow(clock());
     if (!br && w && w.phase === 'sign' && w.key !== lastKey) { lastKey = w.key; br = { key: w.key, phase: 'sign', joined: new Map(), end: w.signEnd, idx: new Map() }; all({ t: 'brOpen', left: Math.max(0, br.end - clock()) }); }
     else if (br && br.phase === 'sign' && clock() >= br.end) brStart(br);
+    const si = G.siegeInfo(clock());
+    if (!sg && si.on && si.left > 2) { const key = G.siegeInfo(clock() + (si.left + 1) * 60000).key; if (key !== sgDone) { sgDone = key; sgOpen((si.left - 1) * 60, false, key); } }
   }, 1000); brClock.unref();
   // Game-master tools. The right to use them is the is_admin flag on the account in the database, read again on
   // every single request; nothing the browser says about itself is believed, and a refused attempt is logged.
@@ -101,6 +103,11 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     if (a === 'brStop') {
       if (!br || br.phase !== 'sign') return no('אין הרשמה פתוחה'); const b = br; br = null; for (const u of b.joined.keys()) send(u, { t: 'brCancel' }); all({ t: 'brOpen', left: 0 }); return ok('ההרשמה בוטלה');
     }
+    if (a === 'siege') {
+      if (sg) return no('כבר יש מצור שרץ'); const min = Math.max(3, Math.min(25, Math.floor(Number(m.min)) || 10)); sgOpen(min * 60, true);
+      await gmChat('מצור ידידות נפתח ל-' + min + ' דקות. מצטרפים מלשונית הגילדה'); return ok('מצור ידידות נפתח ל-' + min + ' דקות');
+    }
+    if (a === 'siegeStop') { if (!sg) return no('אין מצור שרץ'); sg.B.over = 1; return ok('המצור ייסגר מיד'); }
     if (a === 'boost') {
       const min = Math.max(0, Math.min(120, Math.floor(Number(m.min)) || 0)), b = G.setBoost(min ? { xp: m.xp, drop: m.drop, until: now + min * 60000 } : null);
       all({ t: 'boost', xp: b ? b.xp : 1, drop: b ? b.drop : 1, left: b ? b.until - now : 0 });
@@ -137,9 +144,59 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     }
   }
 
+  // Castle siege: one long fight on a walled field, guild against guild, joined at any moment while it runs.
+  // Saturday's siege decides who holds the castle; one a game master opens is a friendly match and changes nothing.
+  let sg = null, sgDone = '';
+  const r3 = (v) => Math.round(v * 1000) / 1000;
+  const sgAll = (m) => { if (!sg) return; const s = JSON.stringify(m); for (const uid of sg.idx.keys()) { const o = socks.get(uid); if (o && o.readyState === 1) o.send(s); } };
+  const sgView = (B) => ({ gate: B.sg.gate.map(r3), sw: B.sg.sw, swp: B.sg.swp.map((p) => [p[0], r3(p[1])]), crown: [B.sg.crown[0], r3(B.sg.crown[1])], holder: B.sg.holder, left: Math.max(0, Math.round((B.sg.time || G.SG.TIME) - B.t)) });
+  const sgState = (B) => ({ t: 'brS', T: B.t, sg: sgView(B), s: B.f.map((f) => [Math.round(f.x), Math.round(f.y), r3(f.hp), f.alive ? 1 : 0, f.sh > B.t ? 1 : 0, f.stun > B.t ? 1 : 0, f.face < 0 ? -1 : 1, f.kills, f.inv > B.t ? 1 : 0, 0, 0, 0, f.pots]) });
+  const sgPub = (B, i, x) => { const f = B.f[i], p = x.prof[i] || {}; return Object.assign(pub(p), { n: f.n, c: f.c, bot: f.bot ? 1 : 0, g: f.g, tag: f.tag }); };
+  async function sgFinish(x) {
+    if (x.done) return; x.done = true; clearInterval(x.timer); if (sg === x) sg = null; const B = x.B, holder = B.sg.holder, hn = holder > 0 ? (x.names.get(holder) || '') : '';
+    for (const [uid, i] of x.idx) { const f = B.f[i], won = holder > 0 && f.g === holder, rt = await mutate(uid, (A) => G.sgReward(A, won && !x.test, f.bought)); send(uid, { t: 'brEnd', sg: 1, won: won ? 1 : 0, test: x.test ? 1 : 0, rt: typeof rt === 'string' ? rt : '', win: hn }); }
+    all({ t: 'sgOpen', left: 0 });
+    try {
+      if (!x.test) { const prev = (await admin.from('castle').select('guild_id,at').order('at', { ascending: false }).limit(1)).data; await admin.from('castle').insert({ siege: x.key, guild_id: holder > 0 ? holder : (prev && prev[0] ? prev[0].guild_id : null), pts: B.sg.caps }); }
+      await admin.from('chat').insert({ ch: 'w', user_id: null, name: '★', tag: '', msg: (x.test ? 'מצור הידידות נגמר. ' : 'מצור הטירה נגמר. ') + (hn ? 'הטירה בידי ' + hn : 'שומרי הטירה החזיקו מעמד') });
+    } catch (e) { console.error(e); }
+  }
+  function sgOpen(secs, test, key) {
+    const B = G.sgNew(rnd, { d: 300, a: 1.2, h: 4000, f: 150 }); B.sg.time = secs;
+    const x = { key: key || 'test', test: !!test, B, idx: new Map(), names: new Map(), prof: B.f.map((f) => ({ n: f.n, c: f.c })), last: clock(), done: false, scaled: false }; sg = x;
+    x.timer = setInterval(() => { const now = clock(), dt = Math.max(0, Math.min(.5, (now - x.last) / 1000)); x.last = now; const ev = G.sgStep(B, dt, rnd), m = sgState(B); if (ev.length) m.ev = ev; sgAll(m); if (B.over) sgFinish(x); }, 200); x.timer.unref();
+    all({ t: 'sgOpen', left: secs * 1000, test: test ? 1 : 0 }); return x;
+  }
+  async function sgMsg(ws, m) {
+    const uid = ws.uid, x = sg;
+    if (m.t === 'sgJoin') {
+      if (!x || x.done || inDuel.has(uid) || (br && br.joined.has(uid))) return send(uid, { t: 'sgNo', why: 'closed' });
+      let i = x.idx.get(uid);
+      if (i == null) {
+        const gm = (await admin.from('guild_members').select('guild_id').eq('user_id', uid).maybeSingle()).data; if (!gm) return send(uid, { t: 'sgNo', why: 'guild' });
+        const g = (await admin.from('guilds').select('id,name,tag').eq('id', gm.guild_id).maybeSingle()).data, p = await snap(uid); if (!g || !p || sg !== x || x.done) return send(uid, { t: 'sgNo', why: 'closed' });
+        if (x.idx.has(uid)) return; const gid = Number(g.id); x.names.set(gid, String(g.name));
+        if (!x.scaled) { x.scaled = true; for (const f of x.B.f) if (f.g === 0) { f.d = p.d * .8; f.pool = Math.max(1, p.h * 5 * .9); f.def = p.f * .8; } } // the guards measure up to the first to arrive
+        i = G.sgAdd(x.B, p, gid, g.tag, rnd); x.idx.set(uid, i); x.prof[i] = p;
+        const add = JSON.stringify({ t: 'sgAdd', i, f: sgPub(x.B, i, x), xy: [x.B.f[i].x, x.B.f[i].y] }); for (const u of x.idx.keys()) if (u !== uid) { const o = socks.get(u); if (o && o.readyState === 1) o.send(add); }
+      }
+      return send(uid, { t: 'brStart', sg: sgView(x.B), test: x.test ? 1 : 0, me: i, f: x.B.f.map((_, q) => sgPub(x.B, q, x)), T: x.B.t, xy: x.B.f.map((f) => [f.x, f.y]), loot: [], guilds: [...x.names.entries()] });
+    }
+    if (!x || x.done) return; const i = x.idx.get(uid); if (i == null) return; const B = x.B, f = B.f[i];
+    if (m.t === 'sgLeave') { x.idx.delete(uid); f.alive = false; f.resp = 0; return; }
+    if (!f.alive || B.t < 0) return;
+    if (m.t === 'sgPos') {
+      if (f.stun > B.t) return; const now = clock(), el = Math.min(1, (now - (ws.brT || now)) / 1000); ws.brT = now;
+      const lim = G.BR.spd * 1.3 * el + (f.inv > B.t ? 190 : 24), dx = (Number(m.x) || 0) - f.x, dy = (Number(m.y) || 0) - f.y, d = Math.hypot(dx, dy) || 1, st = Math.min(d, lim);
+      G.sgMove(B, f, f.x + dx / d * st, f.y + dy / d * st); f.face = Number(m.f) < 0 ? -1 : 1; return;
+    }
+    if (m.t === 'sgAct') { const o = G.sgAct(B, i, String(m.k), rnd); if (!o) return; const out = sgState(B); out.ev = [o]; sgAll(out); return send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t }); }
+  }
+
   async function onMsg(ws, m) {
     const uid = ws.uid, d = inDuel.get(uid), side = d ? d.u.indexOf(uid) : -1;
     if (m.t === 'gm') return gmMsg(ws, m);
+    if (typeof m.t === 'string' && m.t.slice(0, 2) === 'sg') return sgMsg(ws, m);
     if (typeof m.t === 'string' && m.t.slice(0, 2) === 'br') return brMsg(ws, m);
     if (m.t === 'challenge') {
       const to = keys.get(String(m.k)); if (!to || to === uid || !socks.has(to)) return send(uid, { t: 'gone', k: String(m.k) });
@@ -219,6 +276,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
             if (m.t !== 'hello') return ws.close(); const ses = await auth.session(String(m.token || '')); if (!ses) return ws.close();
             clearTimeout(hello); ws.uid = ses.uid; ws.key = peerKey(ses.uid); const old = socks.get(ses.uid); if (old && old !== ws) old.close();
             socks.set(ses.uid, ws); keys.set(ws.key, ses.uid); ws.send(JSON.stringify({ t: 'hi' })); if (push) push.back(ses.uid).catch(() => {});
+            if (sg && !sg.done) ws.send(JSON.stringify({ t: 'sgOpen', left: Math.max(0, ((sg.B.sg.time || G.SG.TIME) - sg.B.t) * 1000), test: sg.test ? 1 : 0, quiet: 1 }));
             if (br && br.phase === 'sign') ws.send(JSON.stringify({ t: 'brOpen', left: Math.max(0, br.end - clock()), quiet: 1 }));
             { const b = G.boostNow(clock()); if (b) ws.send(JSON.stringify({ t: 'boost', xp: b.xp, drop: b.drop, left: b.until - clock(), quiet: 1 })); }
             return;
@@ -228,10 +286,11 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
       });
       ws.on('close', () => { if (!ws.uid || socks.get(ws.uid) !== ws) return; socks.delete(ws.uid); keys.delete(ws.key); if (push) push.away(ws.uid).catch((e) => console.error(e));
         { const x = watching.get(ws.uid); if (x) { x.watch.delete(ws.uid); watching.delete(ws.uid); } }
+        if (sg && sg.idx.has(ws.uid)) { const f = sg.B.f[sg.idx.get(ws.uid)]; sg.idx.delete(ws.uid); f.alive = false; f.resp = 0; }
         if (br && br.joined.has(ws.uid)) { const b = br; if (b.phase === 'sign') b.joined.delete(ws.uid); else { const i = b.idx.get(ws.uid); if (i != null && b.B.f[i].alive) { G.brKill(b.B, i, -1); if (b.B.over) brFinish(b); } } }
         const d = inDuel.get(ws.uid); if (d && !d.done) finish(d, 1 - d.u.indexOf(ws.uid), 'left'); });
       ws.on('error', () => {});
     });
   });
-  return { socks, duels, brNow: () => br, brOpen: (ms) => (br = { key: 'manual', phase: 'sign', joined: new Map(), end: clock() + ms, idx: new Map() }), brBegin: () => { if (br && br.phase === 'sign') brStart(br); }, close: () => { for (const d of duels.values()) clearInterval(d.timer); clearInterval(brClock); if (br && br.timer) clearInterval(br.timer); wss.close(); } };
+  return { socks, duels, sgNow: () => sg, sgOpen, brNow: () => br, brOpen: (ms) => (br = { key: 'manual', phase: 'sign', joined: new Map(), end: clock() + ms, idx: new Map() }), brBegin: () => { if (br && br.phase === 'sign') brStart(br); }, close: () => { for (const d of duels.values()) clearInterval(d.timer); clearInterval(brClock); if (br && br.timer) clearInterval(br.timer); if (sg) clearInterval(sg.timer); wss.close(); } };
 }

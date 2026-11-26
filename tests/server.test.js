@@ -492,3 +492,27 @@ test('players on one map see each other\'s hits, held to what the character coul
     await new Promise(r=>setTimeout(r,80));a.send({t:'mv',z:3,fl:0,x:220,f:1,a:true,v:0,h:5});await new Promise(r=>setTimeout(r,150));assert.equal(b.q.filter(m=>m.t==='mv').length,0,'another map hears nothing');
   }finally{for(const u of [a,b])if(u.ws)u.ws.close();srv.live.close();srv.close();}
 });
+
+test('castle siege over the socket: guild members join a running siege, the server holds it, the winner is written',async()=>{
+  const {makeServer}=await import('../server/index.mjs');const {WebSocket}=await import('ws');const {createHash}=await import('node:crypto');const {db}=await world();
+  const srv=makeServer(fakeAdmin(db),'test-secret');await new Promise(r=>srv.listen(0,r));const port=srv.address().port,base='http://127.0.0.1:'+port;
+  const post=async(body,tok)=>(await (await fetch(base,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},tok?{'x-ec-token':tok}:{}),body:JSON.stringify(body)})).json());
+  const mkUser=async(n,cls)=>{const r=await post({kind:'register',args:{user:n,pass:'correct-horse-9',q:0,a:'rex'}});await post({kind:'create',args:{name:n,cls:cls}},r.token);await post({kind:'travel',args:{z:0}},r.token);
+    const uid=(await db.query('select user_id from users where username=$1',[n])).rows[0].user_id;return {tok:r.token,uid,key:createHash('md5').update(uid+'peer').digest('hex').slice(0,10)};};
+  const open=async u=>{const ws=new WebSocket('ws://127.0.0.1:'+port+'/ws');u.q=[];u.wait=t=>new Promise((res,rej)=>{const go=()=>{const i=u.q.findIndex(m=>m.t===t);if(i>=0)return res(u.q.splice(i,1)[0]);setTimeout(go,10);};go();setTimeout(()=>rej(new Error('no '+t+' message')),4000);});
+    ws.on('message',d=>u.q.push(JSON.parse(String(d))));await new Promise(r=>ws.on('open',r));ws.send(JSON.stringify({t:'hello',token:u.tok}));await u.wait('hi');u.ws=ws;u.send=m=>ws.send(JSON.stringify(m));};
+  const a=await mkUser('lamed','blade'),b=await mkUser('mem','storm'),c=await mkUser('nun','blade');const G=await import('../supabase/functions/act/core.js');
+  try{
+    const gid=(await db.query("insert into guilds (name,tag,leader) values ('אריות','AR',$1) returning id",[a.uid])).rows[0].id;await db.query('insert into guild_members (user_id,guild_id) values ($1,$2),($3,$2)',[a.uid,gid,b.uid]);
+    await open(a);await open(b);await open(c);a.send({t:'sgJoin'});assert.equal((await a.wait('sgNo')).why,'closed');
+    const x=srv.live.sgOpen(600,false,'s-test-key');assert.equal((await a.wait('sgOpen')).left,600000);
+    c.send({t:'sgJoin'});assert.equal((await c.wait('sgNo')).why,'guild','no guild, no siege');
+    a.send({t:'sgJoin'});const sa=await a.wait('brStart');assert.ok(sa.sg&&sa.f.length===G.SG.posts.length+1);assert.equal(sa.f[sa.me].tag,'AR');assert.equal(sa.guilds[0][1],'אריות');
+    b.send({t:'sgJoin'});const sb=await b.wait('brStart'),add=await a.wait('sgAdd');assert.equal(add.i,sb.me);assert.equal(add.f.g,Number(gid));
+    const B=x.B;B.t=1;const fa=B.f[sa.me],fb=B.f[sb.me];a.send({t:'sgPos',x:0,y:-300,f:1});await new Promise(r=>setTimeout(r,300));a.send({t:'sgPos',x:0,y:-300,f:1});await new Promise(r=>setTimeout(r,150));assert.ok(fa.y>130&&fa.y<400,'he walks, and the gate stops him: '+fa.y);
+    for(const f of B.f)if(f.g===0){f.alive=false;f.resp=1e9;}B.sg.sw=[Number(gid),Number(gid)];fa.x=G.SG.crown[0];fa.y=G.SG.crown[1];B.sg.crown=[Number(gid),G.SG.crownT-.3];
+    let taken=null;for(let i=0;i<30&&!taken;i++){const m=await b.wait('brS');if(m.ev&&m.ev.some(e=>e.k==='taken'))taken=m;}assert.ok(taken&&taken.sg.holder===Number(gid));
+    B.sg.time=B.t+.2;const ea=await a.wait('brEnd'),eb=await b.wait('brEnd');assert.ok(ea.sg&&ea.won===1&&eb.won===1);assert.equal(ea.win,'אריות');
+    const row=(await db.query("select * from castle where siege='s-test-key'")).rows[0];assert.equal(String(row.guild_id),String(gid),'the castle is theirs for the week');assert.equal((await db.query('select state from accounts where user_id=$1',[a.uid])).rows[0].state.coins,30);assert.equal(srv.live.sgNow(),null);
+  }finally{for(const u of [a,b,c])if(u.ws)u.ws.close();srv.live.close();srv.close();}
+});

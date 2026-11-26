@@ -158,31 +158,30 @@ test('selling by rarity leaves wings, excellent items and the other rarities alo
   assert.equal(A.inv.filter(it=>it.r===2).length,2,'the wings and the excellent piece stay');assert.equal(G.apply(A,'sellRar',{r:4}).ok,false);
 });
 
-test('the keep: a crafted key, entry fixes the bracket, only kills inside count, higher brackets pay more',()=>{
+test('the keep: a crafted key, a five-minute gate before it begins, nobody enters after, the horde is the prize',()=>{
   assert.deepEqual([1,14,15,80,81,330,331,400].map(G.evTier),[0,0,1,1,2,6,7,7]);assert.deepEqual(G.tierRange(7),[331,400]);assert.deepEqual(G.tierRange(1),[15,80]);
   assert.ok(G.tierReward(7).lv>G.tierReward(6).lv&&G.tierReward(2).gems>G.tierReward(1).gems);
-  const at=Date.parse('2026-11-26T12:01:00Z'); // one minute into the hourly opening
+  const start=Date.parse('2026-11-26T12:00:00Z'),at=start-2*60000; // two minutes before the keep begins: the gate is open
   const mk=(lvl,t0)=>{const A=G.newAccount();const st={now:t0};G.setEnv(()=>.5,()=>st.now);G.apply(A,'create',{name:'a',cls:'blade'});const s=A.chars[0];s.lvl=lvl;s.stats.str=5000;s.stats.vit=3000;s.autoPts=false;A.open=7;return {A,s,st};};
   {const {A}=mk(100,at);assert.equal(G.apply(A,'craftKey',{}).ok,false,'needs shards');A.shards=7;A.gold=5000;assert.ok(G.apply(A,'craftKey',{}).ok);assert.equal(A.keys,1);assert.equal(A.shards,2);assert.equal(A.gold,5000-G.KEY_GOLD);}
-  {const {A}=mk(100,at-10*60000);A.keys=1;assert.equal(G.apply(A,'evEnter',{id:'crimson'}).ok,false,'the gate is shut outside the opening');assert.equal(A.keys,1);}
+  {const {A}=mk(100,start-10*60000);A.keys=1;assert.equal(G.apply(A,'evEnter',{id:'crimson'}).ok,false,'the gate opens only five minutes before');assert.equal(A.keys,1);}
   {const {A}=mk(10,at);A.keys=1;assert.match(G.apply(A,'evEnter',{id:'crimson'}).msg,/מרמה 15/);}
   {const {A}=mk(100,at);assert.match(G.apply(A,'evEnter',{id:'crimson'}).msg,/מפתח/);}
-  const run=(lvl)=>{const {A,s,st}=mk(lvl,at-60000);A.keys=1;st.now=at;
+  const run=(lvl)=>{const {A,s,st}=mk(lvl,at-80000);A.keys=1;
     G.apply(A,'travel',{z:0});for(let i=0;i<3;i++){st.now+=20000;G.apply(A,'tick',{z:0,kills:30});}
-    const outside=Object.values(A.ev||{}).reduce((x,r)=>x+(r.k||0),0);
-    const e=G.apply(A,'evEnter',{id:'crimson'});const again=G.apply(A,'evEnter',{id:'crimson'});
-    for(let i=0;i<10;i++){st.now+=20000;G.apply(A,'tick',{ev:1,kills:60});}
-    const rec=Object.values(A.ev).find(r=>r.in),before=s.lvl,r=G.apply(A,'claimEvent',{id:'crimson'});
-    st.now+=15*60000;const late=G.apply(A,'tick',{ev:1,kills:5});return {A,s,e,again,outside,rec,r,gained:s.lvl-before,late};};
-  const t2=run(100);assert.equal(t2.outside,0,'kills outside the keep do not count');assert.ok(t2.e.ok,t2.e.msg);assert.equal(t2.e.tier,2);assert.ok(t2.again.ok);assert.equal(t2.A.keys,0,'one key per opening, going back in is free');
-  assert.ok(t2.rec.k>=400,'kills '+t2.rec.k);assert.ok(t2.r.ok,t2.r.msg);assert.match(t2.r.rt,/^4 רמות/);assert.equal(t2.late.evOver,true,'after closing, the keep throws the player out');assert.equal(t2.s.evIn,null);
-  {const {A,s,st}=mk(100,at);A.keys=2;st.now=at+2*60000;assert.match(G.apply(A,'evEnter',{id:'crimson'}).msg,/הכניסה נסגרה/,'four minutes in, the gate is shut');assert.equal(A.keys,2);}
-  {const {A,s,st}=mk(100,at);A.keys=1;assert.ok(G.apply(A,'evEnter',{id:'crimson'}).ok);G.apply(A,'evLeave',{});st.now=at+2*60000;assert.equal(G.apply(A,'evEnter',{id:'crimson'}).ok,false,'no way back in once the gate is shut');}
+    const e=G.apply(A,'evEnter',{id:'crimson'}),again=G.apply(A,'evEnter',{id:'crimson'});st.now+=20000;const k0=A.kills,w=G.apply(A,'tick',{ev:1,kills:60}),waited=A.kills-k0;
+    while(st.now<start-30000){st.now+=25000;G.apply(A,'tick',{ev:1,kills:0});}st.now=start+1000;const before=s.lvl;let got=0;for(let i=0;i<10;i++){st.now+=20000;got+=G.apply(A,'tick',{ev:1,kills:60}).kills||0;}
+    const claim=G.apply(A,'claimEvent',{id:'crimson'});st.now+=15*60000;const late=G.apply(A,'tick',{ev:1,kills:5});return {A,s,e,again,w,waited,got,claim,gained:s.lvl-before,late};};
+  const t2=run(100);assert.ok(t2.e.ok,t2.e.msg);assert.equal(t2.e.tier,2);assert.equal(t2.e.start,start);assert.ok(t2.again.ok);assert.equal(t2.A.keys,0,'one key per opening');
+  assert.ok(t2.w.wait&&t2.waited===0,'nothing can be killed while the count runs');assert.ok(t2.got>=400&&t2.gained>0,'then the horde: '+t2.got);assert.equal(t2.claim.ok,false,'the horde is the prize: there is nothing to collect');
+  assert.equal(t2.late.evOver,true,'after closing, the keep throws the player out');assert.equal(t2.s.evIn,null);
+  {const {A}=mk(100,start+60000);A.keys=2;assert.match(G.apply(A,'evEnter',{id:'crimson'}).msg,/הכניסה נסגרה/,'once it has begun, nobody enters');assert.equal(A.keys,2);}
+  {const {A,st}=mk(100,at);A.keys=1;assert.ok(G.apply(A,'evEnter',{id:'crimson'}).ok);G.apply(A,'evLeave',{});st.now=start+60000;assert.equal(G.apply(A,'evEnter',{id:'crimson'}).ok,false,'no way back in after the start');}
   {const {A,s}=mk(400,at);A.keys=1;assert.ok(G.apply(A,'reset',{}).ok);s.lvl=100;assert.match(G.apply(A,'evEnter',{id:'crimson'}).msg,/ריסט/);assert.equal(A.keys,1);}
-  {const a=mk(100,at);a.A.keys=1;G.apply(a.A,'evEnter',{id:'crimson'});a.st.now+=20000;const x=G.apply(a.A,'tick',{ev:1,kills:500}),ez=a.s.evZ;
-    const b=mk(100,at);G.apply(b.A,'travel',{z:ez});b.st.now+=20000;const y=G.apply(b.A,'tick',{z:ez,kills:500});
+  {const a=mk(100,at);a.A.keys=1;G.apply(a.A,'evEnter',{id:'crimson'});while(a.st.now<start-30000){a.st.now+=25000;G.apply(a.A,'tick',{ev:1,kills:0});}a.st.now=start+1000;G.apply(a.A,'tick',{ev:1,kills:0});a.st.now+=20000;const x=G.apply(a.A,'tick',{ev:1,kills:500}),ez=a.s.evZ;
+    const b=mk(100,start+1000);G.apply(b.A,'travel',{z:ez});b.st.now+=20000;const y=G.apply(b.A,'tick',{z:ez,kills:500});
     assert.ok(x.kills>y.kills*1.5,'the horde dies faster: '+x.kills+' vs '+y.kills);assert.ok(Math.abs(x.base/x.kills-y.base/y.kills)<1e-9,'and pays the normal experience per kill');}
-  const t7=run(335);assert.ok(t7.r.ok);assert.equal(t7.rec.tr,7);assert.match(t7.r.rt,/^10 רמות/);assert.ok(t7.gained>=9);
+  const t7=run(335);assert.equal(t7.e.tier,7);assert.ok(t7.got>=400);
 });
 test('wear the best: strongest piece per slot from the shared bag; gear worn by another character is not touched',()=>{
   const {A}=fresh(),s=A.chars[0];A.inv=[];
@@ -423,7 +422,7 @@ test("the day's trial: sized to the character, timed by the server, a better med
 
 test('a bought auto reset: only while away, the character resets at the top, stays on its map and keeps training',()=>{
   const now=clock(1.8e12);G.setEnv(()=>.5,now);const A=G.newAccount();G.apply(A,'create',{name:'Auto',cls:'blade'},{});const s=A.chars[0];A.open=G.BASEZ-1;
-  A.cred=14;assert.ok(!G.apply(A,'buy',{shop:'reset',k:'areset'},{}).ok,'it costs marks');A.cred=15;assert.ok(G.apply(A,'buy',{shop:'reset',k:'areset'},{}).ok);assert.equal(A.areset,G.ARESET_PACK);assert.equal(A.cred,0);
+  A.cred=74;assert.ok(!G.apply(A,'buy',{shop:'reset',k:'areset'},{}).ok,'it costs marks');A.cred=75;assert.ok(G.apply(A,'buy',{shop:'reset',k:'areset'},{}).ok);assert.equal(A.areset,G.ARESET_PACK);assert.equal(A.cred,0);
   s.lvl=G.CAP-1;s.xp=0;s.stats.str=4000;s.stats.vit=2000;s.zone=20;s.last=now();const r0=s.resets,rep=G.offline(s,6*3600);
   assert.ok(rep.resets>=1,'reset while away: '+JSON.stringify(rep).slice(0,120));assert.equal(s.resets,r0+rep.resets);assert.equal(A.areset,G.ARESET_PACK-rep.resets);assert.equal(s.zone,20,'stays on its map');assert.ok(s.lvl>1&&s.lvl<=G.CAP,'and went on training: '+s.lvl);
   assert.equal(A.cred,Array.from({length:rep.resets},(_,i)=>Math.floor((10+2*Math.min(r0+i+1,10))/2)).reduce((a,b)=>a+b,0),'half the marks of an ordinary reset');
@@ -454,5 +453,29 @@ test('pets: rare in boxes, timed from the first wear, a small bonus, sell what t
   const rep2={};assert.equal(G.gainItem(s,G.makeItem(s,'h',1,0,0),rep2),'left','no pet, no fetching');
   const ci=G.cleanItem({s:'y',r:4,t:9,p:15,af:[['dmg',999]],dur:1e15});assert.equal(ci.t,1);assert.equal(ci.p,0);assert.deepEqual(ci.af,G.PET_AF[4]);assert.equal(ci.dur,90*864e5,'a traded pet is rebuilt from its rarity alone');
   x=0;A.boxes=1;const b=G.apply(A,'openBox',{k:''},{});assert.ok(b.ok&&b.box.pet&&b.box.it.s==='y');
+  G.setEnv(Math.random,Date.now);
+});
+
+test('castle siege: walls and gates stop movement, switches then the crown take the castle, the fallen return',()=>{
+  let seed=3;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};G.setEnv(rnd,()=>1.8e12);
+  const P=(n,m)=>G.cleanPlayer(n,{n:n,c:'blade',l:100,d:400*(m||1),a:1.2,h:5000*(m||1),f:200,cr:.1});
+  const B=G.sgNew(rnd,{d:400,a:1.2,h:5000,f:200});assert.equal(B.f.length,G.SG.posts.length,'the castle starts in the hands of its own guards');assert.equal(B.sg.holder,0);
+  const a=G.sgAdd(B,P('a',30),7,'AA',rnd),b=G.sgAdd(B,P('b',30),7,'AA',rnd),e=G.sgAdd(B,P('e',30),9,'BB',rnd);B.t=0;const fa=B.f[a],fb=B.f[b],fe=B.f[e];
+  assert.ok(fa.y>300,'attackers start in the camp outside');G.sgMove(B,fa,0,0);assert.ok(fa.y>130,'a standing gate stops him: '+fa.y);
+  fe.x=fa.x+30;fe.y=fa.y;fb.x=fa.x-30;fb.y=fa.y;const h=G.sgAct(B,a,'atk',rnd);assert.equal(h.to,e,'a guildmate is never hit, an enemy is');
+  fe.x=fa.x;fe.y=fa.y-90;B.t+=2;assert.ok(G.sgAct(B,a,'atk',rnd).gate===0,'an enemy behind the gate is out of reach: the blow lands on the gate');
+  fe.x=600;fe.y=400;let n=0;while(B.sg.gate[0]>0&&n++<300){B.t+=1.3;G.sgAct(B,a,'atk',rnd);}assert.ok(B.sg.gate[0]<=0&&n>10,'with no enemy in reach the blows fall on the gate until it breaks: '+n);
+  G.sgMove(B,fa,0,0);assert.ok(Math.abs(fa.y)<2,'and then the way is open');const wx=fa.x;G.sgMove(B,fa,-600,-300);assert.ok(fa.x>-440,'the wall still stands: '+fa.x);
+  for(const f of B.f)if(f.g===0){f.alive=false;f.resp=1e9;} // the guards are down for now
+  fa.x=G.SG.sw[0][0];fa.y=G.SG.sw[0][1];fb.x=G.SG.sw[1][0];fb.y=G.SG.sw[1][1];let ev=[];for(let i=0;i<20;i++)ev=ev.concat(G.sgStep(B,.2,rnd));assert.deepEqual(B.sg.sw,[7,7]);assert.equal(ev.filter(x=>x.k==='sw').length,2);
+  fe.alive=true;fe.x=G.SG.crown[0];fe.y=G.SG.crown[1];for(let i=0;i<100;i++)G.sgStep(B,.2,rnd);assert.equal(B.sg.holder,0,'the crown ignores a guild that does not hold both switches');
+  fa.x=G.SG.crown[0];fa.y=G.SG.crown[1];for(let i=0;i<100;i++)G.sgStep(B,.2,rnd);assert.equal(B.sg.holder,0,'and stays put while two guilds stand on it');
+  fe.x=600;fe.y=400;ev=[];for(let i=0;i<80;i++)ev=ev.concat(G.sgStep(B,.2,rnd));assert.equal(B.sg.holder,7,'alone on the crown for long enough, the castle is theirs');assert.ok(ev.some(x=>x.k==='taken'&&x.g===7));
+  assert.deepEqual(B.sg.gate,G.SG.gates.map(()=>G.SG.gateHp),'the gates are whole again');assert.ok(B.f.every(f=>f.g!==0||!f.alive),'the guards are gone for good');
+  B.t+=1;fe.x=fa.x+20;fe.y=fa.y;fe.at.atk=0;assert.equal(G.sgAct(B,a,'atk',rnd).to,e);fe.hp=.0001;fa.at.s3=0;const k=G.sgAct(B,a,'s3',rnd);assert.ok(k.dead&&!fe.alive&&fe.resp>B.t);
+  for(let i=0;i<60;i++)G.sgStep(B,.2,rnd);assert.ok(fe.alive&&fe.hp===1&&fe.y>300,'the fallen return at their camp');
+  fe.pots=0;fe.x=G.SG.shops[0][0];fe.y=G.SG.shops[0][1];for(let i=0;i<20;i++)G.sgStep(B,.2,rnd);assert.ok(fe.pots>=2&&fe.bought===fe.pots,'potions are bought by standing at the seller');
+  B.sg.time=B.t+1;for(let i=0;i<10;i++)G.sgStep(B,.2,rnd);assert.ok(B.over);
+  const A=G.newAccount();G.apply(A,'create',{name:'Sg',cls:'blade'},{});A.gold=1200;const c0=A.coins;G.sgReward(A,true,2);assert.equal(A.coins,c0+30);assert.equal(A.gold,200);G.sgReward(A,false,5);assert.equal(A.gold,0,'never below nothing');assert.equal(A.coins,c0+40);
   G.setEnv(Math.random,Date.now);
 });
