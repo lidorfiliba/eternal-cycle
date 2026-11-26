@@ -106,7 +106,7 @@ const PASS_MAX=60,PASS_STEP=200,PASS_DAY=250;
 function passAdd(s,n){const g=Math.max(0,Math.min(n,PASS_DAY-(s.daily.pxp||0)));s.daily.pxp=(s.daily.pxp||0)+g;s.pass.xp+=g;}
 
 const AFK=.7, SKLV=[1,20,60,110,180,260], SKCD=[4,12,30,10,25,45];
-const SHARED=['gold','gems','cred','coins','boxes','sboxes','charms','bless','bonusPts','boost','inv','nid','kills','killAcc','pass','day','daily','rating','tickets','autoEq','autoSell','open','zk','login','jewels','prem','vip','shards','keys','feathers','pick','week','sq','eggs'];
+const SHARED=['gold','gems','cred','coins','boxes','sboxes','charms','bless','bonusPts','boost','inv','nid','kills','killAcc','pass','day','daily','rating','tickets','autoEq','autoSell','open','zk','login','jewels','prem','vip','shards','keys','feathers','pick','week','sq','eggs','areset'];
 function newAccount(){
   return {v:2,gold:0,gems:3,cred:0,coins:0,boxes:1,sboxes:0,charms:0,bless:0,bonusPts:0,boost:0,inv:[],nid:1,kills:0,killAcc:0,
     pass:{key:seasonKey(),xp:0,claimed:0},day:dayKey(),daily:{kills:0,resets:0,wins:0,ups:0,boss:0,ev:0,done:{}},rating:1000,tickets:5,
@@ -299,7 +299,7 @@ function offline(s,secs){
   const rep={secs:secs,kills:0,levels:0};let left=Math.min(secs,12*3600),now=s.last,guard=0;
   const perZone={};
   if(afkZone(s)<0)return rep;
-  while(left>0.5&&guard++<900){
+  while(left>0.5&&guard++<(s.areset>0?6000:900)){
     s._now=now;const c=calc(s),zi=afkZone(s),zf=zoneInfo(zi,c,AFK,afkFloor(s,zi));
     let step=left;
     if(s.boost>now)step=Math.min(step,(s.boost-now)/1000+0.01);
@@ -307,6 +307,7 @@ function offline(s,secs){
     perZone[zi]=(perZone[zi]||0)+zf.kps*step;
     rep.levels+=addXp(s,zf.xps*step);
     left-=step;now+=step*1000;
+    if(s.lvl>=CAP&&(s.areset|0)>0&&left>1){autoReset(s);rep.resets=(rep.resets||0)+1;}
   }
   delete s._now;
   const c=calc(s),fz=zs(0,afkFloor(s,afkZone(s)));c.goldM*=fz.gold;c.dropM*=fz.drop;
@@ -320,6 +321,18 @@ function doReset(s){
   // Stats and unspent points stay: every run through the levels adds five points a level on top of what was there.
   s.resets++;s.lvl=1;s.xp=0;s.cred+=g;s.coins+=5;passAdd(s,150);s.daily.resets++;if(s.week)s.week.resets=(s.week.resets||0)+1;s.zone=-1;s.floor=0;
   if(s.autoPts)autoAlloc(s);return true;
+}
+// A bought auto reset: used only while the player is away. The character resets by itself at the top level, stays on
+// its map and keeps training (the map falls back to what a low level can fight, and climbs again). It pays half the marks.
+const ARESET_PACK=3,ARESET_MAX=30;
+function autoReset(s){const z=s.zone,f=s.floor,c0=s.cred;if(!doReset(s))return false;s.cred=c0+Math.floor((s.cred-c0)/2);s.zone=z;s.floor=f;s.areset=(s.areset|0)-1;return true;}
+// How many seconds of training away from the game until the current character stands at the top level with no auto
+// reset left to spend, or null if that will not happen within the away limit. Works on a copy; changes nothing.
+function afkEta(A){
+  const o=adopt(JSON.parse(JSON.stringify(A)));if(!o)return null;const s=o.chars[o.cur];if(!s||afkZone(s)<0)return null;let t=0,guard=0;
+  while(guard++<6000){if(s.lvl>=CAP){if((s.areset|0)>0){autoReset(s);continue;}return t;}
+    const c=calc(s),zi=afkZone(s),zf=zoneInfo(zi,c,AFK,afkFloor(s,zi));if(!(zf.xps>0))return null;t+=(need(s.lvl)-s.xp)/zf.xps;if(t>12*3600)return null;addXp(s,need(s.lvl)-s.xp+1e-6);}
+  return null;
 }
 function upCost(it){return {gems:1+Math.floor(it.p/3),gold:500*(it.s==='g'?it.t*2:it.t)*(it.p+1)};}
 function upChance(it){return it.p<6?1:UPCH[it.p-6];}
@@ -439,18 +452,30 @@ function liveAct(D,i,k,rnd){
   o.hp=[D.f[0].hp,D.f[1].hp];liveOver(D);return o;
 }
 function liveOver(D){if(!D.over&&(D.f[0].hp<=0||D.f[1].hp<=0||D.t>=DUEL_LIVE.time)){D.over=1;D.win=D.f[1].hp<=0?0:D.f[0].hp<=0?1:(D.f[0].hp>=D.f[1].hp?0:1);}return D.over;}
-// The Last Circle: a live fight of up to eight, held on the game server for players who are connected and came to
-// the arena during sign-up. Empty places are taken by fighters the server plays. The ring closes; the last one
-// standing wins. Positions: BR.W across, depth z 0..1. Health is a fraction of each fighter's own pool.
-const BR={W:900,MAX:8,FILL:6,TIME:140,HOLD:15,SIGN:2,pots:2,ring:.09};
+// The Last Circle: a live battle royale of up to eight, held on the game server for players who are connected and came
+// to the arena during sign-up. Empty places are taken by fighters the server plays. Everyone starts equal, whatever
+// they wear outside: strength comes from what is found on the ground (weapons, armor, boots, potions). The field is
+// a wide round plain; a circle closes on its middle and burns whoever is outside. Positions are x,y from the middle.
+const BR={R:700,MAX:8,FILL:6,TIME:150,HOLD:20,END:60,SIGN:2,pots:1,ring:.1,hit:.032,T:.6,spd:150,pick:30,loot0:24,every:6,drop:40,
+  cls:{blade:1,storm:.75,hunter:.7},wMax:3,aMax:3,bMax:2,pMax:4};
+const brDist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const brSpeed=f=>BR.spd*(1+.12*(f.bt|0));
+function brSpot(B,rnd,rad){const a=rnd()*6.2832,r=Math.sqrt(rnd())*rad;return [Math.round(Math.cos(a)*r),Math.round(Math.sin(a)*r)];}
+function brLoot(B,rnd,k,x,y){const q=rnd(),it={id:B.lid++,x:x,y:y,k:k||(q<.3?'w':q<.6?'a':q<.85?'p':'b')};B.loot.push(it);return it;}
 function brNew(ps,rnd){
   const n=ps.length,ord=ps.map((_,i)=>i);for(let i=n-1;i>0;i--){const j=Math.floor(rnd()*(i+1)),t=ord[i];ord[i]=ord[j];ord[j]=t;}
-  return {t:-4,over:0,out:[],f:ps.map((p,i)=>({id:p.id,n:p.n,c:CLS[p.c]?p.c:'blade',bot:!!p.bot,x:BR.W*(ord[i]+.5)/n,z:(ord[i]%3)/2,hp:1,d:p.d,T:clamp(1/Math.max(.3,p.a),.3,1.2),pool:Math.max(1,p.h*5),def:p.f,cr:p.cr,
-    at:{atk:0,s0:1,s1:3,s2:0,s3:8,dash:0,pot:0},stun:0,sh:0,inv:0,alive:true,kills:0,pots:BR.pots,chain:0,face:1,think:rnd()*.6}))};
+  const B={t:-4,over:0,out:[],loot:[],lid:1,nextLoot:BR.every,dropped:false,f:ps.map((p,i)=>{const a=ord[i]/n*6.2832+rnd()*.3;return {id:p.id,n:p.n,c:CLS[p.c]?p.c:'blade',bot:!!p.bot,x:Math.round(Math.cos(a)*BR.R*.78),y:Math.round(Math.sin(a)*BR.R*.78),hp:1,
+    at:{atk:0,s0:1,s1:3,s2:0,s3:8,dash:0,pot:0},stun:0,sh:0,inv:0,alive:true,kills:0,pots:BR.pots,chain:0,face:1,think:rnd()*.6,w:0,ar:0,bt:0};})};
+  for(let i=0;i<BR.loot0;i++){const p=brSpot(B,rnd,BR.R*.7);brLoot(B,rnd,null,p[0],p[1]);}
+  return B;
 }
 const brAlive=B=>B.f.filter(f=>f.alive).length;
-function brRing(B){const u=clamp((B.t-BR.HOLD)/(BR.TIME-20-BR.HOLD),0,1),half=BR.W/2*(1-u);return [BR.W/2-half,BR.W/2+half];}
-function brKill(B,j,by){const e=B.f[j];if(!e.alive)return;e.alive=false;e.hp=0;B.out.push(j);if(by>=0&&B.f[by])B.f[by].kills++;if(brAlive(B)<=1)B.over=1;}
+function brRing(B){const u=clamp((B.t-BR.HOLD)/(BR.TIME-20-BR.HOLD),0,1);return BR.R+(BR.END-BR.R)*u;} // the circle's radius now
+function brKill(B,j,by){const e=B.f[j];if(!e.alive)return;e.alive=false;e.hp=0;B.out.push(j);if(by>=0&&B.f[by])B.f[by].kills++;
+  B.loot.push({id:B.lid++,x:Math.round(e.x),y:Math.round(e.y),k:e.w>0?'w':e.ar>0?'a':'p'});B.fresh=(B.fresh||[]).concat([B.loot[B.loot.length-1]]);if(brAlive(B)<=1)B.over=1;}
+// What a fighter may take: nothing he already has at its limit, so it stays for someone else.
+const brCan=(f,k)=>k==='w'?f.w<BR.wMax:k==='W'?f.w<BR.wMax||f.ar<BR.aMax:k==='a'?f.ar<BR.aMax:k==='p'?f.pots<BR.pMax:f.bt<BR.bMax;
+function brTake(f,k){if(k==='w')f.w++;else if(k==='W'){f.w=BR.wMax;f.ar=Math.min(BR.aMax,f.ar+1);}else if(k==='a')f.ar++;else if(k==='p')f.pots++;else f.bt++;}
 function brAct(B,i,k,rnd){
   const me=B.f[i],t=B.t,K=DUEL_LIVE;if(B.over||t<0||!me||!me.alive||me.stun>t||!(k in me.at)||me.at[k]>t)return null;
   const o={by:i,k:k,to:-1,dm:0,crit:false,miss:false,stun:false,dead:false,heal:0};
@@ -458,31 +483,42 @@ function brAct(B,i,k,rnd){
   if(k==='dash'){me.at.dash=t+K.dash.cd;me.inv=t+K.dash.inv;return o;}
   if(k==='pot'){if(me.pots<1)return null;me.at.pot=t+K.potCd;me.pots--;me.hp=Math.min(1,me.hp+K.heal);o.heal=K.heal;return o;}
   const rng=LIVE_RNG[me.c]+(k==='atk'?14:k==='s3'?60:k==='s0'?40:20);let j=-1,bd=1e9;
-  B.f.forEach((e,q)=>{if(q===i||!e.alive)return;const d=Math.abs(e.x-me.x);if(d<=rng&&Math.abs(e.z-me.z)<=LIVE_LANE&&d<bd){bd=d;j=q;}});if(j<0)return null;
-  const e=B.f[j];let mult;if(k==='atk'){me.at.atk=t+me.T;me.chain=(me.chain+1)%4;mult=me.T/1.5*(me.chain===0?1.5:.84)*1.5;}else{const sk=K.sk[k==='s0'?0:k==='s1'?1:3];me.at[k]=t+sk.cd;mult=sk.m;}
-  o.to=j;me.face=e.x>=me.x?1:-1;if(e.inv>t){o.miss=true;return o;}
-  o.crit=rnd()<me.cr;let dm=clamp(me.d*300/(300+e.def)/e.pool,.022,.25)*mult*(o.crit?1.5:1)*(.9+rnd()*.2);if(e.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}
+  B.f.forEach((e,q)=>{if(q===i||!e.alive)return;const d=brDist(e,me);if(d<=rng&&d<bd){bd=d;j=q;}});if(j<0)return null;
+  const e=B.f[j];let mult;if(k==='atk'){me.at.atk=t+BR.T;me.chain=(me.chain+1)%4;mult=me.chain===0?1.5:1;}else{const sk=K.sk[k==='s0'?0:k==='s1'?1:3];me.at[k]=t+sk.cd;mult=sk.m*1.6;}
+  o.to=j;if(Math.abs(e.x-me.x)>4)me.face=e.x>=me.x?1:-1;if(e.inv>t){o.miss=true;return o;}
+  o.crit=rnd()<.12;let dm=BR.hit*BR.cls[me.c]*(1+.35*me.w)*(1-.15*e.ar)*mult*(o.crit?1.5:1)*(.9+rnd()*.2);if(e.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}
   e.hp-=dm;o.dm=dm;if(k==='s1'&&!o.guard){e.stun=t+K.sk[1].stun;o.stun=true;}if(e.hp<=0){brKill(B,j,i);o.dead=true;}return o;
 }
-// One step of the server's clock: the ring burns whoever stands outside it, and the server's own fighters move and act.
+// One step of the server's clock: new finds appear, whoever walks over one takes it, the circle burns whoever is
+// outside, and the server's own fighters look for gear, close in and fight.
 function brStep(B,dt,rnd){
   const ev=[];if(B.over)return ev;B.t+=dt;if(B.t<0)return ev;const R=brRing(B),t=B.t;
-  B.f.forEach((f,i)=>{if(!f.alive)return;if(f.x<R[0]||f.x>R[1]){f.hp-=BR.ring*dt;if(f.hp<=0){brKill(B,i,-1);ev.push({by:-1,k:'ring',to:i,dead:true});}}});
-  B.f.forEach((f,i)=>{if(!f.alive||!f.bot||B.over||f.stun>t)return;let j=-1,bd=1e9;B.f.forEach((e,q)=>{if(q===i||!e.alive)return;const d=Math.abs(e.x-f.x)+Math.abs(e.z-f.z)*120;if(d<bd){bd=d;j=q;}});if(j<0)return;
-    const e=B.f[j],rng=LIVE_RNG[f.c],dx=e.x-f.x,mid=(R[0]+R[1])/2,sp=95*dt;f.face=dx>=0?1:-1;
-    if(f.x<R[0]+25||f.x>R[1]-25)f.x+=Math.sign(mid-f.x)*sp;else if(Math.abs(dx)>rng)f.x+=Math.sign(dx)*sp;else if(Math.abs(dx)<rng*.45&&rng>100)f.x-=Math.sign(dx)*sp*.6;
-    f.x=clamp(f.x,10,BR.W-10);const dz=e.z-f.z;if(Math.abs(dz)>.1)f.z=clamp(f.z+Math.sign(dz)*.5*dt,0,1);
-    if((f.think-=dt)>0)return;f.think=.25+rnd()*.35;
+  if(B.fresh){for(const it of B.fresh)ev.push({k:'spawn',l:[it.id,it.x,it.y,it.k]});B.fresh=null;}
+  if(t>=B.nextLoot){B.nextLoot=t+BR.every;const p=brSpot(B,rnd,R*.85),it=brLoot(B,rnd,null,p[0],p[1]);ev.push({k:'spawn',l:[it.id,it.x,it.y,it.k]});}
+  if(!B.dropped&&t>=BR.drop){B.dropped=true;const it=brLoot(B,rnd,'W',0,0);ev.push({k:'spawn',l:[it.id,0,0,'W'],big:1});}
+  B.f.forEach((f,i)=>{if(!f.alive)return;
+    for(let q=B.loot.length-1;q>=0;q--){const it=B.loot[q];if(Math.abs(it.x-f.x)<BR.pick&&Math.abs(it.y-f.y)<BR.pick&&brCan(f,it.k)){brTake(f,it.k);B.loot.splice(q,1);ev.push({k:'pick',by:i,id:it.id,it:it.k});}}
+    if(Math.hypot(f.x,f.y)>R){f.hp-=BR.ring*dt;if(f.hp<=0){brKill(B,i,-1);ev.push({by:-1,k:'ring',to:i,dead:true});}}});
+  B.f.forEach((f,i)=>{if(!f.alive||!f.bot||B.over||f.stun>t)return;let j=-1,bd=1e9;B.f.forEach((e,q)=>{if(q===i||!e.alive)return;const d=brDist(e,f);if(d<bd){bd=d;j=q;}});if(j<0)return;
+    const e=B.f[j],rng=LIVE_RNG[f.c],sp=brSpeed(f)*.9*dt,far=Math.hypot(f.x,f.y);let tx=e.x,ty=e.y,go=bd>rng*.85,back=false;
+    let li=null,ld=1e9;for(const it of B.loot){if(!brCan(f,it.k)||Math.hypot(it.x,it.y)>R)continue;const d=brDist(it,f);if(d<ld){ld=d;li=it;}}
+    if(far>R-30){tx=0;ty=0;go=true;}                                            // first of all, stay inside
+    else if(li&&(t<30&&bd>rng||ld<260&&bd>rng*1.1||f.w<1&&ld<bd)){tx=li.x;ty=li.y;go=true;}      // gear nearby, or unarmed: fetch it
+    else if(f.hp<.3&&f.pots<1&&e.w>=f.w){tx=f.x-(e.x-f.x);ty=f.y-(e.y-f.y);go=true;back=true;} // hurt and outgunned: run
+    else if(rng>100&&bd<rng*.4){tx=f.x-(e.x-f.x);ty=f.y-(e.y-f.y);go=true;back=true;}
+    else if(bd>420&&t<70){if(li){tx=li.x;ty=li.y;go=true;}else go=false;}                 // nobody near yet: keep gearing up
+    if(go){const dx=tx-f.x,dy=ty-f.y,d=Math.hypot(dx,dy)||1,st=Math.min(d,sp);f.x+=dx/d*st;f.y+=dy/d*st;if(Math.abs(dx)>4)f.face=(back?-dx:dx)>=0?1:-1;const fr=Math.hypot(f.x,f.y);if(fr>BR.R){f.x*=BR.R/fr;f.y*=BR.R/fr;}}
+    if((f.think-=dt)>0)return;f.think=.2+rnd()*.3;
     const tryK=k=>{const o=brAct(B,i,k,rnd);if(o)ev.push(o);return !!o;};
-    if(f.hp<.35&&f.pots>0&&tryK('pot'))return;if(f.hp<.5&&rnd()<.25&&tryK('s2'))return;
+    if(f.hp<.4&&f.pots>0&&tryK('pot'))return;if(f.hp<.5&&bd<rng&&rnd()<.25&&tryK('s2'))return;
     if(rnd()<.3&&(tryK('s3')||tryK('s1')||tryK('s0')))return;tryK('atk');});
   if(!B.over&&B.t>=BR.TIME){B.over=1;}
   return ev;
 }
 // Places, winner first: whoever still stands (most health first), then the fallen from last to first.
 function brRank(B){const a=B.f.map((f,i)=>i).filter(i=>B.f[i].alive).sort((x,y)=>B.f[y].hp-B.f[x].hp);return a.concat(B.out.slice().reverse());}
-function brBots(ps,n,rnd){const avg=k=>ps.reduce((a,p)=>a+p[k],0)/ps.length,cl=Object.keys(CLS),out=[];
-  for(let i=0;i<n;i++){const m=.6+rnd()*.35;out.push({id:'bot'+i,bot:true,n:BOTN[i%BOTN.length],c:cl[Math.floor(rnd()*cl.length)],l:Math.round(avg('l')),r:0,p:Math.round(avg('p')*m),d:avg('d')*m,a:avg('a'),h:avg('h')*m,f:avg('f')*m,cr:avg('cr'),cd:avg('cd'),w:null,ar:null,g:null,rt:1000,sp:[0,0]});}return out;}
+function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
+  for(let i=0;i<n;i++)out.push({id:'bot'+i,bot:true,n:BOTN[i%BOTN.length],c:cl[Math.floor(rnd()*cl.length)],l:ps[0]?ps[0].l:1,r:0,p:ps[0]?ps[0].p:1,d:10,a:1,h:100,f:0,cr:.05,cd:2,w:null,ar:null,g:null,rt:1000,sp:[0,0]});return out;}
 // The prize, by place. An ancient chest opens on the spot: a sure ancient set piece when at least two players fought
 // (legendary or ancient when the winner was alone with the server's fighters), plus a jewel.
 function brReward(A,place,humans){
@@ -554,7 +590,7 @@ function siegeInfo(now){
 const PARTY_XP=.05; // extra XP for each active party member on the same map beyond the second player, party of up to 5
 const partyXp=n=>PARTY_XP*Math.max(0,Math.min(4,n|0)-1); // extra XP per active party member in the same map, up to 3
 const GOLD_SHOP=[{k:'gem',t:'אבן נשמה',d:'חומר לשדרוג ציוד',cost:5000},{k:'box',t:'תיבת אוצר',d:'פריט מהמפה הגבוהה שפתחת, אבנים או זהב',cost:40000},{k:'ticket',t:'כרטיס זירה',d:'קרב נוסף',cost:10000},{k:'scroll',t:'מגילת ניסיון',d:'50% יותר ניסיון למשך 30 דקות',cost:25000}];
-const RESET_SHOP=[{k:'charm',t:'3 קמעות הגנה',d:'שדרוג שנכשל לא מוריד דרגה',cost:4},{k:'bless',t:'ברכת נצח',d:'5% יותר ניסיון לתמיד לכל הדמויות, עד 10 פעמים',cost:8},{k:'pts',t:'50 נקודות סטט',d:'לדמות הנוכחית, נשארות לתמיד',cost:10},{k:'jewel',t:'אבן שלמות',d:'מוסיפה אופציה חסרה לפריט אקסלנט',cost:6},{k:'abox',t:'תיבה עתיקה',d:'פריט אגדי או עתיק מהמפה הגבוהה שפתחת',cost:12},{k:'feather',t:'נוצת נצח',d:'מפתחת כנפיים +15 לדרגה הבאה',cost:12}];
+const RESET_SHOP=[{k:'charm',t:'3 קמעות הגנה',d:'שדרוג שנכשל לא מוריד דרגה',cost:4},{k:'bless',t:'ברכת נצח',d:'5% יותר ניסיון לתמיד לכל הדמויות, עד 10 פעמים',cost:8},{k:'pts',t:'50 נקודות סטט',d:'לדמות הנוכחית, נשארות לתמיד',cost:10},{k:'jewel',t:'אבן שלמות',d:'מוסיפה אופציה חסרה לפריט אקסלנט',cost:6},{k:'abox',t:'תיבה עתיקה',d:'פריט אגדי או עתיק מהמפה הגבוהה שפתחת',cost:12},{k:'feather',t:'נוצת נצח',d:'מפתחת כנפיים +15 לדרגה הבאה',cost:12},{k:'areset',t:'3 ריסטים אוטומטיים',d:'כשהדמות מגיעה לרמה 400 בזמן שאתה לא מחובר, היא עושה ריסט לבד וממשיכה להתאמן. ריסט כזה נותן חצי מהאותות',cost:15}];
 // Paid credits: the packs on sale (price in shekels) and what credits buy. Credits are added only by the server, after a payment is confirmed.
 const PACKS=[{k:'p1',credits:100,ils:10,note:''},{k:'p2',credits:550,ils:50,note:'10% תוספת'},{k:'p3',credits:1200,ils:100,note:'20% תוספת'},{k:'p4',credits:2600,ils:200,note:'30% תוספת'}];
 const PREM_SHOP=[{k:'vip7',t:'מעמד נצח לשבוע',d:'15% יותר ניסיון ו-15% יותר שלל, 7 ימים',cost:300},{k:'scroll3',t:'3 מגילות ניסיון',d:'שעה וחצי של 50% יותר ניסיון',cost:60},
@@ -591,7 +627,7 @@ const EVENTS=[
  {id:'square',n:'כיכר התוהו',d:'ניסיון כפול לכולם. חסל 150 מפלצות לפרס',when:'כל שעתיים, בחצי',every:120,at:30,dur:15,mod:{xp:2},obj:['k',150],rw:{lv:6,boxes:1},rt:'6 רמות ותיבת אוצר'},
  {id:'invasion',n:'פלישת הזהב',d:'זהב כפול מכל מפלצת. חסל 60 לפרס',when:'כל שעה, ב-20',every:60,at:20,dur:8,mod:{gold:2},obj:['k',60],rw:{gems:2,coins:4},rt:'2 אבני נשמה ו-4 מטבעות עונה'},
  {id:'world',n:'בוס העולם',d:'בוס אחד לכל השרת. כל חיסול שלך, בכל מפה, פוגע בו, לפי הכוח שלך. הפרס לפי החלק שלך בנזק',when:'כל שלוש שעות, ב-45',every:180,at:45,dur:12,world:1,rt:'נוצות נצח, תיבות עונה ומטבעות'},
- {id:'last',n:'המעגל האחרון',d:'קרב הישרדות חי של עד שמונה לוחמים. משתתף רק מי שמחובר ומשתגר לזירה בשתי הדקות הראשונות. הטבעת נסגרת, והאחרון שנשאר עומד זוכה',when:'כל שעתיים, ב-10',every:120,at:10,dur:6,br:1,rt:'תיבה עתיקה, תכשיט, נוצת נצח ו-40 מטבעות עונה'},
+ {id:'last',n:'המעגל האחרון',d:'קרב הישרדות חי של עד שמונה לוחמים בשדה עגול ורחב. משתתף רק מי שמחובר ומשתגר לזירה בשתי הדקות הראשונות. כולם מתחילים שווים, הציוד מפוזר על הרצפה, המעגל נסגר, והאחרון שנשאר עומד זוכה',when:'כל שעתיים, ב-10',every:120,at:10,dur:6,br:1,rt:'תיבה עתיקה, תכשיט, נוצת נצח ו-40 מטבעות עונה'},
  {id:'rift',n:'קרע המעמקים',d:'סיכוי השלל גדל בחצי. חסל 70 לפרס',when:'כל שעה, ב-33',every:60,at:33,dur:8,mod:{drop:1.5},obj:['k',70],rw:{boxes:1},rt:'תיבת אוצר'},
  {id:'storm',n:'טירת הסערה',d:'הבס בוס מפה בזמן האירוע',when:'כל שעה, רבע לפני',every:60,at:45,dur:10,obj:['b',1],rw:{sboxes:1,gems:2},rt:'תיבת עונה ו-2 אבני נשמה'},
  {id:'quiz',n:'חידון המעגל',d:'שאלה אחת על המשחק, ניסיון אחד',when:'כל שלוש שעות, ורבע',every:180,at:15,dur:6,obj:['q',1],rw:{gems:4,coins:6},rt:'4 אבני נשמה ו-6 מטבעות עונה'},
@@ -829,9 +865,9 @@ function apply(A,kind,args,ctx){
       const o=list&&list.find(x=>x.k===k);if(!o)return fail('המוצר לא קיים');if(!((A[cur]||0)>=o.cost))return fail('אין מספיק');
       if(k==='abox'){A[cur]-=o.cost;r.box=openBox(S,'a');}
       else{
-        if(k==='bless'&&A.bless>=10)return fail('הגעת למקסימום');
+        if(k==='bless'&&A.bless>=10)return fail('הגעת למקסימום');if(k==='areset'&&(A.areset|0)+ARESET_PACK>ARESET_MAX)return fail('הגעת למקסימום');
         A[cur]-=o.cost;
-        if(k==='feather')A.feathers=(A.feathers||0)+1;else if(k==='gem')A.gems++;else if(k==='gem5')A.gems+=5;else if(k==='sbox')A.sboxes++;else if(k==='box')A.boxes++;else if(k==='ticket')A.tickets++;
+        if(k==='areset')A.areset=(A.areset|0)+ARESET_PACK;else if(k==='feather')A.feathers=(A.feathers||0)+1;else if(k==='gem')A.gems++;else if(k==='gem5')A.gems+=5;else if(k==='sbox')A.sboxes++;else if(k==='box')A.boxes++;else if(k==='ticket')A.tickets++;
         else if(k==='scroll')A.boost=Math.max(A.boost,now)+18e5;else if(k==='charm')A.charms+=3;else if(k==='bless')A.bless++;else if(k==='jewel')A.jewels=(A.jewels||0)+1;
         else if(k==='scroll3')A.boost=Math.max(A.boost,now)+3*18e5;else if(k==='vip7')A.vip=Math.max(A.vip||0,now)+7*864e5;
         else if(k==='pts'){A.bonusPts+=50;S.pts+=50;if(S.autoPts)autoAlloc(S);}
@@ -914,4 +950,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {brDist,brSpeed,brCan,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

@@ -418,10 +418,11 @@ test('the last circle over the socket: only connected players who joined fight, 
     srv.live.brBegin();const sa=await a.wait('brStart'),sb=await b.wait('brStart');assert.equal(sa.f.length,6,'empty places are filled');assert.equal(sa.me,0);assert.equal(sb.me,1);assert.equal(sa.f[1].id,undefined);assert.equal(sa.f.filter(f=>f.bot).length,4);
     c.send({t:'brJoin'});assert.equal((await c.wait('brNo')).t,'brNo','too late to join');
     const br=srv.live.brNow(),B=br.B;a.send({t:'brAct',k:'atk'});await new Promise(r=>setTimeout(r,120));assert.equal(B.f[1].hp,1,'no hits during the countdown');
-    B.t=1;for(let i=2;i<6;i++){B.f[i].x=880;B.f[i].z=0;B.f[i].think=99;}B.f[0].x=300;B.f[0].z=.5;B.f[1].x=330;B.f[1].z=.5;
+    assert.ok(sa.loot.length>=10&&sa.xy.length===6,'the finds on the ground are sent at the start');B.t=1;B.loot=[];for(let i=2;i<6;i++){B.f[i].x=-600;B.f[i].y=-200+i*30;B.f[i].bot=false;}B.f[0].x=0;B.f[0].y=0;B.f[1].x=30;B.f[1].y=10;
     a.send({t:'brAct',k:'atk'});let hit=null;for(let i=0;i<40&&!hit;i++){const m=await a.wait('brS');if(m.ev&&m.ev.some(e=>e.by===0&&e.to===1))hit=m;}assert.ok(hit&&B.f[1].hp<1,'the server applied the hit');
-    a.send({t:'brPos',x:9999,z:.5,f:1});await new Promise(r=>setTimeout(r,120));assert.ok(B.f[0].x<600,'a player cannot jump across the arena: '+B.f[0].x);
-    const g=(await import('../web/core.js'));for(let i=2;i<6;i++)g.brKill(B,i,-1);B.f[1].hp=.0001;B.f[0].x=300;B.f[1].x=330;B.f[0].at.atk=0;a.send({t:'brAct',k:'atk'});
+    a.send({t:'brPos',x:9999,y:9999,f:1});await new Promise(r=>setTimeout(r,120));assert.ok(Math.hypot(B.f[0].x,B.f[0].y)<200,'a player cannot jump across the field: '+B.f[0].x);assert.ok(Math.hypot(B.f[0].x,B.f[0].y)>5,'but he does move toward where he says he is');
+    B.loot=[{id:77,x:Math.round(B.f[0].x),y:Math.round(B.f[0].y),k:'w'}];let got=null;for(let i=0;i<20&&!got;i++){const m=await a.wait('brS');if(m.ev&&m.ev.some(e=>e.k==='pick'&&e.by===0))got=m;}assert.ok(got&&B.f[0].w===1,'the server gives the find to whoever stands on it');
+    const g=(await import('../web/core.js'));for(let i=2;i<6;i++)g.brKill(B,i,-1);B.f[1].hp=.0001;B.f[1].x=B.f[0].x+20;B.f[1].y=B.f[0].y;B.f[0].at.atk=0;a.send({t:'brAct',k:'atk'});
     const ea=await a.wait('brEnd'),eb=await b.wait('brEnd');assert.equal(ea.place,0);assert.equal(eb.place,1);assert.ok(ea.rt.includes('תיבה עתיקה'),ea.rt);
     const A1=await st(a),B1=await st(b);assert.equal(A1.coins,40);assert.equal(A1.brW,1);assert.equal(B1.coins,20);assert.equal(B1.sboxes,1);assert.equal((await st(c)).coins,0,'who did not join gets nothing');assert.equal(srv.live.brNow(),null);
   }finally{for(const u of [a,b,c])if(u.ws)u.ws.close();srv.live.close();srv.close();}
@@ -448,4 +449,28 @@ test('game master tools: only an account flagged in the database can open events
     await new Promise(r=>setTimeout(r,1100));a.send({t:'gm',a:'say',m:'<b>שלום</b> לכולם'});assert.equal((await b.wait('gmSay')).m,'bשלום/b לכולם');
     await db.query('update users set is_admin=false where user_id=$1',[a.uid]);await new Promise(r=>setTimeout(r,1100));a.send({t:'gm',a:'boost',min:0});await new Promise(r=>setTimeout(r,300));assert.ok(G.boostNow(Date.now()),'the right is checked again every time');
   }finally{G.setBoost(null);for(const u of [a,b])if(u.ws)u.ws.close();srv.live.close();srv.close();}
+});
+
+test('phone notifications: a subscription is checked, the message goes out once when the absent character reaches the top',async()=>{
+  const {makeServer}=await import('../server/index.mjs');const {WebSocket}=await import('ws');const {createHash}=await import('node:crypto');const {db}=await world();
+  const sent=[];let fail=0;const srv=makeServer(fakeAdmin(db),'test-secret','*',{push:{sender:async(sub,body)=>{if(fail)throw Object.assign(new Error('gone'),{statusCode:fail});sent.push([sub,JSON.parse(body)]);}}});await new Promise(r=>srv.listen(0,r));const port=srv.address().port,base='http://127.0.0.1:'+port;
+  const post=async(body,tok)=>(await (await fetch(base,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},tok?{'x-ec-token':tok}:{}),body:JSON.stringify(body)})).json());
+  const mkUser=async(n,cls)=>{const r=await post({kind:'register',args:{user:n,pass:'correct-horse-9',q:0,a:'rex'}});await post({kind:'create',args:{name:n,cls:cls}},r.token);await post({kind:'travel',args:{z:0}},r.token);
+    const uid=(await db.query('select user_id from users where username=$1',[n])).rows[0].user_id;return {tok:r.token,uid,key:createHash('md5').update(uid+'peer').digest('hex').slice(0,10)};};
+  const open=async u=>{const ws=new WebSocket('ws://127.0.0.1:'+port+'/ws');u.q=[];u.wait=t=>new Promise((res,rej)=>{const go=()=>{const i=u.q.findIndex(m=>m.t===t);if(i>=0)return res(u.q.splice(i,1)[0]);setTimeout(go,10);};go();setTimeout(()=>rej(new Error('no '+t+' message')),4000);});
+    ws.on('message',d=>u.q.push(JSON.parse(String(d))));await new Promise(r=>ws.on('open',r));ws.send(JSON.stringify({t:'hello',token:u.tok}));await u.wait('hi');u.ws=ws;u.send=m=>ws.send(JSON.stringify(m));};
+  const a=await mkUser('tet','blade');const G=await import('../supabase/functions/act/core.js');
+  try{
+    const g=await post({kind:'pushget',args:{}},a.tok);assert.ok(g.ok&&!g.on&&g.key.length>80);
+    const K={p256dh:'BPk3rXcB1dLxq0c0Yb0mE0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ',auth:'abcdefghijklmnop'};
+    for(const ep of ['http://fcm.googleapis.com/fcm/send/x','https://evil.example/hook','https://fcm.googleapis.com.evil.example/x','https://127.0.0.1/x'])assert.equal((await post({kind:'pushon',args:{sub:{endpoint:ep,keys:K}}},a.tok)).ok,false,'only real push services are accepted: '+ep);
+    assert.ok((await post({kind:'pushon',args:{sub:{endpoint:'https://fcm.googleapis.com/fcm/send/abc123',keys:K},lang:'he'}},a.tok)).ok);assert.ok((await post({kind:'pushget',args:{}},a.tok)).on);
+    const st=(await db.query('select state from accounts where user_id=$1',[a.uid])).rows[0].state;st.chars[0].lvl=G.CAP-1;st.chars[0].xp=0;st.chars[0].stats.str=4000;st.chars[0].stats.vit=2000;st.chars[0].zone=0;await db.query('update accounts set state=$1 where user_id=$2',[JSON.stringify(st),a.uid]);
+    await open(a);a.ws.close();await new Promise(r=>setTimeout(r,400));const row=async()=>(await db.query('select * from push_subs where user_id=$1',[a.uid])).rows[0];
+    const r1=await row();assert.ok(r1.notify_at&&new Date(r1.notify_at).getTime()>Date.now(),'leaving the game schedules the message');assert.equal(r1.name,'tet');
+    assert.equal(await srv.push.tick(),0,'not yet');await db.query("update push_subs set notify_at=now()-interval '1 minute' where user_id=$1",[a.uid]);
+    assert.equal(await srv.push.tick(),1);assert.equal(sent.length,1);assert.equal(sent[0][0].endpoint,'https://fcm.googleapis.com/fcm/send/abc123');assert.ok(sent[0][1].body.includes('tet')&&sent[0][1].body.includes(String(G.CAP)));assert.equal(await srv.push.tick(),0,'once only');
+    await srv.push.away(a.uid);assert.ok((await row()).notify_at);await open(a);await new Promise(r=>setTimeout(r,300));assert.equal((await row()).notify_at,null,'coming back cancels it');
+    await db.query("update push_subs set notify_at=now()-interval '1 minute' where user_id=$1",[a.uid]);fail=410;await srv.push.tick();assert.equal((await post({kind:'pushget',args:{}},a.tok)).on,false,'a subscription the push service no longer knows is dropped');
+  }finally{if(a.ws)a.ws.close();srv.live.close();srv.close();}
 });

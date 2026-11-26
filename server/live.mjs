@@ -8,7 +8,7 @@ import { WebSocketServer } from 'ws';
 const peerKey = (id) => createHash('md5').update(String(id) + 'peer').digest('hex').slice(0, 10);
 const plain = (o) => JSON.parse(JSON.stringify(o));
 
-export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tickMs = 250, inviteMs = 20000 }) {
+export function attachLive(server, { admin, auth, G, rnd, push = null, clock = Date.now, tickMs = 250, inviteMs = 20000 }) {
   const wss = new WebSocketServer({ noServer: true, maxPayload: 600 });
   const socks = new Map(), keys = new Map(), invites = new Map(), duels = new Map(), inDuel = new Map(), watching = new Map();
   let nid = 1;
@@ -57,7 +57,7 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
   // The server holds the whole fight (rules: brNew, brAct, brStep in core.js) and plays the empty places itself.
   let br = null;
   const brAll = (m) => { if (!br) return; const s = JSON.stringify(m); for (const uid of br.joined.keys()) { const o = socks.get(uid); if (o && o.readyState === 1) o.send(s); } };
-  const brState = (B) => ({ t: 'brS', T: B.t, ring: G.brRing(B).map(Math.round), s: B.f.map((f) => [Math.round(f.x), Math.round(f.z * 100) / 100, Math.round(f.hp * 1000) / 1000, f.alive ? 1 : 0, f.sh > B.t ? 1 : 0, f.stun > B.t ? 1 : 0, f.face < 0 ? -1 : 1, f.kills, f.inv > B.t ? 1 : 0]) });
+  const brState = (B) => ({ t: 'brS', T: B.t, ring: Math.round(G.brRing(B)), s: B.f.map((f) => [Math.round(f.x), Math.round(f.y), Math.round(f.hp * 1000) / 1000, f.alive ? 1 : 0, f.sh > B.t ? 1 : 0, f.stun > B.t ? 1 : 0, f.face < 0 ? -1 : 1, f.kills, f.inv > B.t ? 1 : 0, f.w, f.ar, f.bt, f.pots]) });
   async function brFinish(b) {
     if (b.done) return; b.done = true; clearInterval(b.timer); if (br === b) br = null;
     const rank = G.brRank(b.B), humans = b.idx.size, win = b.B.f[rank[0]];
@@ -72,7 +72,7 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
     if (!hs.length) { if (br === b) br = null; return; }
     const ps = hs.map(([, p]) => p), all = ps.concat(G.brBots(ps, Math.max(0, G.BR.FILL - ps.length), rnd));
     b.phase = 'fight'; b.B = G.brNew(all, rnd); b.joined = new Map(hs); b.idx = new Map(hs.map(([uid], i) => [uid, i]));
-    hs.forEach(([uid], i) => send(uid, { t: 'brStart', me: i, f: all.map((p) => Object.assign(pub(p), { bot: p.bot ? 1 : 0 })), T: b.B.t, xz: b.B.f.map((f) => [f.x, f.z]) }));
+    hs.forEach(([uid], i) => send(uid, { t: 'brStart', me: i, f: all.map((p) => Object.assign(pub(p), { bot: p.bot ? 1 : 0 })), T: b.B.t, xy: b.B.f.map((f) => [f.x, f.y]), loot: b.B.loot.map((l) => [l.id, l.x, l.y, l.k]) }));
     b.last = clock();
     b.timer = setInterval(() => { const now = clock(), dt = Math.max(0, Math.min(.5, (now - b.last) / 1000)); b.last = now; const ev = G.brStep(b.B, dt, rnd), m = brState(b.B); if (ev.length) m.ev = ev; brAll(m); if (b.B.over) brFinish(b); }, 200); b.timer.unref();
   }
@@ -127,8 +127,8 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
     if (b.phase !== 'fight') return; const i = b.idx.get(uid), B = b.B, f = B.f[i]; if (!f || !f.alive || B.t < 0) return;
     if (m.t === 'brPos') {
       if (f.stun > B.t) return; const now = clock(), el = Math.min(1, (now - (ws.brT || now)) / 1000); ws.brT = now;
-      const lim = 240 * el + (f.inv > B.t ? 190 : 24), nx = Number(m.x) || 0, nz = Math.max(0, Math.min(1, Number(m.z) || 0));
-      f.x = Math.max(10, Math.min(G.BR.W - 10, f.x + Math.max(-lim, Math.min(lim, nx - f.x)))); f.z += Math.max(-1.4 * el - .05, Math.min(1.4 * el + .05, nz - f.z)); f.face = Number(m.f) < 0 ? -1 : 1; return;
+      const lim = G.brSpeed(f) * 1.3 * el + (f.inv > B.t ? 190 : 24), dx = (Number(m.x) || 0) - f.x, dy = (Number(m.y) || 0) - f.y, d = Math.hypot(dx, dy) || 1, st = Math.min(d, lim);
+      f.x += dx / d * st; f.y += dy / d * st; { const r = Math.hypot(f.x, f.y); if (r > G.BR.R) { f.x *= G.BR.R / r; f.y *= G.BR.R / r; } } f.face = Number(m.f) < 0 ? -1 : 1; return;
     }
     if (m.t === 'brAct') {
       const o = G.brAct(B, i, String(m.k), rnd); if (!o) return;
@@ -213,7 +213,7 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
           if (!ws.uid) { // the first message must carry the session token
             if (m.t !== 'hello') return ws.close(); const ses = await auth.session(String(m.token || '')); if (!ses) return ws.close();
             clearTimeout(hello); ws.uid = ses.uid; ws.key = peerKey(ses.uid); const old = socks.get(ses.uid); if (old && old !== ws) old.close();
-            socks.set(ses.uid, ws); keys.set(ws.key, ses.uid); ws.send(JSON.stringify({ t: 'hi' }));
+            socks.set(ses.uid, ws); keys.set(ws.key, ses.uid); ws.send(JSON.stringify({ t: 'hi' })); if (push) push.back(ses.uid).catch(() => {});
             if (br && br.phase === 'sign') ws.send(JSON.stringify({ t: 'brOpen', left: Math.max(0, br.end - clock()), quiet: 1 }));
             { const b = G.boostNow(clock()); if (b) ws.send(JSON.stringify({ t: 'boost', xp: b.xp, drop: b.drop, left: b.until - clock(), quiet: 1 })); }
             return;
@@ -221,7 +221,7 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
           await onMsg(ws, m);
         } catch (e) { console.error(e); }
       });
-      ws.on('close', () => { if (!ws.uid || socks.get(ws.uid) !== ws) return; socks.delete(ws.uid); keys.delete(ws.key);
+      ws.on('close', () => { if (!ws.uid || socks.get(ws.uid) !== ws) return; socks.delete(ws.uid); keys.delete(ws.key); if (push) push.away(ws.uid).catch((e) => console.error(e));
         { const x = watching.get(ws.uid); if (x) { x.watch.delete(ws.uid); watching.delete(ws.uid); } }
         if (br && br.joined.has(ws.uid)) { const b = br; if (b.phase === 'sign') b.joined.delete(ws.uid); else { const i = b.idx.get(ws.uid); if (i != null && b.B.f[i].alive) { G.brKill(b.B, i, -1); if (b.B.over) brFinish(b); } } }
         const d = inDuel.get(ws.uid); if (d && !d.done) finish(d, 1 - d.u.indexOf(ws.uid), 'left'); });

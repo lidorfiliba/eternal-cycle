@@ -7,12 +7,13 @@ import { createClient } from '@supabase/supabase-js';
 import * as G from '../supabase/functions/act/core.js';
 import { makeAuth, makeHandler } from '../supabase/functions/act/handler.js';
 import { attachLive } from './live.mjs';
+import { makePush } from './push.mjs';
 
 const crypto = globalThis.crypto || webcrypto;
 const rnd = () => { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; };
 
-export function makeServer(admin, secret, origin = '*') {
-  const handle = makeHandler(admin, G, rnd), auth = makeAuth(admin, secret);
+export function makeServer(admin, secret, origin = '*', opts = {}) {
+  const handle = makeHandler(admin, G, rnd), auth = makeAuth(admin, secret), push = makePush(admin, secret, G, rnd, opts.push);
   const cors = { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info, x-ec-token', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Max-Age': '86400' };
   const send = (res, body, status = 200) => { res.writeHead(status, { ...cors, 'Content-Type': 'application/json' }); res.end(JSON.stringify(body)); };
   const server = http.createServer(async (req, res) => {
@@ -35,14 +36,18 @@ export function makeServer(admin, secret, origin = '*') {
       if (kind === 'whoami') return send(res, await auth.whoami(uid));
       if (kind === 'setsecret') return send(res, await auth.setSecret(uid, args.pass, args.q, args.a));
       if (kind === 'chpass') return send(res, await auth.chpass(uid, args.pass, args.next));
-      if (kind === 'delacct') return send(res, await auth.delacct(uid, args.pass));
+      if (kind === 'delacct') { const r = await auth.delacct(uid, args.pass); if (r && r.ok) await push.off(uid); return send(res, r); }
+      if (kind === 'pushget') return send(res, await push.status(uid));
+      if (kind === 'pushon') return send(res, await push.on(uid, args.sub, args.lang));
+      if (kind === 'pushoff') return send(res, await push.off(uid));
       if (kind === 'aresetpw') return send(res, await auth.adminReset(uid, args.user));
       const out = await handle(uid, kind, args, { ip, iat: ses.iat });
       if (out && out.expired) return send(res, { error: 'auth' }, 401);
       return send(res, out);
     } catch (e) { console.error(e); return send(res, { error: 'server' }, 500); }
   });
-  server.live = attachLive(server, { admin, auth, G, rnd });
+  server.live = attachLive(server, { admin, auth, G, rnd, push });
+  server.push = push; const pushClock = setInterval(() => { push.tick().catch((e) => console.error(e)); }, 60000); pushClock.unref(); server.on('close', () => clearInterval(pushClock));
   return server;
 }
 

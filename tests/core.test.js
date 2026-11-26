@@ -368,17 +368,28 @@ test('jewelry: two rings and a necklace give percent damage and health, drop, up
   const ci=G.cleanItem({s:'a',t:14,r:4,p:3,z:30,v:1,pf:1,ex:1,af:[]});assert.equal(ci.t,14);assert.ok(ci.v&&ci.pf,'trading keeps the tier, the set and the perfect mark');
   G.setEnv(Math.random,Date.now);
 });
-test('the last circle: rules of the fight, the ring, places and prizes',()=>{
+test('the last circle: an open round field, everyone equal, gear from the ground decides, the circle closes',()=>{
   let seed=11;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};let t=Date.UTC(2026,10,26,10,10,30);G.setEnv(rnd,()=>t);
   const P=(n,m)=>G.cleanPlayer(n,{n:n,c:'blade',l:100,d:400*m,a:1.2,h:5000*m,f:200,cr:.1});
-  const hs=[P('a',1),P('b',1)],ps=hs.concat(G.brBots(hs,4,rnd));assert.equal(ps.length,6);assert.ok(ps[5].bot&&ps[5].d<=hs[0].d*1.06);
-  const B=G.brNew(ps,rnd);assert.equal(G.brAct(B,0,'atk',rnd),null,'nothing happens during the countdown');B.t=0;
-  B.f[0].x=300;B.f[0].z=.5;B.f[1].x=340;B.f[1].z=.5;for(let i=2;i<6;i++){B.f[i].x=800;B.f[i].z=0;}
-  const o=G.brAct(B,0,'atk',rnd);assert.ok(o&&o.to===1&&o.dm>=.012*.5&&o.dm<=.22*1.5*1.5*1.1+.01,'a hit lands on the nearest fighter in reach');assert.equal(G.brAct(B,0,'atk',rnd),null,'the attack has a cooldown');
-  B.f[1].z=0;B.t=5;assert.equal(G.brAct(B,0,'atk',rnd),null,'another lane is out of reach');B.f[1].z=.5;
-  assert.ok(G.brAct(B,1,'dash',rnd));assert.ok(G.brAct(B,0,'s0',rnd).miss,'a dash dodges');B.t=20;B.f[1].hp=.001;const k=G.brAct(B,0,'s3',rnd);assert.ok(k.dead&&!B.f[1].alive&&B.f[0].kills===1&&B.out[0]===1);
-  assert.deepEqual(G.brRing(Object.assign({},B,{t:0})),[0,G.BR.W]);const R=G.brRing(Object.assign({},B,{t:G.BR.TIME}));assert.ok(R[1]-R[0]<1,'the ring closes all the way');
-  let n=0;while(!B.over&&n++<3000)G.brStep(B,.2,rnd);assert.ok(B.over&&B.t<=G.BR.TIME+1);const rank=G.brRank(B);assert.equal(rank.length,6);assert.equal(rank[rank.length-1],1,'the first to fall is last');assert.equal(new Set(rank).size,6);
+  const hs=[P('a',1),P('b',50)],ps=hs.concat(G.brBots(hs,4,rnd));assert.equal(ps.length,6);assert.ok(ps[5].bot);
+  const B=G.brNew(ps,rnd);assert.equal(B.loot.length,G.BR.loot0);assert.ok(B.f.every(f=>Math.hypot(f.x,f.y)<=G.BR.R&&f.w===0&&f.ar===0),'everyone starts inside and bare');
+  assert.equal(G.brAct(B,0,'atk',rnd),null,'nothing happens during the countdown');B.t=0;B.loot=[];B.nextLoot=1e9;B.dropped=true;
+  const put=(i,x,y)=>{B.f[i].x=x;B.f[i].y=y;};put(0,0,0);put(1,40,20);for(let i=2;i<6;i++){put(i,-500,-300+i*40);B.f[i].think=1e9;B.f[i].bot=false;}
+  const o=G.brAct(B,0,'atk',rnd);assert.ok(o&&o.to===1&&o.dm>0,'a hit lands on the nearest fighter in reach, in any direction');assert.equal(G.brAct(B,0,'atk',rnd),null,'the attack has a cooldown');
+  B.t=5;const back=G.brAct(B,1,'atk',rnd);assert.ok(Math.abs(back.dm/o.dm-1)<.7,'what a player wears outside does not matter here: '+back.dm+' vs '+o.dm);
+  put(1,0,300);B.t=10;assert.equal(G.brAct(B,0,'atk',rnd),null,'out of reach');put(1,40,20);
+  // gear from the ground
+  B.loot=[{id:900,x:5,y:5,k:'w'},{id:901,x:-5,y:5,k:'a'},{id:902,x:400,y:0,k:'w'}];let ev=G.brStep(B,.1,rnd);assert.equal(ev.filter(e=>e.k==='pick'&&e.by===0).length,2);assert.equal(B.f[0].w,1);assert.equal(B.f[0].ar,1);assert.equal(B.loot.length,1,'a find far away stays');
+  B.t=20;B.f[1].hp=1;const armed=G.brAct(B,0,'atk',rnd);B.t=25;B.f[0].hp=1;const bare=G.brAct(B,1,'atk',rnd);assert.ok(armed.dm>bare.dm*1.2,'a weapon hits harder, and armor takes less: '+armed.dm+' vs '+bare.dm);
+  B.f[0].w=G.BR.wMax;B.loot=[{id:903,x:0,y:0,k:'w'}];G.brStep(B,.1,rnd);assert.equal(B.loot.length,1,'what I cannot use stays for someone else');
+  assert.ok(G.brAct(B,1,'dash',rnd));B.t=40;assert.ok(G.brAct(B,1,'dash',rnd));assert.ok(G.brAct(B,0,'s0',rnd).miss,'a dash dodges');
+  B.t=60;B.f[1].hp=.001;B.f[1].w=2;const k=G.brAct(B,0,'s3',rnd);assert.ok(k.dead&&!B.f[1].alive&&B.f[0].kills===1&&B.out[0]===1);assert.ok(B.loot.some(l=>l.k==='w'&&Math.abs(l.x-40)<2),'the fallen drops his weapon');
+  assert.equal(G.brRing(Object.assign({},B,{t:0})),G.BR.R);assert.equal(G.brRing(Object.assign({},B,{t:G.BR.TIME})),G.BR.END);
+  B.t=G.BR.TIME-30;put(2,-600,0);const h0=B.f[2].hp;G.brStep(B,1,rnd);assert.ok(B.f[2].hp<h0,'outside the circle burns');put(0,0,0);const h1=B.f[0].hp;G.brStep(B,1,rnd);assert.equal(B.f[0].hp,h1);
+  for(let i=2;i<6;i++){B.f[i].bot=true;B.f[i].think=0;}let n=0;while(!B.over&&n++<3000)G.brStep(B,.2,rnd);assert.ok(B.over&&B.t<=G.BR.TIME+1);const rank=G.brRank(B);assert.equal(rank.length,6);assert.equal(rank[rank.length-1],1,'the first to fall is last');assert.equal(new Set(rank).size,6);
+  { // a whole fight between the server's own fighters: they gear up, the legendary weapon lands, someone wins
+    const C=G.brNew(G.brBots([P('x',1)],6,rnd),rnd);let picks=0,big=0,m=0;while(!C.over&&m++<3000)for(const e of G.brStep(C,.2,rnd)){if(e.k==='pick')picks++;if(e.big)big++;}
+    assert.ok(C.over&&picks>=6,'picks: '+picks);assert.ok(C.t<G.BR.drop||big===1);assert.ok(C.f.every(f=>Math.hypot(f.x,f.y)<=G.BR.R+1));}
   const A=G.newAccount();G.apply(A,'create',{name:'Win',cls:'blade'},{});const c0=A.coins,f0=A.feathers||0,rt=G.brReward(A,0,2);assert.ok(rt.includes('תיבה עתיקה'));assert.equal(A.coins,c0+40);assert.equal((A.feathers||0),f0+1);
   const got=A.inv.concat(Object.values(A.chars[0].eq).filter(Boolean));assert.ok(got.some(it=>it.r===4&&G.DROPS.includes(it.s)),'two or more players: the chest holds an ancient piece');assert.ok(got.some(it=>G.JEW.includes(it.s)));
   const A2=G.newAccount();G.apply(A2,'create',{name:'Sec',cls:'blade'},{});const sb=A2.sboxes;G.brReward(A2,1,2);assert.equal(A2.sboxes,sb+1);const c5=A2.coins;G.brReward(A2,4,2);assert.equal(A2.coins,c5+5);
@@ -407,5 +418,26 @@ test("the day's trial: sized to the character, timed by the server, a better med
   G.apply(A,'trialStart',{},{});t+=60000;const g0=A.gems,c0=A.coins,w=G.apply(A,'trialEnd',{win:true},{});assert.equal(w.tier,2);assert.equal(A.gems,g0+2);assert.equal(A.coins,c0+4);
   G.apply(A,'trialStart',{},{});t+=25000;const b0=A.boxes,w2=G.apply(A,'trialEnd',{win:true},{});assert.equal(w2.tier,0);assert.equal(A.gems,g0+6);assert.equal(A.coins,c0+15);assert.equal(A.boxes,b0+1);
   assert.ok(!G.apply(A,'trialStart',{},{}).ok,'three tries a day');t+=86400000;const n=G.apply(A,'trialStart',{},{});assert.ok(n.ok&&A.daily.trB==null,'a new day, a new trial');
+  G.setEnv(Math.random,Date.now);
+});
+
+test('a bought auto reset: only while away, the character resets at the top, stays on its map and keeps training',()=>{
+  const now=clock(1.8e12);G.setEnv(()=>.5,now);const A=G.newAccount();G.apply(A,'create',{name:'Auto',cls:'blade'},{});const s=A.chars[0];A.open=G.BASEZ-1;
+  A.cred=14;assert.ok(!G.apply(A,'buy',{shop:'reset',k:'areset'},{}).ok,'it costs marks');A.cred=15;assert.ok(G.apply(A,'buy',{shop:'reset',k:'areset'},{}).ok);assert.equal(A.areset,G.ARESET_PACK);assert.equal(A.cred,0);
+  s.lvl=G.CAP-1;s.xp=0;s.stats.str=4000;s.stats.vit=2000;s.zone=20;s.last=now();const r0=s.resets,rep=G.offline(s,6*3600);
+  assert.ok(rep.resets>=1,'reset while away: '+JSON.stringify(rep).slice(0,120));assert.equal(s.resets,r0+rep.resets);assert.equal(A.areset,G.ARESET_PACK-rep.resets);assert.equal(s.zone,20,'stays on its map');assert.ok(s.lvl>1&&s.lvl<=G.CAP,'and went on training: '+s.lvl);
+  assert.equal(A.cred,Array.from({length:rep.resets},(_,i)=>Math.floor((10+2*Math.min(r0+i+1,10))/2)).reduce((a,b)=>a+b,0),'half the marks of an ordinary reset');
+  const B=G.newAccount();G.apply(B,'create',{name:'NoAuto',cls:'blade'},{});const b=B.chars[0];B.open=G.BASEZ-1;b.lvl=G.CAP-1;b.stats.str=4000;b.stats.vit=2000;b.zone=20;b.last=now();const rb=G.offline(b,6*3600);assert.ok(!rb.resets&&b.resets===0&&b.lvl===G.CAP,'without it the character waits at the top');
+  A.areset=G.ARESET_MAX-1;A.cred=99;assert.ok(!G.apply(A,'buy',{shop:'reset',k:'areset'},{}).ok,'there is a limit to how many can be held');
+  G.setEnv(Math.random,Date.now);
+});
+
+test('time until an absent character stands at the reset level',()=>{
+  const now=clock(1.8e12);G.setEnv(()=>.5,now);const A=G.newAccount();G.apply(A,'create',{name:'Eta',cls:'blade'},{});const s=A.chars[0];A.open=G.BASEZ-1;
+  assert.equal(G.afkEta(A),null,'in town nothing trains');s.zone=20;s.lvl=G.CAP-1;s.xp=0;s.stats.str=4000;s.stats.vit=2000;const snap=JSON.stringify(A);
+  const e1=G.afkEta(A);assert.ok(e1>0&&e1<3600,'one level away: '+e1);assert.equal(JSON.stringify(A),snap,'asking changes nothing');
+  s.last=now();const rep=G.offline(s,Math.ceil(e1)+2);assert.equal(s.lvl,G.CAP,'and it is right: the character is there after that long');
+  const B=G.adopt(JSON.parse(snap));B.areset=1;const e2=G.afkEta(B);assert.ok(e2>e1*20,'with an auto reset left the message waits for the next time at the top: '+e2);
+  const C=G.adopt(JSON.parse(snap));C.chars[0].lvl=G.CAP;assert.equal(G.afkEta(C),0);C.chars[0].lvl=2;C.chars[0].stats.str=15;C.chars[0].zone=0;const far=G.afkEta(C);assert.ok(far===null||far>3600);
   G.setEnv(Math.random,Date.now);
 });
