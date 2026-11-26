@@ -22,19 +22,22 @@ function setNet(ok){$('net').textContent=ONLINE?(ok?'מחובר לשרת':'אי�
 
 // In online mode the server owns the account; the client only asks and displays.
 let session=null,chain=Promise.resolve(),players=[],market=[],party={code:'',members:[]},partyN=0;
-// The account is a random secret key kept in this browser. The server only ever sees its hash as the account id.
-const AKEY='eternal-cycle-key';
-function newKey(){const a=new Uint8Array(32);crypto.getRandomValues(a);return btoa(String.fromCharCode.apply(null,a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
-const keyOk=k=>/^[A-Za-z0-9_-]{40,128}$/.test(k);
+// Online accounts: username + password. After sign-in the server hands back a signed session token kept in this browser.
+const SKEY='eternal-cycle-session';
 function initServer(){
-  let k='';try{k=localStorage.getItem(AKEY)||'';}catch(e){}
-  if(!keyOk(k)){k=newKey();try{localStorage.setItem(AKEY,k);}catch(e){}}
-  session={key:k};
+  if(window.EC_MOCK){session={token:'mock',user:'mock'};return;}
+  try{const o=JSON.parse(localStorage.getItem(SKEY)||'null');if(o&&o.token)session=o;}catch(e){}
+}
+function setSession(o){session=o;try{if(o)localStorage.setItem(SKEY,JSON.stringify(o));else localStorage.removeItem(SKEY);}catch(e){}}
+async function post(body,token){
+  const h={'Content-Type':'application/json'};if(CFG.anon)h.apikey=CFG.anon;if(token)h['x-ec-token']=token;
+  const res=await fetch(CFG.url+'/functions/v1/act',{method:'POST',headers:h,body:JSON.stringify(body)});
+  return {status:res.status,j:await res.json().catch(()=>null)};
 }
 async function rpc(kind,args){
-  const h={'Content-Type':'application/json','x-ec-key':session.key};if(CFG.anon)h.apikey=CFG.anon;
-  const res=await fetch(CFG.url+'/functions/v1/act',{method:'POST',headers:h,body:JSON.stringify({kind:kind,args:args||{}})});
-  const j=await res.json().catch(()=>null);if(!res.ok||!j)throw new Error(j&&j.error||('HTTP '+res.status));return j;
+  const r=await post({kind:kind,args:args||{}},session&&session.token);
+  if(r.status===401){setSession(null);location.reload();throw new Error('auth');}
+  if(r.status!==200||!r.j)throw new Error(r.j&&r.j.error||('HTTP '+r.status));return r.j;
 }
 if(typeof window!=='undefined'&&window.EC_MOCK)rpc=window.EC_MOCK; // test hook: an in-page stand-in for the server
 // Every state change goes through send(), one at a time and in order.
@@ -687,7 +690,7 @@ function showCreate(extra){
   const cl=k=>'<button data-act="pick" data-k="'+k+'" data-x="'+(extra?1:'')+'" class="'+(pickCls===k?'on':'')+'">'+CLS[k].n+'<small>'+(k==='blade'?'קרב קרוב':'קרב מרחוק')+'</small></button>';
   openModal('<h3>'+(extra?'דמות חדשה':'מעגל הנצח')+'</h3><p class="hint">'+(extra?'הדמות החדשה מתחילה בכפר וחולקת איתך זהב, תיק ושערים.':'לוחצים על המסך כדי ללכת, על מפלצת כדי לתקוף, ומפעילים כישורים. מביסים בוסים, פותחים מפות, מגיעים לרמה 400 ועושים ריסט.')+'</p>'+
     '<label for="nm" class="hint">שם הדמות</label><input type="text" id="nm" maxlength="14" value="'+esc($('nm')?$('nm').value:'')+'" placeholder="עד 14 תווים" autocomplete="off">'+
-    '<div class="cls">'+cl('blade')+cl('storm')+cl('hunter')+'</div><div class="acts"><button class="btn pri" data-act="create" data-x="'+(extra?1:'')+'">'+(extra?'צור דמות':'צא לדרך')+'</button>'+(extra?'<button class="btn" data-act="closeModal">ביטול</button>':'')+'</div>'+(!extra&&ONLINE?loginHtml():''));
+    '<div class="cls">'+cl('blade')+cl('storm')+cl('hunter')+'</div><div class="acts"><button class="btn pri" data-act="create" data-x="'+(extra?1:'')+'">'+(extra?'צור דמות':'צא לדרך')+'</button>'+(extra?'<button class="btn" data-act="closeModal">ביטול</button>':'')+'</div>');
 }
 function openTab(name){
   tab=name;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
@@ -711,11 +714,36 @@ function boxFx(r){
 }
 function accountHtml(){
   if(!ONLINE)return '<h2>העברה בין מכשירים</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">מצב מקומי: ההתקדמות שמורה במכשיר הזה. קוד השמירה מעביר אותה למכשיר אחר, וטעינה מחליפה את מה שיש כאן.</p><button class="btn" data-act="expSave">העתק קוד שמירה</button><input type="text" id="impCode" placeholder="הדבק כאן קוד שמירה" autocomplete="off"><button class="btn" data-act="impSave">טען קוד שמירה</button></div>';
-  return '<h2>חשבון</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">החשבון מזוהה לפי מפתח סודי ששמור בדפדפן הזה. העתק אותו ושמור במקום בטוח: הוא הדרך היחידה להיכנס ממכשיר אחר או לשחזר את החשבון. מי שמחזיק במפתח שולט בחשבון.</p><button class="btn" data-act="copyKey">העתק מפתח חשבון</button><input type="text" id="keyOut" readonly dir="ltr" style="display:none"></div>';
+  return '<h2>חשבון</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">מחובר כ-<b dir="auto">'+esc(session&&session.user||'')+'</b>. אפשר להיכנס עם אותו שם וסיסמה מכל מכשיר. אין שחזור סיסמה, אז שמור אותה.</p><button class="btn" data-act="logout">התנתק</button></div>';
 }
-function loginHtml(){return '<p class="hint" style="margin-top:6px">כבר יש לך חשבון? הדבק את מפתח החשבון:</p><input type="text" id="keyIn" placeholder="מפתח חשבון" autocomplete="off" dir="ltr"><button class="btn" data-act="useKey">כניסה עם מפתח</button>';}
+let authMode='login';
+function showAuth(msg){
+  const reg=authMode==='register';
+  openModal('<h3>מעגל הנצח</h3><p class="hint">'+(reg?'בחר שם משתמש וסיסמה. איתם נכנסים לחשבון מכל מכשיר.':'היכנס עם שם המשתמש והסיסמה שלך.')+'</p>'+
+    '<label for="auUser" class="hint">שם משתמש</label><input type="text" id="auUser" maxlength="16" autocomplete="username" autocapitalize="none" placeholder="3 עד 16 תווים">'+
+    '<label for="auPass" class="hint">סיסמה</label><input type="password" id="auPass" maxlength="72" autocomplete="'+(reg?'new-password':'current-password')+'" placeholder="לפחות 8 תווים" style="width:100%;background:#0a0818;border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--ink);font:inherit;font-size:16px">'+
+    (msg?'<p class="hint" style="color:var(--bad)">'+esc(msg)+'</p>':'')+
+    '<div class="acts"><button class="btn pri" data-act="authGo">'+(reg?'הרשמה':'כניסה')+'</button></div>'+
+    '<button class="btn sm" data-act="authSwap">'+(reg?'יש לי כבר חשבון':'אין לי חשבון, הרשמה')+'</button>');
+}
+async function authGo(){
+  const user=($('auUser').value||'').trim(),pass=$('auPass').value||'';
+  if(user.length<3){showAuth('שם משתמש קצר מדי');return;}if(pass.length<8){showAuth('הסיסמה צריכה לפחות 8 תווים');return;}
+  openModal('<h3>מעגל הנצח</h3><p class="hint">מתחבר...</p>');
+  let r=null;try{r=await post({kind:authMode,args:{user:user,pass:pass}});}catch(e){}
+  if(!r||!r.j){showAuth('אין חיבור לשרת. נסה שוב');return;}
+  if(!r.j.ok){showAuth(r.j.msg||'הפעולה נכשלה');return;}
+  setSession({token:r.j.token,user:r.j.user});await startOnline();
+}
+async function startOnline(){
+  const r=await send('sync',{});
+  if(r.ok){demo=false;closeModal();enterGame(r);return;}
+  if(r.msg==='net'){openModal('<h3>אין חיבור לשרת</h3><p class="hint">השרת לא ענה. נסה שוב בעוד רגע.</p><div class="acts"><button class="btn pri" data-act="retry">נסה שוב</button></div>');return;}
+  S=A.chars[0];closeModal();showCreate(false);
+}
 const failTxt=r=>{if(r&&!r.ok)toast(r.msg==='net'?'אין חיבור לשרת':r.msg);};
 let clickBusy=false;
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&(e.target.id==='auPass'||e.target.id==='auUser'))authGo();});
 document.addEventListener('click',async e=>{
   const t=e.target.closest('[data-tab]');if(t){openTab(t.dataset.tab);return;}
   if(e.target.id==='sheet'){closeSheet();return;}
@@ -724,8 +752,9 @@ document.addEventListener('click',async e=>{
   if(a==='closeModal'){closeModal();return;}
   if(a==='closeSheet'){closeSheet();return;}
   if(a==='retry'){location.reload();return;}
-  if(a==='useKey'){const k=($('keyIn').value||'').trim();if(!keyOk(k)){const d=document.createElement('p');d.className='hint';d.style.color='var(--bad)';d.textContent='המפתח לא תקין.';$('modalBox').appendChild(d);return;}
-    try{localStorage.setItem(AKEY,k);}catch(e2){}location.reload();return;}
+  if(a==='authSwap'){authMode=authMode==='login'?'register':'login';showAuth();return;}
+  if(a==='authGo'){authGo();return;}
+  if(a==='logout'){setSession(null);location.reload();return;}
   if(a==='create'){
     if(clickBusy)return;clickBusy=true;const nm=($('nm').value||'').trim().slice(0,14)||'גיבור',extra=!!b.dataset.x;
     const keep=A,wasDemo=demo;if(!extra){demo=false;if(!ONLINE)A=newAccount();}
@@ -743,8 +772,6 @@ document.addEventListener('click',async e=>{
     try{navigator.clipboard.writeText(code).then(done,fb);}catch(e2){fb();}return;}
   if(a==='impSave'){if(ONLINE)return;let o=null;try{o=adopt(JSON.parse(decodeURIComponent(escape(atob($('impCode').value.trim())))));}catch(e2){}
     if(!o||!o.chars.length){toast('הקוד לא תקין');return;}A=o;const r=await send('sync',{});enterGame(r);saveLocal();toast('ההתקדמות נטענה');return;}
-  if(a==='copyKey'){const out=$('keyOut'),done=()=>toast('מפתח החשבון הועתק. שמור אותו במקום בטוח'),fb=()=>{out.style.display='';out.value=session.key;out.focus();out.select();toast('סמן והעתק את המפתח מהשדה');};
-    try{navigator.clipboard.writeText(session.key).then(done,fb);}catch(e2){fb();}return;}
   if(a==='evtab'){openTab('pass');return;}
   if(clickBusy||busy)return;clickBusy=true;
   try{
@@ -808,12 +835,10 @@ async function boot(){
     const o=loadLocal();if(!o){showCreate(false);return;}
     A=o;S=A.chars[A.cur];demo=false;const r=await send('sync',{});enterGame(r);saveLocal();return;
   }
+  initServer();
+  if(!session){showAuth();return;}
   openModal('<h3>מעגל הנצח</h3><p class="hint">מתחבר לשרת...</p>');
-  try{initServer();}catch(e){openModal('<h3>אין חיבור לשרת</h3><p class="hint">לא הצלחתי להתחבר. בדוק את החיבור ונסה שוב.</p><div class="acts"><button class="btn pri" data-act="retry">נסה שוב</button></div>');setNet(false);return;}
-  const r=await send('sync',{});
-  if(r.ok){demo=false;closeModal();enterGame(r);return;}
-  if(r.msg==='net'){openModal('<h3>אין חיבור לשרת</h3><p class="hint">השרת לא ענה. נסה שוב בעוד רגע.</p><div class="acts"><button class="btn pri" data-act="retry">נסה שוב</button></div>');return;}
-  S=A.chars[0];closeModal();showCreate(false);
+  await startOnline();
 }
 if(typeof window!=='undefined')window.EC={get A(){return A;},get S(){return S;},get C(){return C;},set C(v){C=v;},SC,G,send,act,frame,enterZone,pend,flushTick,syncBoss,spawnBoss,touch,get demo(){return demo;}};
 boot();

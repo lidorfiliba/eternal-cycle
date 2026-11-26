@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
 import * as G from '../supabase/functions/act/core.js';
-import { makeHandler } from '../supabase/functions/act/handler.js';
+import { makeHandler, makeAuth } from '../supabase/functions/act/handler.js';
 
 const JSONB=new Set(['state','snap','item','detail']);
 const enc=(k,v)=>JSONB.has(k)&&v!==null&&typeof v==='object'?JSON.stringify(v):v;
@@ -36,13 +36,14 @@ const U=n=>'00000000-0000-0000-0000-00000000000'+n;
 async function world(){
   const db=new PGlite();
   await db.exec(`create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls; create schema auth; create table auth.users(id uuid primary key);`);
-  await db.exec(fs.readFileSync('supabase/migrations/'+fs.readdirSync('supabase/migrations').sort()[0],'utf8'));
+  for(const f of fs.readdirSync('supabase/migrations').sort())await db.exec(fs.readFileSync('supabase/migrations/'+f,'utf8'));
   for(let i=1;i<=5;i++)await db.query('insert into auth.users values ($1)',[U(i)]);
   let t=1.8e12;const clock=()=>t;clock.add=s=>{t+=s*1000;};
   const handle=makeHandler(fakeAdmin(db),G,Math.random,clock);
   const row=async u=>(await db.query('select state,version,calls from accounts where user_id=$1',[u])).rows[0];
   const poke=async(u,fn)=>{const r=await row(u);fn(r.state);await db.query('update accounts set state=$2 where user_id=$1',[u,JSON.stringify(r.state)]);};
-  return {db,handle,clock,row,poke};
+  const auth=makeAuth(fakeAdmin(db),'test-secret',clock);
+  return {db,handle,clock,row,poke,auth};
 }
 
 test('account lifecycle: unknown user, create, and the stored state is the source of truth',async()=>{
@@ -106,11 +107,28 @@ test('party through the server: bonus only for active members in the same map',a
   assert.equal((await handle(U(1),'tick',{z:0,kills:3})).result.partyN,0);
   assert.equal((await handle(U(1),'pleave',{})).party.code,'');
 });
-test('new accounts are throttled per network address',async()=>{
-  const {handle}=await world();const made=[];
-  for(let i=1;i<=7;i++){const id='00000000-0000-0000-0000-0000000001'+String(i).padStart(2,'0');made.push((await handle(id,'create',{name:'n'+i,cls:'blade'},{ip:'203.0.113.9'})).result.ok);}
-  assert.deepEqual(made,[true,true,true,true,true,false,false]);
-  assert.ok((await handle('00000000-0000-0000-0000-000000000199','create',{name:'z',cls:'blade'},{ip:'198.51.100.2'})).result.ok,'another address is unaffected');
+test('accounts: register, sign in, signed sessions, brute-force brake, signup throttle',async()=>{
+  const {db,auth,clock,handle}=await world();
+  assert.equal((await auth.register('ab','longenough1','1.1.1.1')).ok,false,'short name');
+  assert.equal((await auth.register('lidor','short','1.1.1.1')).ok,false,'short password');
+  assert.equal((await auth.register('bad name!','longenough1','1.1.1.1')).ok,false);
+  const r=await auth.register('  Lidor_28 ','correct horse 1','1.1.1.1');assert.ok(r.ok,r.msg);assert.equal(r.user,'lidor_28');
+  const uid=await auth.verify(r.token);assert.match(uid,/^[0-9a-f-]{36}$/);
+  assert.equal((await auth.register('LIDOR_28','another pass 1','1.1.1.1')).ok,false,'names are unique regardless of case');
+  const he=await auth.register('לידור','סיסמה ארוכה 1','1.1.1.1');assert.ok(he.ok,'Hebrew names work');
+  const stored=(await db.query('select pass_hash,salt from users where username=$1',['lidor_28'])).rows[0];
+  assert.ok(!stored.pass_hash.includes('correct')&&stored.pass_hash.length>=40,'only a hash is stored');
+  assert.ok((await handle(uid,'create',{name:'גיבור',cls:'blade'})).result.ok,'the id from the token owns the game account');
+  const l=await auth.login('Lidor_28','correct horse 1','2.2.2.2');assert.ok(l.ok);assert.equal(await auth.verify(l.token),uid,'same account from another device');
+  assert.equal(await auth.verify(l.token+'x'),null);assert.equal(await auth.verify('abc.def'),null);assert.equal(await auth.verify(''),null);
+  const other=makeAuth({from(){},rpc(){}},'another-secret',clock);assert.equal(await other.verify(l.token),null,'a token signed with a different secret is rejected');
+  const forged=Buffer.from('00000000-0000-0000-0000-000000000001.'+(clock()+1e9)).toString('base64url')+'.'+l.token.split('.')[1];assert.equal(await auth.verify(forged),null,'payload cannot be swapped');
+  clock.add(91*24*3600);assert.equal(await auth.verify(l.token),null,'expired');
+  const m1=(await auth.login('lidor_28','wrong','3.3.3.3')).msg,m2=(await auth.login('nobody_here','wrong','3.3.3.3')).msg;assert.equal(m1,m2,'no hint whether the user exists');
+  for(let i=0;i<10;i++)await auth.login('lidor_28','wrong'+i,'3.3.3.3');
+  assert.equal((await auth.login('lidor_28','correct horse 1','9.9.9.9')).ok,false,'locked after repeated failures, even with the right password');
+  const made=[];for(let i=0;i<6;i++)made.push((await auth.register('farm_'+i,'longenough1','7.7.7.7')).ok);
+  assert.deepEqual(made,[true,true,true,true,true,false],'five sign-ups per address per hour');
 });
 test('timed events: bonus XP, objectives, rewards once, quiz once',async()=>{
   const {handle,clock,row}=await world();await handle(U(1),'create',{name:'a',cls:'blade'});

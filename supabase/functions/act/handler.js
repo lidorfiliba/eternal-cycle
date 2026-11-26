@@ -46,8 +46,6 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
 
       if (!row) {
         if (kind !== "create") return { result: { ok: false, msg: "new" }, state: null };
-        const okIp = await admin.rpc("signup_allowed", { p_ip: String(meta.ip || "unknown").slice(0, 64) });
-        if (okIp.error || okIp.data !== true) return { result: { ok: false, msg: "נוצרו יותר מדי חשבונות מהרשת הזו. נסה שוב בעוד שעה" }, state: null };
         G.setEnv(rnd, () => now);
         const A = G.newAccount();
         const r = G.apply(A, "create", args, { uid });
@@ -131,4 +129,62 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
     return { result: { ok: false, msg: "עומס, נסה שוב" } };
   }
   return handle;
+}
+
+// Username + password sign-in. Sessions are stateless tokens signed with a key derived from a server secret.
+// Uses only WebCrypto, so the same code runs in the edge runtime and in the tests.
+export function makeAuth(admin, secret, clock = Date.now) {
+  const ITER = 300000, TTL = 90 * 24 * 3600 * 1000;
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  const b64 = (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const unb64 = (t) => Uint8Array.from(atob(t.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+  const USER_RE = /^[\p{L}\p{N}_]{3,16}$/u;
+  const norm = (u) => String(u == null ? "" : u).normalize("NFKC").trim().toLowerCase();
+  const fail = (msg) => ({ ok: false, msg });
+  let hkey = null;
+  const hmacKey = async () => hkey || (hkey = await crypto.subtle.importKey("raw",
+    await crypto.subtle.digest("SHA-256", enc.encode("ec-session:" + secret)), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]));
+  async function hashPass(pass, salt) {
+    const k = await crypto.subtle.importKey("raw", enc.encode(pass), "PBKDF2", false, ["deriveBits"]);
+    return b64(new Uint8Array(await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: ITER }, k, 256)));
+  }
+  const same = (a, b) => { let d = a.length ^ b.length; for (let i = 0; i < Math.max(a.length, b.length); i++) d |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0); return d === 0; };
+  async function token(uid) {
+    const body = uid + "." + (clock() + TTL);
+    return b64(enc.encode(body)) + "." + b64(new Uint8Array(await crypto.subtle.sign("HMAC", await hmacKey(), enc.encode(body))));
+  }
+  // Returns the account id for a valid, unexpired token, otherwise null.
+  async function verify(tok) {
+    try {
+      const p = String(tok || "").split("."); if (p.length !== 2 || tok.length > 400) return null;
+      const body = dec.decode(unb64(p[0]));
+      if (!await crypto.subtle.verify("HMAC", await hmacKey(), unb64(p[1]), enc.encode(body))) return null;
+      const [uid, exp] = body.split("."); if (!(+exp > clock())) return null;
+      return /^[0-9a-f-]{36}$/.test(uid) ? uid : null;
+    } catch { return null; }
+  }
+  async function register(user, pass, ip) {
+    const u = norm(user), pw = String(pass == null ? "" : pass);
+    if (!USER_RE.test(u)) return fail("שם משתמש: 3 עד 16 תווים, אותיות, ספרות וקו תחתון");
+    if (pw.length < 8 || pw.length > 72) return fail("סיסמה: 8 עד 72 תווים");
+    const ex = await admin.from("users").select("username").eq("username", u).maybeSingle();
+    if (ex.data) return fail("שם המשתמש תפוס");
+    const okIp = await admin.rpc("signup_allowed", { p_ip: String(ip || "unknown").slice(0, 64) });
+    if (okIp.error || okIp.data !== true) return fail("נוצרו יותר מדי חשבונות מהרשת הזו. נסה שוב בעוד שעה");
+    const salt = crypto.getRandomValues(new Uint8Array(16)), uid = crypto.randomUUID();
+    const ins = await admin.from("users").insert({ username: u, user_id: uid, pass_hash: await hashPass(pw, salt), salt: b64(salt) });
+    if (ins.error) return fail("שם המשתמש תפוס");
+    return { ok: true, token: await token(uid), user: u };
+  }
+  async function login(user, pass, ip) {
+    const u = norm(user).slice(0, 64), pw = String(pass == null ? "" : pass).slice(0, 72), addr = String(ip || "unknown").slice(0, 64);
+    const blk = await admin.rpc("login_blocked", { p_user: u, p_ip: addr });
+    if (blk.error || blk.data === true) return fail("יותר מדי ניסיונות. נסה שוב בעוד רבע שעה");
+    const row = (await admin.from("users").select("user_id,pass_hash,salt").eq("username", u).maybeSingle()).data;
+    // Hash even when the user does not exist, so the answer takes the same time either way.
+    const h = await hashPass(pw, row ? unb64(row.salt) : new Uint8Array(16));
+    if (!row || !same(h, row.pass_hash)) { await admin.rpc("login_fail", { p_user: u, p_ip: addr }); return fail("שם משתמש או סיסמה שגויים"); }
+    return { ok: true, token: await token(row.user_id), user: u };
+  }
+  return { register, login, verify };
 }

@@ -12,7 +12,7 @@ async function setup(){
     create schema auth; create table auth.users(id uuid primary key);
     grant usage on schema public to anon, authenticated, service_role;
     alter default privileges in schema public grant all on tables to service_role;`);
-  await db.exec(fs.readFileSync(fs.readdirSync('supabase/migrations').map(f=>'supabase/migrations/'+f).sort()[0],'utf8'));
+  for(const f of fs.readdirSync('supabase/migrations').sort())await db.exec(fs.readFileSync('supabase/migrations/'+f,'utf8'));
   await db.exec(`grant all on all tables in schema public to service_role; grant usage on all sequences in schema public to service_role;`);
   for(const [u,name,gold] of [[U1,'מוכר',0],[U2,'קונה',5000],[U3,'שלישי',5000]]){
     G.setEnv(Math.random,Date.now);const A=G.newAccount();G.apply(A,'create',{name,cls:'blade'});A.gold=gold;
@@ -60,6 +60,8 @@ test('a browser session cannot read or write tables, or call market functions di
     await assert.rejects(db.query('select * from listings'),/permission denied/);
     await assert.rejects(db.query('insert into audit(kind) values ($1)',['x']),/permission denied/);
     await assert.rejects(db.query('select market_buy($1,$2)',[U2,1]),/permission denied/);
+    await assert.rejects(db.query('select * from users'),/permission denied/);
+    await assert.rejects(db.query("select login_fail('x','y')"),/permission denied/);
     await assert.rejects(db.query('select market_list($1,$2,$3)',[U1,1,1]),/permission denied/);
     await db.exec('reset role');
   }

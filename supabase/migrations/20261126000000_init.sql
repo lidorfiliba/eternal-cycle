@@ -1,7 +1,7 @@
 -- Eternal Cycle: all game state lives here and only the server function may touch it.
 -- Row Level Security is on with no policies, so browser clients (anon / authenticated)
 -- cannot read or write any of these tables directly. The edge function uses the service role.
--- Accounts are identified by an id the function derives from a secret key held by the player's
+-- (superseded by the users migration) Accounts were first identified by a key held by the player's
 -- browser (SHA-256 of the key); the key itself is never stored.
 
 create table public.accounts (

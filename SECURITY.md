@@ -2,9 +2,9 @@
 
 ## What the server guarantees
 
-- **Accounts are bearer keys.** The browser creates a random 256-bit key and sends it with each request; the server uses the first 128 bits of its SHA-256 as the account id and never stores the key. Whoever holds the key controls the account, so it is the player's job to keep it private. New accounts are limited to 5 per network address per hour.
+- **Accounts are username + password.** Passwords are stored only as salted PBKDF2-SHA256 hashes (300,000 rounds). Sign-in returns a session token signed with a server-side key (valid 90 days); the game account id comes from that token, never from the client. Ten wrong passwords for a name, or thirty from one address, lock sign-in for 15 minutes. New accounts are limited to 5 per network address per hour. Supabase Auth is not used.
 - **Events run on the server clock.** Bonus XP, bonus drops, objectives and their rewards are decided from server time; a reward can be collected once per event window, the quiz allows one answer.
-- **State cannot be edited from the browser.** All tables have row-level security with no policies, and table and function privileges are revoked from the `anon` and `authenticated` roles. Only the `act` function (service role) reads or writes. Supabase Auth is not used.
+- **State cannot be edited from the browser.** All tables have row-level security with no policies, and table and function privileges are revoked from the `anon` and `authenticated` roles. Only the `act` function (service role) reads or writes.
 - **Every change goes through `apply()`** in `core.js`, executed on the server against the stored account, with server time and cryptographic randomness. Loot, upgrade rolls, boxes and duels are decided there.
 - **Kill claims are bounded.** A token bucket refills at the highest rate a real player can reach for that character in that map, capped at 40 kills. Claims above it are cut and written to `audit` (`suspects` view).
 - **Bosses** must be spawned by the server (40 accepted kills) and cannot be reported dead before the character could have dealt the damage.
@@ -20,7 +20,7 @@
 - **Bots that play at legitimate speed.** An automated client can claim the maximum allowed rate around the clock; it earns at most about twice what an attentive player does. The `suspects` view helps find them; banning is manual.
 - **Multiple accounts.** Creating an account is free; the per-address limit slows mass creation but does not stop it.
 - **The quiz answers** are in the shared rules file, so a determined player can look them up.
-- **A lost key is a lost account.** There is no email recovery.
+- **A forgotten password is a lost account.** There is no email on file, so no recovery. Sessions cannot be revoked one by one; changing the server key signs everyone out.
 - **Real-money trading between players** outside the game.
 - **Local mode** is not protected at all, by design.
 
