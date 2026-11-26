@@ -10,7 +10,7 @@ const plain = (o) => JSON.parse(JSON.stringify(o));
 
 export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tickMs = 250, inviteMs = 20000 }) {
   const wss = new WebSocketServer({ noServer: true, maxPayload: 600 });
-  const socks = new Map(), keys = new Map(), invites = new Map(), duels = new Map(), inDuel = new Map();
+  const socks = new Map(), keys = new Map(), invites = new Map(), duels = new Map(), inDuel = new Map(), watching = new Map();
   let nid = 1;
   const send = (uid, m) => { const ws = socks.get(uid); if (ws && ws.readyState === 1) ws.send(JSON.stringify(m)); };
 
@@ -31,6 +31,7 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
 
   async function finish(d, win, why) {
     if (d.done) return; d.done = true; clearInterval(d.timer); duels.delete(d.id);
+    for (const w of d.watch) { watching.delete(w); send(w, { t: 'over', win, why: why || '' }); }
     for (let i = 0; i < 2; i++) {
       const uid = d.u[i], won = win === i; inDuel.delete(uid);
       const gain = await mutate(uid, (A) => G.duelSettle(A, clock(), won, d.p[1 - i].rt));
@@ -45,7 +46,7 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
     // the challenger pays the arena ticket, as in any arena fight
     const paid = await mutate(a, (A) => { if (!(A.tickets > 0)) return false; A.tickets--; });
     if (paid !== true) return send(a, { t: 'noticket' });
-    const D = G.liveNew(pa, pb), d = { id: nid++, u: [a, b], p: [pa, pb], D, t0: clock(), done: false };
+    const D = G.liveNew(pa, pb), d = { id: nid++, u: [a, b], p: [pa, pb], D, t0: clock(), done: false, watch: new Set() };
     duels.set(d.id, d); inDuel.set(a, d); inDuel.set(b, d);
     const L = { b: D.b, cr: D.cr, T: D.T, pool: D.pool };
     for (let i = 0; i < 2; i++) send(d.u[i], { t: 'start', id: d.id, side: i, opp: pub(d.p[1 - i]), L, cls: [pa.c, pb.c] });
@@ -80,6 +81,13 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
       for (const o of socks.values()) if (o !== ws && o.room === ws.room && o.readyState === 1) o.send(out);
       return;
     }
+    if (m.t === 'duels') return send(uid, { t: 'duels', list: [...duels.values()].slice(0, 20).map((x) => ({ id: x.id, a: x.p[0].n, b: x.p[1].n })) });
+    if (m.t === 'watch') { // look on at a fight between two other players
+      const x = duels.get(Number(m.id)); if (!x || x.done || inDuel.has(uid)) return send(uid, { t: 'gone' });
+      const old = watching.get(uid); if (old) old.watch.delete(uid); x.watch.add(uid); watching.set(uid, x); x.D.t = (clock() - x.t0) / 1000 - 1.2;
+      return send(uid, { t: 'watching', id: x.id, p: [pub(x.p[0]), pub(x.p[1])], L: { b: x.D.b, cr: x.D.cr, T: x.D.T, pool: x.D.pool }, cls: [x.p[0].c, x.p[1].c], T: x.D.t, f: state(x.D), xz: x.D.f.map((f) => [f.x, f.z]) });
+    }
+    if (m.t === 'unwatch') { const x = watching.get(uid); if (x) { x.watch.delete(uid); watching.delete(uid); } return; }
     if (m.t === 'who') { // which of these players are connected right now
       const ks = Array.isArray(m.ks) ? m.ks.slice(0, 60).map(String) : []; return send(uid, { t: 'who', on: ks.filter((k) => keys.has(k)) });
     }
@@ -97,11 +105,12 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
     if (m.t === 'pos') {
       const f = d.D.f[side]; if (d.D.t < 0 || f.stun > d.D.t) return;
       f.x = Math.max(20, Math.min(G.LIVE_W - 20, Number(m.x) || 0)); f.z = Math.max(0, Math.min(1, Number(m.z) || 0));
+      for (const w of d.watch) send(w, { t: 'pos', x: f.x, z: f.z, s: side });
       return send(d.u[1 - side], { t: 'pos', x: f.x, z: f.z });
     }
     if (m.t === 'act') {
       if (d.D.t < 0) return; const o = G.liveAct(d.D, side, String(m.k), rnd); if (!o) return;
-      const msg = { t: 'ev', o, T: d.D.t, f: state(d.D) }; send(d.u[0], msg); send(d.u[1], msg);
+      const msg = { t: 'ev', o, T: d.D.t, f: state(d.D) }; send(d.u[0], msg); send(d.u[1], msg); for (const w of d.watch) send(w, msg);
       if (d.D.over) finish(d, d.D.win, 'ko');
       return;
     }
@@ -124,6 +133,7 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
         } catch (e) { console.error(e); }
       });
       ws.on('close', () => { if (!ws.uid || socks.get(ws.uid) !== ws) return; socks.delete(ws.uid); keys.delete(ws.key);
+        { const x = watching.get(ws.uid); if (x) { x.watch.delete(ws.uid); watching.delete(ws.uid); } }
         const d = inDuel.get(ws.uid); if (d && !d.done) finish(d, 1 - d.u.indexOf(ws.uid), 'left'); });
       ws.on('error', () => {});
     });

@@ -368,8 +368,11 @@ test('live duel over the socket: invite, server-decided hits, result written to 
     a.send({t:'act',k:'atk'});await new Promise(r=>setTimeout(r,150));assert.equal(a.q.filter(m=>m.t==='ev').length,0,'too far apart: the server ignores the swing');
     a.send({t:'pos',x:200,z:.5});b.send({t:'pos',x:240,z:.5});assert.equal((await b.wait('pos')).x,200);
     a.send({t:'act',k:'atk'});const ev=await b.wait('ev');assert.equal(ev.o.by,0);assert.ok(ev.o.dm>0);assert.ok(ev.f[1].hp<1);await a.wait('ev');
+    const c=await mkUser('gimel','storm');await open(c);c.send({t:'duels'});const dl=await c.wait('duels');assert.deepEqual(dl.list.map(x=>[x.a,x.b]),[['alef','bet']]);
+    c.send({t:'watch',id:dl.list[0].id});const wv=await c.wait('watching');assert.equal(wv.p[0].n,'alef');assert.ok(wv.f[1].hp<1);assert.equal(wv.xz[0][0],200);
+    a.send({t:'pos',x:210,z:.5});assert.equal((await c.wait('pos')).s,0);c.send({t:'act',k:'atk'});await new Promise(r=>setTimeout(r,120));assert.equal(c.q.filter(m=>m.t==='ev').length,0,'a spectator cannot act in the fight');
     d.D.f[1].hp=.001;d.t0-=30000;a.send({t:'act',k:'s3'});
-    const ea=await a.wait('end'),eb=await b.wait('end');assert.equal(ea.win,true);assert.equal(eb.win,false);assert.ok(ea.gain>0);
+    const ea=await a.wait('end'),eb=await b.wait('end');await c.wait('ev');assert.equal((await c.wait('over')).win,0);c.ws.close();assert.equal(ea.win,true);assert.equal(eb.win,false);assert.ok(ea.gain>0);
     assert.ok((await st0(a)).rating>r0);assert.equal((await st0(b)).rating,1000-12);assert.equal(srv.live.duels.size,0);
     assert.ok((await db.query("select count(*)::int c from chat where name='★'")).rows[0].c>=1,'the server hears about it');
     a.send({t:'challenge',k:b.key});const inv2=await b.wait('invite');b.send({t:'answer',id:inv2.id,ok:true});await a.wait('start');await b.wait('start');b.ws.close();assert.equal((await a.wait('end')).win,true,'leaving forfeits');
