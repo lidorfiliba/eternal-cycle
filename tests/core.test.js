@@ -161,7 +161,7 @@ test('selling by rarity leaves wings, excellent items and the other rarities alo
 test('the keep: a crafted key, entry fixes the bracket, only kills inside count, higher brackets pay more',()=>{
   assert.deepEqual([1,14,15,80,81,330,331,400].map(G.evTier),[0,0,1,1,2,6,7,7]);assert.deepEqual(G.tierRange(7),[331,400]);assert.deepEqual(G.tierRange(1),[15,80]);
   assert.ok(G.tierReward(7).lv>G.tierReward(6).lv&&G.tierReward(2).gems>G.tierReward(1).gems);
-  const at=Date.parse('2026-11-26T12:02:00Z'); // two minutes into the hourly opening
+  const at=Date.parse('2026-11-26T12:01:00Z'); // one minute into the hourly opening
   const mk=(lvl,t0)=>{const A=G.newAccount();const st={now:t0};G.setEnv(()=>.5,()=>st.now);G.apply(A,'create',{name:'a',cls:'blade'});const s=A.chars[0];s.lvl=lvl;s.stats.str=5000;s.stats.vit=3000;s.autoPts=false;A.open=7;return {A,s,st};};
   {const {A}=mk(100,at);assert.equal(G.apply(A,'craftKey',{}).ok,false,'needs shards');A.shards=7;A.gold=5000;assert.ok(G.apply(A,'craftKey',{}).ok);assert.equal(A.keys,1);assert.equal(A.shards,2);assert.equal(A.gold,5000-G.KEY_GOLD);}
   {const {A}=mk(100,at-10*60000);A.keys=1;assert.equal(G.apply(A,'evEnter',{id:'crimson'}).ok,false,'the gate is shut outside the opening');assert.equal(A.keys,1);}
@@ -171,11 +171,17 @@ test('the keep: a crafted key, entry fixes the bracket, only kills inside count,
     G.apply(A,'travel',{z:0});for(let i=0;i<3;i++){st.now+=20000;G.apply(A,'tick',{z:0,kills:30});}
     const outside=Object.values(A.ev||{}).reduce((x,r)=>x+(r.k||0),0);
     const e=G.apply(A,'evEnter',{id:'crimson'});const again=G.apply(A,'evEnter',{id:'crimson'});
-    for(let i=0;i<10;i++){st.now+=20000;G.apply(A,'tick',{ev:1,kills:30});}
+    for(let i=0;i<10;i++){st.now+=20000;G.apply(A,'tick',{ev:1,kills:60});}
     const rec=Object.values(A.ev).find(r=>r.in),before=s.lvl,r=G.apply(A,'claimEvent',{id:'crimson'});
     st.now+=15*60000;const late=G.apply(A,'tick',{ev:1,kills:5});return {A,s,e,again,outside,rec,r,gained:s.lvl-before,late};};
   const t2=run(100);assert.equal(t2.outside,0,'kills outside the keep do not count');assert.ok(t2.e.ok,t2.e.msg);assert.equal(t2.e.tier,2);assert.ok(t2.again.ok);assert.equal(t2.A.keys,0,'one key per opening, going back in is free');
-  assert.ok(t2.rec.k>=80,'kills '+t2.rec.k);assert.ok(t2.r.ok,t2.r.msg);assert.match(t2.r.rt,/^4 רמות/);assert.equal(t2.late.evOver,true,'after closing, the keep throws the player out');assert.equal(t2.s.evIn,null);
+  assert.ok(t2.rec.k>=400,'kills '+t2.rec.k);assert.ok(t2.r.ok,t2.r.msg);assert.match(t2.r.rt,/^4 רמות/);assert.equal(t2.late.evOver,true,'after closing, the keep throws the player out');assert.equal(t2.s.evIn,null);
+  {const {A,s,st}=mk(100,at);A.keys=2;st.now=at+2*60000;assert.match(G.apply(A,'evEnter',{id:'crimson'}).msg,/הכניסה נסגרה/,'four minutes in, the gate is shut');assert.equal(A.keys,2);}
+  {const {A,s,st}=mk(100,at);A.keys=1;assert.ok(G.apply(A,'evEnter',{id:'crimson'}).ok);G.apply(A,'evLeave',{});st.now=at+2*60000;assert.equal(G.apply(A,'evEnter',{id:'crimson'}).ok,false,'no way back in once the gate is shut');}
+  {const {A,s}=mk(400,at);A.keys=1;assert.ok(G.apply(A,'reset',{}).ok);s.lvl=100;assert.match(G.apply(A,'evEnter',{id:'crimson'}).msg,/ריסט/);assert.equal(A.keys,1);}
+  {const a=mk(100,at);a.A.keys=1;G.apply(a.A,'evEnter',{id:'crimson'});a.st.now+=20000;const x=G.apply(a.A,'tick',{ev:1,kills:500}),ez=a.s.evZ;
+    const b=mk(100,at);G.apply(b.A,'travel',{z:ez});b.st.now+=20000;const y=G.apply(b.A,'tick',{z:ez,kills:500});
+    assert.ok(x.kills>y.kills*1.5,'the horde dies faster: '+x.kills+' vs '+y.kills);assert.ok(Math.abs(x.base/x.kills-y.base/y.kills)<1e-9,'and pays the normal experience per kill');}
   const t7=run(335);assert.ok(t7.r.ok);assert.equal(t7.rec.tr,7);assert.match(t7.r.rt,/^10 רמות/);assert.ok(t7.gained>=9);
 });
 test('wear the best: strongest piece per slot from the shared bag; gear worn by another character is not touched',()=>{
