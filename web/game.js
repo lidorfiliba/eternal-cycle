@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126141309';
-const {TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126142145';
+const {PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -758,6 +758,7 @@ function renderHud(){
   if(lv1){const rec=(A.ev||{})[lv1.key]||{};chip=lv1.e.n+(lv1.e.obj&&lv1.e.obj[0]!=='q'?' · '+Math.min(rec[lv1.e.obj[0]]||0,lv1.e.obj[1])+'/'+lv1.e.obj[1]:'')+' · '+mmss((lv1.end-now)/1000);}
   else{let best=null,bt=1e9;for(const e of EVENTS){const t=evNext(e,now);if(t<bt){bt=t;best=e;}}chip='הבא: '+best.n+' בעוד '+fmtT(bt);}
   ec.style.display=duel?'none':'';ec.textContent=evReady?'פרס אירוע מחכה לך':chip;ec.classList.toggle('done',evReady);ec.classList.toggle('live',!!lv1);
+  if(premSeen==null)premSeen=A.prem||0;else if((A.prem||0)>premSeen){announce('התקבלו '+fmt((A.prem||0)-premSeen)+' קרדיטים. תודה!',true);premSeen=A.prem||0;myOrders=null;loadOrders();}else premSeen=A.prem||0;
   if(passSeen<0)passSeen=passLevel(S);else if(passLevel(S)>passSeen){passSeen=passLevel(S);announce('פס העונה: רמה '+passSeen+'! '+passReward(passSeen).t+' מחכה לך',true);panelDirty=true;}
   const plv=passLevel(S),pb=evReady||(A.login&&!A.login.got)||plv>A.pass.claimed||TASKS.some(t=>A.daily[t.k]>=t.n&&!A.daily.done[t.k]);
   const bt=document.querySelector('#tabs [data-tab=pass]');let b=bt.querySelector('.badge');if(pb&&!b){b=document.createElement('i');b.className='badge';bt.appendChild(b);}else if(!pb&&b)b.remove();
@@ -826,7 +827,7 @@ function shopList(name,list,have,curName){
     return '<div class="card shop"><div class="z"><b>'+o.t+'</b>'+(o.d?'<small>'+o.d+'</small>':'')+'</div><button class="btn sm'+(dis?'':' pri')+'" data-act="buy" data-s="'+name+'" data-k="'+o.k+'"'+(dis?' disabled':'')+'>'+L(fmt(o.cost))+' '+curName+'</button></div>';}).join('');
 }
 function renderShop(){
-  let h=renderMarket()+'<h2>חנות אותות ריסט</h2><p class="hint">אותות מקבלים רק מריסט. יש לך '+L(A.cred)+'.</p>'+shopList('reset',RESET_SHOP,A.cred,'אותות');
+  let h=renderCredits()+renderMarket()+'<h2>חנות אותות ריסט</h2><p class="hint">אותות מקבלים רק מריסט. יש לך '+L(A.cred)+'.</p>'+shopList('reset',RESET_SHOP,A.cred,'אותות');
   h+='<h2>חנות זהב</h2>'+(A.boost>Date.now()?'<p class="hint">מגילת ניסיון פעילה עוד '+fmtT((A.boost-Date.now())/1000)+'.</p>':'')+shopList('gold',GOLD_SHOP,A.gold,'זהב');
   h+='<h2>חנות העונה</h2><p class="hint">מטבעות עונה מקבלים מהפס, מריסטים ומהזירה.</p>'+shopList('season',SEASON_SHOP,A.coins,'מטבעות');
   return h;
@@ -999,7 +1000,7 @@ function setBig(on){prefs.big=!!on;savePrefs();$('app').classList.toggle('wide',
 function openTab(name){
   if(prefs.big)setBig(false);
   tab=name;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
-  if(tab==='arena'){loadArena();if(ONLINE&&!demo){send('pget',{});loadGuild();loadTop();}}if(tab==='shop')loadMarket();passScroll=null;renderPanel();$('panel').scrollTop=0;
+  if(tab==='arena'){loadArena();if(ONLINE&&!demo){send('pget',{});loadGuild();loadTop();}}if(tab==='shop'){loadMarket();loadOrders();}passScroll=null;renderPanel();$('panel').scrollTop=0;
 }
 function loadArena(){if(!demo&&S)act('opps',{}).then(()=>{panelDirty=true;});}
 function enterGame(r){
@@ -1075,6 +1076,9 @@ document.addEventListener('click',async e=>{
   if(a==='acct'){acctModal(b.dataset.k);return;}
   if(a==='acctGo'){acctGo(b.dataset.k);return;}
   if(a==='tut'){tutNext();return;}
+  if(a==='credBuy'){loadOrders().then(()=>showPacks());return;}
+  if(a==='ordSend'){ordSend();return;}
+  if(a==='ordCancel'){rpc('ocancel',{id:+b.dataset.id}).then(j=>{if(j.orders)myOrders=j.orders;renderPanel();}).catch(()=>{});return;}
   if(a==='sellAsk'){const q=+b.dataset.r,list=A.inv.filter(it=>it.r===q&&it.s!=='g'&&!it.ex),gold=list.reduce((x,it)=>x+sellVal(it),0),up=list.filter(it=>it.p>0).length;if(!list.length)return;
     openModal('<h3 style="color:var(--r'+q+')">למכור את כל ה'+RAR[q].n+'?</h3><p class="hint">'+L(list.length)+' פריטים יימכרו תמורת '+L(fmt(gold))+' זהב. אי אפשר לבטל אחרי המכירה.</p>'+
       (up?'<p class="hint" style="color:var(--bad)">שים לב: '+L(up)+' מהם משודרגים.</p>':'')+(q>=3?'<p class="hint" style="color:var(--bad)">אלה פריטים '+(q===4?'עתיקים':'אגדיים')+'. ודא שאתה לא צריך אותם.</p>':'')+
@@ -1169,6 +1173,36 @@ function showPeer(p){
     (party.code?'<p class="hint" style="margin-top:8px">קוד הפארטי שלך: <b dir="ltr">'+esc(party.code)+'</b>. שלח לו אותו בצ\'אט כדי לצרף אותו.</p>':'')+
     '<div class="acts"><button class="btn pri" data-act="closeModal">סגור</button></div>');
 }
+/* ---------- paid credits ---------- */
+let myOrders=null,premSeen=null;
+const ORD_ST={pending:'ממתין לאישור',paid:'אושר',rejected:'נדחה',cancelled:'בוטל'};
+function renderCredits(){
+  let h='<h2>חנות קרדיטים</h2>';if(!ONLINE)return h+'<p class="hint">קרדיטים קיימים רק במצב מקוון.</p>';
+  const pend=myOrders&&myOrders.orders.find(o=>o.status==='pending');
+  h+='<div class="card" style="display:flex;flex-direction:column;gap:8px"><div class="kv"><span>הקרדיטים שלך</span><b class="num" style="color:#7df9ff;font-size:17px">'+L(fmt(A.prem||0))+'</b></div>'+
+    (A.vip>Date.now()?'<p class="hint" style="color:var(--gold)">מעמד נצח פעיל עוד '+fmtT((A.vip-Date.now())/1000)+'.</p>':'')+
+    (pend?'<p class="hint">בקשה ל-'+L(fmt(pend.credits))+' קרדיטים ('+L(pend.price)+' ש"ח) ממתינה לאישור התשלום.</p><button class="btn sm" data-act="ordCancel" data-id="'+pend.id+'">בטל בקשה</button>'
+      :'<button class="btn pri" data-act="credBuy">קנה קרדיטים</button>')+'</div>';
+  return h+shopList('prem',PREM_SHOP,A.prem||0,'קרדיטים');
+}
+async function loadOrders(){if(!ONLINE||demo)return;try{const j=await rpc('oget',{});if(j.orders){myOrders=j.orders;panelDirty=true;}}catch(e){}}
+function showPacks(msg){
+  const o=myOrders||{pay:'',orders:[]};
+  if(!o.pay){openModal('<h3>קרדיטים</h3><p class="hint">רכישת קרדיטים עוד לא נפתחה. היא תיפתח כשמפעיל המשחק יגדיר את פרטי התשלום.</p><div class="acts"><button class="btn pri" data-act="closeModal">סגור</button></div>');return;}
+  openModal('<h3>קניית קרדיטים</h3><p class="hint">בוחרים חבילה, משלמים לפי ההוראות, והקרדיטים נכנסים לחשבון אחרי שהתשלום מאושר. הרכישה מגיל 18, או באישור הורה.</p>'+
+    PACKS.map(p=>'<label class="pack"><input type="radio" name="pack" value="'+p.k+'"'+(p.k==='p2'?' checked':'')+'><span><b>'+L(fmt(p.credits))+' קרדיטים</b>'+(p.note?'<small>'+p.note+'</small>':'')+'</span><b class="num">'+L(p.ils)+' ש"ח</b></label>').join('')+
+    '<p class="hint" style="margin-top:8px"><b>איך משלמים:</b></p><p dir="auto" style="white-space:pre-wrap;margin:0 0 8px">'+esc(o.pay)+'</p>'+
+    '<input type="text" id="ordRef" maxlength="60" placeholder="שם המשלם או 4 ספרות אחרונות, כדי לזהות את התשלום" autocomplete="off">'+
+    (msg?'<p class="hint" style="color:var(--bad)">'+esc(msg)+'</p>':'')+
+    '<p class="hint">קרדיטים ופריטים הם חלק מהמשחק בלבד ואין להם ערך כספי. פרטים ב<a href="terms.html" target="_blank" rel="noopener">תקנון</a>.</p>'+
+    '<div class="acts"><button class="btn" data-act="closeModal">ביטול</button><button class="btn pri" data-act="ordSend">שילמתי, שלח בקשה</button></div>');
+}
+async function ordSend(){
+  const el=document.querySelector('input[name=pack]:checked'),ref=($('ordRef').value||'').trim();if(!el)return;if(ref.length<2){showPacks('כתוב פרט מזהה לתשלום');return;}
+  let j=null;try{j=await rpc('onew',{pack:el.value,ref:ref});}catch(e){}
+  if(j&&j.orders)myOrders=j.orders;if(!j||!j.result||!j.result.ok){showPacks(j&&j.result&&j.result.msg||'אין חיבור לשרת');return;}
+  closeModal();toast('הבקשה נשלחה. הקרדיטים ייכנסו אחרי אישור התשלום');panelDirty=true;
+}
 /* ---------- leaderboard: the top 20 ---------- */
 let topList=null,topBy='resets';
 function loadTop(){if(ONLINE&&!demo)send('top',{});}
@@ -1185,7 +1219,7 @@ function renderTop(){
   return h+'</div>';
 }
 /* ---------- other players, chat, guilds ---------- */
-let peers=[],chatLog=[],chatSince=0,chatCh='w',chatUnread=0,onlineN=0,guild={mine:null,top:[],holder:null},me={secret:true,admin:false},beatT=0,beatBusy=false,banned=false;
+let chatAt=0,peers=[],chatLog=[],chatSince=0,chatCh='w',chatUnread=0,onlineN=0,guild={mine:null,top:[],holder:null},me={secret:true,admin:false},beatT=0,beatBusy=false,banned=false;
 async function beat(){
   if(beatBusy||!ONLINE||demo||!S||document.hidden||SC.mode!=='farm')return;beatBusy=true;
   try{const h=SC.hero,j=await rpc('beat',{x:Math.round(h.x),f:h.face,a:SC.t-(h.lastAtk||-9)<3,s:chatSince}),b=j&&j.beat;
@@ -1208,7 +1242,7 @@ function drawPeers(g0,sc){
     nameTag(p.x,g0-SPR[CLSSPR[p.s.c]].bh*2*sc-10,p.s.n,p.s.r,p.g,false);}
 }
 function addChat(list){
-  const first=chatSince===0;
+  const first=chatSince===0;if(!first&&list.length)chatAt=Date.now();
   for(const m of list){const i=+m.i;if(!(i>chatSince))continue;chatSince=i;chatLog.push({c:m.c==='g'?'g':'w',n:String(m.n||''),g:String(m.g||''),m:String(m.m||''),me:!!m.me});if(!first&&tab!=='chat'&&!m.me)chatUnread++;}
   if(chatLog.length>120)chatLog.splice(0,chatLog.length-120);
   const l=$('chatList');if(l){l.innerHTML=chatRows();l.scrollTop=l.scrollHeight;}
@@ -1234,7 +1268,7 @@ async function say(){
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='chatIn'){e.preventDefault();say();}});
 function renderChatBar(){
   const el=$('chatBar');if(!el)return;if(!ONLINE||demo||!S){el.style.display='none';return;}el.style.display='';
-  const m=chatLog[chatLog.length-1],t=(chatUnread?'('+chatUnread+') ':'')+(m?(m.g?'['+m.g+'] ':'')+m.n+': '+m.m:'צ\'אט · '+onlineN+' מחוברים עכשיו');
+  const m=Date.now()-chatAt<180000?chatLog[chatLog.length-1]:null,t=(chatUnread?'('+chatUnread+') ':'')+(m?(m.g?'['+m.g+'] ':'')+m.n+': '+m.m:'צ\'אט · '+onlineN+' מחוברים עכשיו');
   if(el.textContent!==t)el.textContent=t;
 }
 function loadGuild(){if(ONLINE&&!demo)send('gget',{});}
@@ -1305,17 +1339,20 @@ function loadMe(){
 
 /* ---------- event announcements in the middle of the screen ---------- */
 // From five minutes before an event, once a minute, and once more when it opens.
-const annPrev={},annMark={},annLive={},annQ=[];let annT=0,annShow=0,annRemind=200;
+const annPrev={},annMark={},annLive={},annQ=[];let annT=0,annShow=0,annAge=99,annGap=0,annRemind=200;
 function announce(txt,live){annQ.push({t:txt,live:!!live});if(annQ.length>4)annQ.shift();}
 function updateAnnounce(dt){
   const el=$('annc');if(!el)return;
-  if(annShow>0){annShow-=dt;if(annShow<=0)el.classList.remove('on');}
-  else if(annQ.length&&S&&!demo){const a=annQ.shift();el.textContent=a.t;el.classList.toggle('live',a.live);el.classList.add('on');annShow=4.2;snd(a.live?'boss':'ok');}
+  // A message starts a little below the middle, drifts up for most of a minute and fades. A newer one may replace it after a few seconds.
+  if(annShow>0){annShow-=dt;annAge+=dt;if(annShow<=0||(annQ.length&&annAge>6)){el.classList.remove('on');annShow=0;annGap=.7;}}
+  else if((annGap-=dt)<=0&&annQ.length&&S&&!demo){const a=annQ.shift();el.textContent=a.t;el.classList.toggle('live',a.live);
+    el.style.transition='none';el.style.transform='translateY(0)';void el.offsetWidth;el.style.transition='opacity .7s, transform 52s linear';el.style.transform='translateY(-'+Math.round(H*.26)+'px)';
+    el.classList.add('on');annShow=50;annAge=0;snd(a.live?'boss':'ok');}
   if(!S||demo||(annT+=dt)<1)return;annT=0;
   const now=Date.now(),list=EVENTS.map(e=>{const t=e.tiered?evTier(S.lvl):0;return {id:e.id,n:e.n+(t?' '+t:''),s:evNext(e,now),d:e.d,t:t,tiered:e.tiered};}),sg=siegeInfo(now);
   list.push({id:'siege',n:'מצור הטירה',s:sg.on?1e9:sg.next*60-new Date(now).getSeconds(),d:'כל חיסול של חבר גילדה נספר'});
   for(const e of list){const prev=annPrev[e.id];annPrev[e.id]=e.s;
-    if(prev!=null&&prev<=90&&e.s>prev+120){annMark[e.id]=0;announce(e.n+' התחיל! '+e.d,true);continue;}
+    if(prev!=null&&prev<=90&&e.s>prev+120){annMark[e.id]=0;announce(e.n+' התחיל! '+String(e.d).split('.')[0],true);continue;}
     if(e.s<=300&&e.s>5){const m=Math.ceil(e.s/60);if(annMark[e.id]!==m&&prev!=null){annMark[e.id]=m;announce(e.n+' מתחיל בעוד '+(m===1?'דקה':m+' דקות'));
       if(e.tiered&&(m===5||m===2)){if(!e.t)announce('הכניסה ל'+e.n+' מרמה '+TIER_MIN[0]+'. חסרות לך '+(TIER_MIN[0]-S.lvl)+' רמות');else if(e.t<7)announce('עוד '+(TIER_MIN[e.t]-S.lvl)+' רמות לדרגה '+(e.t+1)+'. תספיק?');}}}}
   // While an event runs: how much is left, the moment its goal is reached, and what was missed when it closes.
@@ -1343,7 +1380,7 @@ function updateTut(dt){
   tutT+=dt;
   const done=tutStep===0?SC.zi>=0:tutStep===1?(A.kills>=2||pend.kills>=2)&&tutT>3:tutStep===2?(pend.casts>0||A.casts>0)&&tutT>3||tutT>14:tutT>(tutStep===3?12:9);
   if(done){tutNext();return;}
-  el.style.display=SC.mode==='farm'&&annShow<=0&&!$('modal').classList.contains('on')?'':'none';
+  el.style.display=SC.mode==='farm'&&annAge>6&&!$('modal').classList.contains('on')?'':'none';
   const t=TUT[tutStep];if(el.dataset.t!==t){el.dataset.t=t;el.firstChild.textContent=t;el.lastChild.textContent='הבנתי · '+(tutStep+1)+'/'+TUT.length;}
 }
 function tutNext(){tutStep++;tutT=0;if(tutStep>=TUT.length){prefs.tut=1;savePrefs();$('tip').style.display='none';}}

@@ -278,3 +278,28 @@ test('party training: a member\'s kills hand experience to the others on the sam
   assert.equal((await handle(U(2),'tick',{z:0,kills:0})).result.shared,undefined,'nothing left to take');
   assert.equal(Number((await db.query('select coalesce(sum(xp),0) s from party_share where user_id=$1',[U(1)])).rows[0].s),0,'no kills, nothing shared back');
 });
+
+test('paid credits: a request, an admin confirming it once, and spending the credits',async()=>{
+  const {db,handle,auth,row}=await world();
+  const boss=await auth.register('boss','longenough1','3.3.3.3',0,'x1');const bu=(await auth.session(boss.token)).uid;await handle(bu,'create',{name:'מנהל',cls:'blade'});
+  await handle(U(1),'create',{name:'קונה',cls:'blade'});
+  assert.match((await handle(U(1),'onew',{pack:'p2',ref:'x'})).result.msg,/עוד לא נפתחה/,'closed until payment details are set');
+  assert.equal((await handle(U(1),'aset',{key:'pay_info',value:'hack'})).result.ok,false,'players cannot open the shop');
+  await db.query("update users set is_admin=true where username='boss'");
+  assert.ok((await handle(bu,'aset',{key:'pay_info',value:'העברה למספר 000'})).result.ok);
+  assert.equal((await handle(U(1),'onew',{pack:'nope'})).result.ok,false);
+  const o=await handle(U(1),'onew',{pack:'p2',ref:'  דני\n4321 '});assert.ok(o.result.ok,o.result.msg);assert.equal(o.orders.orders[0].credits,550);assert.equal(o.orders.orders[0].price,50);assert.equal(o.orders.pay,'העברה למספר 000');
+  assert.match((await handle(U(1),'onew',{pack:'p1'})).result.msg,/ממתינה/,'one open request at a time');
+  assert.equal((await row(U(1))).state.prem,undefined,'asking gives nothing');
+  const id=o.orders.orders[0].id;
+  assert.equal((await handle(U(1),'aodecide',{id,ok:true})).result.ok,false,'a player cannot confirm their own payment');
+  const view=await handle(bu,'aorders',{});assert.equal(view.shop.pending.length,1);assert.equal(view.shop.pending[0].ref,'דני 4321');
+  const v0=(await row(U(1))).version;
+  assert.ok((await handle(bu,'aodecide',{id,ok:true})).result.ok);assert.equal((await row(U(1))).state.prem,550);assert.ok((await row(U(1))).version>v0,'the account version moves so a request in flight cannot overwrite the credits');
+  assert.equal((await handle(bu,'aodecide',{id,ok:true})).result.ok,false,'confirming twice adds nothing');assert.equal((await row(U(1))).state.prem,550);
+  const b=await handle(U(1),'buy',{shop:'prem',k:'jewel'});assert.ok(b.result.ok,b.result.msg);assert.equal(b.state.prem,430);assert.equal(b.state.jewels,1);
+  assert.equal((await handle(U(1),'buy',{shop:'prem',k:'vip7'})).result.ok,true);assert.equal((await handle(U(1),'buy',{shop:'prem',k:'vip7'})).result.ok,false,'not enough credits left');
+  const o2=await handle(U(1),'onew',{pack:'p1',ref:''});const id2=o2.orders.orders[0].id;assert.ok((await handle(bu,'aodecide',{id:id2,ok:false})).result.ok);
+  assert.equal((await row(U(1))).state.prem,130,'a rejected request adds nothing');
+  const s=(await handle(bu,'aorders',{})).shop;assert.equal(Number(s.paid_total),50);assert.equal(s.pending.length,0);
+});

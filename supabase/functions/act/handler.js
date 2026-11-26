@@ -6,7 +6,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
     sold: "הפריט כבר נמכר", own: "זה פריט שלך", no_gold: "אין מספיק זהב", bag_full: "התיק מלא",
     limit: "אפשר להציע עד 8 פריטים", not_found: "הפריט לא בתיק", bad_price: "מחיר לא תקין", no_account: "אין חשבון",
     in_guild: "אתה כבר בגילדה", no_guild: "לא נמצאה גילדה בשם הזה", guild_full: "הגילדה מלאה", bad_name: "שם: 3 עד 14 אותיות וספרות. תג: 2 עד 4",
-    taken: "השם או התג כבר תפוסים", not_leader: "רק מוביל הגילדה יכול", muted: "הושתקת בצ'אט", slow: "לאט יותר, רגע בין הודעות", empty: "הודעה ריקה", forbidden: "אין הרשאה",
+    taken: "השם או התג כבר תפוסים", not_leader: "רק מוביל הגילדה יכול", muted: "הושתקת בצ'אט", order_pending: "יש לך כבר בקשה שממתינה לאישור", order_limit: "יותר מדי בקשות היום. נסה מחר", order_done: "הבקשה כבר טופלה", shop_closed: "רכישת קרדיטים עוד לא נפתחה", slow: "לאט יותר, רגע בין הודעות", empty: "הודעה ריקה", forbidden: "אין הרשאה",
     not_party: "אפשר למכור ישירות רק לחבר פארטי", in_party: "אתה כבר בפארטי", no_party: "לא נמצא פארטי עם הקוד הזה", full: "הפארטי מלא, עד חמישה שחקנים",
   };
   const MAX_CALLS_PER_MIN = 240;
@@ -61,6 +61,22 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
       const byResets = (await list("resets")).sort((a, b) => b.r - a.r || b.l - a.l || b.p - a.p).slice(0, 20);
       const byPower = (await list("power")).sort((a, b) => b.p - a.p || b.r - a.r).slice(0, 20);
       return { result: { ok: true }, top: { resets: byResets, power: byPower } };
+    }
+    // Paid credits: a player's requests, and the admin side that confirms payments.
+    if (kind === "oget" || kind === "onew" || kind === "ocancel") {
+      let res = { error: null };
+      if (kind === "onew") { const pk = G.PACKS.find((x) => x.k === String(args.pack)); if (!pk) return { result: { ok: false, msg: "החבילה לא קיימת" } };
+        res = await admin.rpc("order_create", { p_user: uid, p_pack: pk.k, p_credits: pk.credits, p_price: pk.ils, p_ref: String(args.ref == null ? "" : args.ref).slice(0, 120) }); }
+      if (kind === "ocancel") res = await admin.rpc("order_cancel", { p_user: uid, p_id: Math.floor(Number(args.id)) || 0 });
+      return { result: res.error ? { ok: false, msg: errMsg(res) } : { ok: true }, orders: (await admin.rpc("orders_mine", { p_user: uid })).data || { pay: "", orders: [] } };
+    }
+    if (kind === "aorders" || kind === "aodecide" || kind === "aset") {
+      let res = { error: null };
+      if (kind === "aodecide") res = await admin.rpc("order_decide", { p_admin: uid, p_id: Math.floor(Number(args.id)) || 0, p_ok: !!args.ok });
+      if (kind === "aset") res = await admin.rpc("admin_setting", { p_admin: uid, p_key: String(args.key || "").slice(0, 20), p_value: String(args.value == null ? "" : args.value).slice(0, 700) });
+      const view = await admin.rpc("admin_orders", { p_admin: uid });
+      if (view.error) return { result: { ok: false, msg: errMsg(view) } };
+      return { result: res.error ? { ok: false, msg: errMsg(res) } : { ok: true }, shop: view.data };
     }
     if (kind === "aview") { const r = await admin.rpc("admin_view", { p_user: uid }); return r.error ? { result: { ok: false, msg: errMsg(r) } } : { result: { ok: true }, admin: r.data }; }
     if (kind === "aact") {
