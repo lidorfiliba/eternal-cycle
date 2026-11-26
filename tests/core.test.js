@@ -333,3 +333,11 @@ test('endless progress: cycle rank from lifetime kills, champions, and the tower
   assert.ok(!G.apply(A,'towerStart',{},{}).ok,'tries run out for the day');
   G.setEnv(Math.random,Date.now);
 });
+
+test('a boss beaten without taking a marked move pays one extra soul stone, and only with an accepted kill',()=>{
+  let t=Date.UTC(2026,10,26,12,20);G.setEnv(()=>.5,()=>t);
+  const run=clean=>{const A=G.newAccount();G.apply(A,'create',{name:'Cln',cls:'blade'},{});G.apply(A,'travel',{z:0},{});A.bossAt={z:0,t:t-600000};const g=A.gems,r=G.apply(A,'tick',{z:0,f:0,kills:0,boss:true,clean:clean},{});return [A.gems-g,r.rep];};
+  const [a,ra]=run(true),[b,rb]=run(false);assert.ok(ra.boss&&rb.boss,'both kills accepted');assert.equal(a-b,1);assert.ok(ra.clean&&!rb.clean);
+  const A=G.newAccount();G.apply(A,'create',{name:'Cln',cls:'blade'},{});G.apply(A,'travel',{z:0},{});const g=A.gems,r=G.apply(A,'tick',{z:0,f:0,kills:0,boss:true,clean:true},{});assert.ok(!r.rep.clean&&A.gems===g,'no boss, no bonus');
+  G.setEnv(Math.random,Date.now);
+});

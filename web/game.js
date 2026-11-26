@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126185048';
+const BUILD='20261126190840';
 const {mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -54,11 +54,11 @@ function send(kind,args){
   const p=chain.then(run);chain=p.catch(()=>{});
   return p.catch(()=>{setNet(false);return {ok:false,msg:'net'};});
 }
-const pend={kills:0,casts:0,boss:false,elite:false,t:0};
+const pend={kills:0,casts:0,boss:false,clean:false,elite:false,t:0};
 function flushTick(){
   if(!ONLINE||demo||!S)return Promise.resolve();
   if(!pend.kills&&!pend.casts&&!pend.boss&&!pend.elite&&!(party.code&&SC.zi>=0))return chain; // in a party, keep checking in: that is how shared experience arrives
-  const a={z:SC.zi,f:SC.fl,kills:pend.kills,casts:pend.casts,boss:pend.boss,elite:pend.elite,ev:SC.ev?1:0},l0=S.lvl;pend.kills=0;pend.casts=0;pend.boss=false;pend.elite=false;pend.t=0;
+  const a={z:SC.zi,f:SC.fl,kills:pend.kills,casts:pend.casts,boss:pend.boss,clean:pend.boss&&pend.clean,elite:pend.elite,ev:SC.ev?1:0},l0=S.lvl;pend.clean=false;pend.kills=0;pend.casts=0;pend.boss=false;pend.elite=false;pend.t=0;
   return send('tick',a).then(r=>afterTick(r,null,l0));
 }
 async function act(kind,args){await flushTick();return send(kind,args);}
@@ -527,7 +527,7 @@ function enterZone(z,side,f,ev){
 }
 function spawnBoss(){
   const zi=SC.zi,z=ZONES[zi];if(SC.boss||zi<0)return;
-  const b=newMon(MW-280,zi);b.boss=true;b.hp=b.max=zs(zi,SC.fl).hp*30;b.slamT=4;b.wind=0;SC.boss=b;SC.mons.push(b);snd('boss');toast('הבוס של '+z.n+' הופיע בקצה המפה');
+  const b=newMon(MW-280,zi);b.boss=true;b.hp=b.max=zs(zi,SC.fl).hp*30;b.slamT=4;b.wind=0;b.m2T=8;b.mets=[];b.metN=0;b.metT=0;b.chg=null;b.dash=null;b.weak=0;b.clean=true;SC.boss=b;SC.mons.push(b);snd('boss');toast('הבוס של '+z.n+' הופיע בקצה המפה');
 }
 // A champion: one monster of the pack that is far stronger and carries a sure rare drop. The server decides when.
 function syncElite(){
@@ -571,6 +571,7 @@ function afterTick(r,m,l0){
   if(!ONLINE||rep.items||rep.gems||rep.boxes||rep.notable)dropOrbs(src,rep);
   if(rep.items||rep.boxes)panelDirty=true;
   if(rep.elite){toast('האלוף הובס. השלל שלך',3);snd('rare');}if(rep.eliteDenied)toast('השרת לא אישר את הניצחון על האלוף');
+  if(rep.clean)toast('ניצחון נקי: אף מהלך מסומן לא פגע בך. אבן נשמה נוספת',3);
   if(rep.boss||rep.bossDenied){bossPending=false;if(rep.opened!=null)toast('השער אל '+ZONES[rep.opened].n+' נפתח');if(rep.bossDenied)toast('השרת לא אישר את הניצחון על הבוס');}
   if(r.shared>0)addNum(SC.hero.x,gy()-150,'+'+fmt(r.shared)+' ניסיון מהפארטי','#8be28b',true);
   if(r.partyN!=null)partyN=r.partyN;if(r.auras&&r.auras.join()!==auras.join()){auras=r.auras;statsDirty=true;panelDirty=true;}
@@ -583,7 +584,7 @@ function onKill(m,zi){
   if(m.elite){snd('bossdie');burst(m.x,m.y-36,'#ffd75e',30);addNum(m.x,m.y-120,'האלוף הובס!','#ffd75e',true);m.gone=true;if(ONLINE){pend.elite=true;flushTick();}else{const l0=S.lvl;afterTick(localTick({z:zi,kills:0,elite:true}),m,l0);}return;}
   if(m.boss){snd('bossdie');
     SC.boss=null;bossPending=true;burst(m.x,m.y-40,'#f2c14e',40);if(!calm)SC.shake=.4;addNum(m.x,m.y-150,'הבוס הובס!','#f2c14e',true);
-    if(ONLINE){pend.boss=true;flushTick();}else{const l0=S.lvl;afterTick(localTick({z:zi,kills:0,boss:true}),m,l0);}
+    if(ONLINE){pend.boss=true;pend.clean=!!m.clean;flushTick();}else{const l0=S.lvl;afterTick(localTick({z:zi,kills:0,boss:true,clean:!!m.clean}),m,l0);}
     return;
   }
   burst(m.x,m.y-24,z.c,10);
@@ -598,7 +599,7 @@ async function travelTo(z,side,f){
   snd('portal');enterZone(z,side,f|0);saveLocal();
 }
 function strike(m,mult,col,big){
-  const crit=Math.random()<C.crit,d=Math.round(C.dmg*(crit?C.cdmg:1)*mult*(.9+Math.random()*.2));
+  const crit=Math.random()<C.crit,d=Math.round(C.dmg*(crit?C.cdmg:1)*mult*(m.weak>0?1.5:1)*(.9+Math.random()*.2));
   snd(crit?'crit':'hit');m.hp-=d;m.hit=1;m.ag=true;addNum(m.x,m.y-(m.boss?130:60),fmt(d),crit?'#ffd75e':big?col:'#fff',crit||big);
   if(m.hp<=0&&m.die<=0){m.die=.45;m.dead=true;onKill(m,SC.zi);}
 }
@@ -678,8 +679,18 @@ function updateWorld(dt){
     m.hit=Math.max(0,m.hit-dt*4);m.atkA=Math.max(0,(m.atkA||0)-dt);m.mv=false;
     if(m.pull!=null){m.x+=(m.pull-m.x)*Math.min(1,dt*9);if(Math.abs(m.pull-m.x)<3)m.pull=null;}
     if(m.stun>0){m.stun-=dt;continue;}
+    if(m.boss){ // marked moves: each shows on the ground first, and each can be walked out of
+      const mad=m.hp<m.max*.35,bh=(pc,far)=>{if(h.dead>0)return;const d=C.hp*pc*(h.shield>0?.3:1);h.hp-=d;m.clean=false;snd('hurt');addNum(h.x,gy()-100,'-'+fmt(d),'#ff5c7a',true);};
+      m.weak=Math.max(0,m.weak-dt);
+      if(m.metN>0&&(m.metT-=dt)<=0){m.metN--;m.metT=mad?.45:.6;m.mets.push({x:h.x,t:.95});}
+      for(const q of m.mets){q.t-=dt;if(q.t<=0){SC.fx.push({k:'flash',x:q.x,y:gy()-30,r:60,life:.3,d:.3,c:'#ff9a4a'});SC.fx.push({k:'ring',x:q.x,y:gy()-8,life:.35,c:'#ff9a4a',r:62});burst(q.x,gy()-10,'#ff9a4a',10);snd('slam');if(Math.abs(h.x-q.x)<58)bh(.2);}}
+      m.mets=m.mets.filter(q=>q.t>0);
+      if(m.dash){const st=Math.sign(m.dash.to-m.x)*760*dt;if(Math.abs(m.dash.to-m.x)<=Math.abs(st)){m.x=m.dash.to;m.dash=null;m.weak=2.2;}else m.x+=st;m.mv=true;if(m.dash&&!m.dash.hit&&!h.up&&Math.abs(h.x-m.x)<52){m.dash.hit=true;bh(.35);}continue;}
+      if(m.chg){m.chg.t-=dt;m.atkA=.4;if(m.chg.t<=0){m.dash={to:clamp(m.x+m.chg.dir*420,120,mapW()-120),hit:false};m.chg=null;snd('pull');}continue;}
+      if(m.wind<=0&&(m.m2T-=dt)<=0&&Math.abs(h.x-m.x)<340&&h.dead<=0){m.m2T=mad?6:9.5;if(zi%2===0){m.metN=mad?5:3;m.metT=0;snd('growl');}else{m.chg={t:mad?.8:1.05,dir:h.x>=m.x?1:-1};snd('growl');continue;}}
+    }
     if(m.boss&&m.wind>0){m.wind-=dt;m.atkA=.5*clamp(m.wind/1.2,0,1);if(m.wind<=0){SC.fx.push({k:'ring',x:m.slamX,y:gy()-10,life:.4,c:'#ff5c7a',r:130});if(!calm)SC.shake=.3;snd('slam');
-        if(h.dead<=0&&Math.abs(h.x-m.slamX)<125){const d=C.hp*.45*(h.shield>0?.3:1);h.hp-=d;addNum(h.x,gy()-100,'-'+fmt(d),'#ff5c7a',true);}m.slamT=6;}continue;}
+        if(h.dead<=0&&Math.abs(h.x-m.slamX)<125){const d=C.hp*.45*(h.shield>0?.3:1);h.hp-=d;m.clean=false;addNum(h.x,gy()-100,'-'+fmt(d),'#ff5c7a',true);}m.slamT=m.hp<m.max*.35?4:6;m.weak=2.2;}continue;}
     const dx=h.x-m.x,ad=Math.abs(dx),reach=m.boss?70:36;
     if(ad>420)m.ag=false;
     const same=m.boss||(m.up?1:0)===(h.up?1:0);if(!same)m.ag=false;
@@ -769,7 +780,10 @@ function drawWorld(){
     const gr=ctx.createLinearGradient(0,y,0,y+11);gr.addColorStop(0,'#b58a52');gr.addColorStop(1,'#5e4426');ctx.fillStyle=gr;ctx.fillRect(DECK.x0,y,DECK.x1-DECK.x0,11);ctx.fillStyle='rgba(0,0,0,.25)';for(let px=DECK.x0+38;px<DECK.x1;px+=38)ctx.fillRect(px,y,1.5,11);ctx.fillStyle='rgba(255,236,190,.35)';ctx.fillRect(DECK.x0,y,DECK.x1-DECK.x0,1.5);}
   for(const m of SC.mons){if(m.resp>0)continue;m.y=g0-(m.up?deckH():0);
     if(m.boss&&m.wind>0){ctx.save();ctx.globalAlpha=.25+.3*(1-m.wind/1.2);ctx.fillStyle='#ff5c7a';ctx.beginPath();ctx.ellipse(m.slamX,g0,125,16,0,0,7);ctx.fill();ctx.restore();}
-    drawMon(m,zi,SC.t,m.back?m.home<m.x:h.x<m.x,sc);}
+    if(m.boss){for(const q of m.mets){const u=1-clamp(q.t/.95,0,1);ctx.save();ctx.globalAlpha=.2+.4*u;ctx.fillStyle='#ff9a4a';ctx.beginPath();ctx.ellipse(q.x,g0,58,12,0,0,7);ctx.fill();ctx.globalAlpha=.9;ctx.strokeStyle='#ffd0a0';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(q.x,g0,58*u,12*u,0,0,7);ctx.stroke();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.8;ctx.fillStyle='#ffb060';ctx.beginPath();ctx.arc(q.x+q.t*90,g0-q.t*520,7,0,7);ctx.fill();ctx.restore();}
+      if(m.chg){const x1=clamp(m.x+m.chg.dir*420,120,mapW()-120),u=1-clamp(m.chg.t/1.05,0,1);ctx.save();ctx.globalAlpha=.18+.35*u;ctx.fillStyle='#ff5c7a';ctx.fillRect(Math.min(m.x,x1),g0-9,Math.abs(x1-m.x),18);ctx.globalAlpha=.9;ctx.fillStyle='#ffd0d8';for(let q=0;q<4;q++){const ax=m.x+m.chg.dir*(60+q*100+((SC.t*160)%100));if((ax-m.x)*m.chg.dir<Math.abs(x1-m.x)){ctx.beginPath();ctx.moveTo(ax+m.chg.dir*10,g0);ctx.lineTo(ax-m.chg.dir*6,g0-7);ctx.lineTo(ax-m.chg.dir*6,g0+7);ctx.fill();}}ctx.restore();}
+      if(m.weak>0&&m.die<=0)label('חשוף! נזק מוגבר',m.x,g0-200*sc,'#7df9ff',12);}
+    drawMon(m,zi,SC.t,m.dash?m.dash.to<m.x:m.chg?m.chg.dir<0:m.back?m.home<m.x:h.x<m.x,sc);}
   if(h.tx!=null&&!h.goal){ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(h.tx,g0,9,3,0,0,7);ctx.stroke();}
   if(h.tgt){ctx.strokeStyle='#ffd75e';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(h.tgt.x,g0+1-(h.tgt.up?deckH():0),h.tgt.boss?40:22,h.tgt.boss?8:5,0,0,7);ctx.stroke();}
   drawPeers(g0,sc);
@@ -1848,6 +1862,6 @@ async function boot(){
   openModal('<h3>מעגל הנצח</h3><p class="hint">מתחבר לשרת...</p>');
   await startOnline();
 }
-if(typeof window!=='undefined')window.EC={syncElite,duelAct,netSend,get peers(){return peers;},get ws(){return ws;},get A(){return A;},get S(){return S;},get C(){return C;},set C(v){C=v;},SC,G,send,act,frame,enterZone,pend,flushTick,syncBoss,spawnBoss,touch,get demo(){return demo;}};
+if(typeof window!=='undefined')window.EC={syncElite,spawnBoss,duelAct,netSend,get peers(){return peers;},get ws(){return ws;},get A(){return A;},get S(){return S;},get C(){return C;},set C(v){C=v;},SC,G,send,act,frame,enterZone,pend,flushTick,syncBoss,spawnBoss,touch,get demo(){return demo;}};
 startLang();
 boot();
