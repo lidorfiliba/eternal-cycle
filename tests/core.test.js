@@ -121,3 +121,14 @@ test('daily login reward: once a day, the streak grows only when collected on co
   now.add(day);assert.equal(G.apply(A,'claimLogin',{}).day,1,'after day seven it starts again');
   const old=G.adopt(JSON.parse(JSON.stringify(Object.assign({},A,{login:undefined}))));assert.ok(G.apply(old,'claimLogin',{}).ok,'accounts from before this feature just start at day one');
 });
+
+test('resets: stats are kept, monsters get harder up to a cap, and a stat fills at its maximum',()=>{
+  const {A}=fresh(),s=A.chars[0];s.lvl=G.CAP;s.stats.str=900;s.pts=37;s.autoPts=false;
+  assert.ok(G.apply(A,'reset',{}).ok);assert.equal(s.lvl,1);assert.equal(s.stats.str,900);assert.equal(s.pts,37);assert.equal(s.resets,1);
+  const a=G.zs(3,1,0),b=G.zs(3,1,1),c=G.zs(3,1,20),d=G.zs(3,1,500);
+  assert.ok(Math.abs(b.hp/a.hp-1.25)<.01);assert.ok(Math.abs(b.atk/a.atk-1.15)<.01);assert.equal(b.xp,a.xp);assert.ok(b.gold>a.gold);
+  assert.ok(Math.abs(c.hp/a.hp-6)<.02);assert.deepEqual(d,c,'no harder after reset 20');
+  s.stats.str=G.STAT_MAX-10;s.pts=50;assert.ok(G.apply(A,'pt',{k:'str',n:'all'}).ok);assert.equal(s.stats.str,G.STAT_MAX);assert.equal(s.pts,40);
+  assert.equal(G.apply(A,'pt',{k:'str',n:5}).ok,false,'a full stat takes no more');
+  s.autoPts=true;G.apply(A,'autoPts',{});G.apply(A,'autoPts',{});s.pts=40;G.autoAlloc(s);assert.equal(s.stats.str,G.STAT_MAX);assert.equal(s.pts,0,'automatic allocation spills into the other stats');
+});
