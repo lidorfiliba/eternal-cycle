@@ -6,6 +6,7 @@ import { webcrypto } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import * as G from '../supabase/functions/act/core.js';
 import { makeAuth, makeHandler } from '../supabase/functions/act/handler.js';
+import { attachLive } from './live.mjs';
 
 const crypto = globalThis.crypto || webcrypto;
 const rnd = () => { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; };
@@ -14,7 +15,7 @@ export function makeServer(admin, secret, origin = '*') {
   const handle = makeHandler(admin, G, rnd), auth = makeAuth(admin, secret);
   const cors = { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info, x-ec-token', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Max-Age': '86400' };
   const send = (res, body, status = 200) => { res.writeHead(status, { ...cors, 'Content-Type': 'application/json' }); res.end(JSON.stringify(body)); };
-  return http.createServer(async (req, res) => {
+  const server = http.createServer(async (req, res) => {
     if (req.method === 'OPTIONS') { res.writeHead(204, cors); return res.end(); }
     if (req.method === 'GET') return send(res, { ok: true, name: 'eternal-cycle' }); // health check
     if (req.method !== 'POST') return send(res, { error: 'method' }, 405);
@@ -41,6 +42,8 @@ export function makeServer(admin, secret, origin = '*') {
       return send(res, out);
     } catch (e) { console.error(e); return send(res, { error: 'server' }, 500); }
   });
+  server.live = attachLive(server, { admin, auth, G, rnd });
+  return server;
 }
 
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop())) {

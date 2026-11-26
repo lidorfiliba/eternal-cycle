@@ -349,3 +349,29 @@ test('the Node server speaks the same protocol as the edge function',async()=>{
     assert.equal((await fetch(base,{method:'POST',body:'x'.repeat(5000)})).status,413);
   }finally{srv.close();}
 });
+test('live duel over the socket: invite, server-decided hits, result written to both accounts',async()=>{
+  const {makeServer}=await import('../server/index.mjs');const {WebSocket}=await import('ws');const {createHash}=await import('node:crypto');const {db}=await world();
+  const srv=makeServer(fakeAdmin(db),'test-secret');await new Promise(r=>srv.listen(0,r));const port=srv.address().port,base='http://127.0.0.1:'+port;
+  const post=async(body,tok)=>(await (await fetch(base,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},tok?{'x-ec-token':tok}:{}),body:JSON.stringify(body)})).json());
+  const mkUser=async(n,cls)=>{const r=await post({kind:'register',args:{user:n,pass:'correct-horse-9',q:0,a:'rex'}});await post({kind:'create',args:{name:n,cls:cls}},r.token);await post({kind:'travel',args:{z:0}},r.token);
+    const uid=(await db.query('select user_id from users where username=$1',[n])).rows[0].user_id;return {tok:r.token,uid,key:createHash('md5').update(uid+'peer').digest('hex').slice(0,10)};};
+  const open=async u=>{const ws=new WebSocket('ws://127.0.0.1:'+port+'/ws');u.q=[];u.wait=t=>new Promise((res,rej)=>{const go=()=>{const i=u.q.findIndex(m=>m.t===t);if(i>=0)return res(u.q.splice(i,1)[0]);setTimeout(go,10);};go();setTimeout(()=>rej(new Error('no '+t+' message')),4000);});
+    ws.on('message',d=>u.q.push(JSON.parse(String(d))));await new Promise(r=>ws.on('open',r));ws.send(JSON.stringify({t:'hello',token:u.tok}));await u.wait('hi');u.ws=ws;u.send=m=>ws.send(JSON.stringify(m));};
+  const a=await mkUser('alef','blade'),b=await mkUser('bet','blade');
+  try{
+    const bad=new WebSocket('ws://127.0.0.1:'+port+'/ws');await new Promise(r=>bad.on('open',r));bad.send(JSON.stringify({t:'hello',token:'forged'}));await new Promise(r=>bad.on('close',r));
+    await open(a);a.send({t:'challenge',k:b.key});assert.equal((await a.wait('gone')).t,'gone','the other player is not connected');
+    await open(b);const st0=async u=>(await db.query('select state from accounts where user_id=$1',[u.uid])).rows[0].state,t0=(await st0(a)).tickets,r0=(await st0(a)).rating;
+    a.send({t:'challenge',k:b.key});const inv=await b.wait('invite');assert.equal(inv.from.n,'alef');b.send({t:'answer',id:inv.id,ok:true});
+    const sa=await a.wait('start'),sb=await b.wait('start');assert.equal(sa.side,0);assert.equal(sb.side,1);assert.equal(sa.opp.n,'bet');assert.equal(sa.opp.id,undefined);assert.equal((await st0(a)).tickets,t0-1,'the challenger pays the ticket');
+    const d=[...srv.live.duels.values()][0];d.t0-=3000; // past the countdown
+    a.send({t:'act',k:'atk'});await new Promise(r=>setTimeout(r,150));assert.equal(a.q.filter(m=>m.t==='ev').length,0,'too far apart: the server ignores the swing');
+    a.send({t:'pos',x:200,z:.5});b.send({t:'pos',x:240,z:.5});assert.equal((await b.wait('pos')).x,200);
+    a.send({t:'act',k:'atk'});const ev=await b.wait('ev');assert.equal(ev.o.by,0);assert.ok(ev.o.dm>0);assert.ok(ev.f[1].hp<1);await a.wait('ev');
+    d.D.f[1].hp=.001;d.t0-=30000;a.send({t:'act',k:'s3'});
+    const ea=await a.wait('end'),eb=await b.wait('end');assert.equal(ea.win,true);assert.equal(eb.win,false);assert.ok(ea.gain>0);
+    assert.ok((await st0(a)).rating>r0);assert.equal((await st0(b)).rating,1000-12);assert.equal(srv.live.duels.size,0);
+    assert.ok((await db.query("select count(*)::int c from chat where name='★'")).rows[0].c>=1,'the server hears about it');
+    a.send({t:'challenge',k:b.key});const inv2=await b.wait('invite');b.send({t:'answer',id:inv2.id,ok:true});await a.wait('start');await b.wait('start');b.ws.close();assert.equal((await a.wait('end')).win,true,'leaving forfeits');
+  }finally{for(const u of [a,b])if(u.ws)u.ws.close();srv.live.close();srv.close();}
+});

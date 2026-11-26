@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126171427';
-const {worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126173254';
+const {LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -842,102 +842,136 @@ function sideCard(){
 // Hidden finds: the client notices the moment, the server decides whether it counts and pays once.
 const egg={moon:0,still:0,tried:{}};
 async function tryEgg(k){if(!S||demo||egg.tried[k]||(A.eggs&&A.eggs[k]))return;egg.tried[k]=1;const r=await send('egg',{k:k});if(r&&r.ok){snd('rare');announce('\u2726 '+r.t,true);toast('מצאת סוד נסתר ('+r.found+'/5)',4);}}
-/* ---------- the arena: a live duel. You walk, strike, cast, guard, dash and drink; nothing happens by itself. ---------- */
-const DRNG={blade:62,storm:185,hunter:235},DLANE=.3; // the arena has depth: a blow lands only on someone standing in about the same lane
-const dy=f=>gy()-(1-f.z)*84,dsc=f=>.8+f.z*.2;
+/* ---------- the arena: a live duel. You walk, strike, cast, guard, dash and drink; nothing happens by itself.
+   The rules are liveAct in core.js. Against an absent player the fight runs here and the game plays his side;
+   against a connected player the server runs it and this screen only sends what you try and shows what happened. ---------- */
 const DBTN=['atk','s0','s1','s3','s2','dash','pot'];
-function startDuel(pd){
-  const o=pd.o,L=pd.live,mk=(x,cls,i)=>({x:x,z:.5,hp:1,face:i?-1:1,atkT:.4,cd:{s0:1,s1:2,s2:0,s3:6,dash:0,pot:0},stun:0,sh:0,inv:0,pots:DUEL_LIVE.pots,anim:0,mv:false,cls:cls,chain:0,hitT:0});
-  SC.duel={opp:o,L:L,f:[mk(W*.24,S.cls,0),mk(W*.76,o.c,1)],t:0,end:0,win:null,gain:0,sent:false,ai:{t:.6,threat:0},holdAtk:false,go:1.2};
-  SC.mode='duel';SC.fx=[];SC.nums=[];SC.drops=[];SC.hero.dir=0;SC.hero.dz=0;renderDuelBar();
+const dX=u=>u*(W/LIVE_W),dy=f=>gy()-(1-f.z)*84,dsc=f=>.8+f.z*.2;
+function startDuel(pd,net){
+  const D=liveFrom(pd.live,net?net.cls[0]:S.cls,net?net.cls[1]:pd.o.c),me=net?net.side:0;
+  SC.duel={opp:pd.o,D:D,me:me,net:net||null,v:[{anim:0,face:1,mv:false,hitT:0},{anim:0,face:-1,mv:false,hitT:0}],end:0,win:null,gain:0,sent:false,ai:{t:.6,threat:0},holdAtk:false,go:1.2,posT:0,tgt:null,last:[0,0]};
+  SC.mode='duel';SC.fx=[];SC.nums=[];SC.drops=[];SC.hero.dir=0;SC.hero.dz=0;closeModal();renderDuelBar();
 }
 function renderDuelBar(){
-  const d=SC.duel,bar=$('duelBar');if(!d){bar.style.display='none';return;}bar.style.display='grid';const me=d.f[0],off=d.end>0||d.go>0;
-  bar.querySelectorAll('button').forEach((b,i)=>{const k=DBTN[i],cd=k==='atk'?0:me.cd[k],nm=k==='atk'?'תקיפה':k==='dash'?'צעד':k==='pot'?'שיקוי ×'+me.pots:CLS[S.cls].sk[k==='s0'?0:k==='s1'?3:k==='s2'?4:5],
+  const d=SC.duel,bar=$('duelBar');if(!d){bar.style.display='none';return;}bar.style.display='grid';const me=d.D.f[d.me],off=d.sent||d.go>0;
+  bar.querySelectorAll('button').forEach((b,i)=>{const k=DBTN[i],cd=k==='atk'?0:Math.max(0,me.at[k]-d.D.t),nm=k==='atk'?'תקיפה':k==='dash'?'צעד':k==='pot'?'שיקוי ×'+me.pots:CLS[S.cls].sk[k==='s0'?0:k==='s1'?3:k==='s2'?4:5],
     t=nm+'<small>'+(cd>0?Math.ceil(cd)+' שנ׳':k==='pot'&&!me.pots?'נגמר':k==='s2'?'מגן':k==='s3'?'מכה סופית':k==='s1'?'מהמם':k==='dash'?'חמיקה':'&nbsp;')+'</small>';
     if(b.dataset.h!==t){b.dataset.h=t;b.innerHTML=t;}const dis=off||cd>0||(k==='pot'&&!me.pots);if(b.disabled!==dis)b.disabled=dis;b.classList.toggle('rdy',!dis&&k==='s3');});
 }
-function dHit(d,ai,mult,big,col){ // side ai strikes the other side
-  const a=d.f[ai],v=d.f[1-ai],g=dy(v),pool=d.L.pool[1-ai],off=Math.abs(a.z-v.z)>DLANE;a.anim=1;a.face=v.x>=a.x?1:-1;
-  attackFx(a.cls,a.x,dy(a),a.face,[{x:v.x,y:(off?dy(a):g)-10}],big,col);
-  if(off){addNum(v.x,g-110,'החטיא','#c9c2ea',false);return;}
-  if(v.inv>0){addNum(v.x,g-110,'חמק!','#9fe8ff',true);return;}
-  const crit=Math.random()<d.L.cr[ai];let dm=d.L.b[ai]*mult*(crit?1.5:1)*(.9+Math.random()*.2);if(v.sh>0){dm*=1-DUEL_LIVE.sk[2].cut;SC.fx.push({k:'ring',x:v.x,y:g-40,life:.3,c:'#9fe8ff',r:50});}
-  v.hp-=dm;v.hitT=.18;snd(crit?'crit':big?'skill':'hit');addNum(v.x,g-92,fmt(Math.round(dm*pool)),crit?'#ffd75e':big?col:'#fff',crit||big);if(big&&!calm)SC.shake=.18;
+function dShow(d,o){ // play what a move did; o comes from liveAct, here or on the server
+  const D=d.D,i=o.by,a=D.f[i],v=D.f[1-i],va=d.v[i],ax=dX(a.x),vx=dX(v.x),g=dy(a),ge=dy(v),col=gearColor((i===d.me?lookOf(S):d.opp).w,SC.t,CLS[a.cls].c),k=o.k,pool=D.pool[1-i];
+  if(k==='s2'){snd('fury');SC.fx.push({k:'rune',x:ax,y:g-2,r:70,life:.9,d:.9,c:'#9fe8ff'});SC.fx.push({k:'pillar',x:ax,y:g,life:.5,d:.5,c:'#9fe8ff'});return;}
+  if(k==='dash'){for(let q=0;q<4;q++)SC.parts.push({x:ax,y:g-20-q*14,vx:(Math.random()-.5)*120,vy:0,life:.4,c:'#9fe8ff',s:3});snd('whoosh');return;}
+  if(k==='pot'){burst(ax,g-50,'#6fe39a',18);addNum(ax,g-112,'+30%','#6fe39a',true);snd('fury');return;}
+  const big=k!=='atk'||o.fin;va.anim=1;va.face=v.x>=a.x?1:-1;
+  if(k==='s0'){SC.fx.push({k:'rune',x:ax,y:g-2,r:64,life:.6,d:.6,c:col});if(a.cls==='blade')SC.fx.push({k:'wave',x:ax+va.face*20,y:g,dir:va.face,dist:150,h:70,life:.32,d:.32,c:col});}
+  else if(k==='s1'){SC.fx.push({k:'pillar',x:vx,y:ge,life:.45,d:.45,c:col});SC.fx.push({k:'star',x:vx,y:ge-44,r:46,rot:.4,life:.4,d:.4,c:col});}
+  else if(k==='s3'){snd('ult');SC.fx.push({k:'rune',x:ax,y:g-2,r:150,life:1,d:1,c:col});if(!calm){SC.fx.push({k:'screen',life:.3,d:.3,c:col});SC.shake=.4;}for(const q of [-1,1])SC.fx.push({k:'wave',x:ax+q*30,y:g,dir:q,dist:420,h:110,life:.55,d:.55,c:col});SC.fx.push({k:'flash',x:vx,y:ge-40,r:90,life:.35,d:.35,c:col});}
+  attackFx(a.cls,ax,g,va.face,[{x:vx,y:(o.miss==='lane'?g:ge)-10}],big,col);
+  if(o.miss==='lane'){addNum(vx,ge-110,'החטיא','#c9c2ea',false);return;}
+  if(o.miss==='inv'){addNum(vx,ge-110,'חמק!','#9fe8ff',true);return;}
+  if(o.guard)SC.fx.push({k:'ring',x:vx,y:ge-40,life:.3,c:'#9fe8ff',r:50});
+  d.v[1-i].hitT=.18;snd(o.crit?'crit':big?'skill':'hit');addNum(vx,ge-92,fmt(Math.round(o.dm*pool)),o.crit?'#ffd75e':big?col:'#fff',o.crit||big);if(big&&!calm)SC.shake=Math.max(SC.shake,.18);
+  if(o.stun)addNum(vx,ge-128,'הלם','#ffd75e',false);
 }
-function dAct(d,i,k){ // one move by side i; returns whether it happened
-  const me=d.f[i],en=d.f[1-i],g=dy(me),ge=dy(en),col=gearColor((i?d.opp:lookOf(S)).w,SC.t,CLS[me.cls].c),dist=Math.abs(en.x-me.x),rng=DRNG[me.cls],K=DUEL_LIVE;
-  if(d.end>0||d.go>0||me.stun>0)return false;
-  if(k==='atk'){if(me.atkT>0||dist>rng+14)return false;const T=d.L.T[i];me.atkT=T;me.chain=(me.chain+1)%4;const fin=me.chain===0;dHit(d,i,T/1.5*(fin?1.5:.84),fin,col);return true;}
-  if(me.cd[k]>0)return false;
-  if(k==='s0'){if(dist>rng+40)return false;me.cd.s0=K.sk[0].cd;SC.fx.push({k:'rune',x:me.x,y:g-2,r:64,life:.6,d:.6,c:col});if(me.cls==='blade')SC.fx.push({k:'wave',x:me.x+me.face*20,y:g,dir:en.x>=me.x?1:-1,dist:150,h:70,life:.32,d:.32,c:col});dHit(d,i,K.sk[0].m,true,col);}
-  else if(k==='s1'){if(dist>rng+20)return false;me.cd.s1=K.sk[1].cd;SC.fx.push({k:'pillar',x:en.x,y:ge,life:.45,d:.45,c:col});SC.fx.push({k:'star',x:en.x,y:ge-44,r:46,rot:.4,life:.4,d:.4,c:col});const dodged=en.inv>0||Math.abs(en.z-me.z)>DLANE,guarded=en.sh>0;dHit(d,i,K.sk[1].m,true,col);if(!dodged&&!guarded){en.stun=K.sk[1].stun;addNum(en.x,ge-128,'הלם','#ffd75e',false);}}
-  else if(k==='s2'){me.cd.s2=K.sk[2].cd;me.sh=K.sk[2].dur;snd('fury');SC.fx.push({k:'rune',x:me.x,y:g-2,r:70,life:.9,d:.9,c:'#9fe8ff'});SC.fx.push({k:'pillar',x:me.x,y:g,life:.5,d:.5,c:'#9fe8ff'});}
-  else if(k==='s3'){if(dist>rng+60)return false;me.cd.s3=K.sk[3].cd;snd('ult');SC.fx.push({k:'rune',x:me.x,y:g-2,r:150,life:1,d:1,c:col});if(!calm)SC.fx.push({k:'screen',life:.3,d:.3,c:col});for(const q of [-1,1])SC.fx.push({k:'wave',x:me.x+q*30,y:g,dir:q,dist:420,h:110,life:.55,d:.55,c:col});SC.fx.push({k:'flash',x:en.x,y:ge-40,r:90,life:.35,d:.35,c:col});dHit(d,i,K.sk[3].m,true,col);if(!calm)SC.shake=.4;}
-  else if(k==='dash'){me.cd.dash=K.dash.cd;me.inv=K.dash.inv;const side=i===0?(!SC.hero.dir&&SC.hero.dz?SC.hero.dz:0):(Math.random()<.5?(me.z>.5?-1:1):0),dir=side?0:i===0&&SC.hero.dir?SC.hero.dir:(me.cls==='blade'?(en.x>=me.x?1:-1):(en.x>=me.x?-1:1));for(let q=0;q<4;q++)SC.parts.push({x:me.x,y:g-20-q*14,vx:-dir*90,vy:0,life:.4,c:'#9fe8ff',s:3});me.x=clamp(me.x+dir*K.dash.d,34,W-34);me.z=clamp(me.z+side*.55,0,1);snd('whoosh');}
-  else if(k==='pot'){if(me.pots<1)return false;me.cd.pot=K.potCd;me.pots--;me.hp=Math.min(1,me.hp+K.heal);burst(me.x,g-50,'#6fe39a',18);addNum(me.x,g-112,'+30%','#6fe39a',true);snd('fury');}
-  else return false;
-  if(i===0){renderDuelBar();if(k==='s1'||k==='s3')d.ai.threat=.5;}
-  return true;
+function dashMove(d,i){const D=d.D,me=D.f[i],en=D.f[1-i],mine=i===d.me,side=mine?(!SC.hero.dir&&SC.hero.dz?SC.hero.dz:0):(Math.random()<.5?(me.z>.5?-1:1):0),dir=side?0:mine&&SC.hero.dir?SC.hero.dir:(me.cls==='blade'?(en.x>=me.x?1:-1):(en.x>=me.x?-1:1));
+  me.x=clamp(me.x+dir*DUEL_LIVE.dash.d,20,LIVE_W-20);me.z=clamp(me.z+side*.55,0,1);}
+function duelAct(k){
+  const d=SC.duel;if(!d||d.sent||d.go>0)return;const D=d.D,me=D.f[d.me];
+  if(d.net){if(me.stun>D.t||me.at[k]>D.t)return;netSend({t:'act',k:k});if(k==='dash'){me.at.dash=D.t+DUEL_LIVE.dash.cd;dashMove(d,d.me);netSend({t:'pos',x:me.x,z:me.z});}else if(k==='atk')me.at.atk=D.t+D.T[d.me];return;}
+  const o=liveAct(D,0,k,Math.random);if(!o)return;if(k==='dash')dashMove(d,0);dShow(d,o);renderDuelBar();if(k==='s1'||k==='s3')d.ai.threat=.5;
 }
-function duelAct(k){const d=SC.duel;if(d)dAct(d,0,k);}
 function duelAI(d,dt){ // the absent player, played here with his own numbers and the same moves
-  const me=d.f[1],en=d.f[0],ai=d.ai,rng=DRNG[me.cls],dist=Math.abs(en.x-me.x),dir=en.x>=me.x?1:-1;me.mv=false;if(me.stun>0)return;
+  const D=d.D,me=D.f[1],en=D.f[0],ai=d.ai,v=d.v[1],rng=LIVE_RNG[me.cls],dist=Math.abs(en.x-me.x),dir=en.x>=me.x?1:-1,act=k=>{const o=liveAct(D,1,k,Math.random);if(!o)return false;if(k==='dash')dashMove(d,1);dShow(d,o);return true;};
+  v.mv=false;if(me.stun>D.t)return;
   const want=me.cls==='blade'?rng*.8:rng*.86,sp=me.cls==='blade'?150:128;
-  if(dist>want+8){me.x+=dir*sp*dt;me.mv=true;}else if(me.cls!=='blade'&&dist<want*.55&&me.x>50&&me.x<W-50){me.x-=dir*sp*.8*dt;me.mv=true;}
-  me.x=clamp(me.x,34,W-34);me.face=dir;
-  {const dz=en.z-me.z;if(Math.abs(dz)>.1){me.z=clamp(me.z+Math.sign(dz)*.62*dt,0,1);me.mv=true;}}
-  if(ai.threat>0){const was=ai.threat;ai.threat-=dt;if(was>.25&&ai.threat<=.25){if(Math.random()<.4)dAct(d,1,'dash');else if(Math.random()<.45)dAct(d,1,'s2');}}
-  if((ai.t-=dt)>0){if(dist<=rng+14&&Math.abs(en.z-me.z)<=DLANE)dAct(d,1,'atk');return;}
+  if(dist>want+8){me.x+=dir*sp*dt;v.mv=true;}else if(me.cls!=='blade'&&dist<want*.55&&me.x>30&&me.x<LIVE_W-30){me.x-=dir*sp*.8*dt;v.mv=true;}
+  me.x=clamp(me.x,20,LIVE_W-20);v.face=dir;
+  {const dz=en.z-me.z;if(Math.abs(dz)>.1){me.z=clamp(me.z+Math.sign(dz)*.62*dt,0,1);v.mv=true;}}
+  if(ai.threat>0){const was=ai.threat;ai.threat-=dt;if(was>.25&&ai.threat<=.25){if(Math.random()<.4)act('dash');else if(Math.random()<.45)act('s2');}}
+  const lined=Math.abs(en.z-me.z)<=LIVE_LANE;
+  if((ai.t-=dt)>0){if(lined)act('atk');return;}
   ai.t=.3+Math.random()*.25;const r=Math.random();
-  if(me.hp<.36&&me.pots>0&&r<.75){dAct(d,1,'pot');return;}
-  if(me.hp<.6&&me.sh<=0&&r<.3&&dAct(d,1,'s2'))return;
-  if(Math.abs(en.z-me.z)>DLANE)return; // not lined up yet: no point swinging
-  if(r<.5&&dAct(d,1,'s3'))return;if(r<.7&&dAct(d,1,'s1'))return;if(r<.8&&dAct(d,1,'s0'))return;
-  dAct(d,1,'atk');
+  if(me.hp<.36&&me.pots>0&&r<.75){act('pot');return;}
+  if(me.hp<.6&&me.sh<=D.t&&r<.3&&act('s2'))return;
+  if(!lined)return;
+  if(r<.5&&act('s3'))return;if(r<.7&&act('s1'))return;if(r<.8&&act('s0'))return;
+  act('atk');
 }
 function updateDuel(dt){
-  const d=SC.duel,me=d.f[0];
-  for(const f of d.f){f.anim=Math.max(0,f.anim-dt*3.2);f.atkT=Math.max(0,f.atkT-dt);f.stun=Math.max(0,f.stun-dt);f.sh=Math.max(0,f.sh-dt);f.inv=Math.max(0,f.inv-dt);f.hitT=Math.max(0,f.hitT-dt);for(const k in f.cd)f.cd[k]=Math.max(0,f.cd[k]-dt);}
+  const d=SC.duel,D=d.D,me=D.f[d.me],vm=d.v[d.me];
+  for(const v of d.v){v.anim=Math.max(0,v.anim-dt*3.2);v.hitT=Math.max(0,v.hitT-dt);}
   if(d.end>0){d.end-=dt;if(d.end<=0)finishDuel();return;}
   if(d.go>0){d.go-=dt;if(d.go<=0){renderDuelBar();snd('boss');}return;}
-  d.t+=dt;me.mv=false;if(me.stun<=0&&SC.hero.dir){me.x=clamp(me.x+SC.hero.dir*(me.cls==='blade'?165:145)*dt,34,W-34);me.mv=true;me.face=SC.hero.dir;}
-  if(me.stun<=0&&SC.hero.dz){me.z=clamp(me.z+SC.hero.dz*.95*dt,0,1);me.mv=true;}
-  if(d.holdAtk)dAct(d,0,'atk');
-  duelAI(d,dt);
+  if(d.sent)return;
+  D.t+=dt;vm.mv=false;
+  if(me.stun<=D.t){if(SC.hero.dir){me.x=clamp(me.x+SC.hero.dir*(me.cls==='blade'?165:145)*dt,20,LIVE_W-20);vm.mv=true;vm.face=SC.hero.dir;}
+    if(SC.hero.dz){me.z=clamp(me.z+SC.hero.dz*.95*dt,0,1);vm.mv=true;}}
+  if(d.holdAtk)duelAct('atk');
+  if(d.net){ // tell the server where I stand, and glide the other side toward where it said he is
+    if((d.posT-=dt)<=0&&(Math.abs(me.x-d.last[0])>.5||Math.abs(me.z-d.last[1])>.01)){d.posT=.09;d.last=[me.x,me.z];netSend({t:'pos',x:Math.round(me.x*10)/10,z:Math.round(me.z*100)/100});}
+    const op=D.f[1-d.me],vo=d.v[1-d.me];vo.mv=false;if(d.tgt){const ex=d.tgt[0]-op.x,ez=d.tgt[1]-op.z;if(Math.abs(ex)>1||Math.abs(ez)>.02){op.x+=ex*Math.min(1,dt*12);op.z+=ez*Math.min(1,dt*12);vo.mv=true;if(Math.abs(ex)>2)vo.face=ex>0?1:-1;}}
+  }else{duelAI(d,dt);if(liveOver(D))endDuel(D.win===0);}
   if((d.bt=(d.bt||0)+dt)>.25){d.bt=0;renderDuelBar();}
-  if(me.hp<=0||d.f[1].hp<=0||d.t>=DUEL_LIVE.time)endDuel(d.f[1].hp<=0?true:me.hp<=0?false:me.hp>=d.f[1].hp);
 }
-async function endDuel(win){
+async function endDuel(win){ // a fight that ran here: report it; the server checks that it could have happened
   const d=SC.duel;if(!d||d.sent)return;d.sent=true;d.end=9;d.holdAtk=false;d.local=win;renderDuelBar();
   const r=await send('duelEnd',{win:win});if(SC.duel!==d)return;
-  d.win=r&&r.ok?!!r.win:win;d.gain=r&&r.ok?r.gain|0:0;d.denied=!!(r&&r.denied);d.end=2.4;
-  SC.nums.push({x:W/2,y:H*.4,txt:d.win?'ניצחון!':'הפסד',c:d.win?'#f2c14e':'#ff5c7a',s:34,life:2.4});snd(d.win?'rare':'slam');
+  showResult(d,r&&r.ok?!!r.win:win,r&&r.ok?r.gain|0:0,!!(r&&r.denied));
+}
+function showResult(d,win,gain,denied){
+  d.sent=true;d.holdAtk=false;d.local=win;d.win=win;d.gain=gain;d.denied=denied;d.end=2.4;renderDuelBar();
+  SC.nums.push({x:W/2,y:H*.4,txt:win?'ניצחון!':'הפסד',c:win?'#f2c14e':'#ff5c7a',s:34,life:2.4});snd(win?'rare':'slam');
 }
 function finishDuel(){
   const d=SC.duel,win=d.win;
-  toast(d.denied?'השרת לא אישר את הניצחון':win?'ניצחון. הדירוג עלה ב-'+d.gain+', קיבלת 8 מטבעות עונה':'הפסד. הדירוג ירד ב-12');
-  SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];SC.hero.dir=0;SC.hero.dz=0;renderDuelBar();touch();
+  toast(d.denied?'השרת לא אישר את הניצחון':d.why==='left'&&win?'היריב עזב. ניצחת':win?'ניצחון. הדירוג עלה ב-'+d.gain+', קיבלת 8 מטבעות עונה':'הפסד. הדירוג ירד ב-12');
+  SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];SC.hero.dir=0;SC.hero.dz=0;renderDuelBar();if(d.net)send('sync',{});touch();
 }
 function drawDuel(dt){
-  const d=SC.duel,sc=clamp(H/300,.8,1.45),f=d.f,g=gy(),lost=d.sent?(d.win!=null?!d.win:!d.local):null,dead=d.sent?Math.min(2.4,d.end>2.4?(9-d.end):2.4-d.end+.6):0,looks=[lookOf(S),d.opp];
+  const d=SC.duel,D=d.D,sc=clamp(H/300,.8,1.45),f=D.f,g=gy(),me=d.me,lost=d.sent?(d.win!=null?!d.win:!d.local):null,dead=d.sent?Math.min(2.4,d.end>2.4?(9-d.end):2.4-d.end+.6):0,looks=[];looks[me]=lookOf(S);looks[1-me]=d.opp;
   { // the floor, seen at an angle: far edge narrower, lines running into the distance
     const y0=g-84,y1=g+6,in0=W*.13;ctx.save();const gr=ctx.createLinearGradient(0,y0,0,y1);gr.addColorStop(0,'rgba(60,44,110,.55)');gr.addColorStop(1,'rgba(120,90,190,.38)');ctx.fillStyle=gr;
     ctx.beginPath();ctx.moveTo(in0,y0);ctx.lineTo(W-in0,y0);ctx.lineTo(W-6,y1);ctx.lineTo(6,y1);ctx.closePath();ctx.fill();ctx.strokeStyle='rgba(255,215,94,.22)';ctx.lineWidth=1;
     for(let q=0;q<=8;q++){const u=q/8;ctx.beginPath();ctx.moveTo(in0+(W-2*in0)*u,y0);ctx.lineTo(6+(W-12)*u,y1);ctx.stroke();}
     for(let q=0;q<=4;q++){const u=q/4,y=y0+(y1-y0)*u*u,ins=in0+(6-in0)*u*u;ctx.beginPath();ctx.moveTo(ins,y);ctx.lineTo(W-ins,y);ctx.stroke();}
     ctx.strokeStyle='rgba(255,215,94,.6)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(in0,y0);ctx.lineTo(W-in0,y0);ctx.lineTo(W-6,y1);ctx.lineTo(6,y1);ctx.closePath();ctx.stroke();ctx.restore();}
-  for(const i of (f[0].z<=f[1].z?[0,1]:[1,0])){const a=f[i],ya=dy(a),s2=sc*dsc(a),x=a.x+(a.hitT>0?(Math.random()-.5)*5:0),down=lost!=null&&(i===0?lost:!lost);
-    ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(a.x,ya+2,22*s2,6*s2,0,0,7);ctx.fill();
-    if(Math.abs(f[0].z-f[1].z)<=DLANE&&i===1&&!d.sent){ctx.strokeStyle='rgba(255,92,122,.55)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(a.x,ya+2,28*s2,8*s2,0,0,7);ctx.stroke();}
-    if(a.sh>0){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle='#9fe8ff';ctx.shadowColor='#9fe8ff';ctx.shadowBlur=12;ctx.globalAlpha=.5+.3*Math.sin(SC.t*9);ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(a.x,ya-44*s2,30*s2,50*s2,0,0,7);ctx.stroke();ctx.restore();}
-    ctx.save();if(a.inv>0)ctx.globalAlpha=.45;drawHero(x,ya,s2,looks[i],SC.t+i*1.7,a.anim,a.face<0,down?Math.max(.01,dead):0,a.mv,false);ctx.restore();
-    if(a.stun>0)for(let q=0;q<3;q++){const an=SC.t*6+q*2.1;label('\u2726',a.x+Math.cos(an)*16,ya-128*s2+Math.sin(an)*5,'#ffd75e',12);}}
-  const side=(x,a,c,nm)=>{hpBar(x-60,26,120,a.hp,c,nm);label('שיקויים '+a.pots+(a.sh>0?' · מגן':'')+(a.stun>0?' · המום':''),x,48,'#c9c2ea',10.5);};
-  side(W*.26,f[0],'#6fe39a',S.name);side(W*.74,f[1],'#ff5c7a',d.opp.n);
-  label(d.go>0?'היכון...':mmss(Math.max(0,DUEL_LIVE.time-d.t)),W/2,32,d.go>0?'#ffd75e':'#fff',d.go>0?18:13);
-  if(d.go<=0&&!d.sent){const far=Math.abs(f[1].x-f[0].x)>DRNG[f[0].cls]+14,offl=Math.abs(f[1].z-f[0].z)>DLANE;if(far||offl)label(offl?'עמוד מולו כדי לפגוע':'התקרב כדי לתקוף',f[0].x,dy(f[0])-150*sc*dsc(f[0]),'#ffd75e',11);}
-  const hx0=SC.hero.x;SC.hero.x=f[0].x;drawFx(dt);SC.hero.x=hx0;
+  const lined=Math.abs(f[0].z-f[1].z)<=LIVE_LANE;
+  for(const i of (f[0].z<=f[1].z?[0,1]:[1,0])){const a=f[i],v=d.v[i],ya=dy(a),s2=sc*dsc(a),ax=dX(a.x),x=ax+(v.hitT>0?(Math.random()-.5)*5:0),down=lost!=null&&(i===me?lost:!lost);
+    ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(ax,ya+2,22*s2,6*s2,0,0,7);ctx.fill();
+    if(lined&&i!==me&&!d.sent){ctx.strokeStyle='rgba(255,92,122,.55)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(ax,ya+2,28*s2,8*s2,0,0,7);ctx.stroke();}
+    if(a.sh>D.t){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle='#9fe8ff';ctx.shadowColor='#9fe8ff';ctx.shadowBlur=12;ctx.globalAlpha=.5+.3*Math.sin(SC.t*9);ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(ax,ya-44*s2,30*s2,50*s2,0,0,7);ctx.stroke();ctx.restore();}
+    ctx.save();if(a.inv>D.t)ctx.globalAlpha=.45;drawHero(x,ya,s2,looks[i],SC.t+i*1.7,v.anim,v.face<0,down?Math.max(.01,dead):0,v.mv,false);ctx.restore();
+    if(a.stun>D.t)for(let q=0;q<3;q++){const an=SC.t*6+q*2.1;label('✦',ax+Math.cos(an)*16,ya-128*s2+Math.sin(an)*5,'#ffd75e',12);}}
+  const side=(x,a,c,nm)=>{hpBar(x-60,26,120,a.hp,c,nm);label('שיקויים '+a.pots+(a.sh>D.t?' · מגן':'')+(a.stun>D.t?' · המום':''),x,48,'#c9c2ea',10.5);};
+  side(W*(me?.74:.26),f[me],'#6fe39a',S.name);side(W*(me?.26:.74),f[1-me],'#ff5c7a',d.opp.n);
+  label(d.go>0?'היכון...':mmss(Math.max(0,DUEL_LIVE.time-D.t)),W/2,32,d.go>0?'#ffd75e':'#fff',d.go>0?18:13);if(d.net)label('קרב חי מול שחקן',W/2,48,'#7df9ff',10.5);
+  if(d.go<=0&&!d.sent){const far=Math.abs(f[1].x-f[0].x)>LIVE_RNG[f[me].cls]+14;if(far||!lined)label(!lined?'עמוד מולו כדי לפגוע':'התקרב כדי לתקוף',dX(f[me].x),dy(f[me])-150*sc*dsc(f[me]),'#ffd75e',11);}
+  const hx0=SC.hero.x;SC.hero.x=dX(f[me].x);drawFx(dt);SC.hero.x=hx0;
+}
+/* ---------- the live line to the server: invitations and duels between two connected players ---------- */
+let ws=null;
+function netSend(m){if(ws&&ws.readyState===1)ws.send(JSON.stringify(m));}
+function netOpen(){
+  if(!CFG.api||!session||!session.token||demo||(ws&&ws.readyState<2))return;
+  try{ws=new WebSocket(CFG.api.replace(/^http/,'ws').replace(/\/+$/,'')+'/ws');}catch(e){ws=null;return;}
+  const sock=ws;sock.onopen=()=>sock.send(JSON.stringify({t:'hello',token:session.token}));
+  sock.onmessage=e=>{let m;try{m=JSON.parse(e.data);}catch(_){return;}if(m&&typeof m==='object')netMsg(m);};
+  sock.onclose=()=>{if(ws===sock)ws=null;const d=SC.duel;if(d&&d.net&&!d.sent){d.why='lost';showResult(d,false,0,false);toast('החיבור לקרב נותק');}};
+  sock.onerror=()=>{};
+}
+function netMsg(m){
+  const d=SC.duel;
+  if(m.t==='invite'){if(SC.mode!=='farm'||!S){netSend({t:'answer',id:m.id,ok:false});return;}snd('boss');const f=m.from||{};
+    openModal('<h3 style="color:var(--gold)">'+esc(String(f.n||''))+' מאתגר אותך לדו-קרב חי</h3><p class="hint">'+(CLS[f.c]?CLS[f.c].n:'')+' · רמה '+L(f.l|0)+' · ריסטים '+L(f.r|0)+' · כוח '+L(fmt(f.p|0))+'</p><p class="hint">קרב בזמן אמת בין שניכם. המנצח עולה בדירוג. ההזמנה פגה תוך 20 שניות.</p><div class="acts"><button class="btn" data-act="pvpNo" data-id="'+(m.id|0)+'">סרב</button><button class="btn pri glow" data-act="pvpYes" data-id="'+(m.id|0)+'">קבל</button></div>');}
+  else if(m.t==='start'){flushTick();startDuel({o:G.cleanPlayer('opp',m.opp),live:m.L},{side:m.side?1:0,id:m.id,cls:m.cls});announce('דו-קרב חי מול '+SC.duel.opp.n,true);}
+  else if(m.t==='pos'){if(d&&d.net)d.tgt=[+m.x||0,+m.z||0];}
+  else if(m.t==='ev'){if(!d||!d.net||!m.o||!m.f)return;const D=d.D;D.t=+m.T||D.t;for(let i=0;i<2;i++){const s=m.f[i],f=D.f[i];f.hp=+s.hp;f.stun=+s.stun;f.sh=+s.sh;f.inv=+s.inv;f.pots=s.pots|0;if(s.at)for(const k in f.at)f.at[k]=+s.at[k]||0;}dShow(d,m.o);renderDuelBar();}
+  else if(m.t==='end'){if(d&&d.net){d.why=m.why;showResult(d,!!m.win,m.gain|0,false);}}
+  else if(m.t==='declined')toast('ההזמנה לדו-קרב לא התקבלה');
+  else if(m.t==='busy')toast('השחקן באמצע קרב אחר');
+  else if(m.t==='noticket')toast('אין לך כרטיס זירה');
+  else if(m.t==='gone'){if(m.k&&SC.mode==='farm'){toast('הוא לא זמין לקרב חי. נלחמים בדמות שלו');act('duelStart',{k:String(m.k)}).then(r=>{if(r.ok)startDuel(r.pd);else toast(r.msg==='net'?'אין חיבור לשרת':r.msg);});}}
 }
 function frame(dt){
   SC.t+=dt;SC.dt=dt;if(statsDirty){C=calc(S,auras);statsDirty=false;}
@@ -1225,7 +1259,7 @@ async function checkVersion(){
   try{await Promise.all(['./','index.html','game.js','core.js','config.js'].map(u=>fetch(u,{cache:'reload'}).catch(()=>null)));}catch(e){}
   location.reload();
 }
-setInterval(paceTick,5000);setInterval(()=>{if(worldWin()||(tab==='pass'&&evWindows(Date.now(),60).some(w=>w.e.world)))loadWorld();},10000);setInterval(checkVersion,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(checkVersion,1500);});setTimeout(checkVersion,8000);
+setInterval(paceTick,5000);setInterval(()=>{if(ONLINE&&S&&!demo)netOpen();},6000);setInterval(()=>{if(worldWin()||(tab==='pass'&&evWindows(Date.now(),60).some(w=>w.e.world)))loadWorld();},10000);setInterval(checkVersion,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(checkVersion,1500);});setTimeout(checkVersion,8000);
 
 /* ---------- full screen and installing as an app ---------- */
 const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement,fsCan=!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);
@@ -1408,7 +1442,8 @@ document.addEventListener('click',async e=>{
     else if(a==='respec'){closeModal();r=await act('respec',{});if(r.ok){snd('rare');toast(fmt(r.pts)+' נקודות חזרו אליך');}else toast(r.msg);}
     else if(a==='fight'){if(SC.mode==='farm'&&(A.tickets>0||A.pd)){r=await act('duelStart',{i:+b.dataset.i});if(r.ok)startDuel(r.pd);}}
     else if(a==='da'){return;}
-    else if(a==='challenge'){closeModal();r=await act('duelStart',{k:b.dataset.k});if(r.ok)startDuel(r.pd);else toast(r.msg==='net'?'אין חיבור לשרת':r.msg);}
+    else if(a==='challenge'){closeModal();const k=b.dataset.k;if(ws&&ws.readyState===1){netSend({t:'challenge',k:k});toast('ההזמנה נשלחה. מחכים לתשובה');r={ok:true};}else{r=await act('duelStart',{k:k});if(r.ok)startDuel(r.pd);else toast(r.msg==='net'?'אין חיבור לשרת':r.msg);}}
+    else if(a==='pvpYes'||a==='pvpNo'){closeModal();netSend({t:'answer',id:+b.dataset.id,ok:a==='pvpYes'});r={ok:true};}
     else if(a==='pinvite'){closeModal();try{const j=await rpc('say',{m:b.dataset.n+', בוא לפארטי שלי. הקוד: '+party.code,g:false});toast(j&&j.result&&j.result.ok?'ההזמנה נשלחה בצ\'אט':'ההזמנה לא נשלחה');beatT=99;}catch(e){}r={ok:true};}
     else if(a==='reroll'){loadArena();}
     else if(a==='pt'){r=await act('pt',{k:b.dataset.k,n:b.dataset.n});}
@@ -1441,7 +1476,7 @@ function showPeer(p){
     '<div class="kv"><span>נשק</span><b>'+gearLine(s.w,TIERN)+'</b></div><div class="kv"><span>שריון</span><b>'+gearLine(s.ar,TIERN)+'</b></div><div class="kv"><span>כנפיים</span><b>'+gearLine(s.g,WINGN)+'</b></div>'+
     (pet?'<div class="kv"><span>מלווה</span><b>'+pet[1]+'</b></div>':'')+
     '<div class="grid2" style="margin-top:10px"><button class="btn pri" data-act="challenge" data-k="'+esc(p.k)+'"'+(A.tickets>0&&SC.mode==='farm'?'':' disabled')+'>אתגר לדו-קרב</button><button class="btn" data-act="pinvite" data-n="'+esc(s.n)+'"'+(party.code?'':' disabled')+'>'+(party.code?'שלח קוד פארטי':'אין לך פארטי')+'</button></div>'+
-    '<p class="hint" style="margin-top:6px">בדו-קרב אתה נלחם בדמות שלו עם הציוד האמיתי שלה, והיא מופעלת על ידי המשחק. עולה כרטיס זירה.</p>'+
+    '<p class="hint" style="margin-top:6px">אם הוא מחובר הוא מקבל הזמנה, ואם הוא מקבל אותה נלחמים זה בזה בזמן אמת. אחרת נלחמים בדמות שלו, שהמשחק מפעיל. עולה כרטיס זירה.</p>'+
     '<div class="acts"><button class="btn" data-act="closeModal">סגור</button></div>');
 }
 /* ---------- the keep: a tiered event fought in its own place, entered with a crafted key ---------- */
@@ -1736,5 +1771,5 @@ async function boot(){
   openModal('<h3>מעגל הנצח</h3><p class="hint">מתחבר לשרת...</p>');
   await startOnline();
 }
-if(typeof window!=='undefined')window.EC={duelAct,get A(){return A;},get S(){return S;},get C(){return C;},set C(v){C=v;},SC,G,send,act,frame,enterZone,pend,flushTick,syncBoss,spawnBoss,touch,get demo(){return demo;}};
+if(typeof window!=='undefined')window.EC={duelAct,netSend,get peers(){return peers;},get ws(){return ws;},get A(){return A;},get S(){return S;},get C(){return C;},set C(v){C=v;},SC,G,send,act,frame,enterZone,pend,flushTick,syncBoss,spawnBoss,touch,get demo(){return demo;}};
 boot();

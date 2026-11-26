@@ -290,3 +290,16 @@ test('a duel against a player seen on the map uses the fighter the server looked
   const t=G.cleanPlayer('u2',{n:'יריב',c:'storm',l:50,r:1,p:900,d:120,a:1.1,h:900,f:60,cr:.1,cd:2,rt:1100});const r=G.apply(A,'duelStart',{k:'0123456789'},{target:t});
   assert.ok(r.ok);assert.equal(r.pd.o.n,'יריב');assert.equal(r.pd.o.id,undefined,'ids never reach the browser');assert.ok(r.pd.live.b[1]>0);
 });
+
+test('live duel rules: range, lanes, cooldowns, shield, dodge, stun and potions behave, for either side',()=>{
+  const F=(c,d,h)=>({c:c,d:d,a:1,h:h,f:200,cr:0,cd:2});const D=G.liveNew(F('blade',1000,10000),F('storm',1000,10000)),r=()=>.5;
+  assert.equal(G.liveAct(D,0,'atk',r),null,'still winding up at the start');D.t=1;assert.equal(G.liveAct(D,0,'atk',r),null,'a blade out of reach cannot hit');
+  D.f[1].x-=20;const far=G.liveAct(D,1,'atk',r);assert.ok(far&&far.dm>0,'the mage reaches from afar');assert.ok(D.f[0].hp<1);
+  D.f[0].x=D.f[1].x-40;D.f[0].z=.95;const miss=G.liveAct(D,0,'atk',r);assert.equal(miss.miss,'lane');assert.equal(miss.dm,0);
+  D.f[0].z=.5;assert.equal(G.liveAct(D,0,'atk',r),null,'the swing is on cooldown');D.t=3;const h0=D.f[1].hp,a=G.liveAct(D,0,'atk',r);assert.ok(a.dm>0&&D.f[1].hp<h0);
+  assert.ok(G.liveAct(D,1,'s2',r));const g=G.liveAct(D,0,'s1',r);assert.ok(g.guard&&!g.stun,'a shield stops the stun and most of the blow');assert.equal(G.liveAct(D,0,'s1',r),null);
+  D.t=20;const st=G.liveAct(D,0,'s1',r);assert.ok(st.stun);assert.equal(G.liveAct(D,1,'atk',r),null,'stunned');D.t=21.5;assert.ok(G.liveAct(D,1,'dash',r));const dodged=G.liveAct(D,0,'s0',r);assert.equal(dodged.miss,'inv');
+  D.f[1].hp=.2;const p=G.liveAct(D,1,'pot',r);assert.equal(p.heal,.3);assert.equal(D.f[1].pots,2);assert.equal(G.liveAct(D,1,'pot',r),null);assert.equal(G.liveAct(D,0,'nope',r),null);
+  D.t=40;D.f[1].hp=.01;const k=G.liveAct(D,0,'s3',r);assert.ok(k.dm>0);assert.equal(D.over,1);assert.equal(D.win,0);assert.equal(G.liveAct(D,1,'atk',r),null);
+  const E=G.liveNew(F('blade',1000,10000),F('blade',1000,10000));E.t=80;E.f[1].hp=.4;assert.equal(G.liveOver(E),1);assert.equal(E.win,0,'on time, the healthier side wins');
+});

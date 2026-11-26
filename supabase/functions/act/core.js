@@ -378,6 +378,31 @@ function simDuel(A,B){
 // The live duel: what each move does, in units of a fighter's `base` (the share of the enemy's health one
 // second and a half of ordinary attacking removes). The device runs the fight; the server knows these numbers too.
 const DUEL_LIVE={time:75,pots:3,heal:.3,sk:[{m:.9,cd:5},{m:1.6,cd:9,stun:.8},{cd:14,dur:3,cut:.6},{m:2.8,cd:22}],dash:{cd:4,inv:.45,d:150},potCd:5,maxRate:(1.5/1.5)+.9/5+1.6/9+2.8/22};
+// One set of rules for the live duel, used by the browser (against a fighter the game plays) and by the server
+// (between two players who are both connected, where the server alone decides what a move did).
+// Positions are in arena units: LIVE_W across, depth z from 0 to 1. Times are seconds on the duel's own clock D.t.
+const LIVE_W=400,LIVE_RNG={blade:62,storm:185,hunter:235},LIVE_LANE=.3;
+function liveFrom(L,ca,cb){
+  const mk=(i,cls)=>({x:i?LIVE_W*.76:LIVE_W*.24,z:.5,hp:1,cls:CLS[cls]?cls:'blade',at:{atk:.4,s0:1,s1:2,s2:0,s3:6,dash:0,pot:0},stun:0,sh:0,inv:0,pots:DUEL_LIVE.pots,chain:0});
+  return {f:[mk(0,ca),mk(1,cb)],b:L.b.slice(0,2),cr:L.cr.slice(0,2),T:L.T.slice(0,2),pool:L.pool.slice(0,2),t:0,over:0,win:-1};
+}
+function liveNew(A,B){const D=duelNew(A,B),T=x=>clamp(1/Math.max(.3,x.a),.3,1.2);return liveFrom({b:[D.f[0].base,D.f[1].base],cr:[D.f[0].cr,D.f[1].cr],T:[T(A),T(B)],pool:[A.h*5,B.h*5]},A.c,B.c);}
+// One move by side i. Returns what happened, or null if the move was not possible right now.
+function liveAct(D,i,k,rnd){
+  if(D.over)return null;const me=D.f[i],en=D.f[1-i],t=D.t,K=DUEL_LIVE,dist=Math.abs(en.x-me.x),rng=LIVE_RNG[me.cls],lane=Math.abs(en.z-me.z)<=LIVE_LANE;
+  if(me.stun>t||!(k in me.at)||me.at[k]>t)return null;
+  const o={by:i,k:k,dm:0,crit:false,miss:null,stun:false,fin:false,heal:0};
+  const hit=mult=>{if(!lane){o.miss='lane';return;}if(en.inv>t){o.miss='inv';return;}o.crit=rnd()<D.cr[i];let dm=D.b[i]*mult*(o.crit?1.5:1)*(.9+rnd()*.2);if(en.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}en.hp-=dm;o.dm=dm;};
+  if(k==='atk'){if(dist>rng+14)return null;const T=D.T[i];me.at.atk=t+T;me.chain=(me.chain+1)%4;o.fin=me.chain===0;hit(T/1.5*(o.fin?1.5:.84));}
+  else if(k==='s0'){if(dist>rng+40)return null;me.at.s0=t+K.sk[0].cd;hit(K.sk[0].m);}
+  else if(k==='s1'){if(dist>rng+20)return null;me.at.s1=t+K.sk[1].cd;hit(K.sk[1].m);if(!o.miss&&!o.guard){en.stun=t+K.sk[1].stun;o.stun=true;}}
+  else if(k==='s2'){me.at.s2=t+K.sk[2].cd;me.sh=t+K.sk[2].dur;}
+  else if(k==='s3'){if(dist>rng+60)return null;me.at.s3=t+K.sk[3].cd;hit(K.sk[3].m);}
+  else if(k==='dash'){me.at.dash=t+K.dash.cd;me.inv=t+K.dash.inv;}
+  else if(k==='pot'){if(me.pots<1)return null;me.at.pot=t+K.potCd;me.pots--;me.hp=Math.min(1,me.hp+K.heal);o.heal=K.heal;}
+  o.hp=[D.f[0].hp,D.f[1].hp];liveOver(D);return o;
+}
+function liveOver(D){if(!D.over&&(D.f[0].hp<=0||D.f[1].hp<=0||D.t>=DUEL_LIVE.time)){D.over=1;D.win=D.f[1].hp<=0?0:D.f[0].hp<=0?1:(D.f[0].hp>=D.f[1].hp?0:1);}return D.over;}
 const DUEL_ROUNDS=30,DUEL_POTS=3,DUEL_MULT={a:1,h:2.2,c:3.2,u:4.5,g:0,p:0};
 function duelNew(A,B){
   const raw=(x,y)=>x.d*Math.max(.3,x.a)*300/(300+y.f)/Math.max(1,y.h*5),K=.09/Math.sqrt(Math.max(1e-12,raw(A,B)*raw(B,A)));
@@ -750,4 +775,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
