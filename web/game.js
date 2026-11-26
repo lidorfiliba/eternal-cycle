@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126151818';
+const BUILD='20261126152037';
 const {tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -246,6 +246,22 @@ function silhouette(key,col){const im=IMG[key];if(!im||!im.complete||!im.natural
   const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;const x=c.getContext('2d');x.drawImage(im,0,0);x.globalCompositeOperation='source-in';x.fillStyle=col;x.fillRect(0,0,c.width,c.height);
   if(Object.keys(TINT).length>80)for(const k in TINT)if(k.startsWith('sil'))delete TINT[k];
   return TINT[id]=c;}
+// From +13 a ring circles the body with an orb riding it; at +15 there are three orbs, lightning jumps from them
+// to the body and a rune turns on the ground. The far half is drawn behind the body and the near half over it.
+function drawOrbit(x,y,k,bh,t,tier,col,front){
+  const cx=x,cy=y-bh*k*.5,rx=bh*k*.5,ry=rx*.3,n=tier>=15?3:1,c=tier>=15?col:'#ffd75e';
+  ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle=c;ctx.shadowColor=c;ctx.shadowBlur=10;
+  if(!front&&tier>=15){ctx.save();ctx.translate(x,y);ctx.scale(1,.3);ctx.globalAlpha=.55;ctx.lineWidth=2;const R=rx*1.25;ctx.beginPath();ctx.arc(0,0,R,0,7);ctx.stroke();ctx.rotate(t*1.3);ctx.beginPath();for(let i=0;i<5;i++){const q=i*1.2566;ctx.moveTo(Math.cos(q)*R,Math.sin(q)*R);ctx.lineTo(Math.cos(q+2.513)*R,Math.sin(q+2.513)*R);}ctx.stroke();ctx.restore();}
+  ctx.globalAlpha=.5;ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,-.18,front?0:Math.PI,front?Math.PI:Math.PI*2);ctx.stroke();
+  for(let i=0;i<n;i++){const a=t*2.6+i*6.283/n,sn=Math.sin(a);if((sn>0)!==front)continue;
+    const ox=cx+Math.cos(a)*rx*Math.cos(-.18)-sn*ry*Math.sin(-.18),oy=cy+Math.cos(a)*rx*Math.sin(-.18)+sn*ry*Math.cos(-.18);
+    ctx.globalAlpha=1;ctx.shadowBlur=0;const g=ctx.createRadialGradient(ox,oy,0,ox,oy,9*k*.5+3);g.addColorStop(0,'#fff');g.addColorStop(.35,c);g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.fillRect(ox-14,oy-14,28,28);
+    if(tier>=15&&!calm){const ph=Math.floor(t*14)+i*5;if(ph%3!==1){let px=ox,py=oy;const tx=cx+(((ph*13)%9)-4)*k,ty=cy+(((ph*7)%15)-7)*k;ctx.shadowBlur=8;
+      for(const [w,cc] of [[3,c],[1.2,'#fff']]){ctx.strokeStyle=cc;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(ox,oy);px=ox;py=oy;for(let j=1;j<=4;j++){const u=j/4,jx=j<4?(((ph*31+j*17)%13)-6)*k*.8:0,jy=j<4?(((ph*19+j*11)%13)-6)*k*.8:0;ctx.lineTo(ox+(tx-ox)*u+jx,oy+(ty-oy)*u+jy);}ctx.stroke();}}
+      if(Math.random()<.2)SC.parts.push({x:ox,y:oy,vx:(Math.random()-.5)*60,vy:-20,life:.35,c:c,s:2});}
+  }
+  ctx.restore();
+}
 function drawArmorAura(key,an,fi,x,y,k,flip,tier,col,t,bh){ // behind the body
   if(tier<7)return;const hueStep=tier>=15?Math.floor(t*6)%12:0,c=tier>=15?'hsl('+hueStep*30+',95%,66%)':col,sil=silhouette(key,c);if(!sil)return;
   ctx.save();ctx.globalCompositeOperation='lighter';ctx.shadowColor=c;
@@ -324,10 +340,10 @@ function drawHero(x,y,sc,look,t,anim,flip,dead,mv,fury){
   if(look.w&&!dead&&!look.spr)drawBackWeapon(bx-(flip?-1:1)*7*k,by-m.bh*k*.5,look,t,k,flip);
   let gl=0;if(look.w)gl=Math.max(gl,glowAmt(look.w[2],look.w[1],t));if(look.ar)gl=Math.max(gl,glowAmt(look.ar[2],look.ar[1],t)*.7);if(fury)gl=Math.max(gl,14);
   const sheet=armorSheet(key,look),gt=look.spr||dead?0:glowTier(look.sp),ac=gt?armorGlowColor(look,t,gt):null;
-  if(gt)drawArmorAura(key,an,fi,x,y,k,flip,gt,ac,t,m.bh);
+  if(gt)drawArmorAura(key,an,fi,x,y,k,flip,gt,ac,t,m.bh);if(gt>=13)drawOrbit(bx,by,k,m.bh,t,gt,ac,false);
   if(mv&&maxP>=11&&!dead&&!calm)spr(key,an,fi-1,x-(flip?-1:1)*12*sc,y,k,flip,null,0,.28,sheet); // afterimage at +11
   spr(key,an,fi,x,y,k,flip,gt>=7?ac:gc,dead?0:Math.max(anim>0?Math.min(gl,6):gl,gt>=13?12:gt>=9?11:gt>=7?9:0),null,sheet);
-  if(gt)drawArmorShine(key,an,fi,x,y,k,flip,gt,t,m.bh);
+  if(gt)drawArmorShine(key,an,fi,x,y,k,flip,gt,t,m.bh);if(gt>=13)drawOrbit(bx,by,k,m.bh,t,gt,ac,true);
   if(look.lu>0&&!dead){const u=look.lu,sil=silhouette(key,'#ffd75e'),w=silhouette(key,'#ffffff'); // level up: the body flares gold for a second
     if(sil&&w){ctx.save();ctx.globalCompositeOperation='lighter';ctx.shadowColor='#ffd75e';ctx.shadowBlur=22;const e=1-u;
       sprFrame(w,key,an,fi,x,y,k,flip,u*u*.3);for(let i=1;i<=3;i++)sprFrame(sil,key,an,fi,x,y,k,flip,u*.32/i,0,-e*i*5,1+(.06+e*.22)*i,1+(.05+e*.2)*i);ctx.restore();}
