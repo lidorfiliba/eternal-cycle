@@ -44,7 +44,7 @@ const isSet=it=>it&&it.r===4&&it.s!=='g'&&it.z>=0;
 function setCounts(s){const c={};for(const k of DROPS){const it=s.eq[k];if(isSet(it))c[it.z]=(c[it.z]||0)+1;}return c;}
 const UPCH=[.75,.65,.55,.5,.45,.4,.35,.3,.25];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const need=L=>Math.round((4+0.07*L)/1.5*10*Math.pow(1+L/50,1.6));
+const need=L=>Math.round((4+0.07*L)/1.5*10*Math.pow(1+L/50,1.6)*(1+1.25*Math.min(1,L/100)));
 const pois=x=>{let n=Math.floor(x);if(_rnd()<x-n)n++;return n;};
 function tzParts(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerusalem',year:'numeric',month:'numeric',day:'numeric'}).formatToParts(new Date(_now()));const o={};for(const x of p)o[x.type]=x.value;return o;}
 const dayKey=()=>{const o=tzParts();return o.year+'-'+(+o.month)+'-'+(+o.day);};

@@ -63,7 +63,7 @@ test('character slots are gated and names are sanitised',()=>{
 test('AFK-only time to first reset stays in the designed range and sets work',()=>{
   const now=clock(1.8e12);G.setEnv(Math.random,now);const A=G.newAccount();G.apply(A,'create',{name:'x',cls:'blade'});A.open=7;const s=A.chars[0];let t=0;
   while(s.lvl<G.CAP&&t<40*3600){let z=0;for(let i=0;i<8;i++)if(G.ZONES[i].min<=s.lvl)z=i;s.zone=z;s.last=now();G.offline(s,300);now.add(300);t+=300;}
-  assert.ok(t/60>100&&t/60<230,'minutes: '+t/60);
+  console.log('AFK-only minutes to first reset:',t/60);assert.ok(t/60>200&&t/60<480,'minutes: '+t/60);
   for(const k of G.DROPS)s.eq[k]=G.makeItem(s,k,8,4,7);
   assert.equal(G.setCounts(s)[7],6);const full=G.calc(s).dmg;s.eq.b=null;assert.ok(G.calc(s).dmg<full);
 });

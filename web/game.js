@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const {FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const {GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -45,7 +45,7 @@ function send(kind,args){
   const run=async()=>{
     if(!ONLINE){const r=apply(A,kind,args,{});S=A.chars[A.cur]||S;touch();localDirty=true;return r;}
     const j=await rpc(kind,args);
-    if(j.state)setState(j.state);if(j.players)players=j.players;if(j.market){market=j.market;panelDirty=true;}if(j.party){party=j.party;panelDirty=true;}
+    if(j.state)setState(j.state);if(j.players)players=j.players;if(j.market){market=j.market;panelDirty=true;}if(j.party){party=j.party;panelDirty=true;}if(j.guild){guild=j.guild;panelDirty=true;}if(j.banned)showBanned(j.result&&j.result.msg);
     setNet(true);return j.result||{ok:false,msg:j.error||''};
   };
   const p=chain.then(run);chain=p.catch(()=>{});
@@ -231,7 +231,7 @@ function hpBar(x,y,w,frac,c,lbl){ctx.fillStyle='rgba(0,0,0,.6)';rr(x,y,w,7,3);ct
 
 /* ---------- sound ---------- */
 let AC=null,MG=null;const sndLast={};
-function initAudio(){try{if(!AC){const X=window.AudioContext||window.webkitAudioContext;if(!X)return;AC=new X();MG=AC.createGain();MG.gain.value=.5;MG.connect(AC.destination);}if(AC.state==='suspended')AC.resume();loadSfx();}catch(e){}}
+function initAudio(){try{if(!AC){const X=window.AudioContext||window.webkitAudioContext;if(!X)return;AC=new X();MG=AC.createGain();MG.gain.value=.5;MG.connect(AC.destination);}if(AC.state==='suspended')AC.resume();loadSfx();initMusic();}catch(e){}}
 document.addEventListener('pointerdown',initAudio);document.addEventListener('keydown',initAudio);
 // Recorded effects; anything not loaded falls back to the synthesised version below.
 const SFX={hit:['hit0','hit1','hit2'],crit:['crit0','crit1'],skill:['skill0','skill1'],hurt:['hurt0','hurt1'],kill:['kill'],coin:['coin'],rare:['rare'],boss:['boss'],slam:['slam']};
@@ -281,7 +281,7 @@ function enterZone(z,side,f){
   h.x=side==='R'?mapW()-110:110;h.face=side==='R'?-1:1;
   if(h.climb&&h.climb.ph==='wait'){h.climb.ph='in';h.climb.t=.45;h.x=side==='R'?mapW()-50:50;}else h.climb=null;
   if(z>=0)for(let i=0;i<8;i++)SC.mons.push(newMon(300+i*140+Math.random()*50,z));
-  statsDirty=true;panelDirty=true;syncBoss();
+  statsDirty=true;panelDirty=true;syncBoss();peers=[];beatT=99;
 }
 function spawnBoss(){
   const zi=SC.zi,z=ZONES[zi];if(SC.boss||zi<0)return;
@@ -429,7 +429,7 @@ function updateWorld(dt){
     if(Math.abs(dx)>r){h.x+=Math.sign(dx)*spd*dt;h.mv=true;}
     else{
       if(S.auto&&h.autoSk<=0&&h.cds[0]<=0&&S.lvl>=SKLV[0]&&cast(0,true))h.autoSk=8;
-      if(h.atkT<=0){h.atkT=1/(C.aspd*(h.buff>0?2:1));h.anim=1;const col=gearColor(lookOf(S).w,SC.t,CLS[S.cls].c);attackFx(S.cls,h.x,gy(),h.face,[m],false,col);strike(m,1,col,false);if(m.dead)h.atkT=Math.max(h.atkT,.3);}
+      if(h.atkT<=0){h.atkT=1/(C.aspd*(h.buff>0?2:1));h.anim=1;h.lastAtk=SC.t;const col=gearColor(lookOf(S).w,SC.t,CLS[S.cls].c);attackFx(S.cls,h.x,gy(),h.face,[m],false,col);strike(m,1,col,false);if(m.dead)h.atkT=Math.max(h.atkT,.3);}
     }
   }else if(h.tx!=null){const dx=h.tx-h.x;h.face=dx>=0?1:-1;
     if(Math.abs(dx)<6){h.tx=null;if(h.goal){const g=h.goal;h.goal=null;arrive(g);}}else{h.x+=Math.sign(dx)*Math.min(Math.abs(dx),spd*dt);h.mv=true;}}
@@ -465,6 +465,7 @@ function drawWorld(){
     drawMon(m,zi,SC.t,m.back?m.home<m.x:h.x<m.x,sc);}
   if(h.tx!=null&&!h.goal){ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(h.tx,g0,9,3,0,0,7);ctx.stroke();}
   if(h.tgt){ctx.strokeStyle='#ffd75e';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(h.tgt.x,g0+1,h.tgt.boss?40:22,h.tgt.boss?8:5,0,0,7);ctx.stroke();}
+  drawPeers(g0,sc);
   const cl=h.climb;
   if(cl){const u=cl.ph==='wait'?1:cl.ph==='out'?1-cl.t/.45:cl.t/.45,above=(cl.kind==='up')===(cl.ph!=='in');
     ctx.save();ctx.globalAlpha=clamp(1-u*u,0,1);drawHero(h.x,g0+(above?-u*170:u*46),sc,lk,SC.t,0,h.face<0,0,true,false);ctx.restore();}
@@ -498,7 +499,7 @@ function finishDuel(){
 }
 function frame(dt){
   SC.t+=dt;SC.dt=dt;if(statsDirty){C=calc(S);statsDirty=false;}
-  if(SC.mode==='farm')updateWorld(dt);else updateDuel(dt);
+  if(SC.mode==='farm'){updateWorld(dt);updatePeers(dt);}else updateDuel(dt);
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.save();if(SC.shake>0){SC.shake-=dt;ctx.translate((Math.random()-.5)*7,(Math.random()-.5)*5);}
   const cam=SC.cam;if(SC.mode==='duel')SC.cam=0;
@@ -667,7 +668,7 @@ function renderParty(){
 }
 function renderArena(){
   const arenaOpps=A.opps||[];
-  let h=renderParty()+'<h2>זירה</h2><div class="card"><div class="grid2"><div class="kv"><span>דירוג</span><b class="num" style="color:var(--gold)">'+A.rating+'</b></div><div class="kv"><span>כרטיסים היום</span><b class="num">'+A.tickets+'</b></div></div>'+
+  let h=renderGuild()+renderParty()+'<h2>זירה</h2><div class="card"><div class="grid2"><div class="kv"><span>דירוג</span><b class="num" style="color:var(--gold)">'+A.rating+'</b></div><div class="kv"><span>כרטיסים היום</span><b class="num">'+A.tickets+'</b></div></div>'+
     '<p class="hint" style="margin-top:6px">הקרב אוטומטי, מול הדמות השמורה של היריב. '+(ONLINE?'הדמות שלך שמורה בשרת ומופיעה לשחקנים אחרים.':'מצב מקומי: יוצגו רק דמויות אימון.')+'</p></div><h2>יריבים</h2>';
   arenaOpps.forEach((o,i)=>{h+='<div class="card opp"><div class="z"><b>'+esc(o.n)+'</b>'+(o.bot?'<span class="tag">דמות אימון</span>':'')+
     '<small>'+CLS[o.c].n+' · רמה '+L(o.l)+' · ריסטים '+L(o.r)+' · כוח '+L(fmt(o.p))+'</small></div><button class="btn sm pri" data-act="fight" data-i="'+i+'"'+(A.tickets>0&&SC.mode==='farm'?'':' disabled')+'>הילחם</button></div>';});
@@ -680,7 +681,8 @@ function renderArena(){
 }
 function renderPanel(){
   panelDirty=false;const p=$('panel');
-  p.innerHTML=tab==='char'?renderChar():tab==='gear'?renderGear():tab==='zones'?renderZones():tab==='shop'?renderShop():tab==='pass'?renderPass():renderArena();
+  p.innerHTML=tab==='char'?renderChar():tab==='gear'?renderGear():tab==='zones'?renderZones():tab==='shop'?renderShop():tab==='pass'?renderPass():tab==='chat'?renderChat():renderArena();
+  if(tab==='chat'){const l=$('chatList');if(l)l.scrollTop=l.scrollHeight;renderChatBar();}
 }
 function openSheet(id){
   const f=findItem(id);if(!f){closeSheet();return;}const it=f.it,v=itemVals(it),uc=upCost(it);
@@ -725,7 +727,7 @@ function showCreate(extra){
 }
 function openTab(name){
   tab=name;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
-  if(tab==='arena'){loadArena();if(ONLINE&&!demo)send('pget',{});}if(tab==='shop')loadMarket();renderPanel();$('panel').scrollTop=0;
+  if(tab==='arena'){loadArena();if(ONLINE&&!demo){send('pget',{});loadGuild();}}if(tab==='shop')loadMarket();renderPanel();$('panel').scrollTop=0;
 }
 function loadArena(){if(!demo&&S)act('opps',{}).then(()=>{panelDirty=true;});}
 function enterGame(r){
@@ -745,29 +747,39 @@ function boxFx(r){
 }
 function accountHtml(){
   if(!ONLINE)return '<h2>העברה בין מכשירים</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">מצב מקומי: ההתקדמות שמורה במכשיר הזה. קוד השמירה מעביר אותה למכשיר אחר, וטעינה מחליפה את מה שיש כאן.</p><button class="btn" data-act="expSave">העתק קוד שמירה</button><input type="text" id="impCode" placeholder="הדבק כאן קוד שמירה" autocomplete="off"><button class="btn" data-act="impSave">טען קוד שמירה</button></div>';
-  return '<h2>חשבון</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">מחובר כ-<b dir="auto">'+esc(session&&session.user||'')+'</b>. אפשר להיכנס עם אותו שם וסיסמה מכל מכשיר. אין שחזור סיסמה, אז שמור אותה.</p><button class="btn" data-act="logout">התנתק</button></div>';
+  return '<h2>חשבון</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">מחובר כ-<b dir="auto">'+esc(session&&session.user||'')+'</b>. אפשר להיכנס עם אותו שם וסיסמה מכל מכשיר.</p>'+
+    (me.secret?'':'<p class="hint" style="color:var(--bad)">עוד לא הוגדרה שאלת שחזור. בלעדיה אי אפשר לשחזר סיסמה שנשכחה.</p>')+
+    '<button class="btn'+(me.secret?'':' pri')+'" data-act="acct" data-k="secret">שאלת שחזור</button><button class="btn" data-act="acct" data-k="pass">שינוי סיסמה</button>'+
+    '<button class="btn" data-act="music">מוזיקה: '+(prefs.music===false?'כבויה':'פעילה')+'</button>'+
+    (me.admin?'<a class="btn" href="admin.html" style="text-align:center;text-decoration:none;color:inherit">מסך ניהול</a>':'')+
+    '<button class="btn" data-act="logout">התנתק</button><button class="btn sm" data-act="acct" data-k="del" style="color:var(--bad)">מחיקת חשבון</button>'+
+    '<p class="hint"><a href="terms.html" target="_blank" rel="noopener">תקנון</a> · <a href="privacy.html" target="_blank" rel="noopener">פרטיות</a></p></div>';
 }
 let authMode='login';
 function showAuth(msg){
   const reg=authMode==='register';
   openModal('<h3>מעגל הנצח</h3><p class="hint">'+(reg?'בחר שם משתמש וסיסמה. איתם נכנסים לחשבון מכל מכשיר.':'היכנס עם שם המשתמש והסיסמה שלך.')+'</p>'+
     '<label for="auUser" class="hint">שם משתמש</label><input type="text" id="auUser" maxlength="16" autocomplete="username" autocapitalize="none" placeholder="3 עד 16 תווים">'+
-    '<label for="auPass" class="hint">סיסמה</label><input type="password" id="auPass" maxlength="72" autocomplete="'+(reg?'new-password':'current-password')+'" placeholder="לפחות 8 תווים" style="width:100%;background:#0a0818;border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--ink);font:inherit;font-size:16px">'+
+    '<label for="auPass" class="hint">סיסמה</label><input type="password" id="auPass" maxlength="72" autocomplete="'+(reg?'new-password':'current-password')+'" placeholder="לפחות 8 תווים">'+
+    (reg?'<label for="auQ" class="hint">שאלת שחזור, למקרה שתשכח את הסיסמה</label>'+qSelect('auQ')+'<input type="text" id="auA" maxlength="60" placeholder="התשובה שלך" autocomplete="off">':'')+
     (msg?'<p class="hint" style="color:var(--bad)">'+esc(msg)+'</p>':'')+
     '<div class="acts"><button class="btn pri" data-act="authGo">'+(reg?'הרשמה':'כניסה')+'</button></div>'+
-    '<button class="btn sm" data-act="authSwap">'+(reg?'יש לי כבר חשבון':'אין לי חשבון, הרשמה')+'</button>');
+    '<button class="btn sm" data-act="authSwap">'+(reg?'יש לי כבר חשבון':'אין לי חשבון, הרשמה')+'</button>'+(reg?'':' <button class="btn sm" data-act="forgot">שכחתי סיסמה</button>')+
+    '<p class="hint" style="margin-top:8px">'+(reg?'בהרשמה אתה מאשר את ':'')+'<a href="terms.html" target="_blank" rel="noopener">התקנון</a> '+(reg?'ואת ':'· ')+'<a href="privacy.html" target="_blank" rel="noopener">מדיניות הפרטיות</a></p>');
 }
 async function authGo(){
   const user=($('auUser').value||'').trim(),pass=$('auPass').value||'';
   if(user.length<3){showAuth('שם משתמש קצר מדי');return;}if(pass.length<8){showAuth('הסיסמה צריכה לפחות 8 תווים');return;}
+  const reg=authMode==='register',q=reg?+$('auQ').value:0,ans=reg?($('auA').value||'').trim():'';
+  if(reg&&ans.length<2){showAuth('כתוב תשובה לשאלת השחזור');return;}
   openModal('<h3>מעגל הנצח</h3><p class="hint">מתחבר...</p>');
-  let r=null;try{r=await post({kind:authMode,args:{user:user,pass:pass}});}catch(e){}
+  let r=null;try{r=await post({kind:authMode,args:{user:user,pass:pass,q:q,a:ans}});}catch(e){}
   if(!r||!r.j){showAuth('אין חיבור לשרת. נסה שוב');return;}
   if(!r.j.ok){showAuth(r.j.msg||'הפעולה נכשלה');return;}
   setSession({token:r.j.token,user:r.j.user});await startOnline();
 }
 async function startOnline(){
-  const r=await send('sync',{});
+  const r=await send('sync',{});if(banned)return;loadMe();
   if(r.ok){demo=false;closeModal();enterGame(r);return;}
   if(r.msg==='net'){openModal('<h3>אין חיבור לשרת</h3><p class="hint">השרת לא ענה. נסה שוב בעוד רגע.</p><div class="acts"><button class="btn pri" data-act="retry">נסה שוב</button></div>');return;}
   S=A.chars[0];closeModal();showCreate(false);
@@ -785,6 +797,15 @@ document.addEventListener('click',async e=>{
   if(a==='retry'){location.reload();return;}
   if(a==='authSwap'){authMode=authMode==='login'?'register':'login';showAuth();return;}
   if(a==='authGo'){authGo();return;}
+  if(a==='forgot'){fg={user:'',q:null};showForgot();return;}
+  if(a==='forgotGo'){forgotGo();return;}
+  if(a==='authBack'){showAuth();return;}
+  if(a==='acct'){acctModal(b.dataset.k);return;}
+  if(a==='acctGo'){acctGo(b.dataset.k);return;}
+  if(a==='music'){prefs.music=prefs.music===false;savePrefs();renderPanel();return;}
+  if(a==='tut'){tutNext();return;}
+  if(a==='say'){say();return;}
+  if(a==='chatCh'){chatCh=b.dataset.c==='g'?'g':'w';renderPanel();return;}
   if(a==='logout'){setSession(null);location.reload();return;}
   if(a==='create'){
     if(clickBusy)return;clickBusy=true;const nm=($('nm').value||'').trim().slice(0,14)||'גיבור',extra=!!b.dataset.x;
@@ -810,6 +831,11 @@ document.addEventListener('click',async e=>{
     if(a==='quest'){const q=QUESTS[A.q];if(q){const p=q.p(A,S);if(p[0]>=p[1]){r=await act('claimQuest',{});if(r.ok){snd('rare');toast('קיבלת '+r.rt);}}}}
     else if(a==='switch'){clickBusy=false;await switchTo(+b.dataset.i);}
     else if(a==='list'){await listItem(id,$('mprice').value,$('mto')?$('mto').value:'');}
+    else if(a==='gcreate'){r=await act('gcreate',{name:($('gname').value||'').trim(),tag:($('gtag').value||'').trim()});if(r.ok)toast('הגילדה נפתחה');}
+    else if(a==='gjoin'){r=await act('gjoin',{name:b.dataset.n});if(r.ok)toast('הצטרפת לגילדה');}
+    else if(a==='gleave'){r=await act('gleave',{});}
+    else if(a==='gkick'){r=await act('gkick',{i:+b.dataset.i});}
+    else if(a==='gnotice'){r=await act('gnotice',{text:$('gnotice').value||''});}
     else if(a==='pcreate'||a==='pleave'){r=await act(a,{});if(r.ok&&a==='pleave')partyN=0;}
     else if(a==='pjoin'){r=await act('pjoin',{code:($('pcode').value||'').trim()});if(r.ok)toast('הצטרפת לפארטי');}
     else if(a==='mbuy'){await buyListing(b.dataset.m);}
@@ -836,6 +862,158 @@ document.addEventListener('click',async e=>{
   touch();if(S){C=calc(S);statsDirty=false;}renderHud();renderPanel();saveLocal();
 });
 
+/* ---------- other players, chat, guilds ---------- */
+let peers=[],chatLog=[],chatSince=0,chatCh='w',chatUnread=0,onlineN=0,guild={mine:null,top:[],holder:null},me={secret:true,admin:false},beatT=0,beatBusy=false,banned=false;
+async function beat(){
+  if(beatBusy||!ONLINE||demo||!S||document.hidden||SC.mode!=='farm')return;beatBusy=true;
+  try{const h=SC.hero,j=await rpc('beat',{x:Math.round(h.x),f:h.face,a:SC.t-(h.lastAtk||-9)<3,s:chatSince}),b=j&&j.beat;
+    if(b){if(b.banned){location.reload();return;}
+      if(b.peers)mergePeers(b.peers);if(b.chat&&b.chat.length)addChat(b.chat);if(b.online!=null)onlineN=b.online;renderChatBar();}
+  }catch(e){}finally{beatBusy=false;}
+}
+function mergePeers(list){
+  const old={};for(const p of peers)old[p.k]=p;
+  peers=list.slice(0,20).map(o=>{const k=String(o.k),x=clamp(+o.x||110,30,mapW()-30),p=old[k]||{x:x,an:0,sw:Math.random()*2,dir:1};
+    p.k=k;p.s=G.cleanPlayer(k,o.s);p.tx=x;p.f=o.f<0?-1:1;p.a=!!o.a;p.g=String(o.g||'').slice(0,4);return p;});
+}
+function updatePeers(dt){
+  for(const p of peers){const d=p.tx-p.x;p.mv=Math.abs(d)>4;
+    if(p.mv){p.x+=Math.sign(d)*Math.min(Math.abs(d),Math.max(190,Math.abs(d)*1.2)*dt);p.dir=d<0?-1:1;}
+    p.an=Math.max(0,p.an-dt*4);if(p.a&&!p.mv&&SC.zi>=0&&(p.sw-=dt)<=0){p.sw=.8+Math.random()*.6;p.an=1;}}
+}
+function drawPeers(g0,sc){
+  for(const p of peers){ctx.save();ctx.globalAlpha=.9;drawHero(p.x,g0,sc,p.s,SC.t+p.k.charCodeAt(0),p.an,(p.mv?p.dir:p.f)<0,0,p.mv,false);ctx.restore();
+    label((p.g?'['+p.g+'] ':'')+p.s.n,p.x,g0-SPR[CLSSPR[p.s.c]].bh*2*sc-10,'#cfe6ff',11.5);}
+}
+function addChat(list){
+  const first=chatSince===0;
+  for(const m of list){const i=+m.i;if(!(i>chatSince))continue;chatSince=i;chatLog.push({c:m.c==='g'?'g':'w',n:String(m.n||''),g:String(m.g||''),m:String(m.m||''),me:!!m.me});if(!first&&tab!=='chat'&&!m.me)chatUnread++;}
+  if(chatLog.length>120)chatLog.splice(0,chatLog.length-120);
+  const l=$('chatList');if(l){l.innerHTML=chatRows();l.scrollTop=l.scrollHeight;}
+}
+function chatRows(){
+  const rows=chatLog.filter(m=>m.c===chatCh).slice(-60);
+  if(!rows.length)return '<p class="hint">'+(chatCh==='g'?'עוד אין הודעות בגילדה.':'עוד אין הודעות. תהיה הראשון.')+'</p>';
+  return rows.map(m=>'<div class="cl'+(m.me?' me':'')+'"><b>'+(m.g?'['+esc(m.g)+'] ':'')+esc(m.n)+'</b> <span dir="auto">'+esc(m.m)+'</span></div>').join('');
+}
+function renderChat(){
+  if(!ONLINE)return '<h2>צ\'אט</h2><p class="hint">הצ\'אט עובד רק במצב מקוון, מול השרת.</p>';
+  chatUnread=0;
+  return '<div class="seg"><button class="btn sm'+(chatCh==='w'?' pri':'')+'" data-act="chatCh" data-c="w">כולם</button><button class="btn sm'+(chatCh==='g'?' pri':'')+'" data-act="chatCh" data-c="g">גילדה</button><span class="hint">'+L(onlineN)+' מחוברים עכשיו</span></div>'+
+    '<div id="chatList">'+chatRows()+'</div><div class="chatSend"><input type="text" id="chatIn" maxlength="160" placeholder="כתוב הודעה" autocomplete="off" enterkeyhint="send"><button class="btn pri" data-act="say">שלח</button></div>'+
+    '<p class="hint">שמור על שפה מכבדת. קללות, הטרדה ופרסום מביאים להשתקה.</p>';
+}
+async function say(){
+  const el=$('chatIn');if(!el)return;const m=el.value.trim();if(!m)return;el.value='';
+  let j=null;try{j=await rpc('say',{m:m,g:chatCh==='g'});}catch(e){}
+  const r=j&&j.result;if(!r||!r.ok){toast(r&&r.msg||'ההודעה לא נשלחה');if(!el.value)el.value=m;return;}
+  beatT=99;
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='chatIn'){e.preventDefault();say();}});
+function renderChatBar(){
+  const el=$('chatBar');if(!el)return;if(!ONLINE||demo||!S){el.style.display='none';return;}el.style.display='';
+  const m=chatLog[chatLog.length-1],t=(chatUnread?'('+chatUnread+') ':'')+(m?(m.g?'['+m.g+'] ':'')+m.n+': '+m.m:'צ\'אט · '+onlineN+' מחוברים עכשיו');
+  if(el.textContent!==t)el.textContent=t;
+}
+function loadGuild(){if(ONLINE&&!demo)send('gget',{});}
+function siegeLine(){
+  const s=siegeInfo(Date.now());
+  return s.on?'המצור פעיל עכשיו, נשארו '+s.left+' דקות. כל חיסול של חבר גילדה נספר.':'המצור הבא בשבת ב-21:00, בעוד '+(s.next>=1440?Math.floor(s.next/1440)+' ימים':s.next>=60?Math.floor(s.next/60)+' שעות':s.next+' דקות')+'.';
+}
+function renderGuild(){
+  let h='<h2>גילדה</h2>';if(!ONLINE)return h+'<p class="hint">גילדות עובדות רק במצב מקוון, מול השרת.</p>';
+  const g=guild.mine,hold=guild.holder;
+  h+='<div class="card"><p class="hint"><b>מצור הטירה</b> · '+siegeLine()+' הגילדה שמחסלת הכי הרבה בחצי השעה הזו מחזיקה בטירה שבוע, וכל חבריה מקבלים '+L('+10%')+' ניסיון וזהב.</p><div class="kv"><span>מחזיקה בטירה</span><b>'+(hold?esc(hold.name)+' ['+esc(hold.tag)+']':'אף גילדה')+'</b></div></div>';
+  if(!g){
+    h+='<div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">עד 20 חברים. כל רמת גילדה מוסיפה '+L('1%')+' ניסיון לכל החברים, עד '+L('10%')+'. הרמה עולה מהחיסולים של כולם.</p>'+
+      '<input type="text" id="gname" maxlength="14" placeholder="שם הגילדה, 3 עד 14 תווים" autocomplete="off"><input type="text" id="gtag" maxlength="4" placeholder="תג, 2 עד 4 תווים" autocomplete="off" dir="ltr">'+
+      '<button class="btn pri" data-act="gcreate">פתח גילדה · '+L(fmt(GUILD_FEE))+' זהב</button></div>';
+  }else{
+    h+='<div class="card"><div class="kv"><span><b>'+esc(g.name)+'</b> ['+esc(g.tag)+']</span><b>רמה '+L(g.lvl)+' · '+L('+'+(g.lvl+(g.castle?10:0))+'%')+' ניסיון</b></div>'+
+      '<div class="kv"><span>חיסולים של הגילדה</span><b class="num">'+L(fmt(g.points))+'</b></div><div class="kv"><span>נקודות במצור</span><b class="num">'+L(fmt(g.siege))+'</b></div>'+
+      (g.notice?'<p class="hint" dir="auto" style="margin:6px 0;color:var(--ink)">'+esc(g.notice)+'</p>':'');
+    g.members.forEach((m,i)=>{h+='<div class="kv"><span><i class="dot" style="background:var(--'+(m.on?'good':'line')+')"></i>'+esc(m.n)+(m.me?' (אתה)':'')+(m.ld?' · מוביל':'')+'</span><b>רמה '+L(m.l)+' · '+L(fmt(m.k))+(g.leader&&!m.me?' <button class="btn sm" data-act="gkick" data-i="'+i+'">הוצא</button>':'')+'</b></div>';});
+    if(g.leader)h+='<div class="tog" style="margin-top:6px"><input type="text" id="gnotice" maxlength="120" placeholder="הודעה לחברי הגילדה" autocomplete="off"><button class="btn sm" data-act="gnotice">עדכן</button></div>';
+    h+='<button class="btn sm" data-act="gleave" style="margin-top:8px">עזוב גילדה</button></div>';
+  }
+  if(guild.top&&guild.top.length){h+='<div class="card"><p class="hint"><b>גילדות מובילות</b></p>';
+    for(const t of guild.top)h+='<div class="kv"><span>'+(t.castle?'♜ ':'')+esc(t.name)+' ['+esc(t.tag)+'] · '+L(t.n+'/20')+'</span><b>רמה '+L(t.lvl)+(t.siege?' · מצור '+L(fmt(t.siege)):'')+(!g&&t.n<20?' <button class="btn sm" data-act="gjoin" data-n="'+esc(t.name)+'">הצטרף</button>':'')+'</b></div>';
+    h+='</div>';}
+  return h;
+}
+function showBanned(msg){banned=true;openModal('<h3>החשבון מושעה</h3><p class="hint">'+esc(msg||'')+'</p><p class="hint">השעיה ניתנת כשהשרת מזהה דיווחי חיסולים שלא ייתכנו במשחק רגיל, או בהחלטת מנהל. אם לדעתך נפלה טעות, אפשר לפנות דרך עמוד התקנון.</p><div class="acts"><button class="btn" data-act="logout">התנתק</button></div>');}
+
+/* ---------- account: recovery question, password, deletion ---------- */
+const qSelect=id=>'<select id="'+id+'">'+SECRET_Q.map((q,i)=>'<option value="'+i+'">'+esc(q)+'</option>').join('')+'</select>';
+const pwInput=(id,ph,ac)=>'<input type="password" id="'+id+'" maxlength="72" autocomplete="'+ac+'" placeholder="'+ph+'">';
+function acctModal(kind,msg){
+  const h=kind==='secret'?'<h3>שאלת שחזור</h3><p class="hint">אם תשכח את הסיסמה, התשובה תאפשר לקבוע סיסמה חדשה. בחר תשובה שרק אתה יודע.</p>'+qSelect('acQ')+'<input type="text" id="acA" maxlength="60" placeholder="התשובה שלך" autocomplete="off">'+pwInput('acP','הסיסמה הנוכחית','current-password')
+    :kind==='pass'?'<h3>שינוי סיסמה</h3><p class="hint">אחרי השינוי, מכשירים אחרים יצטרכו להיכנס מחדש.</p>'+pwInput('acP','הסיסמה הנוכחית','current-password')+pwInput('acN','סיסמה חדשה, לפחות 8 תווים','new-password')
+    :'<h3>מחיקת חשבון</h3><p class="hint" style="color:var(--bad)">המחיקה סופית. הדמויות, הציוד וההתקדמות נמחקים מהשרת ואי אפשר לשחזר אותם.</p>'+pwInput('acP','הסיסמה, לאישור','current-password');
+  openModal(h+(msg?'<p class="hint" style="color:var(--bad)">'+esc(msg)+'</p>':'')+'<div class="acts"><button class="btn" data-act="closeModal">ביטול</button><button class="btn pri" data-act="acctGo" data-k="'+kind+'">'+(kind==='del'?'מחק לצמיתות':'שמור')+'</button></div>');
+}
+async function acctGo(kind){
+  const v=id=>$(id)?$(id).value:'',args=kind==='secret'?{pass:v('acP'),q:+v('acQ'),a:v('acA')}:kind==='pass'?{pass:v('acP'),next:v('acN')}:{pass:v('acP')};
+  let r=null;try{r=await post({kind:kind==='secret'?'setsecret':kind==='pass'?'chpass':'delacct',args:args},session&&session.token);}catch(e){}
+  const j=r&&r.j;if(!j||!j.ok){acctModal(kind,j&&j.msg||'אין חיבור לשרת');return;}
+  if(kind==='del'){setSession(null);location.reload();return;}
+  if(kind==='pass')setSession({token:j.token,user:j.user});else me.secret=true;
+  closeModal();toast('נשמר');panelDirty=true;
+}
+let fg={user:'',q:null};
+function showForgot(msg){
+  openModal('<h3>שחזור סיסמה</h3>'+(fg.q==null?'<p class="hint">כתוב את שם המשתמש, ותוצג שאלת השחזור שנבחרה בהרשמה.</p><input type="text" id="fgUser" maxlength="16" autocomplete="username" autocapitalize="none" placeholder="שם משתמש">'
+    :'<p class="hint">ענה על השאלה כדי לקבוע סיסמה חדשה:</p><p><b>'+esc(SECRET_Q[fg.q]||'')+'</b></p><input type="text" id="fgA" maxlength="60" placeholder="התשובה שלך" autocomplete="off">'+pwInput('fgP','סיסמה חדשה, לפחות 8 תווים','new-password'))+
+    (msg?'<p class="hint" style="color:var(--bad)">'+esc(msg)+'</p>':'')+'<div class="acts"><button class="btn" data-act="authBack">חזרה</button><button class="btn pri" data-act="forgotGo">המשך</button></div>');
+}
+async function forgotGo(){
+  let r=null;
+  if(fg.q==null){const u=($('fgUser').value||'').trim();if(u.length<3){showForgot('שם משתמש קצר מדי');return;}
+    try{r=await post({kind:'forgot',args:{user:u}});}catch(e){}
+    if(!r||!r.j||!r.j.ok){showForgot('אין חיבור לשרת. נסה שוב');return;}fg={user:u,q:r.j.q};showForgot();return;}
+  const a=$('fgA').value||'',p=$('fgP').value||'';if(p.length<8){showForgot('הסיסמה צריכה לפחות 8 תווים');return;}
+  try{r=await post({kind:'recover',args:{user:fg.user,a:a,pass:p}});}catch(e){}
+  if(!r||!r.j){showForgot('אין חיבור לשרת. נסה שוב');return;}if(!r.j.ok){showForgot(r.j.msg||'הפעולה נכשלה');return;}
+  setSession({token:r.j.token,user:r.j.user});fg={user:'',q:null};openModal('<h3>מעגל הנצח</h3><p class="hint">מתחבר...</p>');await startOnline();
+}
+function loadMe(){
+  if(!ONLINE||window.EC_MOCK||!session)return;
+  post({kind:'whoami',args:{}},session.token).then(r=>{if(r.j&&r.j.ok){me={secret:!!r.j.secret,admin:!!r.j.admin};panelDirty=true;}}).catch(()=>{});
+}
+
+/* ---------- music: a small generated loop that follows the map ---------- */
+let musG=null,musT=0,musStep=0;
+const MUS_PROG={town:[[0,4,7],[7,11,14],[9,12,16],[5,9,12]],wild:[[0,3,7],[8,12,15],[3,7,10],[10,14,17]]};
+function musNote(f,t,d,type,v){const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.02);g.gain.exponentialRampToValueAtTime(.0008,t+d);o.connect(g);g.connect(musG);o.start(t);o.stop(t+d+.05);}
+function musTick(){
+  if(!AC||!musG)return;
+  const on=!prefs.mute&&prefs.music!==false&&!document.hidden&&!!S&&!demo;musG.gain.setTargetAtTime(on?.15:0,AC.currentTime,.4);if(!on){musT=0;return;}
+  const zi=SC.zi,town=zi<0,boss=!!SC.boss&&SC.mode==='farm',bpm=town?76:boss?124:92+(zi%4)*4,sp=60/bpm/2,root=110*Math.pow(2,(town?3:[0,2,-2,5,-4,3,-5,1][zi%8])/12),prog=MUS_PROG[town?'town':'wild'],f=n=>root*Math.pow(2,n/12);
+  if(musT<AC.currentTime)musT=AC.currentTime+.05;
+  while(musT<AC.currentTime+.35){const ch=prog[Math.floor(musStep/8)%4],st=musStep%8;
+    if(st===0){musNote(f(ch[0])/2,musT,sp*7,'triangle',.5);for(const n of ch)musNote(f(n),musT,sp*8,'sine',.12);}
+    if(st===4&&!town)musNote(f(ch[0])/2,musT,sp*3,'triangle',.4);
+    if(!town||st%2===0)musNote(f(ch[[0,1,2,1,0,2,1,2][st]])*2*(st===5?2:1),musT,sp*1.6,town?'sine':'triangle',town?.22:.16);
+    if(boss&&st%2===0)musNote(f(ch[0])/4,musT,sp*.8,'sawtooth',.16);
+    musT+=sp;musStep++;}
+}
+function initMusic(){if(!AC||musG)return;musG=AC.createGain();musG.gain.value=0;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1800;musG.connect(lp);lp.connect(MG);setInterval(musTick,120);}
+
+/* ---------- first steps ---------- */
+const TUT=['החזק את החץ ימינה, או לחץ על השער, כדי לצאת מהכפר אל השדה','לחץ על מפלצת כדי לתקוף אותה. הדמות ממשיכה להילחם לבד','הכפתורים מימין הם הכישורים. הפעל את הראשון','אחרי 40 חיסולים מגיע בוס, והוא פותח את המפה הבאה. בקצה כל קומה יש סולם לקומה חזקה יותר','ברמה 400 עושים ריסט ומתחזקים. האירועים בשעות קבועות מקצרים את הדרך. בהצלחה'];
+let tutStep=-1,tutT=0;
+function updateTut(dt){
+  const el=$('tip');if(!el)return;
+  if(tutStep<0){if(!S||demo||prefs.tut||A.kills>60){el.style.display='none';return;}tutStep=0;}
+  if(tutStep>=TUT.length){el.style.display='none';return;}
+  tutT+=dt;
+  const done=tutStep===0?SC.zi>=0:tutStep===1?(A.kills>=2||pend.kills>=2)&&tutT>3:tutStep===2?(pend.casts>0||A.casts>0)&&tutT>3||tutT>14:tutT>(tutStep===3?12:9);
+  if(done){tutNext();return;}
+  el.style.display=SC.mode==='farm'&&!$('modal').classList.contains('on')?'':'none';
+  const t=TUT[tutStep];if(el.dataset.t!==t){el.dataset.t=t;el.firstChild.textContent=t;el.lastChild.textContent='הבנתי · '+(tutStep+1)+'/'+TUT.length;}
+}
+function tutNext(){tutStep++;tutT=0;if(tutStep>=TUT.length){prefs.tut=1;savePrefs();$('tip').style.display='none';}}
+
 /* ---------- loop ---------- */
 let lastT=0,hudT=0,saveT=0,evT=0,resyncing=false;
 function loop(ts){
@@ -849,8 +1027,10 @@ function loop(ts){
   frame(dt);
   if((hudT+=dt)>.2){hudT=0;renderHud();const ae=document.activeElement;if(panelDirty&&!$('sheet').classList.contains('on')&&!(ae&&ae.tagName==='INPUT'&&$('panel').contains(ae)))renderPanel();}
   if(tab==='pass'&&(evT+=dt)>1){evT=0;panelDirty=true;}
-  if(ONLINE){pend.t+=dt;if(pend.t>8){pend.t=0;if(pend.kills||pend.casts)flushTick();}}
+  if(ONLINE){pend.t+=dt;if(pend.t>8){pend.t=0;if(pend.kills||pend.casts)flushTick();}
+    if(!demo&&(beatT+=dt)>(peers.length?2.5:5)){beatT=0;beat();}}
   else if((saveT+=dt)>8){saveT=0;if(localDirty){localDirty=false;saveLocal();}}
+  updateTut(dt);
 }
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&A&&!demo){if(ONLINE)flushTick();else saveLocal();}});
 window.addEventListener('pagehide',()=>{if(A&&!demo)saveLocal();});

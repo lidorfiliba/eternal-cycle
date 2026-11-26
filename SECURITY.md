@@ -27,3 +27,13 @@
 ## Not verified here
 
 The rules, the SQL and the request handler are tested against an in-process Postgres with a stand-in for the Supabase client. The deployed function and the GitHub Actions deployment have not been run against a live Supabase project.
+
+## Players, chat, guilds and moderation
+
+- **Seeing each other.** The browser sends a heartbeat with the hero's position every 2.5 to 5 seconds and gets back who else stands on the same floor. Name, class, level and gear come from the snapshot the server keeps, never from the other player's browser; only the position is self-reported, and it affects nothing but the picture.
+- **Chat.** Messages go through the server, which stamps the character name itself, strips control characters, caps length at 160, and paces each account (2 seconds apart, 12 a minute). The client only ever inserts chat text as escaped text.
+- **Guilds and the siege.** Founding, joining, kicking and the weekly castle are SQL functions callable only by the server. Siege points come only from kills the server accepted.
+- **Automatic suspensions.** A kill claim at least three times what the server allows, and at least 50 over, is recorded as blatant. Five within an hour suspend the account: a day, then a week, then for good. Smaller overshoots are only clamped and logged.
+- **Password recovery.** There is no e-mail. A recovery question is chosen at sign-up and its answer is stored as a salted PBKDF2 hash. Wrong answers count against the same brake as wrong passwords. Changing or recovering a password invalidates sessions opened before it.
+- **Admin screen** (`admin.html`). Every admin call is checked on the server against `users.is_admin`, which can only be set from the database: `update users set is_admin = true where username = '...'`.
+- **Account deletion** is available to the player in-game and removes the login, the characters and the audit rows.
