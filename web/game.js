@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126125136';
+const BUILD='20261126125651';
 const {AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -101,7 +101,22 @@ function gearColor(g,t,fallback){if(!g)return fallback;if(g[2]>=15)return 'hsl('
 const WPAL={1:['#2f7a45','#b6ef86'],2:['#2260c9','#a8e8ff'],3:['#c42d18','#ffbe55'],4:['#caa02e','#fff8d2'],5:['#35106b','#d596ff'],6:['#1b6ea8','#effcff'],7:['#a8740a','#fff1a8'],8:['#ff4fa3','#7df9ff'],s:['#a637ee','#62f3e2']};
 const SPR={"mh":{"w":128,"h":69,"ax":28,"ay":69,"bh":52,"a":{"idle":[0,8],"run":[1,8],"atk":[2,6],"atk2":[3,6],"hit":[4,4],"die":[5,6]}},"ew":{"w":94,"h":69,"ax":26,"ay":69,"bh":58,"a":{"idle":[0,8],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,5]}},"hu":{"w":91,"h":66,"ax":42,"ay":66,"bh":42,"a":{"idle":[0,8],"run":[1,8],"atk":[2,7],"atk2":[3,5],"hit":[4,3],"die":[5,8]}},"mush":{"w":71,"h":45,"ax":32,"ay":45,"bh":37,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"gob":{"w":88,"h":46,"ax":44,"ay":46,"bh":36,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"skel":{"w":98,"h":59,"ax":32,"ay":57,"bh":51,"a":{"idle":[0,4],"run":[1,4],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"eye":{"w":56,"h":41,"ax":27,"ay":33,"bh":33,"a":{"idle":[0,8],"atk":[1,8],"hit":[2,4],"die":[3,4]}},"worm":{"w":77,"h":54,"ax":30,"ay":54,"bh":45,"a":{"idle":[0,9],"run":[1,9],"atk":[2,16],"hit":[3,3],"die":[4,8]}},"skel_f":{"w":98,"h":59,"ax":32,"ay":57,"bh":51,"a":{"idle":[0,4],"run":[1,4],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"gob_r":{"w":88,"h":46,"ax":44,"ay":46,"bh":36,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"eye_p":{"w":56,"h":41,"ax":27,"ay":33,"bh":33,"a":{"idle":[0,8],"atk":[1,8],"hit":[2,4],"die":[3,4]}},"skel_g":{"w":98,"h":59,"ax":32,"ay":57,"bh":51,"a":{"idle":[0,4],"run":[1,4],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"n_smith":{"w":128,"h":69,"ax":28,"ay":69,"bh":52,"a":{"idle":[0,8]}},"n_merch":{"w":91,"h":66,"ax":42,"ay":66,"bh":42,"a":{"idle":[0,8]}},"n_guard":{"w":94,"h":69,"ax":26,"ay":69,"bh":58,"a":{"idle":[0,8]}},"n_herald":{"w":91,"h":66,"ax":42,"ay":66,"bh":42,"a":{"idle":[0,8]}},"n_arena":{"w":128,"h":69,"ax":28,"ay":69,"bh":52,"a":{"idle":[0,8]}},"mush_d":{"w":71,"h":45,"ax":32,"ay":45,"bh":37,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"worm_i":{"w":77,"h":54,"ax":30,"ay":54,"bh":45,"a":{"idle":[0,9],"run":[1,9],"atk":[2,16],"hit":[3,3],"die":[4,8]}},"gob_g":{"w":88,"h":46,"ax":44,"ay":46,"bh":36,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"skel_d":{"w":98,"h":59,"ax":32,"ay":57,"bh":51,"a":{"idle":[0,4],"run":[1,4],"atk":[2,8],"hit":[3,4],"die":[4,4]}}};
 const IMG={},CLSSPR={blade:'mh',storm:'ew',hunter:'hu'};
-function loadSprites(){for(const k in SPR){const im=new Image();im.src='assets/'+k+'.png';IMG[k]=im;}}
+function loadSprites(){for(const k in SPR){const im=new Image();if(k==='mh'||k==='ew'||k==='hu')im.onload=()=>measureBody(k);im.src='assets/'+k+'.png';IMG[k]=im;}}
+// Where the hero's body is in every animation frame, so wings and the weapon on the back move with it.
+// Thin parts (the weapon in the hand) are worn away first; what is left is the body. Stored as [middle x, top y] in sprite pixels.
+const BODY={};
+function measureBody(key){
+  try{const m=SPR[key],im=IMG[key],c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(im,0,0);const out={};
+    for(const an in m.a){const row=m.a[an][0],n=m.a[an][1];out[an]=[];
+      for(let fi=0;fi<n;fi++){const d=x.getImageData(fi*m.w,row*m.h,m.w,m.h).data,w=m.w,h=m.h,on=(px,py)=>px>=0&&py>=0&&px<w&&py<h&&d[(py*w+px)*4+3]>128;
+        let top=h,pts=[];for(let py=2;py<h-2;py++)for(let px=2;px<w-2;px++){let ok=true;for(let dy=-2;dy<=2&&ok;dy++)for(let dx=-2;dx<=2;dx++)if(!on(px+dx,py+dy)){ok=false;break;}if(ok){pts.push(px,py);if(py<top)top=py;}}
+        if(pts.length<40){out[an].push(null);continue;}
+        let sx=0,cnt=0;const lim=top+(m.ay-top)*.6;for(let i=0;i<pts.length;i+=2)if(pts[i+1]<=lim){sx+=pts[i];cnt++;}
+        out[an].push([sx/cnt-m.ax,top-m.ay]);}}
+    if(out.idle&&out.idle[0])BODY[key]=out;
+  }catch(e){}
+}
+function bodyShift(key,an,fi){const b=BODY[key];if(!b)return [0,0];const fr=b[an]||b.idle,f=fr[clamp(fi|0,0,fr.length-1)],o=b.idle[0];return f?[clamp(f[0]-o[0],-9,9),clamp(f[1]-o[1],-6,10)]:[0,0];} // clamped: attack frames with a big slash drawn in would throw it off
 function spr(key,an,fi,x,y,k,flip,glowC,glowB,alpha,sheet){
   const m=SPR[key],src=IMG[key];if(!m||!src||!src.complete||!src.naturalWidth)return false;const im=sheet||src;
   const a=m.a[an]||m.a.idle;fi=Math.max(0,Math.min(a[1]-1,fi|0));
@@ -153,13 +168,13 @@ function wingShape(c,T,pal,t,far){
   }
 }
 // Eight wing styles by tier: leaf, storm feathers, flame, angel, bat, ice, golden, energy. Both wings sweep back from the shoulders.
-function drawWings(x,y,g,t,k,flip,cls,bh){
+function drawWings(x,y,g,t,k,flip,cls,bh,mv,anim){
   const T=clamp(g[0]|0,1,8),c=wctx,at=WING_AT[cls]||WING_AT.blade,f=flip?-1:1;let pal=g[3]?WPAL.s:WPAL[T];
   if(T===8&&!g[3]){const h=(t*70)%360;pal=['hsl('+h+',90%,55%)','hsl('+((h+120)%360)+',95%,80%)'];}
-  const flap=Math.sin(t*2.6),OX=130,OY=185;
+  const flap=Math.sin(t*(mv?7:2.6))*(mv?1.5:1),lean=(mv?.22:0)-(anim>0?anim*.35:0),OX=130,OY=185; // beat faster on the run, trail back, open on a strike
   c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,340,280);
-  c.save();c.translate(OX-14,OY-4);c.rotate(-.42+flap*.11);c.scale(.74,.74);c.globalAlpha=.72;wingShape(c,T,pal,t+.4,true);c.restore(); // far wing, behind and higher
-  c.save();c.translate(OX,OY);c.rotate(flap*.14);c.globalAlpha=1;wingShape(c,T,pal,t,false);c.restore();
+  c.save();c.translate(OX-14,OY-4);c.rotate(-.42+flap*.11+lean*.7);c.scale(.74,.74);c.globalAlpha=.72;wingShape(c,T,pal,t+.4,true);c.restore(); // far wing, behind and higher
+  c.save();c.translate(OX,OY);c.rotate(flap*.14+lean);c.globalAlpha=1;wingShape(c,T,pal,t,false);c.restore();
   if(T===4||T>=7){c.save();c.strokeStyle=T===8?pal[1]:'#fff3b0';c.lineWidth=5;c.globalAlpha=.85;c.beginPath();c.ellipse(OX-(at[0]+3)*2,OY-bh*2*(1-at[1])-20,22,6.5,0,0,7);c.stroke();c.restore();}
   const u=k*.5,ax=x-f*at[0]*k,ay=y-bh*k*at[1];
   ctx.save();ctx.translate(Math.round(ax),Math.round(ay));ctx.scale(-f*u,u);ctx.imageSmoothingEnabled=true;
@@ -264,13 +279,14 @@ function drawHero(x,y,sc,look,t,anim,flip,dead,mv,fury){
   ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(x,y+1,20*sc,5*sc,0,0,7);ctx.fill();
   if(look.set&&!dead)drawSetAura(x,y,sc,look.set,t);
   if(!dead&&!look.spr&&petTier(look.r|0))drawPet(x-(flip?-1:1)*38*sc,y-m.bh*k*.92,sc,petTier(look.r|0),t+(look.c==='storm'?1:0),flip);
-  if(look.g&&!dead)drawWings(x,y,look.g,t,k,flip,look.c,m.bh);
-  if(look.w&&!dead&&!look.spr)drawBackWeapon(x-(flip?-1:1)*7*k,y-m.bh*k*.5,look,t,k,flip);
   let an='idle',fi=Math.floor(t*8);
   if(dead){an='die';fi=Math.min(frames(key,'die')-1,Math.floor((dead===true?9:dead)*8));}
   else if(anim>0){an=look.sk&&m.a.atk2?'atk2':'atk';fi=Math.floor((1-anim)*frames(key,an));}
   else if(mv){an='run';fi=Math.floor(t*12)%frames(key,'run');}
   else fi=fi%frames(key,'idle');
+  const bs=look.spr||dead?[0,0]:bodyShift(key,an,fi),bx=x+(flip?-1:1)*bs[0]*k,by=y+bs[1]*k; // the body's place in this frame
+  if(look.g&&!dead)drawWings(bx,by,look.g,t,k,flip,look.c,m.bh,mv,anim);
+  if(look.w&&!dead&&!look.spr)drawBackWeapon(bx-(flip?-1:1)*7*k,by-m.bh*k*.5,look,t,k,flip);
   let gl=0;if(look.w)gl=Math.max(gl,glowAmt(look.w[2],look.w[1],t));if(look.ar)gl=Math.max(gl,glowAmt(look.ar[2],look.ar[1],t)*.7);if(fury)gl=Math.max(gl,14);
   const sheet=armorSheet(key,look);
   if(mv&&maxP>=11&&!dead&&!calm)spr(key,an,fi-1,x-(flip?-1:1)*12*sc,y,k,flip,null,0,.28,sheet); // afterimage at +11
