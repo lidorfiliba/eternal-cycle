@@ -27,3 +27,7 @@ python3 -m http.server -d web 8080
 ```
 
 Art: LuizMelo (CC0). Sound credits: `CREDITS.md`.
+
+## Build id
+
+Every commit must refresh the build id (`web/version.txt` and the `BUILD` line in `web/game.js`); open clients compare the two to notice a new version and reload. Install the hook once per clone: `cp tools/stamp.sh .git/hooks/pre-commit`. A test fails if the two ids differ.
