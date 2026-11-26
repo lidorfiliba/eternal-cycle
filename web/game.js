@@ -32,7 +32,7 @@ function initServer(){
   session={key:k};
 }
 async function rpc(kind,args){
-  const h={'Content-Type':'application/json','x-ec-key':session.key};if(CFG.anon){h.apikey=CFG.anon;h.Authorization='Bearer '+CFG.anon;}
+  const h={'Content-Type':'application/json','x-ec-key':session.key};if(CFG.anon)h.apikey=CFG.anon;
   const res=await fetch(CFG.url+'/functions/v1/act',{method:'POST',headers:h,body:JSON.stringify({kind:kind,args:args||{}})});
   const j=await res.json().catch(()=>null);if(!res.ok||!j)throw new Error(j&&j.error||('HTTP '+res.status));return j;
 }

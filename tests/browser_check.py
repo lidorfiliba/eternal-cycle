@@ -13,7 +13,7 @@ window.EC_MOCK=async(kind,args)=>{const G=await import('./core.js');await new Pr
 '''
 async def run(pg,online):
     errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
-    if online: await pg.route('**/config.js',lambda r:r.fulfill(body=MOCK,content_type='application/javascript'))
+    await pg.route('**/config.js',lambda r:r.fulfill(body=MOCK if online else 'window.EC_CONFIG={};',content_type='application/javascript'))
     await pg.goto('http://127.0.0.1:8765/index.html');await pg.wait_for_timeout(900)
     await pg.fill('#nm','בודק');await pg.click('[data-act=create]');await pg.wait_for_timeout(600)
     out={'mode':'online-mock' if online else 'local','net':await pg.inner_text('#net'),'created':await pg.evaluate("()=>!EC.demo&&EC.S.name")}

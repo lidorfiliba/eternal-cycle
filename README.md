@@ -14,6 +14,8 @@ A Hebrew, mobile-first browser RPG: walk the maps, fight, beat bosses, collect a
 - **Local** (no Supabase configured): everything runs in the browser and is saved on the device. Unprotected, single player.
 - **Online**: the server owns every account. The browser sends actions; the server runs the rules with its own clock and randomness and replies with the new state.
 
+The live server is the Supabase project in `web/config.js`. The deployed function is `supabase/functions/act/index.ts` with its two imports pointed at this repository at a pinned commit, so the server runs exactly the committed rules; redeploy after changing `core.js` or `handler.js`.
+
 See `SETUP.md` (Hebrew) to go online and `SECURITY.md` for what is and is not protected.
 
 ## Development
