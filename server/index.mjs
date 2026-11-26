@@ -44,9 +44,12 @@ export function makeServer(admin, secret, origin = '*') {
 }
 
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop())) {
-  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) { console.error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set'); process.exit(1); }
-  const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-  const port = Number(process.env.PORT) || 10000;
-  makeServer(admin, key, process.env.ALLOWED_ORIGIN || '*').listen(port, () => console.log('eternal-cycle server on ' + port));
+  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY, port = Number(process.env.PORT) || 10000;
+  if (!url || !key || key.length < 30) { // not configured yet: stay up and say so, instead of crashing in a loop
+    console.error('SUPABASE_SERVICE_ROLE_KEY is not set yet');
+    http.createServer((req, res) => { res.writeHead(req.method === 'GET' ? 200 : 503, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }); res.end(JSON.stringify({ ok: false, need: 'SUPABASE_SERVICE_ROLE_KEY' })); }).listen(port);
+  } else {
+    const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    makeServer(admin, key, process.env.ALLOWED_ORIGIN || '*').listen(port, () => console.log('eternal-cycle server on ' + port));
+  }
 }
