@@ -314,5 +314,6 @@ test('English: every Hebrew phrase in the game has a translation, and sentences 
   const {tr}=await import('../web/i18n.js?en');
   assert.equal(tr('חסל 1,500 מפלצות'),'Kill 1,500 monsters');assert.equal(tr('הבוס של ביצת הערפל הופיע בקצה המפה'),'The boss of Mist Marsh appeared at the edge of the map');
   assert.equal(tr('Santrio · רמה 141'),'Santrio · Level 141');assert.equal(tr('abc 123'),'abc 123');assert.ok(!/[֐-׿]/.test(tr('צריך 5 שברי ארגמן. יש לך 2')));
+  assert.equal(tr('עוד 20 רמות'),'20 more levels');assert.equal(tr('נשארו 36 ימים לעונה'),'36 days left in the season');assert.equal(tr('נצח 12 קרבות זירה'),'Win 12 arena fights');assert.equal(tr('מביצת הערפל'),'From Mist Marsh');assert.equal(tr('הדירוג עלה ב-14, קיבלת 8 מטבעות עונה'),'Rating +14, and you received 8 Season Coins');
   delete globalThis.localStorage;
 });

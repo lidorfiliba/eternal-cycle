@@ -2,10 +2,14 @@
 // Text is cut into Hebrew phrases (digits, Latin text and sentence punctuation end a phrase), and each phrase is
 // looked up in en.js: whole first, then as the longest known pieces from left to right, so a sentence built in code
 // around a name or a number still comes out in English. What is not known stays as it was.
-import {EN} from './en.js';
+import {EN,SENTENCES} from './en.js';
 const RUN=/[֐-׿][֐-׿ "'׳״\-]*[֐-׿]|[֐-׿]/g,HE=/[֐-׿]/;
 const PRE={'ו':'and ','ה':'the ','ב':'in ','ל':'to ','מ':'from ','ש':'that ','כ':'as '};
-let lang='he';try{lang=localStorage.getItem('eternal-cycle-lang')==='en'?'en':'he';}catch(e){}
+// The language is the player's saved choice; with none saved, Hebrew for a Hebrew browser and English for any other.
+let lang='he';try{const saved=localStorage.getItem('eternal-cycle-lang');lang=saved==='en'||saved==='he'?saved:(typeof navigator!=='undefined'&&!/^he|^iw/i.test(navigator.language||'he')?'en':'he');}catch(e){}
+// Whole sentences that the game builds around a number or a name are translated as sentences, before the
+// phrase-by-phrase pass, so the English reads in English word order. $1, $2 are the numbers or names.
+const N='(\\d[\\d,.]*[KM]?)',SENT=SENTENCES.map(p=>[new RegExp(p[0].replace(/#/g,N),'g'),p[1]]);
 const cache=new Map();
 function phrase(r){
   let hit=cache.get(r);if(hit!==undefined)return hit;
@@ -13,14 +17,16 @@ function phrase(r){
   if(EN[k]!==undefined)hit=lead+EN[k]+tail;
   else{const w=k.split(' '),out=[];let i=0;
     while(i<w.length){let n=Math.min(w.length-i,12),got=null;
-      for(;n>=1;n--){const p=w.slice(i,i+n).join(' ');if(EN[p]!==undefined){got=EN[p];break;}}
-      if(got===null){const x=w[i];n=1;got=x.length>2&&PRE[x[0]]&&EN[x.slice(1)]!==undefined?PRE[x[0]]+EN[x.slice(1)]:x;}
+      for(;n>=1;n--){const p=w.slice(i,i+n).join(' ');if(EN[p]!==undefined){got=EN[p];break;}
+        if(p.length>2&&PRE[p[0]]&&EN[p.slice(1)]!==undefined){got=PRE[p[0]]+EN[p.slice(1)];break;}} // a one-letter prefix (from, in, the, and ...) glued to a known phrase
+      if(got===null){n=1;got=w[i];}
       out.push(got);i+=n;}
     hit=lead+out.join(' ')+tail;}
   cache.set(r,hit);return hit;
 }
 export const getLang=()=>lang;
-export function tr(s){return lang==='he'||s==null||typeof s!=='string'||!HE.test(s)?s:s.replace(RUN,phrase);}
+export function tr(s){if(lang==='he'||s==null||typeof s!=='string'||!HE.test(s))return s;let hit=cache.get('\u0001'+s);if(hit!==undefined)return hit;let t=s;for(const p of SENT)t=t.replace(p[0],p[1]);
+  t=t.replace(RUN,phrase).replace(/([A-Za-z])-(\+?\d)/g,'$1 $2').replace(/([A-Za-z])-$/,'$1 ').replace(/(^|[.!?] +|: )([a-z])/g,(m,a,b)=>a+b.toUpperCase()).replace(/(\d) ?x(?= |$)/g,'$1x');if(cache.size<4000)cache.set('\u0001'+s,t);return t;}
 export function setLang(l){try{localStorage.setItem('eternal-cycle-lang',l==='en'?'en':'he');}catch(e){}location.reload();}
 // The page: translate what is there, then everything that is added or changed. Text people typed (chat lines, names in
 // inputs) is left alone: it sits in elements marked dir="auto" or in form fields.

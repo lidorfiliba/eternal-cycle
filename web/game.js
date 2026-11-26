@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126175403';
+const BUILD='20261126180131';
 const {LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
@@ -951,6 +951,7 @@ function drawDuel(dt){
   const hx0=SC.hero.x;SC.hero.x=dX(f[me].x);drawFx(dt);SC.hero.x=hx0;
 }
 /* ---------- the live line to the server: invitations and duels between two connected players ---------- */
+const EMO=['\u{1F44B}','\u{1F602}','\u{1F44D}','\u2764\uFE0F','\u{1F621}','\u{1F483}','GG','\u{1F64F}'];
 let mvT=0,mvLast=[0,false,1],ws=null,whisperTo=null,friendsOn={},whoT=0;
 const isBlocked=(k,n)=>(A&&A.blocked||[]).some(x=>x.k===k||(n&&x.n===n)),isFriend=k=>(A&&A.friends||[]).some(x=>x.k===k);
 function askWho(){const fr=A&&A.friends||[];if(fr.length&&ws&&ws.readyState===1)netSend({t:'who',ks:fr.map(f=>f.k)});}
@@ -969,6 +970,7 @@ function netMsg(m){
     openModal('<h3 style="color:var(--gold)">'+esc(String(f.n||''))+' מאתגר אותך לדו-קרב חי</h3><p class="hint">'+(CLS[f.c]?CLS[f.c].n:'')+' · רמה '+L(f.l|0)+' · ריסטים '+L(f.r|0)+' · כוח '+L(fmt(f.p|0))+'</p><p class="hint">קרב בזמן אמת בין שניכם. המנצח עולה בדירוג. ההזמנה פגה תוך 20 שניות.</p><div class="acts"><button class="btn" data-act="pvpNo" data-id="'+(m.id|0)+'">סרב</button><button class="btn pri glow" data-act="pvpYes" data-id="'+(m.id|0)+'">קבל</button></div>');}
   else if(m.t==='start'){flushTick();startDuel({o:G.cleanPlayer('opp',m.opp),live:m.L},{side:m.side?1:0,id:m.id,cls:m.cls});announce('דו-קרב חי מול '+SC.duel.opp.n,true);}
   else if(m.t==='pos'){if(d&&d.net)d.tgt=[+m.x||0,+m.z||0];}
+  else if(m.t==='emote'){const p=peers.find(q=>q.k===m.k);if(p&&EMO[m.e|0])p.say={m:EMO[m.e|0],t:SC.t+3.5};}
   else if(m.t==='mv'){const p=peers.find(q=>q.k===m.k);if(p&&SC.mode==='farm'){p.tx=clamp(+m.x||0,30,mapW()-30);p.f=m.f<0?-1:1;p.a=!!m.a;}}
   else if(m.t==='ev'){if(!d||!d.net||!m.o||!m.f)return;const D=d.D;D.t=+m.T||D.t;for(let i=0;i<2;i++){const s=m.f[i],f=D.f[i];f.hp=+s.hp;f.stun=+s.stun;f.sh=+s.sh;f.inv=+s.inv;f.pots=s.pots|0;if(s.at)for(const k in f.at)f.at[k]=+s.at[k]||0;}dShow(d,m.o);renderDuelBar();}
   else if(m.t==='end'){if(d&&d.net){d.why=m.why;showResult(d,!!m.win,m.gain|0,false);}}
@@ -1085,7 +1087,7 @@ function renderGear(){
   h+='</div>';
   const sc=setCounts(S);for(const z in sc)h+='<div class="card r4"><b style="color:var(--r4)">סט עתיק: '+SETN[z]+' · '+L(sc[z]+'/6')+'</b>'+setLines(z,sc[z])+'</div>';
   h+='<div class="card" style="display:flex;flex-direction:column;gap:8px">'+tog('לבש אוטומטית ציוד חזק יותר',A.autoEq,'autoEq')+
-    '<div><span style="font-size:13px">מה להרים מהרצפה</span><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:5px">'+[['0','רגיל'],['1','קסום'],['2','נדיר'],['3','אגדי'],['4','עתיק'],['set','חלקי סט'],['g','כנפיים'],['ex','אקסלנט']].map(x=>'<button class="btn sm'+(pickOf(A)[x[0]]?' on':'')+'" data-act="pickup" data-k="'+x[0]+'">'+x[1]+'</button>').join('')+'</div><p class="hint" style="margin-top:4px">זהב, אבני נשמה, תיבות ושברים נאספים תמיד. מה שכבוי נשאר על הרצפה.</p></div>'+
+    '<div><span style="font-size:13px">מה להרים מהרצפה</span><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:5px">'+[['0','רגיל'],['1','קסום'],['2','נדיר'],['3','אגדי'],['4','עתיק'],['set','חלקי סט'],['g','כנפיים'],['ex','אקסלנט']].map(x=>'<button class="btn sm pk'+(pickOf(A)[x[0]]?' on':'')+'" data-act="pickup" data-k="'+x[0]+'">'+(pickOf(A)[x[0]]?'\u2713 ':'\u2715 ')+x[1]+'</button>').join('')+'</div><p class="hint" style="margin-top:4px">ירוק עם \u2713: הדמות מרימה. אפור עם \u2715: נשאר על הרצפה. זהב, אבני נשמה, תיבות ושברים נאספים תמיד.</p></div>'+
     '<div class="tog"><span>מכירה אוטומטית</span><button class="btn sm" data-act="autoSell">'+['כבויה','רגיל','רגיל וקסום'][A.autoSell]+'</button></div>'+
     '<div class="tog"><span>תיבות אוצר: '+L(A.boxes)+'</span><button class="btn sm pri" data-act="openBox" data-k=""'+(A.boxes?'':' disabled')+'>פתח תיבה</button></div>'+
     '<div class="tog"><span>תיבות עונה: '+L(A.sboxes)+' · 15% לחלק סט עתיק</span><button class="btn sm pri" data-act="openBox" data-k="s"'+(A.sboxes?'':' disabled')+'>פתח תיבה</button></div>'+
@@ -1383,6 +1385,7 @@ document.addEventListener('click',async e=>{
       '<div class="acts"><button class="btn" data-act="closeModal">ביטול</button><button class="btn pri" data-act="sellRar" data-r="'+q+'">מכור '+L(list.length)+' פריטים</button></div>');return;}
   if(a==='respecAsk'){openModal('<h3>לאפס את נקודות הסטט?</h3><p class="hint">כל הנקודות שחילקת חוזרות אליך ואפשר לחלק אותן מחדש. המחיר: '+L(RESPEC_COST)+' אותות ריסט. יש לך '+L(A.cred)+'. ציוד שכבר לבוש נשאר עליך.'+(S.autoPts?' החלוקה האוטומטית פעילה ותחלק אותן מיד מחדש. כבה אותה קודם אם אתה רוצה לחלק לבד.':'')+'</p><div class="acts"><button class="btn" data-act="closeModal">ביטול</button><button class="btn pri" data-act="respec">אפס נקודות</button></div>');return;}
   if(a==='lang'){if(b.dataset.l!==getLang())setLang(b.dataset.l);return;}
+  if(a==='emote'){const i=+b.dataset.i;if(EMO[i]){SC.hero.say={m:EMO[i],t:SC.t+3.5};netSend({t:'emote',z:SC.zi,fl:SC.fl,e:i});}return;}
   if(a==='guide'){showGuide();return;}
   if(a==='big'){setBig(!prefs.big);return;}
   if(a==='fs'){fsToggle();return;}
@@ -1629,6 +1632,7 @@ function renderChat(){
   chatUnread=0;
   return '<div class="seg"><button class="btn sm'+(chatCh==='w'?' pri':'')+'" data-act="chatCh" data-c="w">כולם</button><button class="btn sm'+(chatCh==='g'?' pri':'')+'" data-act="chatCh" data-c="g">גילדה</button><button class="btn sm'+(chatCh==='p'?' pri':'')+'" data-act="chatCh" data-c="p">פרטי</button><span class="hint">'+L(onlineN)+' מחוברים עכשיו</span></div>'+
     '<div id="chatList">'+chatRows()+'</div><div class="chatSend"><input type="text" id="chatIn" maxlength="160" placeholder="'+(chatCh==='p'?(whisperTo?'הודעה פרטית אל '+esc(whisperTo.n):'בחר שחקן מכרטיס שחקן או מהחברים'):'כתוב הודעה')+'" autocomplete="off" enterkeyhint="send"><button class="btn pri" data-act="say">שלח</button></div>'+
+    '<div class="seg notr" style="flex-wrap:wrap">'+EMO.map((e,i)=>'<button class="btn sm" data-act="emote" data-i="'+i+'">'+e+'</button>').join('')+'</div><p class="hint">הכפתורים למעלה מציגים תגובה מעל הדמות שלך למי שנמצא איתך במפה.</p>'+
     '<p class="hint">שמור על שפה מכבדת. קללות, הטרדה ופרסום מביאים להשתקה.</p>';
 }
 async function say(){

@@ -74,6 +74,12 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
       for (const o of socks.values()) if (o !== ws && o.room === ws.room && o.readyState === 1) o.send(out);
       return;
     }
+    if (m.t === 'emote') { // a reaction shown over my character to whoever shares my map
+      const now = clock(); if (now - (ws.lastE || 0) < 800) return; ws.lastE = now; ws.room = (Math.floor(Number(m.z)) || 0) + ':' + (Math.floor(Number(m.fl)) || 0);
+      const out = JSON.stringify({ t: 'emote', k: ws.key, e: Math.max(0, Math.min(15, Math.floor(Number(m.e)) || 0)) });
+      for (const o of socks.values()) if (o !== ws && o.room === ws.room && o.readyState === 1) o.send(out);
+      return;
+    }
     if (m.t === 'who') { // which of these players are connected right now
       const ks = Array.isArray(m.ks) ? m.ks.slice(0, 60).map(String) : []; return send(uid, { t: 'who', on: ks.filter((k) => keys.has(k)) });
     }
