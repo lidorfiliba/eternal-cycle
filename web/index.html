@@ -27,7 +27,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:2px solid var(--arc);outline-offset:2px}
 .num{font-variant-numeric:tabular-nums}
 
-#hud{padding:8px 14px 6px;display:flex;flex-direction:column;gap:5px;border-bottom:1px solid var(--line)}
+#hud{padding:6px 14px 5px;display:flex;flex-direction:column;gap:4px;border-bottom:1px solid var(--line)}
 #hud .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 #hName{font-family:var(--display);font-size:19px;color:var(--gold);letter-spacing:.3px}
 #hCls{color:var(--dim);font-size:13px;margin-inline-start:6px}
@@ -36,11 +36,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--arc);outline-of
 .bar{height:9px;background:#0a0818;border:1px solid var(--line);border-radius:6px;overflow:hidden;position:relative}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,#8a5cff,var(--arc));width:0;transition:width .25s}
 .bar.gold i{background:linear-gradient(90deg,#c9892a,var(--gold))}
-.cur{display:flex;gap:12px;font-size:13px;color:var(--dim);flex-wrap:wrap}
+.cur{display:flex;gap:14px;font-size:13px;color:var(--dim);flex-wrap:nowrap;white-space:nowrap;overflow:hidden}
+#app.wide #stage{flex:1;max-height:none}#app.wide #panel{display:none}
+#bigBtn{position:absolute;left:8px;bottom:142px;height:28px;font-size:12px;font-weight:700;color:#fff;background:rgba(10,8,24,.72);padding:0 10px;border-radius:10px;border:1px solid rgba(255,255,255,.3)}
 .cur b{color:var(--ink);font-weight:700}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-inline-end:4px;vertical-align:middle}
 
-#stage{position:relative;flex:0 0 48%;min-height:240px;max-height:430px;background:#000;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#stage{position:relative;flex:0 0 60%;min-height:260px;max-height:72vh;background:#000;touch-action:manipulation;user-select:none;-webkit-user-select:none}
 #cv{display:block;width:100%;height:100%}
 #zoneTag{position:absolute;inset-inline-start:8px;top:8px;pointer-events:none;font-size:12px;color:#fff;background:rgba(10,8,24,.6);padding:3px 9px;border-radius:10px;border:1px solid rgba(255,255,255,.14)}
 #rateTag:empty{display:none}
@@ -181,10 +183,10 @@ input[type=text],input[type=password],select{width:100%;background:#0a0818;borde
     </div>
     <div class="bar" aria-label="ניסיון"><i id="hXp"></i></div>
     <div class="cur num">
-      <span><i class="dot" style="background:var(--gold)"></i>זהב <b id="cGold">0</b></span>
-      <span><i class="dot" style="background:var(--arc)"></i>אבני נשמה <b id="cGem">0</b></span>
-      <span><i class="dot" style="background:var(--ember)"></i>אותות ריסט <b id="cCred">0</b></span>
-      <span><i class="dot" style="background:var(--r2)"></i>מטבעות עונה <b id="cCoin">0</b></span>
+      <span><i class="dot" style="background:var(--gold)"></i><b id="cGold" title="זהב" aria-label="זהב">0</b></span>
+      <span><i class="dot" style="background:var(--arc)"></i><b id="cGem" title="אבני נשמה" aria-label="אבני נשמה">0</b></span>
+      <span><i class="dot" style="background:var(--ember)"></i><b id="cCred" title="אותות ריסט" aria-label="אותות ריסט">0</b></span>
+      <span><i class="dot" style="background:var(--r2)"></i><b id="cCoin" title="מטבעות עונה" aria-label="מטבעות עונה">0</b></span>
     </div>
   </header>
   <div id="stage">
@@ -194,6 +196,7 @@ input[type=text],input[type=password],select{width:100%;background:#0a0818;borde
     <button id="evChip" data-act="evtab"></button>
     <button id="resetNow" data-act="reset">ריסט מוכן</button>
     <button id="autoBtn" data-act="auto"></button>
+    <button id="bigBtn" data-act="big">הגדל</button>
     <button id="sndBtn" data-act="mute"></button>
     <div id="annc" role="status" aria-live="polite"></div>
     <button id="tip" data-act="tut" style="display:none"><span></span><small></small></button>

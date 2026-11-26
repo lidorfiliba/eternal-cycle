@@ -86,7 +86,7 @@ function renderMarket(){
 const cv=$('cv'),ctx=cv.getContext('2d');let W=360,H=260,DPR=1;
 const calm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function resize(){const r=cv.getBoundingClientRect();DPR=Math.min(window.devicePixelRatio||1,2);W=Math.max(200,r.width);H=Math.max(140,r.height);cv.width=W*DPR;cv.height=H*DPR;}
-window.addEventListener('resize',resize);
+window.addEventListener('resize',resize);if(prefs.big)document.getElementById('app').classList.add('wide');if(prefs.big)document.getElementById('bigBtn').textContent='הקטן';
 const MW=1500,TW=1150;
 const TOWN={n:'כפר המעגל',sky:['#141033','#4a3a78'],sil:'#0c0a20',amb:'#ffe9a8',kind:'town'};
 const NPCS=[{x:270,n:'הנפח',tab:'gear',c:'blade',col:'#ff8a4d',spr:'n_smith'},{x:440,n:'הסוחרת',tab:'shop',c:'hunter',col:'#f2c14e',spr:'n_merch'},{x:610,n:'שומר המעגל',tab:'char',c:'storm',col:'#8be28b',spr:'n_guard'},{x:780,n:'כרוז העונה',tab:'pass',c:'hunter',col:'#5fd4ff',spr:'n_herald'},{x:950,n:'שומר הזירה',tab:'arena',c:'blade',col:'#6fe39a',spr:'n_arena'}];
@@ -578,7 +578,7 @@ cv.addEventListener('pointerdown',e=>{
   h.tx=clamp(wx,30,mapW()-30);h.manual=2.5;
 });
 function drawWorld(){
-  const h=SC.hero,sc=clamp(H/300,.8,1.25),g0=gy(),zi=SC.zi,lk=lookOf(S),hk=SPR[CLSSPR[S.cls]];lk.sk=h.skA>0;
+  const h=SC.hero,sc=clamp(H/300,.8,1.45),g0=gy(),zi=SC.zi,lk=lookOf(S),hk=SPR[CLSSPR[S.cls]];lk.sk=h.skA>0;
   ctx.save();ctx.translate(-Math.round(SC.cam),0);
   const pl=portalState(-1),pr=portalState(1);
   for(const [p,x] of [[pl,50],[pr,mapW()-50]])if(p){if(p.kind)drawLadder(x,p);else drawPortal(x,p.ok,p.txt,SC.t);}
@@ -629,7 +629,7 @@ function frame(dt){
   const cam=SC.cam;if(SC.mode==='duel')SC.cam=0;
   drawBg(SC.zi,SC.t);
   if(SC.mode==='farm')drawWorld();
-  else{const d=SC.duel,sc=clamp(H/300,.8,1.25);
+  else{const d=SC.duel,sc=clamp(H/300,.8,1.45);
     drawHero(W*.26,gy(),sc,lookOf(S),SC.t,d.an[0],false,d.end>0&&d.r.win===1?1.8-d.end:0);
     drawHero(W*.74,gy(),sc,d.opp,SC.t+1.7,d.an[1],true,d.end>0&&d.r.win===0?1.8-d.end:0);
     hpBar(W*.26-45,22,90,d.ha/d.r.ma,'#6fe39a',S.name);hpBar(W*.74-45,22,90,d.hb/d.r.mb,'#ff5c7a',d.opp.n);
@@ -871,7 +871,9 @@ function showCreate(extra){
     '<label for="nm" class="hint">שם הדמות</label><input type="text" id="nm" maxlength="14" value="'+esc($('nm')?$('nm').value:'')+'" placeholder="עד 14 תווים" autocomplete="off">'+
     '<div class="cls">'+cl('blade')+cl('storm')+cl('hunter')+'</div><div class="acts"><button class="btn pri" data-act="create" data-x="'+(extra?1:'')+'">'+(extra?'צור דמות':'צא לדרך')+'</button>'+(extra?'<button class="btn" data-act="closeModal">ביטול</button>':'')+'</div>');
 }
+function setBig(on){prefs.big=!!on;savePrefs();$('app').classList.toggle('wide',prefs.big);$('bigBtn').textContent=prefs.big?'הקטן':'הגדל';resize();}
 function openTab(name){
+  if(prefs.big)setBig(false);
   tab=name;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
   if(tab==='arena'){loadArena();if(ONLINE&&!demo){send('pget',{});loadGuild();}}if(tab==='shop')loadMarket();passScroll=null;renderPanel();$('panel').scrollTop=0;
 }
@@ -948,6 +950,7 @@ document.addEventListener('click',async e=>{
   if(a==='acct'){acctModal(b.dataset.k);return;}
   if(a==='acctGo'){acctGo(b.dataset.k);return;}
   if(a==='tut'){tutNext();return;}
+  if(a==='big'){setBig(!prefs.big);return;}
   if(a==='say'){say();return;}
   if(a==='chatCh'){chatCh=b.dataset.c==='g'?'g':'w';renderPanel();return;}
   if(a==='logout'){setSession(null);location.reload();return;}
