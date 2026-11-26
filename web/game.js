@@ -293,7 +293,7 @@ function hpBar(x,y,w,frac,c,lbl){ctx.fillStyle='rgba(0,0,0,.6)';rr(x,y,w,7,3);ct
 
 /* ---------- sound ---------- */
 let AC=null,MG=null;const sndLast={};
-function initAudio(){try{if(!AC){const X=window.AudioContext||window.webkitAudioContext;if(!X)return;AC=new X();MG=AC.createGain();MG.gain.value=.5;MG.connect(AC.destination);}if(AC.state==='suspended')AC.resume();loadSfx();initMusic();}catch(e){}}
+function initAudio(){try{if(!AC){const X=window.AudioContext||window.webkitAudioContext;if(!X)return;AC=new X();MG=AC.createGain();MG.gain.value=.5;MG.connect(AC.destination);}if(AC.state==='suspended')AC.resume();loadSfx();}catch(e){}}
 document.addEventListener('pointerdown',initAudio);document.addEventListener('keydown',initAudio);
 // Recorded effects; anything not loaded falls back to the synthesised version below.
 const SFX={pull:['whoosh'],ult:['ult'],hit:['hit0','hit1','hit2'],crit:['crit0','crit1'],skill:['skill0','skill1'],hurt:['hurt0','hurt1'],kill:['kill'],coin:['coin'],rare:['rare'],boss:['roar'],slam:['slam']};
@@ -814,7 +814,6 @@ function accountHtml(){
   return '<h2>חשבון</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">מחובר כ-<b dir="auto">'+esc(session&&session.user||'')+'</b>. אפשר להיכנס עם אותו שם וסיסמה מכל מכשיר.</p>'+
     (me.secret?'':'<p class="hint" style="color:var(--bad)">עוד לא הוגדרה שאלת שחזור. בלעדיה אי אפשר לשחזר סיסמה שנשכחה.</p>')+
     '<button class="btn'+(me.secret?'':' pri')+'" data-act="acct" data-k="secret">שאלת שחזור</button><button class="btn" data-act="acct" data-k="pass">שינוי סיסמה</button>'+
-    '<button class="btn" data-act="music">מוזיקה: '+(prefs.music===false?'כבויה':'פעילה')+'</button>'+
     (me.admin?'<a class="btn" href="admin.html" style="text-align:center;text-decoration:none;color:inherit">מסך ניהול</a>':'')+
     '<button class="btn" data-act="logout">התנתק</button><button class="btn sm" data-act="acct" data-k="del" style="color:var(--bad)">מחיקת חשבון</button>'+
     '<p class="hint"><a href="terms.html" target="_blank" rel="noopener">תקנון</a> · <a href="privacy.html" target="_blank" rel="noopener">פרטיות</a></p></div>';
@@ -866,7 +865,6 @@ document.addEventListener('click',async e=>{
   if(a==='authBack'){showAuth();return;}
   if(a==='acct'){acctModal(b.dataset.k);return;}
   if(a==='acctGo'){acctGo(b.dataset.k);return;}
-  if(a==='music'){prefs.music=prefs.music===false;savePrefs();renderPanel();return;}
   if(a==='tut'){tutNext();return;}
   if(a==='say'){say();return;}
   if(a==='chatCh'){chatCh=b.dataset.c==='g'?'g':'w';renderPanel();return;}
@@ -1044,32 +1042,6 @@ function loadMe(){
   if(!ONLINE||window.EC_MOCK||!session)return;
   post({kind:'whoami',args:{}},session.token).then(r=>{if(r.j&&r.j.ok){me={secret:!!r.j.secret,admin:!!r.j.admin};panelDirty=true;}}).catch(()=>{});
 }
-
-/* ---------- music: a small generated loop that follows the map ---------- */
-let musG=null,musT=0,musStep=0,musEl=null,musFile='';
-const MUS_PROG={town:[[0,4,7],[7,11,14],[9,12,16],[5,9,12]],wild:[[0,3,7],[8,12,15],[3,7,10],[10,14,17]]};
-function musNote(f,t,d,type,v){const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.02);g.gain.exponentialRampToValueAtTime(.0008,t+d);o.connect(g);g.connect(musG);o.start(t);o.stop(t+d+.05);}
-function musTick(){
-  if(!AC||!musG)return;
-  const on=!prefs.mute&&prefs.music!==false&&!document.hidden&&!!S&&!demo;
-  if(musFile!=='fail'&&musEl){ // the recorded track; the generated loop below only plays if the file cannot be loaded
-    musG.gain.setTargetAtTime(0,AC.currentTime,.2);
-    const boss=!!SC.boss&&SC.mode==='farm';musEl.volume=boss?.3:.22;
-    if(on&&musEl.paused){const p=musEl.play();if(p&&p.catch)p.catch(()=>{});}else if(!on&&!musEl.paused)musEl.pause();
-    return;}
-  musG.gain.setTargetAtTime(on?.15:0,AC.currentTime,.4);if(!on){musT=0;return;}
-  const zi=SC.zi,town=zi<0,boss=!!SC.boss&&SC.mode==='farm',bpm=town?76:boss?124:92+(zi%4)*4,sp=60/bpm/2,root=110*Math.pow(2,(town?3:[0,2,-2,5,-4,3,-5,1][zi%8])/12),prog=MUS_PROG[town?'town':'wild'],f=n=>root*Math.pow(2,n/12);
-  if(musT<AC.currentTime)musT=AC.currentTime+.05;
-  while(musT<AC.currentTime+.35){const ch=prog[Math.floor(musStep/8)%4],st=musStep%8;
-    if(st===0){musNote(f(ch[0])/2,musT,sp*7,'triangle',.5);for(const n of ch)musNote(f(n),musT,sp*8,'sine',.12);}
-    if(st===4&&!town)musNote(f(ch[0])/2,musT,sp*3,'triangle',.4);
-    if(!town||st%2===0)musNote(f(ch[[0,1,2,1,0,2,1,2][st]])*2*(st===5?2:1),musT,sp*1.6,town?'sine':'triangle',town?.22:.16);
-    if(boss&&st%2===0)musNote(f(ch[0])/4,musT,sp*.8,'sawtooth',.16);
-    musT+=sp;musStep++;}
-}
-function initMusic(){if(!AC||musG)return;musG=AC.createGain();musG.gain.value=0;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1800;musG.connect(lp);lp.connect(MG);
-  try{musEl=new Audio('sfx/music.mp3');musEl.loop=true;musEl.preload='auto';musEl.volume=.22;musEl.addEventListener('error',()=>{musFile='fail';});}catch(e){musFile='fail';}
-  setInterval(musTick,120);musTick();}
 
 /* ---------- event announcements in the middle of the screen ---------- */
 // From five minutes before an event, once a minute, and once more when it opens.
