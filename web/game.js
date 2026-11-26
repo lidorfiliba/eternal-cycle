@@ -86,7 +86,7 @@ function renderMarket(){
 const cv=$('cv'),ctx=cv.getContext('2d');let W=360,H=260,DPR=1;
 const calm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function resize(){const r=cv.getBoundingClientRect();DPR=Math.min(window.devicePixelRatio||1,2);W=Math.max(200,r.width);H=Math.max(140,r.height);cv.width=W*DPR;cv.height=H*DPR;}
-window.addEventListener('resize',resize);if(prefs.big)document.getElementById('app').classList.add('wide');if(prefs.big)document.getElementById('bigBtn').textContent='הקטן';
+window.addEventListener('resize',resize);if(prefs.big)document.getElementById('app').classList.add('wide');if(prefs.big)document.getElementById('bigBtn').textContent='הקטן';setTimeout(()=>fsSync(),0);
 const MW=1500,TW=1150;
 const TOWN={n:'כפר המעגל',sky:['#141033','#4a3a78'],sil:'#0c0a20',amb:'#ffe9a8',kind:'town'};
 const NPCS=[{x:270,n:'הנפח',tab:'gear',c:'blade',col:'#ff8a4d',spr:'n_smith'},{x:440,n:'הסוחרת',tab:'shop',c:'hunter',col:'#f2c14e',spr:'n_merch'},{x:610,n:'שומר המעגל',tab:'char',c:'storm',col:'#8be28b',spr:'n_guard'},{x:780,n:'כרוז העונה',tab:'pass',c:'hunter',col:'#5fd4ff',spr:'n_herald'},{x:950,n:'שומר הזירה',tab:'arena',c:'blade',col:'#6fe39a',spr:'n_arena'}];
@@ -872,6 +872,29 @@ function showCreate(extra){
     '<label for="nm" class="hint">שם הדמות</label><input type="text" id="nm" maxlength="14" value="'+esc($('nm')?$('nm').value:'')+'" placeholder="עד 14 תווים" autocomplete="off">'+
     '<div class="cls">'+cl('blade')+cl('storm')+cl('hunter')+'</div><div class="acts"><button class="btn pri" data-act="create" data-x="'+(extra?1:'')+'">'+(extra?'צור דמות':'צא לדרך')+'</button>'+(extra?'<button class="btn" data-act="closeModal">ביטול</button>':'')+'</div>');
 }
+/* ---------- full screen and installing as an app ---------- */
+const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement,fsCan=!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);
+const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||window.matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
+let installEvt=null;
+function fsSync(){const b=$('fsBtn');b.style.display=fsCan&&!standalone()?'':'none';b.textContent=fsEl()?'צא ממסך מלא':'מסך מלא';setTimeout(resize,150);}
+function fsToggle(){
+  try{const d=document.documentElement;
+    if(fsEl())(document.exitFullscreen||document.webkitExitFullscreen).call(document);
+    else{const p=(d.requestFullscreen||d.webkitRequestFullscreen).call(d,{navigationUI:'hide'});if(p&&p.catch)p.catch(()=>toast('הדפדפן לא אישר מסך מלא'));}
+  }catch(e){toast('הדפדפן לא תומך במסך מלא');}
+}
+document.addEventListener('fullscreenchange',fsSync);document.addEventListener('webkitfullscreenchange',fsSync);
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;panelDirty=true;});
+window.addEventListener('appinstalled',()=>{installEvt=null;panelDirty=true;});
+function installHtml(){
+  if(standalone())return '';
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  return '<h2>כמו אפליקציה</h2><div class="card" style="display:flex;flex-direction:column;gap:8px">'+
+    (installEvt?'<p class="hint">התקנה מוסיפה סמל למסך הבית, והמשחק נפתח במסך מלא בלי שורת הדפדפן.</p><button class="btn pri" data-act="install">התקן את המשחק</button>'
+      :ios?'<p class="hint">באייפון: פתח את העמוד בספארי, לחץ על כפתור השיתוף ובחר "הוסף למסך הבית". המשחק ייפתח משם במסך מלא.</p>'
+      :'<p class="hint">כדי לקבל סמל במסך הבית: פתח את העמוד בכרום, פתח את התפריט ובחר "הוסף למסך הבית" או "התקן אפליקציה".</p>')+
+    (fsCan?'<button class="btn" data-act="fs">'+(fsEl()?'צא ממסך מלא':'מסך מלא עכשיו')+'</button>':'')+'</div>';
+}
 function setBig(on){prefs.big=!!on;savePrefs();$('app').classList.toggle('wide',prefs.big);$('bigBtn').textContent=prefs.big?'הקטן':'הגדל';resize();}
 function openTab(name){
   if(prefs.big)setBig(false);
@@ -894,7 +917,8 @@ function boxFx(r){
   if(SC.mode!=='farm')return;SC.fx.push({k:'beam',x:h.x+30*h.face,y:gy(),life:1.2,c:c});burst(h.x+30*h.face,gy()-10,c,26);
   for(let i=0;i<5;i++)SC.drops.push({x:h.x+30*h.face,y:gy()-10,vx:(Math.random()-.5)*220,vy:-200-Math.random()*120,c:c,s:4.5,age:0,life:4});
 }
-function accountHtml(){
+function accountHtml(){return installHtml()+accountHtml2();}
+function accountHtml2(){
   if(!ONLINE)return '<h2>העברה בין מכשירים</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">מצב מקומי: ההתקדמות שמורה במכשיר הזה. קוד השמירה מעביר אותה למכשיר אחר, וטעינה מחליפה את מה שיש כאן.</p><button class="btn" data-act="expSave">העתק קוד שמירה</button><input type="text" id="impCode" placeholder="הדבק כאן קוד שמירה" autocomplete="off"><button class="btn" data-act="impSave">טען קוד שמירה</button></div>';
   return '<h2>חשבון</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">מחובר כ-<b dir="auto">'+esc(session&&session.user||'')+'</b>. אפשר להיכנס עם אותו שם וסיסמה מכל מכשיר.</p>'+
     (me.secret?'':'<p class="hint" style="color:var(--bad)">עוד לא הוגדרה שאלת שחזור. בלעדיה אי אפשר לשחזר סיסמה שנשכחה.</p>')+
@@ -952,6 +976,8 @@ document.addEventListener('click',async e=>{
   if(a==='acctGo'){acctGo(b.dataset.k);return;}
   if(a==='tut'){tutNext();return;}
   if(a==='big'){setBig(!prefs.big);return;}
+  if(a==='fs'){fsToggle();return;}
+  if(a==='install'){if(installEvt){const ev=installEvt;installEvt=null;ev.prompt();}renderPanel();return;}
   if(a==='say'){say();return;}
   if(a==='chatCh'){chatCh=b.dataset.c==='g'?'g':'w';renderPanel();return;}
   if(a==='logout'){setSession(null);location.reload();return;}
