@@ -46,6 +46,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--arc);outline-of
 #cv{display:block;width:100%;height:100%}
 #zoneTag{position:absolute;inset-inline-start:8px;top:8px;pointer-events:none;font-size:12px;color:#fff;background:rgba(10,8,24,.6);padding:3px 9px;border-radius:10px;border:1px solid rgba(255,255,255,.14)}
 #rateTag:empty{display:none}
+#boostTag{position:absolute;inset-inline-end:8px;top:36px;pointer-events:none;font-size:12px;font-weight:700;color:#1a1230;background:linear-gradient(90deg,#ffd75e,#ffb23e);padding:3px 9px;border-radius:10px;box-shadow:0 0 10px #f2c14e88;font-variant-numeric:tabular-nums}
+#boostTag:empty{display:none}
 #rateTag{position:absolute;inset-inline-end:8px;top:8px;pointer-events:none;font-size:12px;color:var(--good);background:rgba(10,8,24,.6);padding:3px 9px;border-radius:10px;border:1px solid rgba(255,255,255,.14)}
 #resetNow{position:absolute;top:44px;inset-inline:0;margin:auto;width:max-content;display:none;font-family:var(--display);font-size:17px;padding:8px 22px;border-radius:22px;border:1px solid #fff3;background:linear-gradient(#ffcf5a,#d98a1c);color:#2a1500;animation:pulse 1.2s infinite}
 #quest{position:absolute;top:38px;inset-inline:0;margin:auto;width:max-content;max-width:92%;font-size:12.5px;font-weight:700;color:#fff;background:rgba(10,8,24,.72);padding:4px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.18)}
@@ -191,7 +193,7 @@ input[type=text],input[type=password],select{width:100%;background:#0a0818;borde
   </header>
   <div id="stage">
     <canvas id="cv"></canvas>
-    <div id="zoneTag"></div><div id="rateTag" class="num"></div>
+    <div id="zoneTag"></div><div id="rateTag" class="num"></div><div id="boostTag"></div>
     <button id="quest" data-act="quest"></button>
     <button id="evChip" data-act="evtab"></button>
     <button id="resetNow" data-act="reset">ריסט מוכן</button>
