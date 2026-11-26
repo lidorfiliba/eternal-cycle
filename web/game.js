@@ -1,4 +1,5 @@
 import * as G from './core.js';
+const BUILD='20261126125128';
 const {AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -893,6 +894,21 @@ function showCreate(extra){
     '<label for="nm" class="hint">שם הדמות</label><input type="text" id="nm" maxlength="14" value="'+esc($('nm')?$('nm').value:'')+'" placeholder="עד 14 תווים" autocomplete="off">'+
     '<div class="cls">'+cl('blade')+cl('storm')+cl('hunter')+'</div><div class="acts"><button class="btn pri" data-act="create" data-x="'+(extra?1:'')+'">'+(extra?'צור דמות':'צא לדרך')+'</button>'+(extra?'<button class="btn" data-act="closeModal">ביטול</button>':'')+'</div>');
 }
+/* ---------- picking up a new version without being asked ---------- */
+// BUILD is stamped on every commit, together with version.txt. When the two differ, a newer client is out:
+// refresh the cached files and reload. One attempt per version, so a slow deploy cannot cause a reload loop.
+async function checkVersion(){
+  if(!S||demo||SC.mode!=='farm'||document.hidden)return;
+  let v='';try{const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;v=(await r.text()).trim();}catch(e){return;}
+  if(!/^[0-9]{14}$/.test(v)||v<=BUILD)return;
+  try{if(sessionStorage.getItem('ec-upd')===v)return;sessionStorage.setItem('ec-upd',v);}catch(e){}
+  toast('גרסה חדשה, מתעדכן...');
+  try{await flushTick();if(!ONLINE)saveLocal();}catch(e){}
+  try{await Promise.all(['./','index.html','game.js','core.js','config.js'].map(u=>fetch(u,{cache:'reload'}).catch(()=>null)));}catch(e){}
+  location.reload();
+}
+setInterval(checkVersion,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(checkVersion,1500);});setTimeout(checkVersion,8000);
+
 /* ---------- full screen and installing as an app ---------- */
 const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement,fsCan=!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);
 const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||window.matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;

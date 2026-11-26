@@ -103,3 +103,8 @@ test('siege window: Saturday 21:00 to 21:30 Israel time, one key per finished si
   const k=at('2026-11-28T19:31:10Z').key;assert.equal(at('2026-12-05T19:29:50Z').key,k);assert.equal(at('2026-12-02T08:00:00Z').key,k);
   assert.notEqual(at('2026-11-28T19:29:00Z').key,k);assert.notEqual(at('2026-12-05T19:30:30Z').key,k);
 });
+
+test('the build id in the client matches version.txt',()=>{
+  const v=fs.readFileSync('web/version.txt','utf8').trim(),m=/^const BUILD='([0-9]{14})';$/m.exec(fs.readFileSync('web/game.js','utf8'));
+  assert.ok(m,'BUILD line present');assert.equal(m[1],v);
+});
