@@ -457,7 +457,7 @@ function liveOver(D){if(!D.over&&(D.f[0].hp<=0||D.f[1].hp<=0||D.t>=DUEL_LIVE.tim
 // they wear outside: strength comes from what is found on the ground (weapons, armor, boots, potions). The field is
 // a wide round plain; a circle closes on its middle and burns whoever is outside. Positions are x,y from the middle.
 const BR={R:700,MAX:8,FILL:6,TIME:150,HOLD:20,END:60,SIGN:2,pots:1,ring:.1,hit:.032,T:.6,spd:150,pick:30,loot0:24,every:6,drop:40,
-  cls:{blade:1,storm:.75,hunter:.7},wMax:3,aMax:3,bMax:2,pMax:4};
+  rng:110,wMax:3,aMax:3,bMax:2,pMax:4};
 const brDist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const brSpeed=f=>BR.spd*(1+.12*(f.bt|0));
 function brSpot(B,rnd,rad){const a=rnd()*6.2832,r=Math.sqrt(rnd())*rad;return [Math.round(Math.cos(a)*r),Math.round(Math.sin(a)*r)];}
@@ -482,11 +482,11 @@ function brAct(B,i,k,rnd){
   if(k==='s2'){me.at.s2=t+K.sk[2].cd;me.sh=t+K.sk[2].dur;return o;}
   if(k==='dash'){me.at.dash=t+K.dash.cd;me.inv=t+K.dash.inv;return o;}
   if(k==='pot'){if(me.pots<1)return null;me.at.pot=t+K.potCd;me.pots--;me.hp=Math.min(1,me.hp+K.heal);o.heal=K.heal;return o;}
-  const rng=LIVE_RNG[me.c]+(k==='atk'?14:k==='s3'?60:k==='s0'?40:20);let j=-1,bd=1e9;
+  const rng=BR.rng+(k==='atk'?14:k==='s3'?60:k==='s0'?40:20);let j=-1,bd=1e9; // the same reach and the same blow for every class: here only finds make one stronger
   B.f.forEach((e,q)=>{if(q===i||!e.alive)return;const d=brDist(e,me);if(d<=rng&&d<bd){bd=d;j=q;}});if(j<0)return null;
   const e=B.f[j];let mult;if(k==='atk'){me.at.atk=t+BR.T;me.chain=(me.chain+1)%4;mult=me.chain===0?1.5:1;}else{const sk=K.sk[k==='s0'?0:k==='s1'?1:3];me.at[k]=t+sk.cd;mult=sk.m*1.6;}
   o.to=j;if(Math.abs(e.x-me.x)>4)me.face=e.x>=me.x?1:-1;if(e.inv>t){o.miss=true;return o;}
-  o.crit=rnd()<.12;let dm=BR.hit*BR.cls[me.c]*(1+.35*me.w)*(1-.15*e.ar)*mult*(o.crit?1.5:1)*(.9+rnd()*.2);if(e.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}
+  o.crit=rnd()<.1;let dm=BR.hit*(1+.35*me.w)*(1-.15*e.ar)*mult*(o.crit?1.5:1)*(.9+rnd()*.2);if(e.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}
   e.hp-=dm;o.dm=dm;if(k==='s1'&&!o.guard){e.stun=t+K.sk[1].stun;o.stun=true;}if(e.hp<=0){brKill(B,j,i);o.dead=true;}return o;
 }
 // One step of the server's clock: new finds appear, whoever walks over one takes it, the circle burns whoever is
@@ -500,12 +500,11 @@ function brStep(B,dt,rnd){
     for(let q=B.loot.length-1;q>=0;q--){const it=B.loot[q];if(Math.abs(it.x-f.x)<BR.pick&&Math.abs(it.y-f.y)<BR.pick&&brCan(f,it.k)){brTake(f,it.k);B.loot.splice(q,1);ev.push({k:'pick',by:i,id:it.id,it:it.k});}}
     if(Math.hypot(f.x,f.y)>R){f.hp-=BR.ring*dt;if(f.hp<=0){brKill(B,i,-1);ev.push({by:-1,k:'ring',to:i,dead:true});}}});
   B.f.forEach((f,i)=>{if(!f.alive||!f.bot||B.over||f.stun>t)return;let j=-1,bd=1e9;B.f.forEach((e,q)=>{if(q===i||!e.alive)return;const d=brDist(e,f);if(d<bd){bd=d;j=q;}});if(j<0)return;
-    const e=B.f[j],rng=LIVE_RNG[f.c],sp=brSpeed(f)*.9*dt,far=Math.hypot(f.x,f.y);let tx=e.x,ty=e.y,go=bd>rng*.85,back=false;
+    const e=B.f[j],rng=BR.rng,sp=brSpeed(f)*.9*dt,far=Math.hypot(f.x,f.y);let tx=e.x,ty=e.y,go=bd>rng*.85,back=false;
     let li=null,ld=1e9;for(const it of B.loot){if(!brCan(f,it.k)||Math.hypot(it.x,it.y)>R)continue;const d=brDist(it,f);if(d<ld){ld=d;li=it;}}
     if(far>R-30){tx=0;ty=0;go=true;}                                            // first of all, stay inside
     else if(li&&(t<30&&bd>rng||ld<260&&bd>rng*1.1||f.w<1&&ld<bd)){tx=li.x;ty=li.y;go=true;}      // gear nearby, or unarmed: fetch it
     else if(f.hp<.3&&f.pots<1&&e.w>=f.w){tx=f.x-(e.x-f.x);ty=f.y-(e.y-f.y);go=true;back=true;} // hurt and outgunned: run
-    else if(rng>100&&bd<rng*.4){tx=f.x-(e.x-f.x);ty=f.y-(e.y-f.y);go=true;back=true;}
     else if(bd>420&&t<70){if(li){tx=li.x;ty=li.y;go=true;}else go=false;}                 // nobody near yet: keep gearing up
     if(go){const dx=tx-f.x,dy=ty-f.y,d=Math.hypot(dx,dy)||1,st=Math.min(d,sp);f.x+=dx/d*st;f.y+=dy/d*st;if(Math.abs(dx)>4)f.face=(back?-dx:dx)>=0?1:-1;const fr=Math.hypot(f.x,f.y);if(fr>BR.R){f.x*=BR.R/fr;f.y*=BR.R/fr;}}
     if((f.think-=dt)>0)return;f.think=.2+rnd()*.3;

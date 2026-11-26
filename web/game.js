@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126212733';
+const BUILD='20261126213413';
 const {TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -795,6 +795,12 @@ window.addEventListener('keyup',e=>{if((e.key==='ArrowUp'||e.key==='w')&&SC.hero
 window.addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT')return;const k=e.key;if(k==='ArrowLeft'||k==='a')SC.hero.dir=-1;else if(k==='ArrowRight'||k==='d')SC.hero.dir=1;else if(k>='1'&&k<='6'&&S&&!demo)cast(+k-1,false);});
 window.addEventListener('keyup',e=>{const k=e.key;if((k==='ArrowLeft'||k==='a')&&SC.hero.dir<0||(k==='ArrowRight'||k==='d')&&SC.hero.dir>0)SC.hero.dir=0;});
 window.addEventListener('blur',()=>{SC.hero.dir=0;});
+// The walking stick of the Last Circle: hold it and lean it the way you want to go.
+const joy={v:[0,0],id:null};
+{const el=$('joy'),knob=el.firstElementChild,R=40,set=e=>{const r=el.getBoundingClientRect();let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);const m=Math.hypot(dx,dy);if(m>R){dx*=R/m;dy*=R/m;}knob.style.transform='translate('+dx+'px,'+dy+'px)';joy.v=m<8?[0,0]:[dx/R,dy/R];},
+  end=()=>{joy.id=null;joy.v=[0,0];knob.style.transform='';};
+  el.addEventListener('pointerdown',e=>{e.preventDefault();initAudio();joy.id=e.pointerId;try{el.setPointerCapture(e.pointerId);}catch(_){}set(e);});
+  el.addEventListener('pointermove',e=>{if(joy.id===e.pointerId)set(e);});for(const ev of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(ev,e=>{if(joy.id===e.pointerId||ev==='lostpointercapture')end();});el.addEventListener('contextmenu',e=>e.preventDefault());}
 cv.addEventListener('pointerdown',e=>{
   if(SC.duel&&SC.duel.br&&SC.mode==='duel'){const r=cv.getBoundingClientRect();brTap((e.clientX-r.left)/ZM,(e.clientY-r.top)/ZM);return;}
   if(!S||demo||busy||SC.mode!=='farm'||SC.hero.dead>0||SC.hero.climb)return;
@@ -963,7 +969,7 @@ function updateBr(dt){
   if(b.phase==='fight'){D.t+=dt;if(d.go>0&&D.t>=0){d.go=0;renderDuelBar();snd('boss');}}
   vm.mv=false;
   if(me.alive&&me.stun<=D.t&&(b.phase==='lobby'||D.t>=0)){
-    let vx=SC.hero.dir,vy=SC.hero.dz;if(vx||vy)b.go=null;else if(b.go){const gx=b.go[0]-me.x,gy2=b.go[1]-me.y,gd=Math.hypot(gx,gy2);if(gd<8)b.go=null;else{vx=gx/gd;vy=gy2/gd;}}
+    let vx=SC.hero.dir,vy=SC.hero.dz;if(joy.v[0]||joy.v[1]){vx=joy.v[0];vy=joy.v[1];}if(vx||vy)b.go=null;else if(b.go){const gx=b.go[0]-me.x,gy2=b.go[1]-me.y,gd=Math.hypot(gx,gy2);if(gd<8)b.go=null;else{vx=gx/gd;vy=gy2/gd;}}
     if(vx||vy){const n=Math.hypot(vx,vy),sp=BR.spd*(1+.12*(me.bt|0))*dt;me.x+=vx/n*sp;me.y+=vy/n*sp;const r=Math.hypot(me.x,me.y),lim=b.phase==='lobby'?240:BR.R;if(r>lim){me.x*=lim/r;me.y*=lim/r;}vm.mv=true;if(Math.abs(vx)>.15)vm.face=vx>0?1:-1;}}
   if(b.phase==='fight'){
     if(d.holdAtk||b.auto)duelAct('atk');
@@ -994,7 +1000,7 @@ function drawBr(dt){
     label(LOOTN[l.k],p[0],y-14*big,c,9.5);}
   ctx.restore();
   // whom my next hit would reach
-  let tgt=-1;if(b.phase==='fight'&&me.alive){const rng=LIVE_RNG[me.cls]+14;let bd=1e9;D.f.forEach((f,i)=>{if(i===d.me||!f.alive)return;const q=Math.hypot(f.x-me.x,f.y-me.y);if(q<=rng&&q<bd){bd=q;tgt=i;}});
+  let tgt=-1;if(b.phase==='fight'&&me.alive){const rng=BR.rng+14;let bd=1e9;D.f.forEach((f,i)=>{if(i===d.me||!f.alive)return;const q=Math.hypot(f.x-me.x,f.y-me.y);if(q<=rng&&q<bd){bd=q;tgt=i;}});
     const p=bP(me.x,me.y);ctx.strokeStyle='rgba(125,249,255,.22)';ctx.lineWidth=1;ctx.setLineDash([5,6]);ctx.beginPath();ctx.ellipse(p[0],p[1],rng*k,rng*k*.55,0,0,7);ctx.stroke();ctx.setLineDash([]);}
   if(b.go&&me.alive){const p=bP(b.go[0],b.go[1]);ctx.strokeStyle='rgba(125,249,255,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(p[0],p[1],9,4,0,0,7);ctx.stroke();}
   const ord=D.f.map((_,i)=>i).sort((p,q)=>D.f[p].y-D.f[q].y);
@@ -1018,7 +1024,7 @@ function drawBr(dt){
   else{label('המעגל האחרון · נותרו '+alive,W/2,34,'#ffd75e',13);label(D.t<0?'מתחילים בעוד '+Math.ceil(-D.t):mmss(Math.max(0,BR.TIME-D.t))+(me.alive?'':' · אתה צופה'),W/2,52,'#c9c2ea',11);
     if(me.alive)label('נשק '+me.w+'/'+BR.wMax+' · שריון '+me.ar+'/'+BR.aMax+' · מגפיים '+me.bt+'/'+BR.bMax,W/2,70,'#dfe6f5',10.5);
     if(me.alive&&D.t>=0&&Math.hypot(me.x,me.y)>b.ring)label('אתה מחוץ למעגל! רוץ פנימה',W/2,H*.3,'#ff5c7a',15);
-    else if(me.alive&&D.t>=0&&D.t<6)label('רוץ לאסוף ציוד. הקש על הרצפה כדי ללכת לשם',W/2,H*.3,'#7df9ff',12);}
+    else if(me.alive&&D.t>=0&&D.t<6)label('רוץ לאסוף ציוד. כולם שווים עד שמוצאים משהו',W/2,H*.3,'#7df9ff',12);}
 }
 function worldCard(w,live){
   if(!ONLINE)return '<p class="hint">בוס העולם קיים רק במצב מקוון.</p>';
@@ -1081,7 +1087,7 @@ function dashMove(d,i){const D=d.D,me=D.f[i],en=D.f[1-i],mine=i===d.me,side=mine
 function duelAct(k){
   const d=SC.duel;if(!d||d.sent||d.go>0||d.spec)return;const D=d.D,me=D.f[d.me];
   if(d.br){if(d.br.phase!=='fight'||!me.alive||D.t<0||me.stun>D.t||me.at[k]>D.t||(k==='pot'&&!me.pots))return;netSend({t:'brAct',k:k});
-    if(k==='dash'){me.at.dash=D.t+DUEL_LIVE.dash.cd;let vx=SC.hero.dir,vy=SC.hero.dz;if(!vx&&!vy){if(d.br.go){vx=d.br.go[0]-me.x;vy=d.br.go[1]-me.y;}else vx=d.v[d.me].face;}const n=Math.hypot(vx,vy)||1;me.x+=vx/n*DUEL_LIVE.dash.d;me.y+=vy/n*DUEL_LIVE.dash.d;const r=Math.hypot(me.x,me.y);if(r>BR.R){me.x*=BR.R/r;me.y*=BR.R/r;}netSend({t:'brPos',x:Math.round(me.x),y:Math.round(me.y),f:d.v[d.me].face});}else me.at[k]=D.t+(k==='atk'?.25:.5);return;}
+    if(k==='dash'){me.at.dash=D.t+DUEL_LIVE.dash.cd;let vx=joy.v[0]||SC.hero.dir,vy=joy.v[1]||SC.hero.dz;if(!vx&&!vy){if(d.br.go){vx=d.br.go[0]-me.x;vy=d.br.go[1]-me.y;}else vx=d.v[d.me].face;}const n=Math.hypot(vx,vy)||1;me.x+=vx/n*DUEL_LIVE.dash.d;me.y+=vy/n*DUEL_LIVE.dash.d;const r=Math.hypot(me.x,me.y);if(r>BR.R){me.x*=BR.R/r;me.y*=BR.R/r;}netSend({t:'brPos',x:Math.round(me.x),y:Math.round(me.y),f:d.v[d.me].face});}else me.at[k]=D.t+(k==='atk'?.25:.5);return;}
   if(d.net){if(me.stun>D.t||me.at[k]>D.t)return;netSend({t:'act',k:k});if(k==='dash'){me.at.dash=D.t+DUEL_LIVE.dash.cd;dashMove(d,d.me);netSend({t:'pos',x:me.x,z:me.z});}else if(k==='atk')me.at.atk=D.t+D.T[d.me];return;}
   const o=liveAct(D,0,k,Math.random);if(!o)return;if(k==='dash')dashMove(d,0);dShow(d,o);renderDuelBar();if(k==='s1'||k==='s3')d.ai.threat=.5;
 }
@@ -1272,7 +1278,7 @@ function renderHud(){
   {const kw=!duel&&!SC.ev&&S&&!demo?keepWin():null,kb=$('keepBtn');kb.style.display=kw?'':'none';if(kw){const t=(A.keys>0||(A.ev&&A.ev[kw.key]&&A.ev[kw.key].in)?'שגר למצודה':'המצודה פתוחה · אין מפתח')+' · הכניסה נסגרת בעוד '+mmss((kw.end-(kw.e.dur-KEEP_GATE)*60000-Date.now())/1000);if(kb.textContent!==t)kb.textContent=t;}}
   {const se=!duel&&S&&!demo&&ws&&ws.readyState===1?brSign():0,bb=$('brBtn');bb.style.display=se?'':'none';if(se){const t='המעגל האחרון נפתח · השתגר לזירה · '+mmss((se-Date.now())/1000);if(bb.textContent!==t)bb.textContent=t;}}
   $('resetNow').style.display=canReset(S)&&!duel?'block':'none';
-  $('autoBtn').style.display=$('skills').style.display=duel||zi<0?'none':'';$('paceTag').style.visibility=$('bigBtn').style.visibility=$('sndBtn').style.visibility=$('fsBtn').style.visibility=duel?'hidden':'';if(duel)renderDuelBar();$('mv').style.display='';$('mvU').style.display=$('mvD').style.display=duel?'':'none';$('stage').classList.toggle('duel',duel);
+  $('autoBtn').style.display=$('skills').style.display=duel||zi<0?'none':'';$('paceTag').style.visibility=$('bigBtn').style.visibility=$('sndBtn').style.visibility=$('fsBtn').style.visibility=duel?'hidden':'';if(duel)renderDuelBar();{const brm=duel&&SC.duel&&SC.duel.br;$('joy').style.display=brm?'':'none';$('mv').style.display=brm?'none':'';if(!brm&&(joy.v[0]||joy.v[1]))joy.v=[0,0];}$('mvU').style.display=$('mvD').style.display=duel?'':'none';$('stage').classList.toggle('duel',duel);
   $('sndBtn').textContent=prefs.mute?'צליל כבוי':'צליל פעיל';$('sndBtn').classList.toggle('on',!prefs.mute);
   $('autoBtn').textContent='אוטומטי: '+(S.auto?'פעיל':'כבוי');$('autoBtn').classList.toggle('on',!!S.auto);
   const bs=$('skills').children,h=SC.hero;
