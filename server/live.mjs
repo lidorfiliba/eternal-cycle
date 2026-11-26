@@ -158,12 +158,16 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     all({ t: 'sgOpen', left: 0 });
     try {
       if (!x.test) { const prev = (await admin.from('castle').select('guild_id,at').order('at', { ascending: false }).limit(1)).data; await admin.from('castle').insert({ siege: x.key, guild_id: holder > 0 ? holder : (prev && prev[0] ? prev[0].guild_id : null), pts: B.sg.caps }); }
-      await admin.from('chat').insert({ ch: 'w', user_id: null, name: '★', tag: '', msg: (x.test ? 'מצור הידידות נגמר. ' : 'מצור הטירה נגמר. ') + (hn ? 'הטירה בידי ' + hn : 'שומרי הטירה החזיקו מעמד') });
+      await admin.from('chat').insert({ ch: 'w', user_id: null, name: '★', tag: '', msg: (x.test ? 'מצור הידידות נגמר. ' : 'מצור הטירה נגמר. ') + (hn ? 'הטירה בידי ' + hn : 'אף גילדה לא כבשה את הטירה') });
     } catch (e) { console.error(e); }
   }
   function sgOpen(secs, test, key) {
     const B = G.sgNew(rnd, { d: 300, a: 1.2, h: 4000, f: 150 }); B.sg.time = secs;
-    const x = { key: key || 'test', test: !!test, B, idx: new Map(), names: new Map(), prof: B.f.map((f) => ({ n: f.n, c: f.c })), last: clock(), done: false, scaled: false }; sg = x;
+    const x = { key: key || 'test', test: !!test, B, idx: new Map(), names: new Map(), prof: [], last: clock(), done: false, scaled: true }; sg = x;
+    if (!test) (async () => { // Saturday's siege begins with the castle in the hands of whoever holds it now
+      const prev = (await admin.from('castle').select('guild_id,at').order('at', { ascending: false }).limit(1)).data, gid = prev && prev[0] && prev[0].guild_id != null ? Number(prev[0].guild_id) : 0; if (!gid || x.done || B.sg.caps) return;
+      const g = (await admin.from('guilds').select('id,name').eq('id', gid).maybeSingle()).data; if (!g) return; x.names.set(gid, String(g.name)); B.sg.holder = gid; B.sg.sw = [gid, gid]; for (const f of B.f) if (f.g === gid && f.alive) G.sgSpawn(B, f, rnd);
+    })().catch((e) => console.error(e));
     x.timer = setInterval(() => { const now = clock(), dt = Math.max(0, Math.min(.5, (now - x.last) / 1000)); x.last = now; const ev = G.sgStep(B, dt, rnd), m = sgState(B); if (ev.length) m.ev = ev; sgAll(m); if (B.over) sgFinish(x); }, 200); x.timer.unref();
     all({ t: 'sgOpen', left: secs * 1000, test: test ? 1 : 0 }); return x;
   }

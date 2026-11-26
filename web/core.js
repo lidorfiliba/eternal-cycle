@@ -541,7 +541,7 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:1500,H:1000,TIME:59*60,crownT:30,swT:3,resp:8,guardResp:15,pots:3,potPrice:500,gateHp:1,gateHit:.03,rad:14,
+const SG={W:1500,H:1000,TIME:59*60,crownT:30,swT:3,resp:8,guardResp:15,pots:5,potMax:60,potCd:2.5,potPrice:500,combo:2.5,comboGap:2.2,gateHp:1,gateHit:.03,rad:14,
   walls:[[-462,-432,462,-408],[-462,108,-50,132],[50,108,462,132],[-462,-432,-438,-200],[-462,-110,-438,132],[438,-432,462,-200],[438,-110,462,132]],
   gates:[[-50,108,50,132],[-462,-200,-438,-110],[438,-200,462,-110]],sw:[[-260,-250],[260,-250]],crown:[0,-350],zone:46,
   shops:[[-520,400],[330,-40]],shopR:70,camp:[0,400],yard:[0,-140],posts:[[-260,-250],[260,-250],[-40,60],[40,60],[0,-330]]};
@@ -553,47 +553,52 @@ function sgMove(B,f,nx,ny){let dx=nx-f.x,dy=ny-f.y;const d=Math.hypot(dx,dy);if(
 // No blow passes through a wall or a standing gate.
 function sgSees(B,a,e){const n=Math.ceil(brDist(a,e)/10);for(let i=1;i<n;i++){const x=a.x+(e.x-a.x)*i/n,y=a.y+(e.y-a.y)*i/n;for(const w of SG.walls)if(sgIn(w,x,y,0))return false;for(let q=0;q<SG.gates.length;q++)if(B.sg.gate[q]>0&&sgIn(SG.gates[q],x,y,0))return false;}return true;}
 const sgSpawn=(B,f,rnd)=>{const inside=f.g===B.sg.holder,p=f.post||(inside?SG.yard:SG.camp);f.x=p[0]+(f.post?0:(rnd()-.5)*160);f.y=p[1]+(f.post?0:(rnd()-.5)*60);f.hp=1;f.alive=true;f.resp=0;f.stun=0;f.sh=0;f.inv=0;};
-function sgFighter(p,g,tag,rnd){return {id:p.id,n:p.n,c:CLS[p.c]?p.c:'blade',bot:!!p.bot,g:g,tag:String(tag||'').slice(0,4),x:0,y:0,hp:1,d:p.d,T:clamp(1/Math.max(.3,p.a),.3,1.2),pool:Math.max(1,p.h*5),def:p.f,cr:p.cr,
+function sgFighter(p,g,tag,rnd){return {id:p.id,n:p.n,c:CLS[p.c]?p.c:'blade',bot:!!p.bot,g:g,tag:String(tag||'').slice(0,4),x:0,y:0,hp:1,d:p.d,T:clamp(1/Math.max(.3,p.a),.3,1.2),pool:Math.max(1,p.h*5),def:p.f,cr:p.cr,cdm:clamp(Number(p.cd)||1.5,1.2,6),cb:[],cbT:-9,
   at:{atk:0,s0:1,s1:3,s2:0,s3:8,dash:0,pot:0},stun:0,sh:0,inv:0,alive:true,resp:0,kills:0,pots:SG.pots,bought:0,shopT:0,chain:0,face:1,think:rnd()*.5,post:null};}
 function sgNew(rnd,avg){
-  const B={t:-3,over:0,f:[],sg:{holder:0,gate:SG.gates.map(()=>SG.gateHp),sw:[0,0],swBy:[-1,-1],swp:[[0,0],[0,0]],crown:[0,0],caps:0}};
-  SG.posts.forEach((po,i)=>{const f=sgFighter({id:'guard'+i,bot:true,n:'שומר הטירה',c:i<2?'hunter':i<4?'blade':'storm',d:avg.d*.8,a:avg.a,h:avg.h*.9,f:avg.f*.8,cr:.08},0,'',rnd);f.post=po;sgSpawn(B,f,rnd);B.f.push(f);});
-  return B;
+  return {t:-3,over:0,f:[],sg:{holder:0,gate:SG.gates.map(()=>SG.gateHp),sw:[0,0],swBy:[-1,-1],swp:[[0,0],[0,0]],crown:[0,0],caps:0}}; // no guards: the castle is a guild's, or nobody's
 }
 function sgAdd(B,p,g,tag,rnd){const f=sgFighter(p,g,tag,rnd);sgSpawn(B,f,rnd);B.f.push(f);return B.f.length-1;}
 function sgDown(B,j,by,ev){const e=B.f[j];if(!e.alive)return;const S=B.sg; // a switch falls back to the castle with the one who turned it, and the crown starts over
   for(let q=0;q<2;q++)if(S.swBy[q]===j){S.swBy[q]=-1;S.sw[q]=S.holder;S.swp[q]=[0,0];S.crown=[0,0];S.lost=(S.lost||[]).concat([q]);}
   e.alive=false;e.hp=0;e.resp=B.t+(e.g===0?SG.guardResp:SG.resp);if(by>=0&&B.f[by])B.f[by].kills++;if(ev)ev.push({k:'down',to:j,by:by});}
+// What a guild's classes give to everyone of that guild who is in the siege: the blade's cry adds damage, the storm's
+// wind adds attack speed, the hunter's eye adds crit, and all three together also turn aside a tenth of every blow.
+function sgAura(B,g){let b=0,s=0,h=0;for(const f of B.f)if(f.g===g&&f.resp!==-1&&(f.alive||f.resp>0)){if(f.c==='blade')b=1;else if(f.c==='storm')s=1;else h=1;}return {dmg:b?1.12:1,spd:s?.9:1,crit:h?.08:0,def:b&&s&&h?.9:1};}
 function sgAct(B,i,k,rnd){
   const me=B.f[i],t=B.t,K=DUEL_LIVE;if(B.over||t<0||!me||!me.alive||me.stun>t||!(k in me.at)||me.at[k]>t)return null;
   const o={by:i,k:k,to:-1,dm:0,crit:false,miss:false,stun:false,dead:false,heal:0};
   if(k==='s2'){me.at.s2=t+K.sk[2].cd;me.sh=t+K.sk[2].dur;return o;}
   if(k==='dash'){me.at.dash=t+K.dash.cd;me.inv=t+K.dash.inv;return o;}
-  if(k==='pot'){if(me.pots<1)return null;me.at.pot=t+K.potCd;me.pots--;me.hp=Math.min(1,me.hp+K.heal);o.heal=K.heal;return o;}
-  const rng=LIVE_RNG[me.c]+(k==='atk'?14:k==='s3'?60:k==='s0'?40:20);let j=-1,bd=1e9;
+  if(k==='pot'){if(me.pots<1)return null;me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+K.heal);o.heal=K.heal;return o;}
+  const rng=LIVE_RNG[me.c]+(k==='atk'?14:k==='s3'?60:k==='s0'?40:20),au=sgAura(B,me.g);let j=-1,bd=1e9;
   B.f.forEach((e,q)=>{if(q===i||!e.alive||e.g===me.g)return;const d=brDist(e,me);if(d<=rng&&d<bd&&sgSees(B,me,e)){bd=d;j=q;}});
-  let mult;const cool=()=>{if(k==='atk'){me.at.atk=t+me.T;me.chain=(me.chain+1)%4;mult=me.T/1.5*(me.chain===0?1.5:.84)*1.5;}else{const sk=K.sk[k==='s0'?0:k==='s1'?1:3];me.at[k]=t+sk.cd;mult=sk.m;}};
+  let mult;const cool=()=>{if(k==='atk'){me.at.atk=t+me.T*au.spd;me.chain=(me.chain+1)%4;mult=me.T/1.5*(me.chain===0?1.5:.84)*1.5;}else{const sk=K.sk[k==='s0'?0:k==='s1'?1:3];me.at[k]=t+sk.cd;mult=sk.m;}};
   if(j<0){ // nobody in reach: a gate, if one stands near and the castle is not mine
     if(me.g===B.sg.holder)return null;let gi=-1;SG.gates.forEach((g,q)=>{if(B.sg.gate[q]<=0)return;const cx=(g[0]+g[2])/2,cy=(g[1]+g[3])/2,d=Math.hypot(cx-me.x,cy-me.y);if(d<=rng+50&&d<bd){bd=d;gi=q;}});if(gi<0)return null;
     cool();B.sg.gate[gi]=Math.max(0,B.sg.gate[gi]-SG.gateHit*mult);o.gate=gi;o.dm=SG.gateHit*mult;if(B.sg.gate[gi]<=0)o.broke=true;return o;}
   const e=B.f[j];cool();o.to=j;if(Math.abs(e.x-me.x)>4)me.face=e.x>=me.x?1:-1;if(e.inv>t){o.miss=true;return o;}
-  o.crit=rnd()<me.cr;let dm=clamp(me.d*300/(300+e.def)/e.pool,.02,.2)*mult*(o.crit?1.5:1)*(.9+rnd()*.2);if(e.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}
-  e.hp-=dm;o.dm=dm;if(k==='s1'&&!o.guard){e.stun=t+K.sk[1].stun;o.stun=true;}if(e.hp<=0){sgDown(B,j,i);o.dead=true;}return o;
+  // Each character's own numbers decide: its damage against the other's defense and health. No levelling of the field.
+  o.crit=rnd()<me.cr+au.crit;let dm=clamp(me.d*300/(300+e.def)/e.pool,.002,.7)*mult*au.dmg*sgAura(B,e.g).def*(o.crit?me.cdm:1)*(.9+rnd()*.2);
+  // A combo, as the old games had it: three different blows landed one after the other without a pause. The third one bursts.
+  if(t-me.cbT<=SG.comboGap&&me.cb.indexOf(k)<0)me.cb.push(k);else me.cb=[k];me.cbT=t;if(me.cb.length>=3){dm*=SG.combo;o.combo=true;me.cb=[];}else o.cb=me.cb.length;
+  if(e.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}
+  e.hp-=dm;o.dm=dm;if((k==='s1'||o.combo)&&!o.guard){e.stun=t+K.sk[1].stun;o.stun=true;}if(e.hp<=0){sgDown(B,j,i);o.dead=true;}return o;
 }
 const sgNear=(f,p,r)=>Math.abs(f.x-p[0])<r&&Math.abs(f.y-p[1])<r;
 function sgStep(B,dt,rnd){
   const ev=[];if(B.over)return ev;B.t+=dt;if(B.t<0)return ev;const t=B.t,S=B.sg;
   B.f.forEach((f,i)=>{if(!f.alive){if(f.resp&&t>=f.resp&&!(f.g===0&&S.holder!==0)){sgSpawn(B,f,rnd);ev.push({k:'up',to:i});}return;}
-    for(const sh of SG.shops)if(!f.bot&&f.pots<SG.pots&&sgNear(f,sh,SG.shopR)){if((f.shopT+=dt)>=1.5){f.shopT=0;f.pots++;f.bought++;ev.push({k:'buy',by:i});}}});
+    for(const sh of SG.shops)if(!f.bot&&f.pots<SG.potMax&&sgNear(f,sh,SG.shopR)){if((f.shopT+=dt)>=.4){f.shopT=0;f.pots++;f.bought++;ev.push({k:'buy',by:i});}}});
   // switches: one guild alone on a switch turns it to its side after a few seconds
   SG.sw.forEach((p,q)=>{let g=-1,mix=false;for(const f of B.f)if(f.alive&&sgNear(f,p,SG.zone)){if(g<0)g=f.g;else if(g!==f.g)mix=true;}const sp=S.swp[q];
-    if(g<0||mix||g===S.sw[q]){sp[1]=0;return;}if(sp[0]!==g){sp[0]=g;sp[1]=0;}sp[1]+=dt;if(sp[1]>=SG.swT){S.sw[q]=g;sp[1]=0;S.swBy[q]=B.f.findIndex(f=>f.alive&&f.g===g&&sgNear(f,p,SG.zone));ev.push({k:'sw',q:q,g:g});}});
+    if(g<0||mix||g===S.sw[q]){sp[1]=0;return;}if(sp[0]!==g){sp[0]=g;sp[1]=0;}if(sp[1]===0)ev.push({k:'try',q:q,g:g});sp[1]+=dt;if(sp[1]>=SG.swT){S.sw[q]=g;sp[1]=0;S.swBy[q]=B.f.findIndex(f=>f.alive&&f.g===g&&sgNear(f,p,SG.zone));ev.push({k:'sw',q:q,g:g});}});
   if(S.lost){for(const q of S.lost)ev.push({k:'swLost',q:q});S.lost=null;}
   { // the crown: both switches mine, one of mine on it, no one else there
     const p=SG.crown;let g=-1,mix=false;for(const f of B.f)if(f.alive&&sgNear(f,p,SG.zone)){if(g<0)g=f.g;else if(g!==f.g)mix=true;}
-    if(g>0&&!mix&&g!==S.holder&&S.sw[0]===g&&S.sw[1]===g){if(S.crown[0]!==g)S.crown=[g,0];S.crown[1]+=dt;
+    if(g>0&&!mix&&g!==S.holder&&S.sw[0]===g&&S.sw[1]===g){if(S.crown[0]!==g)S.crown=[g,0];if(S.crown[1]===0)ev.push({k:'ctry',g:g});S.crown[1]+=dt;
       if(S.crown[1]>=SG.crownT){S.holder=g;S.caps++;S.crown=[0,0];S.sw=[g,g];S.swBy=[-1,-1];S.swp=[[0,0],[0,0]];S.gate=SG.gates.map(()=>SG.gateHp);ev.push({k:'taken',g:g});
-        B.f.forEach((f,i)=>{if(f.g===0){f.alive=false;f.resp=0;f.hp=0;}else if(f.alive&&f.g!==g){f.post=null;sgSpawn(B,f,rnd);ev.push({k:'out',to:i});}});}}
+        B.f.forEach((f,i)=>{if(f.alive&&f.g!==g){f.post=null;sgSpawn(B,f,rnd);ev.push({k:'out',to:i});}});}}
     else if(S.crown[1]>0)S.crown=[0,0];}
   // the castle's own guards
   B.f.forEach((f,i)=>{if(!f.alive||!f.bot||f.stun>t)return;let j=-1,bd=1e9;B.f.forEach((e,q)=>{if(!e.alive||e.g===f.g)return;const d=brDist(e,f);if(d<bd){bd=d;j=q;}});
@@ -714,7 +719,7 @@ function give(A,S,r){
 // Bonuses and objectives count only while playing; AFK progress never gets them.
 const EVENTS=[
  {id:'crimson',n:'מצודת הארגמן',d:'נחיל אדיר של מפלצות, והכמות היא הפרס. הכניסה עם מפתח, רק בחמש הדקות שלפני הפתיחה. כשהספירה נגמרת השער ננעל. שבע דרגות לפי רמה',when:'כל שעה עגולה',every:60,at:0,dur:12,tiered:1},
- {id:'square',n:'כיכר התוהו',d:'ניסיון כפול לכולם. חסל 150 מפלצות לפרס',when:'כל שעתיים, בחצי',every:120,at:30,dur:15,mod:{xp:2},obj:['k',150],rw:{lv:6,boxes:1},rt:'6 רמות ותיבת אוצר'},
+ {id:'square',n:'כיכר התוהו',d:'ניסיון כפול לכולם. חסל 150 מפלצות לפרס',when:'כל שעתיים, בחצי',every:120,at:30,dur:15,mod:{xp:2},obj:['k',150],rw:{boxes:2,gems:3},rt:'2 תיבות אוצר ו-3 אבני נשמה'},
  {id:'invasion',n:'פלישת הזהב',d:'זהב כפול מכל מפלצת. חסל 60 לפרס',when:'כל שעה, ב-20',every:60,at:20,dur:8,mod:{gold:2},obj:['k',60],rw:{gems:2,coins:4},rt:'2 אבני נשמה ו-4 מטבעות עונה'},
  {id:'world',n:'בוס העולם',d:'בוס אחד לכל השרת. כל חיסול שלך, בכל מפה, פוגע בו, לפי הכוח שלך. הפרס לפי החלק שלך בנזק',when:'כל שלוש שעות, ב-45',every:180,at:45,dur:12,world:1,rt:'נוצות נצח, תיבות עונה ומטבעות'},
  {id:'last',n:'המעגל האחרון',d:'קרב הישרדות חי של עד שמונה לוחמים בשדה עגול ורחב. משתתף רק מי שמחובר ומשתגר לזירה בשתי הדקות הראשונות. כולם מתחילים שווים, הציוד מפוזר על הרצפה, המעגל נסגר, והאחרון שנשאר עומד זוכה',when:'כל שעתיים, ב-10',every:120,at:10,dur:6,br:1,rt:'תיבה עתיקה, תכשיט, נוצת נצח ו-40 מטבעות עונה'},
@@ -772,7 +777,7 @@ function evRec(A,key){
 const TIER_MIN=[15,81,131,181,231,281,331],TIER_LV=[3,4,5,6,7,8,10];
 const evTier=l=>{let t=0;for(const m of TIER_MIN)if(l>=m)t++;return t;};
 const tierRange=t=>[TIER_MIN[t-1],t<TIER_MIN.length?TIER_MIN[t]-1:CAP];
-const tierReward=t=>({lv:TIER_LV[t-1],gems:2+t,coins:4+t});
+const tierReward=t=>({gems:2+t,coins:4+t}); // no prize is ever paid in levels
 // The tier is fixed by the level at the moment of entry, not at collection.
 // A tiered event is fought inside its own keep: kills count only for a character that went in (see evEnter).
 // Inside, the monsters come as a horde: each one is weak (KEEP_HP of its normal health) and pays the normal
@@ -1039,12 +1044,11 @@ function apply(A,kind,args,ctx){
       const w=evWindows(now,10).find(x=>x.e.id===String(args.id)&&x.e.obj);if(!w)return fail('האירוע לא פעיל');
       const rec=evRec(A,w.key),e=w.e;if(rec.c)return fail('הפרס כבר נאסף');if((rec[e.obj[0]]||0)<e.obj[1])return fail('המשימה לא הושלמה');
       const rw=e.tiered?tierReward(clamp(rec.tr|0,1,7)):e.rw;
-      rec.c=1;bump(A,'ev',1);if(rw.lv){let xp=0;for(let l=S.lvl;l<Math.min(CAP,S.lvl+rw.lv);l++)xp+=need(l);r.levels=addXp(S,xp);}
-      give(A,S,rw);r.rt=e.tiered?rw.lv+' רמות, '+rw.gems+' אבני נשמה ו-'+rw.coins+' מטבעות עונה':e.rt;break;}
+      rec.c=1;bump(A,'ev',1);give(A,S,rw);r.rt=e.tiered?rw.gems+' אבני נשמה ו-'+rw.coins+' מטבעות עונה':e.rt;break;}
     default:return fail('פעולה לא מוכרת');
   }
   A.maxLvl=Math.max(A.maxLvl||1,S.lvl);
   return r;
 }
 
-export {EXB,exCount,SIEGE_MIN,RESET_RAR,keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {sgAura,sgSees,EXB,exCount,SIEGE_MIN,RESET_RAR,keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

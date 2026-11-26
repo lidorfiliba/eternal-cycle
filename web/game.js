@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126223100';
+const BUILD='20261126224605';
 const {TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -901,6 +901,8 @@ function showGuide(){
     '<div class="card" style="display:block"><b>בונוס סט עתיק</b><p class="hint" style="margin-top:4px">חלקים עתיקים מאותה דרגה: '+SETB.map(b=>L(b[0])+' חלקים: '+AFF[b[1]][0]+' '+L('+'+b[2]+'%')).join(' · ')+'. הנשק נספר כחלק השישי.</p><p class="hint" style="margin-top:4px">לכל דרגה יש סט שני, של שורדים ומחפשי אוצרות: '+SETB2.map(b=>L(b[0])+' חלקים: '+AFF[b[1]][0]+' '+L('+'+b[2]+'%')).join(' · ')+'. חלקים משני הסטים לא נספרים יחד.</p></div>'+
     '<div class="card" style="display:block"><b style="color:#ffd75e">עתיק מושלם</b><p class="hint" style="margin-top:4px">הפריט הנדיר ביותר במשחק: חלק סט עתיק עם כל האופציות ובסיס חזק ב-'+L(Math.round((PERFECT_M-1)*100)+'%')+'. הוא נופל רק מבוסים, מאלופים ומקומות גבוהות במגדל הנצח, בסיכוי זעום. סט מלא כזה הוא עניין של חודשים.</p></div>'+
     '<div class="card" style="display:block"><b>בונוס אקסלנט מלא</b><p class="hint" style="margin-top:4px">חלקי אקסלנט מלא נספרים לבונוס משלהם, בכל נדירות: '+EXB.map(b=>L(b[0])+' חלקים: '+AFF[b[1]][0]+' '+L('+'+b[2]+'%')).join(' · ')+'. חלק עתיק שהוא גם אקסלנט מלא נספר גם לסט וגם לבונוס הזה.</p></div>'+
+    '<div class="card" style="display:block"><b>איפה משיגים חלקי סט</b><p class="hint" style="margin-top:4px">חלק עתיק נופל מכל מפלצת, אבל במפות הריסט הוא נופל פי שלושה. המפלצות שם קשות בהרבה ונותנות פחות ניסיון לדקה, אז הולכים לשם בשביל הסט ולא בשביל רמות. דרגות ציוד 9 ומעלה קיימות רק שם.</p></div>'+
+    '<div class="card" style="display:block"><b>חיות מחמד</b><p class="hint" style="margin-top:4px">יוצאות מתיבות, לעיתים רחוקות. חיה לבושה נותנת זהב ושלל, והנדירות גם ניסיון, נזק, חיים ומהירות. היא גם מוכרת בשבילך את מה שמסנן האיסוף משאיר על הרצפה. הזמן שלה מתחיל בלבישה הראשונה.</p></div>'+
     '<div class="card" style="display:block"><b>תכשיטים</b><p class="hint" style="margin-top:4px">שלושה מקומות נוספים: טבעת עוצמה מוסיפה נזק באחוזים, טבעת חיים מוסיפה חיים, ושרשרת נותנת קצת משניהם. הם נופלים לעיתים רחוקות מכל מפלצת, תמיד מאלופים, ומהתיבה של המעגל האחרון. אפשר לשדרג אותם כמו כל פריט, והם לא חלק מסט.</p></div>'+
     '<div class="card" style="display:block"><b>סיכויי שדרוג</b><p class="hint" style="margin-top:4px">עד '+L('+6')+' תמיד מצליח. אחר כך: '+up+'. מ-'+L('+7')+' כישלון מוריד דרגה, אלא אם יש קמע הגנה.</p></div>'+
     '<p class="hint">המספרים לפי המקצוע שלך. הדרגה שהנשק שלך בה מסומנת בזהב.</p>'+rows+
@@ -947,7 +949,9 @@ function brState(m){
 }
 function brShow(d,o){
   const D=d.D,b=d.br;
-  if(b.sg){const gname=g=>g>0?(b.gn&&b.gn[g]||'גילדה'):'שומרי הטירה';
+  if(b.sg){const gname=g=>g>0?(b.gn&&b.gn[g]||'גילדה'):'אף גילדה',mine=g=>g===b.g[d.me];
+    if(o.k==='try'){announce((mine(o.g)?'הגילדה שלך משתלטת':gname(o.g)+' משתלטת')+' על המתג ה'+(o.q?'ימני':'שמאלי'),true);if(!mine(o.g))snd('growl');return;}
+    if(o.k==='ctry'){snd('boss');announce((mine(o.g)?'הגילדה שלך עומדת על הכתר':gname(o.g)+' עומדת על הכתר')+'! 30 שניות עד הכיבוש',true);return;}
     if(o.k==='swLost'){snd('slam');announce('המתג ה'+(o.q?'ימני':'שמאלי')+' נפל: מי שהשתלט עליו חוסל. הכתר מתחיל מחדש',true);return;}
     if(o.k==='sw'){snd('boss');announce('המתג ה'+(o.q?'ימני':'שמאלי')+' עבר לידי '+gname(o.g),true);return;}
     if(o.k==='taken'){snd('rare');announce('הטירה נכבשה! הכתר בידי '+gname(o.g),true);if(!calm)SC.fx.push({k:'screen',life:1,d:1,c:'#ffd75e'});return;}
@@ -969,11 +973,13 @@ function brShow(d,o){
   if(o.miss){addNum(vx,ge-110,'חמק!','#9fe8ff',true);return;}
   d.v[o.to].hitT=.18;if(o.by===d.me||o.to===d.me)snd(o.crit?'crit':big?'skill':'hit');addNum(vx,ge-92,Math.max(1,Math.round(o.dm*100))+'%',o.to===d.me?'#ff5c7a':o.crit?'#ffd75e':'#fff',o.crit||big);
   if(o.stun)addNum(vx,ge-128,'הלם','#ffd75e',false);
+  if(o.combo){snd('ult');SC.nums.push({x:vx,y:ge-150,txt:'קומבו!',c:'#ff5c7a',s:26,life:1.2});SC.fx.push({k:'star',x:vx,y:ge-40,r:70,rot:0,life:.5,d:.5,c:'#ff5c7a'});SC.fx.push({k:'ring',x:vx,y:ge-10,life:.5,c:'#ffd75e',r:90});if(!calm&&(o.by===d.me||o.to===d.me))SC.shake=.45;}
+  else if(o.cb>=2&&o.by===d.me)addNum(ax,g-150,'קומבו 2/3','#ffb23e',false);
   if(o.dead&&!(b.sg&&o.by!==d.me&&o.to!==d.me))addNum(vx,ge-140,b.names[o.by]+' חיסל את '+b.names[o.to],'#ffd75e',true);
 }
 function brOver(m){
   const d=SC.duel;if(!d||!d.br)return;const b=d.br,pl=m.place|0;b.phase='end';d.sent=true;d.holdAtk=false;d.end=4.5;b.res=m;renderDuelBar();
-  if(m.sg){SC.nums.push({x:W/2,y:H*.36,txt:m.win?'הטירה בידי '+m.win:'שומרי הטירה החזיקו מעמד',c:m.won?'#f2c14e':'#c9c2ea',s:24,life:4.4});snd(m.won?'rare':'slam');return;}
+  if(m.sg){SC.nums.push({x:W/2,y:H*.36,txt:m.win?'הטירה בידי '+m.win:'אף גילדה לא כבשה את הטירה',c:m.won?'#f2c14e':'#c9c2ea',s:24,life:4.4});snd(m.won?'rare':'slam');return;}
   SC.nums.push({x:W/2,y:H*.36,txt:pl===0?'ניצחת במעגל האחרון!':'מקום '+(pl+1)+' מתוך '+(m.n|0),c:pl===0?'#f2c14e':'#c9c2ea',s:pl===0?30:26,life:4.4});snd(pl===0?'rare':'slam');if(pl===0&&!calm)SC.fx.push({k:'screen',life:1,d:1,c:'#ffd75e'});
 }
 function brExit(msg){const d=SC.duel;if(!d||!d.br)return;const m=d.br.res;SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];SC.hero.dir=0;SC.hero.dz=0;renderDuelBar();
@@ -1032,7 +1038,9 @@ function drawSg(dt){
   {const mw=84,mh=56,mx=W-mw-8,my=62,qx=mw/SG.W,qy=mh/SG.H,M=(x,y)=>[mx+mw/2+x*qx,my+mh/2+y*qy];ctx.save();ctx.fillStyle='rgba(8,6,20,.75)';ctx.strokeStyle='rgba(255,215,94,.6)';ctx.lineWidth=1.5;ctx.fillRect(mx,my,mw,mh);ctx.strokeRect(mx,my,mw,mh);
     ctx.strokeStyle='#8d86a8';const a=M(-450,-420),c2=M(450,120);ctx.strokeRect(a[0],a[1],c2[0]-a[0],c2[1]-a[1]);SG.sw.forEach((s,q)=>{const p=M(s[0],s[1]);ctx.fillStyle=gc(S2.sw[q]);ctx.fillRect(p[0]-2.5,p[1]-2.5,5,5);});{const p=M(SG.crown[0],SG.crown[1]);ctx.fillStyle='#ffd75e';ctx.fillRect(p[0]-3,p[1]-3,6,6);}
     D.f.forEach((f,i)=>{if(!f.alive)return;const p=M(f.x,f.y);ctx.fillStyle=i===d.me?'#7df9ff':gc(b.g[i]);ctx.beginPath();ctx.arc(p[0],p[1],i===d.me?2.8:1.9,0,7);ctx.fill();});ctx.restore();}
-  const hn=S2.holder>0?(b.gn&&b.gn[S2.holder]||'גילדה'):'שומרי הטירה';
+  const hn=S2.holder>0?(b.gn&&b.gn[S2.holder]||'גילדה'):'אף גילדה';
+  {const cl={};D.f.forEach((f,i)=>{if(b.g[i]===myG&&(f.alive||b.deadT[i]>0))cl[f.cls]=1;});const bf=[cl.blade?'נזק +12%':'',cl.storm?'מהירות +10%':'',cl.hunter?'קריטי +8%':'',cl.blade&&cl.storm&&cl.hunter?'הגנה +10%':''].filter(Boolean);if(bf.length)label('באפים של הגילדה: '+bf.join(' · '),W/2,82,'#9fe8ff',10);}
+  SG.sw.forEach((s,q)=>{const pr=S2.swp[q];if(pr[1]>0&&S2.crown[1]<=0)label((pr[0]===myG?'משתלטים על המתג ה':'האויב משתלט על המתג ה')+(q?'ימני':'שמאלי')+': '+Math.ceil(SG.swT-pr[1]),W/2,H*.26+q*20,gc(pr[0]),14);});
   label((b.test?'מצור ידידות':'מצור הטירה')+' · '+mmss(S2.left),W/2,30,'#ffd75e',13);label('מחזיקים בטירה: '+hn,W/2,48,gc(S2.holder),11);
   if(S2.crown[1]>0)label('הכתר נכבש: '+Math.ceil(SG.crownT-S2.crown[1])+' שניות',W/2,H*.26,gc(S2.crown[0]),15);
   else if(me.alive&&myG!==S2.holder)label(S2.sw[0]===myG&&S2.sw[1]===myG?'שני המתגים שלכם. עמדו על הכתר!':S2.gate.every(g=>g>0)?'פרצו שער, השתלטו על שני המתגים ועמדו על הכתר':'השתלטו על שני המתגים ואז עמדו על הכתר',W/2,66,'#dfe6f5',10.5);
@@ -2038,7 +2046,7 @@ function siegeLine(){
 function renderGuild(){
   let h='<h2>גילדה</h2>';if(!ONLINE)return h+'<p class="hint">גילדות עובדות רק במצב מקוון, מול השרת.</p>';
   const g=guild.mine,hold=guild.holder;
-  h+='<div class="card"><p class="hint"><b>מצור הטירה</b> · '+siegeLine()+' קרב חי על טירה מוקפת חומה: פורצים שער, משתלטים על שני המתגים, ואז חבר גילדה עומד על הכתר חצי דקה בלי הפרעה. אם מי שהשתלט על מתג מחוסל, המתג נופל והכתר מתחיל מחדש. המצור נמשך שעה. מי שמחזיק בכתר כשהזמן נגמר מחזיק בטירה שבוע, וכל חברי הגילדה מקבלים '+L('+10%')+' ניסיון וזהב. כאן הכוח האמיתי של הדמות קובע.</p>'+(sgLive>Date.now()?'<button class="btn pri glow" style="width:100%;margin-bottom:6px" data-act="sgJoin"'+(netUp()&&SC.mode==='farm'&&guild.mine?'':' disabled')+'>'+(guild.mine?(sgTest?'הצטרף למצור הידידות':'הצטרף למצור')+' · נשארו '+L(mmss((sgLive-Date.now())/1000)):'רק חברי גילדה יכולים להצטרף')+'</button>':'')+'<p class="hint" style="display:none"></p><div class="kv"><span>מחזיקה בטירה</span><b>'+(hold?esc(hold.name)+' ['+esc(hold.tag)+']':'אף גילדה')+'</b></div></div>';
+  h+='<div class="card"><p class="hint"><b>מצור הטירה</b> · '+siegeLine()+' קרב חי על טירה מוקפת חומה: פורצים שער, משתלטים על שני המתגים, ואז חבר גילדה עומד על הכתר חצי דקה בלי הפרעה. אם מי שהשתלט על מתג מחוסל, המתג נופל והכתר מתחיל מחדש. המצור נמשך שעה. קונים שיקויים בלי הגבלה כמעט אצל המוכר, שלוש מכות שונות ברצף נותנות קומבו, וכל מקצוע בגילדה נותן באף לכולם: לוחם נזק, מכשפה מהירות, צייד קריטי, ושלושתם יחד גם הגנה. מי שמחזיק בכתר כשהזמן נגמר מחזיק בטירה שבוע, וכל חברי הגילדה מקבלים '+L('+10%')+' ניסיון וזהב. כאן הכוח האמיתי של הדמות קובע.</p>'+(sgLive>Date.now()?'<button class="btn pri glow" style="width:100%;margin-bottom:6px" data-act="sgJoin"'+(netUp()&&SC.mode==='farm'&&guild.mine?'':' disabled')+'>'+(guild.mine?(sgTest?'הצטרף למצור הידידות':'הצטרף למצור')+' · נשארו '+L(mmss((sgLive-Date.now())/1000)):'רק חברי גילדה יכולים להצטרף')+'</button>':'')+'<p class="hint" style="display:none"></p><div class="kv"><span>מחזיקה בטירה</span><b>'+(hold?esc(hold.name)+' ['+esc(hold.tag)+']':'אף גילדה')+'</b></div></div>';
   if(!g){
     h+='<div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">עד 20 חברים. כל רמת גילדה מוסיפה '+L('1%')+' ניסיון לכל החברים, עד '+L('10%')+'. הרמה עולה מהחיסולים של כולם.</p>'+
       '<input type="text" id="gname" maxlength="14" placeholder="שם הגילדה, 3 עד 14 תווים" autocomplete="off"><input type="text" id="gtag" maxlength="4" placeholder="תג, 2 עד 4 תווים" autocomplete="off" dir="ltr">'+

@@ -142,7 +142,7 @@ test('timed events: bonus XP, objectives, rewards once, quiz once',async()=>{
   const key=Object.keys((await row(U(1))).state.ev).find(k=>k.startsWith('square:'));assert.ok(key);
   assert.ok((await row(U(1))).state.ev[key].k>=150,'progress '+total);
   const lvl=(await row(U(1))).state.chars[0].lvl,c=await handle(U(1),'claimEvent',{id:'square'});assert.ok(c.result.ok,c.result.msg);
-  assert.ok(c.state.chars[0].lvl>=lvl+6);assert.equal((await handle(U(1),'claimEvent',{id:'square'})).result.ok,false,'reward only once');
+  assert.equal(c.state.chars[0].lvl,lvl,'a prize is never levels');assert.match(c.result.rt,/תיבות אוצר/);assert.equal((await handle(U(1),'claimEvent',{id:'square'})).result.ok,false,'reward only once');
   assert.equal((await handle(U(1),'answer',{a:0})).result.ok,false,'quiz not live');
   clock.add((Date.UTC(2026,10,26,10,16,0)-clock())/1000);                // 12:16 local — quiz + שעת השפע
   const a1=await handle(U(1),'answer',{a:99});assert.ok(a1.result.ok);assert.equal(a1.result.correct,false);
@@ -507,7 +507,7 @@ test('castle siege over the socket: guild members join a running siege, the serv
     await open(a);await open(b);await open(c);a.send({t:'sgJoin'});assert.equal((await a.wait('sgNo')).why,'closed');
     const x=srv.live.sgOpen(600,false,'s-test-key');assert.equal((await a.wait('sgOpen')).left,600000);
     c.send({t:'sgJoin'});assert.equal((await c.wait('sgNo')).why,'guild','no guild, no siege');
-    a.send({t:'sgJoin'});const sa=await a.wait('brStart');assert.ok(sa.sg&&sa.f.length===G.SG.posts.length+1);assert.equal(sa.f[sa.me].tag,'AR');assert.equal(sa.guilds[0][1],'אריות');
+    a.send({t:'sgJoin'});const sa=await a.wait('brStart');assert.ok(sa.sg&&sa.f.length===1,'no guards: only players');assert.equal(sa.f[sa.me].tag,'AR');assert.equal(sa.guilds[0][1],'אריות');
     b.send({t:'sgJoin'});const sb=await b.wait('brStart'),add=await a.wait('sgAdd');assert.equal(add.i,sb.me);assert.equal(add.f.g,Number(gid));
     const B=x.B;B.t=1;const fa=B.f[sa.me],fb=B.f[sb.me];a.send({t:'sgPos',x:0,y:-300,f:1});await new Promise(r=>setTimeout(r,300));a.send({t:'sgPos',x:0,y:-300,f:1});await new Promise(r=>setTimeout(r,150));assert.ok(fa.y>130&&fa.y<400,'he walks, and the gate stops him: '+fa.y);
     for(const f of B.f)if(f.g===0){f.alive=false;f.resp=1e9;}B.sg.sw=[Number(gid),Number(gid)];fa.x=G.SG.crown[0];fa.y=G.SG.crown[1];B.sg.crown=[Number(gid),G.SG.crownT-.3];
