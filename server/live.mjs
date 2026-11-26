@@ -76,11 +76,42 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
     b.last = clock();
     b.timer = setInterval(() => { const now = clock(), dt = Math.max(0, Math.min(.5, (now - b.last) / 1000)); b.last = now; const ev = G.brStep(b.B, dt, rnd), m = brState(b.B); if (ev.length) m.ev = ev; brAll(m); if (b.B.over) brFinish(b); }, 200); b.timer.unref();
   }
+  const all = (m) => { const s = JSON.stringify(m); for (const o of socks.values()) if (o.readyState === 1) o.send(s); };
+  let lastKey = '';
   const brClock = setInterval(() => {
     const w = G.brWindow(clock());
-    if (!br && w && w.phase === 'sign') br = { key: w.key, phase: 'sign', joined: new Map(), end: w.signEnd, idx: new Map() };
-    else if (br && br.phase === 'sign' && !(w && w.phase === 'sign' && w.key === br.key)) brStart(br);
+    if (!br && w && w.phase === 'sign' && w.key !== lastKey) { lastKey = w.key; br = { key: w.key, phase: 'sign', joined: new Map(), end: w.signEnd, idx: new Map() }; all({ t: 'brOpen', left: Math.max(0, br.end - clock()) }); }
+    else if (br && br.phase === 'sign' && clock() >= br.end) brStart(br);
   }, 1000); brClock.unref();
+  // Game-master tools. The right to use them is the is_admin flag on the account in the database, read again on
+  // every single request; nothing the browser says about itself is believed, and a refused attempt is logged.
+  const isGm = async (uid) => { const r = (await admin.from('users').select('is_admin').eq('user_id', uid).maybeSingle()).data; return !!(r && r.is_admin === true); };
+  const gmChat = async (msg) => { try { await admin.from('chat').insert({ ch: 'w', user_id: null, name: '★', tag: '', msg: String(msg).slice(0, 160) }); } catch (_e) { /* not worth failing for */ } };
+  async function gmMsg(ws, m) {
+    const uid = ws.uid, now = clock(); if (now - (ws.lastGm || 0) < 1000) return; ws.lastGm = now;
+    if (!(await isGm(uid))) { console.warn('gm command refused for', uid, String(m.a).slice(0, 12)); return; }
+    const a = String(m.a), ok = (msg) => send(uid, { t: 'gmRes', ok: true, msg }), no = (msg) => send(uid, { t: 'gmRes', ok: false, msg });
+    console.log('gm', uid, a);
+    if (a === 'br') {
+      if (br) return no('כבר יש מעגל פתוח או קרב שרץ');
+      const sec = Math.max(30, Math.min(300, Math.floor(Number(m.sec)) || 90));
+      br = { key: 'gm' + (nid++), phase: 'sign', joined: new Map(), end: now + sec * 1000, idx: new Map(), gm: true };
+      all({ t: 'brOpen', left: sec * 1000, gm: 1 }); await gmChat('המעגל האחרון נפתח עכשיו. ההרשמה פתוחה ' + sec + ' שניות'); return ok('ההרשמה נפתחה ל-' + sec + ' שניות');
+    }
+    if (a === 'brStop') {
+      if (!br || br.phase !== 'sign') return no('אין הרשמה פתוחה'); const b = br; br = null; for (const u of b.joined.keys()) send(u, { t: 'brCancel' }); all({ t: 'brOpen', left: 0 }); return ok('ההרשמה בוטלה');
+    }
+    if (a === 'boost') {
+      const min = Math.max(0, Math.min(120, Math.floor(Number(m.min)) || 0)), b = G.setBoost(min ? { xp: m.xp, drop: m.drop, until: now + min * 60000 } : null);
+      all({ t: 'boost', xp: b ? b.xp : 1, drop: b ? b.drop : 1, left: b ? b.until - now : 0 });
+      if (b) await gmChat('בונוס לכולם ל-' + min + ' דקות: ניסיון ×' + b.xp + ', שלל ×' + b.drop); return ok(b ? 'הבונוס פעיל ל-' + min + ' דקות' : 'הבונוס בוטל');
+    }
+    if (a === 'say') {
+      const text = String(m.m || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 120); if (!text) return no('אין טקסט');
+      all({ t: 'gmSay', m: text }); await gmChat('הודעת מנהל: ' + text); return ok('ההודעה נשלחה לכל המחוברים');
+    }
+    return no('פקודה לא מוכרת');
+  }
   async function brMsg(ws, m) {
     const uid = ws.uid, b = br;
     if (m.t === 'brJoin') {
@@ -108,6 +139,7 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
 
   async function onMsg(ws, m) {
     const uid = ws.uid, d = inDuel.get(uid), side = d ? d.u.indexOf(uid) : -1;
+    if (m.t === 'gm') return gmMsg(ws, m);
     if (typeof m.t === 'string' && m.t.slice(0, 2) === 'br') return brMsg(ws, m);
     if (m.t === 'challenge') {
       const to = keys.get(String(m.k)); if (!to || to === uid || !socks.has(to)) return send(uid, { t: 'gone', k: String(m.k) });
@@ -181,7 +213,10 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
           if (!ws.uid) { // the first message must carry the session token
             if (m.t !== 'hello') return ws.close(); const ses = await auth.session(String(m.token || '')); if (!ses) return ws.close();
             clearTimeout(hello); ws.uid = ses.uid; ws.key = peerKey(ses.uid); const old = socks.get(ses.uid); if (old && old !== ws) old.close();
-            socks.set(ses.uid, ws); keys.set(ws.key, ses.uid); return ws.send(JSON.stringify({ t: 'hi' }));
+            socks.set(ses.uid, ws); keys.set(ws.key, ses.uid); ws.send(JSON.stringify({ t: 'hi' }));
+            if (br && br.phase === 'sign') ws.send(JSON.stringify({ t: 'brOpen', left: Math.max(0, br.end - clock()), quiet: 1 }));
+            { const b = G.boostNow(clock()); if (b) ws.send(JSON.stringify({ t: 'boost', xp: b.xp, drop: b.drop, left: b.until - clock(), quiet: 1 })); }
+            return;
           }
           await onMsg(ws, m);
         } catch (e) { console.error(e); }

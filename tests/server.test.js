@@ -426,3 +426,26 @@ test('the last circle over the socket: only connected players who joined fight, 
     const A1=await st(a),B1=await st(b);assert.equal(A1.coins,40);assert.equal(A1.brW,1);assert.equal(B1.coins,20);assert.equal(B1.sboxes,1);assert.equal((await st(c)).coins,0,'who did not join gets nothing');assert.equal(srv.live.brNow(),null);
   }finally{for(const u of [a,b,c])if(u.ws)u.ws.close();srv.live.close();srv.close();}
 });
+
+test('game master tools: only an account flagged in the database can open events, boost or announce',async()=>{
+  const {makeServer}=await import('../server/index.mjs');const {WebSocket}=await import('ws');const {createHash}=await import('node:crypto');const {db}=await world();
+  const srv=makeServer(fakeAdmin(db),'test-secret');await new Promise(r=>srv.listen(0,r));const port=srv.address().port,base='http://127.0.0.1:'+port;
+  const post=async(body,tok)=>(await (await fetch(base,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},tok?{'x-ec-token':tok}:{}),body:JSON.stringify(body)})).json());
+  const mkUser=async(n,cls)=>{const r=await post({kind:'register',args:{user:n,pass:'correct-horse-9',q:0,a:'rex'}});await post({kind:'create',args:{name:n,cls:cls}},r.token);await post({kind:'travel',args:{z:0}},r.token);
+    const uid=(await db.query('select user_id from users where username=$1',[n])).rows[0].user_id;return {tok:r.token,uid,key:createHash('md5').update(uid+'peer').digest('hex').slice(0,10)};};
+  const open=async u=>{const ws=new WebSocket('ws://127.0.0.1:'+port+'/ws');u.q=[];u.wait=t=>new Promise((res,rej)=>{const go=()=>{const i=u.q.findIndex(m=>m.t===t);if(i>=0)return res(u.q.splice(i,1)[0]);setTimeout(go,10);};go();setTimeout(()=>rej(new Error('no '+t+' message')),4000);});
+    ws.on('message',d=>u.q.push(JSON.parse(String(d))));await new Promise(r=>ws.on('open',r));ws.send(JSON.stringify({t:'hello',token:u.tok}));await u.wait('hi');u.ws=ws;u.send=m=>ws.send(JSON.stringify(m));};
+  const a=await mkUser('vav','blade'),b=await mkUser('zayin','storm');const G=await import('../supabase/functions/act/core.js');
+  try{
+    await open(a);await open(b);
+    b.send({t:'gm',a:'br',sec:60});b.send({t:'gm',a:'boost',xp:3,drop:3,min:60});await new Promise(r=>setTimeout(r,400));
+    assert.equal(srv.live.brNow(),null,'a player without the flag opens nothing');assert.equal(G.boostNow(Date.now()),null);assert.equal(b.q.filter(m=>m.t==='gmRes'||m.t==='brOpen').length,0,'and gets no answer at all');
+    await db.query('update users set is_admin=true where user_id=$1',[a.uid]);
+    a.send({t:'gm',a:'br',sec:5});const oa=await a.wait('brOpen'),ob=await b.wait('brOpen');assert.equal(oa.left,30000,'the sign-up length is held to its limits');assert.equal(ob.gm,1);assert.ok((await a.wait('gmRes')).ok);assert.ok(srv.live.brNow().gm);
+    b.send({t:'brJoin'});assert.equal((await b.wait('brLobby')).n,1);
+    await new Promise(r=>setTimeout(r,1100));a.send({t:'gm',a:'brStop'});assert.equal((await b.wait('brCancel')).t,'brCancel');assert.equal(srv.live.brNow(),null);
+    await new Promise(r=>setTimeout(r,1100));a.send({t:'gm',a:'boost',xp:9,drop:2,min:999});const bo=await b.wait('boost');assert.equal(bo.xp,3);assert.equal(bo.drop,2);assert.ok(bo.left<=120*60000+5);assert.ok(G.boostNow(Date.now()));
+    await new Promise(r=>setTimeout(r,1100));a.send({t:'gm',a:'say',m:'<b>שלום</b> לכולם'});assert.equal((await b.wait('gmSay')).m,'bשלום/b לכולם');
+    await db.query('update users set is_admin=false where user_id=$1',[a.uid]);await new Promise(r=>setTimeout(r,1100));a.send({t:'gm',a:'boost',min:0});await new Promise(r=>setTimeout(r,300));assert.ok(G.boostNow(Date.now()),'the right is checked again every time');
+  }finally{G.setBoost(null);for(const u of [a,b])if(u.ws)u.ws.close();srv.live.close();srv.close();}
+});

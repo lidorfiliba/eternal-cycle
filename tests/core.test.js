@@ -385,3 +385,10 @@ test('the last circle: rules of the fight, the ring, places and prizes',()=>{
   const w=G.brWindow(Date.UTC(2026,10,26,10,10,30));assert.equal(w.phase,'sign');assert.equal(G.brWindow(Date.UTC(2026,10,26,10,13,0)).phase,'fight');assert.equal(G.brWindow(Date.UTC(2026,10,26,10,40,0)),null);
   G.setEnv(Math.random,Date.now);
 });
+
+test('a game master bonus is clamped, ends on time, and multiplies what events give',()=>{
+  const t=Date.UTC(2026,10,26,8,29,0);const base=G.evMods(t);
+  const b=G.setBoost({xp:50,drop:-4,until:t+60000});assert.equal(b.xp,3,'never more than triple');assert.equal(b.drop,1);
+  assert.equal(G.evMods(t).xp,base.xp*3);assert.equal(G.evMods(t+60001).xp,G.evMods(t+60001).xp);assert.equal(G.boostNow(t+60001),null,'over when its time is up');
+  G.setBoost({xp:2,drop:2,until:t+1000});assert.equal(G.evMods(t).drop,base.drop*2);G.setBoost(null);assert.equal(G.evMods(t).xp,base.xp);
+});

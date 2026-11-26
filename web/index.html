@@ -167,7 +167,8 @@ h2{font-family:var(--display);font-weight:400;font-size:17px;margin:4px 0 0;colo
 .btn.glow{box-shadow:0 0 14px #f2c14e88;animation:tierPulse 1.4s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.tier.open,.btn.glow{animation:none}}
 #panel>*{flex-shrink:0}
-#keepBtn{position:absolute;top:98px;inset-inline:0;margin:auto;width:max-content;max-width:92%;font-weight:700;font-size:13.5px;color:#fff;background:linear-gradient(90deg,#b3123a,#e0473a);border:1.5px solid #ffb0b0;border-radius:12px;padding:6px 14px;box-shadow:0 0 14px #ff5c7a99;z-index:4;animation:tierPulse 1.4s ease-in-out infinite}
+#brBtn{top:134px!important;background:linear-gradient(90deg,#6a3fd0,#c77dff)!important;border-color:#e6d0ff!important;box-shadow:0 0 14px #c77dff99!important}
+#keepBtn,#brBtn{position:absolute;top:98px;inset-inline:0;margin:auto;width:max-content;max-width:92%;font-weight:700;font-size:13.5px;color:#fff;background:linear-gradient(90deg,#b3123a,#e0473a);border:1.5px solid #ffb0b0;border-radius:12px;padding:6px 14px;box-shadow:0 0 14px #ff5c7a99;z-index:4;animation:tierPulse 1.4s ease-in-out infinite}
 .resgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}.resgrid div{display:flex;align-items:center;gap:6px;font-size:13.5px}.resgrid span{flex:1;color:var(--dim)}.resgrid b{color:var(--ink)}
 #spin{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(8,5,20,.72);z-index:40;color:#ffe9a6;font-weight:700}#spin.on{display:flex}
 #spin i{width:62px;height:62px;border-radius:50%;border:6px solid rgba(255,215,94,.2);border-top-color:#ffd75e;animation:spinR .9s linear infinite;box-shadow:0 0 18px #f2c14e55}@keyframes spinR{to{transform:rotate(360deg)}}
@@ -245,6 +246,7 @@ input[type=text],input[type=password],select{width:100%;background:#0a0818;borde
     <button id="evChip" data-act="evtab"></button>
     <button id="resetNow" data-act="reset">ריסט מוכן</button>
     <button id="keepBtn" data-act="keepGo" style="display:none"></button>
+    <button id="brBtn" data-act="brJoin" style="display:none"></button>
     <button id="autoBtn" data-act="auto"></button>
     <button id="bigBtn" data-act="big">הגדל</button>
     <button id="fsBtn" data-act="fs" style="display:none">מסך מלא</button>

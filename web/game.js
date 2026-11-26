@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126200604';
-const {BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126203326';
+const {setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
@@ -897,7 +897,7 @@ function brCard(live){
   let h='<p class="hint">נלחמים ביד, עם מהלכי הזירה, מול שחקנים אחרים שמחוברים עכשיו. מקומות ריקים מתמלאים בלוחמים של השרת. מי שלא מחובר, או לא נכנס בזמן, לא משתתף. מקום שני ושלישי מקבלים תיבות ומטבעות, וכל משתתף מקבל 5 מטבעות עונה.</p>';
   if(!ONLINE||demo)return h+'<p class="hint" style="color:var(--bad)">האירוע הזה קיים רק במשחק המחובר לשרת.</p>';
   if(inb)return h+'<p class="hint" style="color:var(--good)">אתה בזירה'+(d.br.phase==='lobby'?' · '+L(d.br.n)+' לוחמים נרשמו':'')+'</p>'+(d.br.phase==='lobby'?'<button class="btn" style="width:100%" data-act="brLeave">צא מהזירה</button>':'');
-  if(live&&bw&&bw.phase==='sign')return h+'<button class="btn pri glow" style="width:100%" data-act="brJoin"'+(up&&SC.mode==='farm'?'':' disabled')+'>'+(up?'השתגר לזירה · ההרשמה נסגרת בעוד '+L(mmss((bw.signEnd-Date.now())/1000)):'אין חיבור חי לשרת')+'</button>';
+  {const se=brSign();if(se)return h+'<button class="btn pri glow" style="width:100%" data-act="brJoin"'+(up&&SC.mode==='farm'?'':' disabled')+'>'+(up?'השתגר לזירה · ההרשמה נסגרת בעוד '+L(mmss((se-Date.now())/1000)):'אין חיבור חי לשרת')+'</button>';}
   if(live)return h+'<p class="hint" style="color:var(--bad)">ההרשמה נסגרה. הקרב כבר התחיל.</p>';
   return h;
 }
@@ -1139,7 +1139,9 @@ let liveDuels=[];
 let mvT=0,mvLast=[0,false,1,0],ws=null,whisperTo=null,friendsOn={},whoT=0;
 const isBlocked=(k,n)=>(A&&A.blocked||[]).some(x=>x.k===k||(n&&x.n===n)),isFriend=k=>(A&&A.friends||[]).some(x=>x.k===k);
 function askWho(){const fr=A&&A.friends||[];if(fr.length&&ws&&ws.readyState===1)netSend({t:'who',ks:fr.map(f=>f.k)});}
-let brAsk=false;
+let brAsk=false,brLive=0;
+const netUp=()=>!!(ws&&ws.readyState===1);
+const brSign=()=>{const n=Date.now();if(brLive>n)return brLive;const w=ONLINE&&!demo?brWindow(n):null;return w&&w.phase==='sign'?w.signEnd:0;};
 function brJoin(){if(!(ws&&ws.readyState===1)||SC.mode!=='farm')return false;brAsk=true;netSend({t:'brJoin'});return true;}
 function netSend(m){if(ws&&ws.readyState===1)ws.send(JSON.stringify(m));}
 function netOpen(){
@@ -1167,6 +1169,11 @@ function netMsg(m){
   else if(m.t==='whisper'){const f=m.from||{},k=String(f.k||''),n=String(f.n||'').slice(0,14);if(isBlocked(k,n))return;chatLog.push({c:'p',n:n,g:'',m:String(m.m||'').slice(0,160),me:false,k:k});chatAt=Date.now();if(!(tab==='chat'&&chatCh==='p'))chatUnread++;snd('click');toast('הודעה פרטית מ-'+n);if(!whisperTo)whisperTo={k:k,n:n};const l=$('chatList');if(l&&chatCh==='p'){l.innerHTML=chatRows();l.scrollTop=l.scrollHeight;}renderChatBar();}
   else if(m.t==='whispered'){chatLog.push({c:'p',n:S.name,g:'',m:String(m.m||''),me:true,k:String(m.k||''),to:whisperTo&&whisperTo.k===m.k?whisperTo.n:''});const l=$('chatList');if(l&&chatCh==='p'){l.innerHTML=chatRows();l.scrollTop=l.scrollHeight;}}
   else if(m.t==='brLobby'){if(d&&d.br){if(d.br.phase==='lobby'){d.br.n=m.n|0;d.br.until=Date.now()+(+m.left||0);}}else if(SC.mode==='farm'&&brAsk){brAsk=false;brEnter(m.n|0,+m.left||0);}if(tab==='pass')panelDirty=true;}
+  else if(m.t==='brOpen'){const left=+m.left||0;brLive=left>0?Date.now()+left:0;if(left>0&&!m.quiet){snd('boss');announce('המעגל האחרון נפתח! השתגר לזירה תוך '+Math.round(left/1000)+' שניות',true);}if(tab==='pass')panelDirty=true;}
+  else if(m.t==='brCancel'){if(d&&d.br){d.br.res=null;brExit('ההרשמה למעגל האחרון בוטלה');}}
+  else if(m.t==='boost'){const left=+m.left||0;setBoost(left>0?{xp:m.xp,drop:m.drop,until:Date.now()+left}:null);const b=boostNow(Date.now());if(!m.quiet)announce(b?'בונוס לכולם: ניסיון ×'+b.xp+', שלל ×'+b.drop+' למשך '+Math.round(left/60000)+' דקות':'הבונוס לכולם הסתיים',true);if(tab==='pass')panelDirty=true;}
+  else if(m.t==='gmSay'){snd('boss');announce('הודעת מנהל: '+String(m.m||'').slice(0,120),true);toast('הודעת מנהל: '+String(m.m||'').slice(0,120),6);}
+  else if(m.t==='gmRes'){toast(String(m.msg||''),4);}
   else if(m.t==='brNo'){brAsk=false;toast('ההרשמה למעגל האחרון סגורה כרגע');}
   else if(m.t==='brStart')brBegin(m);
   else if(m.t==='brS')brState(m);
@@ -1225,6 +1232,7 @@ function renderHud(){
   $('rateTag').textContent=duel||zi<0?'':SC.boss?'בוס במפה':'בוס: '+(A.bossM[zi]||0)+'/'+BOSSN;
   {const left=(A.boost-Date.now())/1000,bt=left>0&&!duel?'ניסיון '+L('+50%')+' · '+mmss(left):'';if($('boostTag').dataset.t!==bt){$('boostTag').dataset.t=bt;$('boostTag').innerHTML=bt;}}
   {const kw=!duel&&!SC.ev&&S&&!demo?keepWin():null,kb=$('keepBtn');kb.style.display=kw?'':'none';if(kw){const t=(A.keys>0||(A.ev&&A.ev[kw.key]&&A.ev[kw.key].in)?'שגר למצודה':'המצודה פתוחה · אין מפתח')+' · הכניסה נסגרת בעוד '+mmss((kw.end-(kw.e.dur-KEEP_GATE)*60000-Date.now())/1000);if(kb.textContent!==t)kb.textContent=t;}}
+  {const se=!duel&&S&&!demo&&ws&&ws.readyState===1?brSign():0,bb=$('brBtn');bb.style.display=se?'':'none';if(se){const t='המעגל האחרון נפתח · השתגר לזירה · '+mmss((se-Date.now())/1000);if(bb.textContent!==t)bb.textContent=t;}}
   $('resetNow').style.display=canReset(S)&&!duel?'block':'none';
   $('autoBtn').style.display=$('skills').style.display=duel||zi<0?'none':'';$('paceTag').style.visibility=$('bigBtn').style.visibility=$('sndBtn').style.visibility=$('fsBtn').style.visibility=duel?'hidden':'';if(duel)renderDuelBar();$('mv').style.display='';$('mvU').style.display=$('mvD').style.display=duel?'':'none';$('stage').classList.toggle('duel',duel);
   $('sndBtn').textContent=prefs.mute?'צליל כבוי':'צליל פעיל';$('sndBtn').classList.toggle('on',!prefs.mute);
@@ -1327,7 +1335,8 @@ const mmss=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%
 const OBJN={k:'חיסולים',b:'בוסים',w:'ניצחונות',q:'תשובה נכונה'};
 function renderEvents(){
   const now=Date.now(),wins=evWindows(now,10),ev=A.ev||{};
-  let h='<h2>אירועים</h2><p class="hint">האירועים רצים לפי השעון, בשעון ישראל. בונוסים ומשימות נספרים רק כשמשחקים בפועל.</p>';
+  let h='';{const bo=boostNow(Date.now());if(bo)h+='<div class="card zone cur" style="display:block"><div class="kv"><b style="color:var(--gold)">בונוס לכולם פעיל</b><b class="num" style="color:var(--good)">'+L(mmss((bo.until-Date.now())/1000))+'</b></div><p class="hint">ניסיון ×'+L(bo.xp)+' · שלל ×'+L(bo.drop)+'. הופעל על ידי מנהל המשחק.</p></div>';}
+  h+='<h2>אירועים</h2><p class="hint">האירועים רצים לפי השעון, בשעון ישראל. בונוסים ומשימות נספרים רק כשמשחקים בפועל.</p>';
   for(const e of EVENTS){
     const w=wins.find(x=>x.e.id===e.id),rec=w&&ev[w.key]||{},live=w&&w.live;
     let tierLine='',tn='';
@@ -1527,6 +1536,10 @@ function accountHtml2(){
     (me.secret?'':'<p class="hint" style="color:var(--bad)">עוד לא הוגדרה שאלת שחזור. בלעדיה אי אפשר לשחזר סיסמה שנשכחה.</p>')+
     '<button class="btn'+(me.secret?'':' pri')+'" data-act="acct" data-k="secret">שאלת שחזור</button><button class="btn" data-act="acct" data-k="pass">שינוי סיסמה</button>'+
     (me.admin?'<a class="btn" href="admin.html" style="text-align:center;text-decoration:none;color:inherit">מסך ניהול</a>':'')+
+    (me.admin?'<div class="card" style="display:flex;flex-direction:column;gap:6px;border-color:var(--gold)"><b style="color:var(--gold)">כלי מנהל המשחק</b><p class="hint">רק החשבון שלך רואה את זה, והשרת בודק את ההרשאה מחדש בכל לחיצה. כל פעולה מוכרזת בצ׳אט העולמי.</p>'+
+      '<button class="btn pri" data-act="gm" data-a="br" data-sec="90">פתח את המעגל האחרון עכשיו · הרשמה 90 שניות</button><button class="btn sm" data-act="gm" data-a="br" data-sec="30">פתח לבדיקה מהירה · 30 שניות</button><button class="btn sm" data-act="gm" data-a="brStop">בטל הרשמה פתוחה</button>'+
+      '<button class="btn" data-act="gm" data-a="boost" data-xp="2" data-drop="1" data-min="60">ניסיון כפול לכולם לשעה</button><button class="btn" data-act="gm" data-a="boost" data-xp="1" data-drop="2" data-min="60">שלל כפול לכולם לשעה</button><button class="btn" data-act="gm" data-a="boost" data-xp="2" data-drop="2" data-min="30">ניסיון ושלל כפולים לחצי שעה</button><button class="btn sm" data-act="gm" data-a="boost" data-min="0">בטל בונוס</button>'+
+      '<input id="gmText" maxlength="120" placeholder="הודעה לכל המחוברים" autocomplete="off"><button class="btn" data-act="gm" data-a="say">שלח הודעה לכולם</button></div>':'')+
     '<button class="btn" data-act="logout">התנתק</button><button class="btn sm" data-act="acct" data-k="del" style="color:var(--bad)">מחיקת חשבון</button>'+
     '<p class="hint"><a href="'+PG('terms')+'" target="_blank" rel="noopener">תקנון</a> · <a href="'+PG('privacy')+'" target="_blank" rel="noopener">פרטיות</a></p></div>';
 }
@@ -1589,6 +1602,9 @@ document.addEventListener('click',async e=>{
   if(a==='respecAsk'){openModal('<h3>לאפס את נקודות הסטט?</h3><p class="hint">כל הנקודות שחילקת חוזרות אליך ואפשר לחלק אותן מחדש. המחיר: '+L(RESPEC_COST)+' אותות ריסט. יש לך '+L(A.cred)+'. ציוד שכבר לבוש נשאר עליך.'+(S.autoPts?' החלוקה האוטומטית פעילה ותחלק אותן מיד מחדש. כבה אותה קודם אם אתה רוצה לחלק לבד.':'')+'</p><div class="acts"><button class="btn" data-act="closeModal">ביטול</button><button class="btn pri" data-act="respec">אפס נקודות</button></div>');return;}
   if(a==='lang'){if(b.dataset.l!==getLang())setLang(b.dataset.l);return;}
   if(a==='emote'){const i=+b.dataset.i;if(EMO[i]){SC.hero.say={m:EMO[i],t:SC.t+3.5};netSend({t:'emote',z:SC.zi,fl:SC.fl,e:i});}return;}
+  if(a==='gm'){if(!netUp())toast('אין חיבור חי לשרת');else netSend({t:'gm',a:b.dataset.a,sec:+b.dataset.sec||0,xp:+b.dataset.xp||1,drop:+b.dataset.drop||1,min:+b.dataset.min||0,m:b.dataset.a==='say'&&$('gmText')?$('gmText').value:''});return;}
+  if(a==='brJoin'){if(!brJoin())toast('אין חיבור חי לשרת');return;}
+  if(a==='brLeave'){netSend({t:'brLeave'});const dd=SC.duel;if(dd&&dd.br){dd.br.res=null;brExit('יצאת מהזירה');}return;}
   if(a==='watch'){netSend({t:'watch',id:+b.dataset.id});return;}
   if(a==='unwatch'){netSend({t:'unwatch'});if(SC.duel&&SC.duel.spec){SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];renderDuelBar();}return;}
   if(a==='guide'){showGuide();return;}
@@ -1666,8 +1682,6 @@ document.addEventListener('click',async e=>{
     else if(a==='friend'||a==='block'){const on=b.dataset.on==='1';closeModal();r=await act(a,{k:b.dataset.k,n:b.dataset.n,on:on});if(r.ok){toast(a==='friend'?(on?b.dataset.n+' נוסף לחברים':'הוסר מהחברים'):(on?b.dataset.n+' נחסם. לא תראה הודעות ממנו':'החסימה הוסרה'));askWho();}else toast(r.msg);}
     else if(a==='report'){const why=($('repWhy')||{}).value||'';closeModal();r=await act('report',{k:b.dataset.k,n:b.dataset.n,why:why});toast(r.ok?'הדיווח נשלח. תודה':r.msg);r={ok:true};}
     else if(a==='tower'){r=await act('towerStart',{});if(r.ok)startDuel(r.pd);else toast(r.msg==='net'?'אין חיבור לשרת':r.msg);}
-    else if(a==='brJoin'){if(!brJoin())toast('אין חיבור חי לשרת');r={ok:true};}
-    else if(a==='brLeave'){netSend({t:'brLeave'});const dd=SC.duel;if(dd&&dd.br){dd.br.res=null;brExit('יצאת מהזירה');}r={ok:true};}
     else if(a==='pvpYes'||a==='pvpNo'){closeModal();netSend({t:'answer',id:+b.dataset.id,ok:a==='pvpYes'});r={ok:true};}
     else if(a==='pinvite'){closeModal();try{const j=await rpc('say',{m:b.dataset.n+', בוא לפארטי שלי. הקוד: '+party.code,g:false});toast(j&&j.result&&j.result.ok?'ההזמנה נשלחה בצ\'אט':'ההזמנה לא נשלחה');beatT=99;}catch(e){}r={ok:true};}
     else if(a==='reroll'){loadArena();}
