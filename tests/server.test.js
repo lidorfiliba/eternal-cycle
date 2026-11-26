@@ -320,3 +320,19 @@ test('daily backup: a snapshot of the accounts, and one account put back from it
   await handle(bu,'abackup',{});assert.equal((await db.query('select count(*)::int c from backups')).rows[0].c,1,'one snapshot a day');
   const snap=(await db.query("select data from backups")).rows[0].data;assert.ok(snap.users.length===2&&snap.settings&&snap.orders);
 });
+test('world boss: everyone\'s kills take from one health pool, and each collects once by share',async()=>{
+  const {db,handle,clock,poke}=await world();
+  for(const [u,n] of [[U(1),'חזק'],[U(2),'חלש']]){await handle(u,'create',{name:n,cls:'blade'});await handle(u,'travel',{z:0});}
+  await poke(U(1),s=>{s.chars[0].stats.str=6000;s.chars[0].stats.vit=3000;s.chars[0].autoPts=false;});
+  assert.equal((await handle(U(1),'claimWorld',{})).result.ok,false,'nothing to collect before any opening');
+  clock.add(165*60+30);for(const u of [U(1),U(2)])await handle(u,'tick',{z:0,kills:0}); // 12:45 Israel time: the boss is up
+  let w1,w2;for(let i=0;i<6;i++){clock.add(15);w1=(await handle(U(1),'tick',{z:0,kills:30})).world;w2=(await handle(U(2),'tick',{z:0,kills:30})).world;}
+  assert.ok(w1&&w2,'ticks report the fight');assert.equal(w2.n,2);assert.ok(w2.hp<w2.max);assert.ok(w1.mine>w2.mine*2,'the stronger player hits harder: '+w1.mine+' vs '+w2.mine);assert.equal(w2.top[0].n,'חזק');
+  assert.equal((await handle(U(1),'claimWorld',{})).result.msg,'הקרב עוד לא נגמר');
+  const g=await handle(U(2),'wget',{});assert.equal(g.world.hp,w2.hp);
+  await db.query("update world_boss set hp=0, killed_at=now()");
+  const c1=await handle(U(1),'claimWorld',{});assert.ok(c1.result.ok,c1.result.msg);assert.equal(c1.result.rank,1);assert.equal(c1.state.feathers,3);
+  assert.equal((await handle(U(1),'claimWorld',{})).result.msg,'הפרס כבר נאסף');
+  const c2=await handle(U(2),'claimWorld',{});assert.ok(c2.result.ok);assert.equal(c2.result.rank,2);assert.ok(c2.result.share<.5);
+  assert.equal((await handle(U(3),'claimWorld',{})).result.ok,false);
+});

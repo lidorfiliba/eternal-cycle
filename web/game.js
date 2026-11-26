@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126164912';
-const {RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126165410';
+const {worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -22,7 +22,7 @@ function toast(txt,r){if(demo||!txt)return;const d=document.createElement('div')
 function setNet(ok){$('net').textContent=ONLINE?(ok?'מחובר לשרת':'אין חיבור לשרת'):'מצב מקומי, בלי הגנה';}
 
 // In online mode the server owns the account; the client only asks and displays.
-let session=null,chain=Promise.resolve(),players=[],market=[],party={code:'',members:[]},partyN=0,auras=[];
+let world=null,worldAt=0,session=null,chain=Promise.resolve(),players=[],market=[],party={code:'',members:[]},partyN=0,auras=[];
 // Online accounts: username + password. After sign-in the server hands back a signed session token kept in this browser.
 const SKEY='eternal-cycle-session';
 function initServer(){
@@ -46,7 +46,7 @@ function send(kind,args){
   const run=async()=>{
     if(!ONLINE){const r=apply(A,kind,args,{});S=A.chars[A.cur]||S;touch();localDirty=true;return r;}
     const j=await rpc(kind,args);
-    if(j.state)setState(j.state);if(j.players)players=j.players;if(j.market){market=j.market;panelDirty=true;}if(j.party){party=j.party;panelDirty=true;}if(j.guild){guild=j.guild;panelDirty=true;}if(j.top){topList=j.top;panelDirty=true;}if(j.banned)showBanned(j.result&&j.result.msg);
+    if(j.state)setState(j.state);if(j.world)world=j.world;if(j.players)players=j.players;if(j.market){market=j.market;panelDirty=true;}if(j.party){party=j.party;panelDirty=true;}if(j.guild){guild=j.guild;panelDirty=true;}if(j.top){topList=j.top;panelDirty=true;}if(j.banned)showBanned(j.result&&j.result.msg);
     setNet(true);return j.result||{ok:false,msg:j.error||''};
   };
   const p=chain.then(run);chain=p.catch(()=>{});
@@ -768,6 +768,8 @@ function drawWorld(){
   drawFx(SC.dt);ctx.restore();
   if(window.EC&&window.EC.gallery)window.EC.gallery(drawHero,ctx); // debug hook for looking at gear art
   if(SC.boss){hpBar(W*.2,92,W*.6,SC.boss.hp/SC.boss.max,'#ff5c7a','בוס: '+monName(zi,SC.ev?0:SC.fl));}
+  {const ww=worldWin();if(ww&&world&&world.key===ww.key&&zi>=0){const y=SC.boss?124:92,tot=world.max-world.hp;
+    hpBar(W*.14,y,W*.72,world.hp/world.max,world.dead?'#6fe39a':'#c56bff',world.dead?'בוס העולם הובס!':'בוס העולם · '+world.n+' לוחמים · החלק שלך '+(tot>0?Math.round(world.mine/tot*100):0)+'%');}}
 }
 
 /* ---------- arena duel ---------- */
@@ -784,6 +786,20 @@ function paceTick(){
   const el=$('paceTag');if(el.dataset.t!==t){el.dataset.t=t;el.innerHTML=t;}el.style.display=t?'':'none';
 }
 // The side quest picked up on the road, if there is one.
+// The world boss: one health bar for the whole server.
+const worldWin=()=>evWindows(Date.now(),0).find(w=>w.e.world&&w.live);
+function loadWorld(){if(!ONLINE||demo||Date.now()-worldAt<8000)return;worldAt=Date.now();rpc('wget',{}).then(j=>{if(j&&j.world!==undefined){world=j.world;panelDirty=true;}}).catch(()=>{});}
+function worldCard(w,live){
+  if(!ONLINE)return '<p class="hint">בוס העולם קיים רק במצב מקוון.</p>';
+  if(!world||!w||world.key!==w.key)return live?'<p class="hint">טוען את מצב הקרב...</p>':'';
+  const tot=world.max-world.hp,sh=tot>0?world.mine/tot:0,over=!live||world.dead,rank=world.top.findIndex(t=>t.d<=world.mine)+1;
+  let h='<div class="bar'+(world.dead?' gold':'')+'" style="margin:8px 0 6px"><i style="width:'+(world.hp/world.max*100)+'%;background:#c56bff"></i></div><div class="kv"><span>'+(world.dead?'הבוס הובס':'חיים')+'</span><b class="num">'+L(fmt(Math.round(world.hp))+'/'+fmt(Math.round(world.max)))+'</b></div>'+
+    '<div class="kv"><span>החלק שלך בנזק</span><b class="num" style="color:var(--gold)">'+L(Math.round(sh*100)+'%')+'</b></div>'+
+    world.top.map((t,i)=>'<div class="kv"><span>'+L(i+1)+'. '+esc(t.n)+'</span><b class="num">'+L(fmt(Math.round(t.d)))+'</b></div>').join('')+
+    '<p class="hint">מקום ראשון: 3 נוצות נצח, 2 תיבות עונה, 30 מטבעות. מ-10% מהנזק: 2 נוצות, תיבת עונה, 20 מטבעות. מ-1%: נוצה ו-10 מטבעות. אם הבוס שורד, מקבלים רק מטבעות.</p>';
+  if(over&&world.mine>0)h+='<button class="btn pri glow" style="width:100%" data-act="claimWorld">אסוף פרס</button>';
+  return h;
+}
 function sideCard(){
   const q=A.sq;if(!q)return '<h2>משימת צד</h2><p class="hint">אין כרגע. משימות צד צצות מדי פעם תוך כדי לחימה במפות, מרמה 20.</p>';
   const d=SIDEQ[q.i],left=Math.max(0,(q.until-Date.now())/1000);
@@ -1041,7 +1057,7 @@ function renderEvents(){
         tierLine='<div class="tiers">'+TIER_MIN.map((m,i)=>'<i class="'+(i+1===t?'on':i+1<t?'past':'')+'">'+(i+1)+'</i>').join('')+'</div><p class="hint"><b style="color:var(--gold)">דרגה '+L(t)+'</b> · רמות '+L(rg[0]+'-'+rg[1])+' · פרס: '+L(rw.lv)+' רמות, '+L(rw.gems)+' אבני נשמה, '+L(rw.coins)+' מטבעות עונה</p>'+
           (nx<=7&&!rec.tr?'<p class="hint" style="color:#8fd3ff">עוד '+L(TIER_MIN[nx-1]-S.lvl)+' רמות לדרגה '+L(nx)+', שנותנת '+L(tierReward(nx).lv)+' רמות. תגיע לפני שהשער נפתח.</p>':'');}}
     h+='<div class="card'+(live?' zone cur':'')+'" style="display:block"><div class="kv"><b'+(live?' style="color:var(--gold)"':'')+'>'+e.n+tn+'</b><b class="num" style="color:var(--'+(live?'good':'dim')+')">'+(live?'פעיל · '+L(mmss((w.end-now)/1000)):'בעוד '+fmtT(evNext(e,now)))+'</b></div>'+
-      '<p class="hint">'+e.d+' · '+e.when+(e.rt&&!e.tiered?' · פרס: '+e.rt:'')+'</p>'+tierLine+(e.tiered?keepCard(e,w,rec,live):'');
+      '<p class="hint">'+e.d+' · '+e.when+(e.rt&&!e.tiered?' · פרס: '+e.rt:'')+'</p>'+tierLine+(e.tiered?keepCard(e,w,rec,live):'')+(e.world?worldCard(w,live):'');
     if(w&&e.obj){
       const have=Math.min(rec[e.obj[0]]||0,e.obj[1]),done=have>=e.obj[1];
       if(e.id==='quiz'&&live&&!rec.t){const q=quizFor(w.key);h+='<p style="margin:8px 0 6px;font-weight:700">'+q.q+'</p><div class="grid2">'+q.o.map((o,i)=>'<button class="btn sm" data-act="answer" data-i="'+i+'">'+L(o)+'</button>').join('')+'</div>';}
@@ -1176,7 +1192,7 @@ async function checkVersion(){
   try{await Promise.all(['./','index.html','game.js','core.js','config.js'].map(u=>fetch(u,{cache:'reload'}).catch(()=>null)));}catch(e){}
   location.reload();
 }
-setInterval(paceTick,5000);setInterval(checkVersion,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(checkVersion,1500);});setTimeout(checkVersion,8000);
+setInterval(paceTick,5000);setInterval(()=>{if(worldWin()||(tab==='pass'&&evWindows(Date.now(),60).some(w=>w.e.world)))loadWorld();},10000);setInterval(checkVersion,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(checkVersion,1500);});setTimeout(checkVersion,8000);
 
 /* ---------- full screen and installing as an app ---------- */
 const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement,fsCan=!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);
@@ -1350,6 +1366,7 @@ document.addEventListener('click',async e=>{
     else if(a==='exAdd'){const id=+b.dataset.id;r=await act('exAdd',{id:id});if(r.ok){snd('rare');toast(r.full?'הפריט הגיע לאקסלנט מלא':'נוספה אופציה: '+AFF[r.opt[0]][0]+' '+r.opt[1]+'%',4);openSheet(id);}}
     else if(a==='claimLogin'){r=await act('claimLogin',{});if(r.ok){snd('rare');closeModal();toast('פרס יום '+r.day+': '+r.t);}}
     else if(a==='claimTask'){r=await act('claimTask',{k:b.dataset.k});if(r.ok){snd('coin');toast(r.rt?'קיבלת '+r.rt:r.xp+' ניסיון לפס');}}
+    else if(a==='claimWorld'){r=await act('claimWorld',{});if(r.ok){snd('rare');toast('בוס העולם: מקום '+r.rank+'. קיבלת '+r.rt,4);if(world)world.mine=0;}else toast(r.msg);}
     else if(a==='claimWeek'){r=await act('claimWeek',{k:b.dataset.k});if(r.ok){snd('rare');toast('פרס שבועי: '+r.rt,4);}}
     else if(a==='sqClaim'){r=await act('sqClaim',{});if(r.ok){snd('rare');toast('משימת הצד הושלמה. הפרס אצלך',4);}}
     else if(a==='sqDrop'){r=await act('sqDrop',{});}

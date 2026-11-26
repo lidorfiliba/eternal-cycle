@@ -324,6 +324,13 @@ function passReward(lv){
 }
 const passLevel=s=>Math.min(PASS_MAX,Math.floor(s.pass.xp/PASS_STEP));
 const RESPEC_COST=15;
+// The world boss: health per player around when the first blow lands, and what a share of the damage is worth.
+const WORLD_BASE=120000;
+function worldReward(share,rank,killed){
+  if(!killed)return {coins:3+Math.round(share*20)};
+  if(rank===1)return {feathers:3,sboxes:2,coins:30};if(share>=.1)return {feathers:2,sboxes:1,coins:20};if(share>=.01)return {feathers:1,coins:10};return {coins:5};
+}
+const rewardText=r=>[r.feathers?r.feathers+' נוצות נצח':'',r.sboxes?r.sboxes+' תיבות עונה':'',r.coins?r.coins+' מטבעות עונה':''].filter(Boolean).join(', ');
 const TASKS=[{k:'kills',n:1500,t:'חסל 1,500 מפלצות',xp:60},{k:'resets',n:1,t:'בצע ריסט',xp:100},{k:'wins',n:2,t:'נצח 2 קרבות זירה',xp:60},{k:'ups',n:3,t:'נסה 3 שדרוגים',xp:40},
   {k:'boss',n:3,t:'הבס 3 בוסים',xp:0,rw:{gems:6},rt:'6 אבני נשמה'},{k:'ev',n:2,t:'אסוף פרס מ-2 אירועים',xp:0,rw:{coins:12},rt:'12 מטבעות עונה'},{k:'big',f:'kills',n:6000,t:'חסל 6,000 מפלצות',xp:0,rw:{boxes:1,gold:3000},rt:'תיבת אוצר ו-3,000 זהב'}];
 // Weekly tasks: larger, for the week (Sunday to Saturday, Israel time), paid in what the long chase needs.
@@ -465,6 +472,7 @@ const EVENTS=[
  {id:'crimson',n:'מצודת הארגמן',d:'נחיל אדיר של מפלצות. הכניסה עם מפתח, רק ב-3 הדקות הראשונות. חסל 400 לפני שהמצודה נסגרת. שבע דרגות לפי רמה',when:'כל שעה עגולה',every:60,at:0,dur:12,obj:['k',400],tiered:1,rw:{lv:4,gems:3,coins:5},rt:'לפי הדרגה'},
  {id:'square',n:'כיכר התוהו',d:'ניסיון כפול לכולם. חסל 150 מפלצות לפרס',when:'כל שעתיים, בחצי',every:120,at:30,dur:15,mod:{xp:2},obj:['k',150],rw:{lv:6,boxes:1},rt:'6 רמות ותיבת אוצר'},
  {id:'invasion',n:'פלישת הזהב',d:'זהב כפול מכל מפלצת. חסל 60 לפרס',when:'כל שעה, ב-20',every:60,at:20,dur:8,mod:{gold:2},obj:['k',60],rw:{gems:2,coins:4},rt:'2 אבני נשמה ו-4 מטבעות עונה'},
+ {id:'world',n:'בוס העולם',d:'בוס אחד לכל השרת. כל חיסול שלך, בכל מפה, פוגע בו, לפי הכוח שלך. הפרס לפי החלק שלך בנזק',when:'כל שלוש שעות, ב-45',every:180,at:45,dur:12,world:1,rt:'נוצות נצח, תיבות עונה ומטבעות'},
  {id:'rift',n:'קרע המעמקים',d:'סיכוי השלל גדל בחצי. חסל 70 לפרס',when:'כל שעה, ב-33',every:60,at:33,dur:8,mod:{drop:1.5},obj:['k',70],rw:{boxes:1},rt:'תיבת אוצר'},
  {id:'storm',n:'טירת הסערה',d:'הבס בוס מפה בזמן האירוע',when:'כל שעה, רבע לפני',every:60,at:45,dur:10,obj:['b',1],rw:{sboxes:1,gems:2},rt:'תיבת עונה ו-2 אבני נשמה'},
  {id:'quiz',n:'חידון המעגל',d:'שאלה אחת על המשחק, ניסיון אחד',when:'כל שלוש שעות, ורבע',every:180,at:15,dur:6,obj:['q',1],rw:{gems:4,coins:6},rt:'4 אבני נשמה ו-6 מטבעות עונה'},
@@ -623,6 +631,7 @@ function apply(A,kind,args,ctx){
       {const sh=Math.max(0,Math.min(Number(ctx.shareXp)||0,5e7));if(sh>0){r.shared=Math.round(sh);rep.levels=(rep.levels||0)+addXp(S,sh);}} // from party members' kills here; the server supplies it
       r.base=k*zd.xp;
       if(k>0){const l0=S.lvl;A.allow-=k;rep.levels=(rep.levels||0)+addXp(S,k*zd.xp*c.xpM*pb);rollLoot(S,z,k,c,rep);evAdd(A,now,'k',k,inEv);ensureWeek(A);
+        {const ww=evWindows(now,0).find(w=>w.e.world);if(ww)r.world={key:ww.key,dmg:Math.round(k*Math.sqrt(Math.max(1,c.power)))};}
         if(!inEv){sideAdd(A,'hunt',z,k,now,r);if(rep.notable)sideAdd(A,'rare',z,rep.notable.length,now,r);
           if(!A.sq&&S.lvl>=20&&now-(A.sqAt||0)>25*60000&&_rnd()<k*.0009){A.sqAt=now;r.sqNew=sideOffer(A,z,now);}}
         if(!A.bossAt&&!inEv){A.bossM[z]=(A.bossM[z]||0)+k;if(A.bossM[z]>=BOSSN){A.bossM[z]=0;A.bossAt={z:z,t:now};}}}
@@ -695,6 +704,7 @@ function apply(A,kind,args,ctx){
     case 'claimLogin':{const lg=A.login;if(!lg||lg.got)return fail('את הפרס של היום כבר אספת');const day=clamp(lg.s|0,1,7),rw=LOGIN_RW[day-1];lg.got=1;
       A.gems+=rw.gems||0;A.boxes+=rw.boxes||0;A.sboxes+=rw.sboxes||0;A.coins+=rw.coins||0;A.charms+=rw.charms||0;if(rw.boost)A.boost=Math.max(A.boost,now)+18e5;r.t=rw.t;r.day=day;break;}
     case 'claimTask':{const t=TASKS.find(x=>x.k===args.k);if(!t||(A.daily[t.f||t.k]||0)<t.n||A.daily.done[t.k])return fail('המשימה לא הושלמה');A.daily.done[t.k]=1;A.pass.xp+=t.xp;r.xp=t.xp;if(t.rw){give(A,S,t.rw);r.rt=t.rt;}break;}
+    case 'claimWorld':{const w=ctx.wshare;if(!w)return fail('אין פרס לאסוף');const rw=worldReward(Math.max(0,Math.min(1,+w.share||0)),w.rank|0,!!w.killed);give(A,S,rw);bump(A,'ev',1);r.rt=rewardText(rw);r.rank=w.rank|0;r.share=+w.share||0;break;}
     case 'claimWeek':{const w=ensureWeek(A),t=WEEKLY.find(x=>x.k===args.k);if(!t||(w[t.k]||0)<t.n||w.done[t.k])return fail('המשימה לא הושלמה');w.done[t.k]=1;give(A,S,t.rw);A.pass.xp+=120;r.rt=t.rt;break;}
     case 'sqClaim':{const q=A.sq;if(!q||!q.done)return fail('אין משימת צד שהושלמה');const rw=SIDEQ[q.i].rw(q.m);give(A,S,rw);A.sq=null;A.sqN=(A.sqN||0)+1;r.rw=rw;break;}
     case 'sqDrop':{A.sq=null;break;}
@@ -740,4 +750,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

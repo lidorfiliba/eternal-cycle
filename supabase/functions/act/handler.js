@@ -51,6 +51,11 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
       const r = await admin.rpc("beat", { p_user: uid, p_x: Math.round(Number(args.x)) || 0, p_face: Number(args.f) < 0 ? -1 : 1, p_act: !!args.a, p_since: Math.max(0, Math.floor(Number(args.s)) || 0) });
       return { beat: r.data || {} };
     }
+    if (kind === "wget") { // where the world boss stands: the live opening, or the one that just ended
+      const w = G.evWindows(clock(), 60).find((x) => x.e.world); if (!w) return { world: null };
+      const r = await admin.rpc("world_hit", { p_user: uid, p_key: w.key, p_name: "", p_dmg: 0, p_base: G.WORLD_BASE });
+      return { world: r.error ? null : r.data };
+    }
     if (kind === "say") {
       const r = await admin.rpc("chat_say", { p_user: uid, p_guild: !!args.g, p_msg: String(args.m == null ? "" : args.m).slice(0, 300) });
       return { result: r.error ? { ok: false, msg: errMsg(r) } : { ok: true } };
@@ -92,7 +97,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
       if (r.error) return { result: { ok: false, msg: errMsg(r) } };
       return { result: { ok: true }, admin: (await admin.rpc("admin_view", { p_user: uid })).data };
     }
-    let guildMade = false, shareXp = 0;
+    let guildMade = false, shareXp = 0, wclaim = null;
     for (let attempt = 0; attempt < 4; attempt++) {
       const now = clock();
       const { data: row, error } = await admin.from("accounts").select("state,version,calls,calls_at,banned_until,pw_at").eq("user_id", uid).maybeSingle();
@@ -175,6 +180,15 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
       const ctx = { uid };
       let players = null;
       if (kind === "opps") { players = await board(uid); ctx.players = players; }
+      if (kind === "claimWorld") { // the share is read, and marked collected, once; a retried save reuses it
+        if (!wclaim) { const w = G.evWindows(now, 60).find((x) => x.e.world); if (!w) return { result: { ok: false, msg: "אין בוס עולם לאסוף ממנו" }, state: row.state };
+          const st = await admin.rpc("world_hit", { p_user: uid, p_key: w.key, p_name: "", p_dmg: 0, p_base: G.WORLD_BASE });
+          if (w.live && !(st.data && st.data.dead)) return { result: { ok: false, msg: "הקרב עוד לא נגמר" }, state: row.state };
+          const c = await admin.rpc("world_claim", { p_user: uid, p_key: w.key });
+          if (c.error) return { result: { ok: false, msg: /claimed/.test(String(c.error.message)) ? "הפרס כבר נאסף" : "לא השתתפת בקרב הזה" }, state: row.state };
+          wclaim = c.data; }
+        ctx.wshare = wclaim;
+      }
       if (kind === "duelStart" && typeof args.k === "string" && /^[0-9a-f]{10}$/.test(args.k)) { // challenge someone seen on the map
         const { data } = await admin.from("arena").select("user_id,snap").order("seen_at", { ascending: false }).limit(300);
         for (const row of data || []) { if (row.user_id !== uid && (await peerKey(row.user_id)) === args.k) { ctx.target = G.cleanPlayer(row.user_id, row.snap); break; } }
@@ -213,6 +227,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
       }
       const out = { result: r, state: next };
       if (kind === "tick" && r.kills > 0 && r.partyN > 0 && r.base > 0) await admin.rpc("party_share_add", { p_user: uid, p_zone: Math.floor(Number(args.z)), p_xp: Math.round(r.base * G.PARTY_SHARE), p_lvl: A.chars[A.cur].lvl });
+      if (kind === "tick" && r.world && r.world.dmg > 0) { const ch = A.chars[A.cur]; const wh = await admin.rpc("world_hit", { p_user: uid, p_key: r.world.key, p_name: ch ? ch.name : "", p_dmg: r.world.dmg, p_base: G.WORLD_BASE }); if (!wh.error) out.world = wh.data; }
       if (kind === "tick" && r.kills > 0) await admin.rpc("guild_tick", { p_user: uid, p_kills: r.kills, p_siege: G.siegeInfo(now).on, p_key: G.siegeInfo(now).key });
       if (kind === "tick" && r.claimed > r.kills + 5) {
         const detail = { claimed: r.claimed, allowed: r.kills, z: args.z };
