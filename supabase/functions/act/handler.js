@@ -53,6 +53,15 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
       const r = await admin.rpc("chat_say", { p_user: uid, p_guild: !!args.g, p_msg: String(args.m == null ? "" : args.m).slice(0, 300) });
       return { result: r.error ? { ok: false, msg: errMsg(r) } : { ok: true } };
     }
+    if (kind === "top") { // the leaderboard: top 20 by resets (then level) and by fighting power
+      const list = async (col) => ((await admin.from("arena").select("user_id,snap,resets,power").order(col, { ascending: false }).limit(40)).data || []).map((r) => {
+        const c = G.cleanPlayer(r.user_id, r.snap);
+        return { n: c.n, c: c.c, l: c.l, r: Number(r.resets) || 0, p: Number(r.power) || c.p, me: r.user_id === uid };
+      });
+      const byResets = (await list("resets")).sort((a, b) => b.r - a.r || b.l - a.l || b.p - a.p).slice(0, 20);
+      const byPower = (await list("power")).sort((a, b) => b.p - a.p || b.r - a.r).slice(0, 20);
+      return { result: { ok: true }, top: { resets: byResets, power: byPower } };
+    }
     if (kind === "aview") { const r = await admin.rpc("admin_view", { p_user: uid }); return r.error ? { result: { ok: false, msg: errMsg(r) } } : { result: { ok: true }, admin: r.data }; }
     if (kind === "aact") {
       const r = await admin.rpc("admin_act", { p_user: uid, p_action: String(args.action || "").slice(0, 12), p_target: String(args.target || "").slice(0, 64), p_hours: Math.floor(Number(args.hours)) || 24 });

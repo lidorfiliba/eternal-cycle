@@ -248,3 +248,14 @@ test('recovery question, password change, account deletion, admin tools',async()
   assert.equal((await auth.delacct(s1.uid,'wrong')).ok,false);assert.ok((await auth.delacct(s1.uid,tmp.temp)).ok);
   assert.equal((await db.query("select count(*)::int c from users where username='dana'")).rows[0].c,0);assert.equal((await handle(s1.uid,'sync',{})).result.msg,'new');
 });
+
+test('leaderboard: top players by resets then level, and by power, without account ids',async()=>{
+  const {db,handle,poke}=await world();
+  for(const [i,n] of [[1,'א'],[2,'ב'],[3,'ג']])await handle(U(i),'create',{name:n,cls:'blade'});
+  await db.query("update arena set resets=5,power=100,snap=jsonb_set(snap,'{l}','120') where user_id=$1",[U(1)]);
+  await db.query("update arena set resets=5,power=900,snap=jsonb_set(snap,'{l}','300') where user_id=$1",[U(2)]);
+  await db.query("update arena set resets=1,power=5000 where user_id=$1",[U(3)]);
+  const r=await handle(U(1),'top',{});assert.ok(r.result.ok);
+  assert.deepEqual(r.top.resets.map(x=>x.n),['ב','א','ג'],'same resets: the higher level leads');assert.deepEqual(r.top.power.map(x=>x.n),['ג','ב','א']);
+  assert.equal(r.top.resets[1].me,true);assert.equal(r.top.resets[0].me,false);assert.ok(!JSON.stringify(r).includes(U(2)));
+});

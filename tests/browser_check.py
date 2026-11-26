@@ -9,6 +9,7 @@ window.EC_MOCK=async(kind,args)=>{const G=await import('./core.js');await new Pr
   if(kind==='mget')return {result:{ok:true},market:[]};
   if(kind==='beat')return {beat:{peers:[{k:'abc123',s:{n:'שחקן אחר',c:'storm',l:44,r:2,w:[5,3,11,0]},x:520,f:-1,a:true,g:'AB'}],chat:(args.s?[]:[{i:1,c:'w',n:'דנה',g:'AB',m:'מישהו בא לבוס?',me:false}]),online:7}};
   if(kind==='say')return {result:{ok:true}};
+  if(kind==='top'){const mk=(n,c,l,r,p,me)=>({n,c,l,r,p,me});const L=[mk('דרקון',"storm",400,31,980000),mk('שירה',"hunter",388,16,410000),mk('אבי',"blade",350,8,220000),mk('נועה',"storm",301,3,90000),mk('בודק',"blade",3,0,111,true),mk('תום',"hunter",12,0,300)];return {result:{ok:true},top:{resets:L,power:L}};}
   if(kind==='gget')return {result:{ok:true},guild:{mine:null,top:[{name:'נשרים',tag:'NS',lvl:3,n:4,siege:120,castle:true}],holder:{name:'נשרים',tag:'NS'}}};
   if(kind[0]==='p'&&kind!=='pt')return {result:{ok:true},party:{code:kind==='pleave'?'':'AB12CD',members:[{n:'בודק',c:'blade',l:3,r:0,zone:0,active:true,me:true,leader:true},{n:'חבר',c:'storm',l:9,r:1,zone:0,active:true,me:false,leader:false}]}};
   if(!sv.db){if(kind!=='create')return {result:{ok:false,msg:'new'},state:null};const A=G.newAccount();const r=G.apply(A,'create',args,{});if(r.ok)sv.db=JSON.stringify(A);return {result:r,state:JSON.parse(sv.db)};}
@@ -19,7 +20,8 @@ async def run(pg,online):
     await pg.route('**/config.js',lambda r:r.fulfill(body=MOCK if online else 'window.EC_CONFIG={};',content_type='application/javascript'))
     await pg.goto('http://127.0.0.1:8765/index.html');await pg.wait_for_timeout(900)
     await pg.fill('#nm','בודק');await pg.click('[data-act=create]');await pg.wait_for_timeout(600)
-    out={'mode':'online-mock' if online else 'local','net':await pg.inner_text('#net'),'created':await pg.evaluate("()=>!EC.demo&&EC.S.name")}
+    login=await pg.evaluate("()=>{const b=document.querySelector('#modal.on [data-act=claimLogin]');if(b)b.click();return !!b}");await pg.wait_for_timeout(400)
+    out={'mode':'online-mock' if online else 'local','loginReward':[login,await pg.evaluate("()=>EC.A.login&&EC.A.login.got")],'net':await pg.inner_text('#net'),'created':await pg.evaluate("()=>!EC.demo&&EC.S.name")}
     box=await pg.eval_on_selector('#mvR','e=>{const r=e.getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2]}')
     await pg.mouse.move(box[0],box[1]);await pg.mouse.down();await pg.wait_for_timeout(6500);await pg.mouse.up()
     await pg.wait_for_timeout(16000)

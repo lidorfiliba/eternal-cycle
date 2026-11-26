@@ -6,7 +6,7 @@ function run(cls,rate,resets=2,log=false){
   while(out.length<resets&&guard++<200000){
     const S=A.chars[A.cur];
     // best zone/floor
-    let bz=0,bf=0;for(let z=0;z<G.ZONES.length;z++)for(let f=0;f<G.FLOORS;f++)if(G.canFloor(S,z,f)){ // prefer highest xp per second
+    let bz=0,bf=0,bx=0;for(let z=0;z<G.ZONES.length;z++)for(let f=0;f<G.FLOORS;f++)if(G.canFloor(S,z,f)){ // prefer highest xp per second
       bz=z;bf=f;}
     if(S.zone!==bz||(S.floor|0)!==bf)G.apply(A,'travel',{z:bz,f:bf},{});
     const kps=G.maxKps(S,bz)*rate;now+=8000;
@@ -26,7 +26,7 @@ if(process.argv[2])run(process.argv[2],.6,1,true);
 { // milestones at a realistic pace
   for(const c of ['blade','storm','hunter']){let now=1.8e12,seed=7;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};G.setEnv(rnd,()=>now);const A=G.newAccount();G.apply(A,'create',{name:'s',cls:c},{});
   const marks=[20,60,110,180,260,400],got=[];let t0=now,g=0,res=[];
-  while(res.length<3&&g++<400000){const S=A.chars[0];let bz=0,bf=0;for(let z=0;z<G.ZONES.length;z++)for(let f=0;f<G.FLOORS;f++)if(G.canFloor(S,z,f)){bz=z;bf=f;}
+  while(res.length<3&&g++<400000){const S=A.chars[0];let bz=0,bf=0,bx=0;for(let z=0;z<G.ZONES.length;z++)for(let f=0;f<G.FLOORS;f++)if(G.canFloor(S,z,f)&&G.zs(z,f).xp>=bx){bx=G.zs(z,f).xp;bz=z;bf=f;}
     if(S.zone!==bz||(S.floor|0)!==bf)G.apply(A,'travel',{z:bz,f:bf},{});const kps=Math.min(G.maxKps(S,bz)*.7,.55);now+=8000;
     let boss=false;if(A.bossAt&&A.bossAt.z===bz&&(now-A.bossAt.t)/1000>=G.zs(bz,bf).hp*30/(G.calc(S).dps*1.4))boss=true;
     G.apply(A,'tick',{z:bz,f:bf,kills:Math.floor(kps*8+rnd()),boss,casts:1},{});if(A.boxes>0)G.apply(A,'openBox',{k:''},{});if(S.eq.w)G.apply(A,'upgrade',{id:S.eq.w.id},{});G.apply(A,'claimQuest',{},{});

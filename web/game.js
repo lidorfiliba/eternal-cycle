@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126125651';
-const {AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126131016';
+const {LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -46,7 +46,7 @@ function send(kind,args){
   const run=async()=>{
     if(!ONLINE){const r=apply(A,kind,args,{});S=A.chars[A.cur]||S;touch();localDirty=true;return r;}
     const j=await rpc(kind,args);
-    if(j.state)setState(j.state);if(j.players)players=j.players;if(j.market){market=j.market;panelDirty=true;}if(j.party){party=j.party;panelDirty=true;}if(j.guild){guild=j.guild;panelDirty=true;}if(j.banned)showBanned(j.result&&j.result.msg);
+    if(j.state)setState(j.state);if(j.players)players=j.players;if(j.market){market=j.market;panelDirty=true;}if(j.party){party=j.party;panelDirty=true;}if(j.guild){guild=j.guild;panelDirty=true;}if(j.top){topList=j.top;panelDirty=true;}if(j.banned)showBanned(j.result&&j.result.msg);
     setNet(true);return j.result||{ok:false,msg:j.error||''};
   };
   const p=chain.then(run);chain=p.catch(()=>{});
@@ -609,6 +609,7 @@ cv.addEventListener('pointerdown',e=>{
   h.tgt=null;h.goal=null;h.tx=null;
   if(py>g0-170){
     for(const m of alive())if(Math.abs(wx-m.x)<(m.boss?60:32)&&py>g0-(m.boss?170:95)){h.tgt=m;return;}
+    for(const p of peers)if(Math.abs(wx-p.x)<26&&py>g0-120){showPeer(p);return;}
     if(SC.zi<0)for(const n of NPCS)if(Math.abs(wx-n.x)<32){h.tx=n.x-60;h.goal={npc:n};return;}
     if(SC.zi>=0&&Math.abs(wx-50)<42){h.tx=60;h.goal={dir:-1};return;}
     if(portalState(1)&&Math.abs(wx-(mapW()-50))<42){h.tx=mapW()-60;h.goal={dir:1};return;}
@@ -720,7 +721,7 @@ function renderHud(){
   else{let best=null,bt=1e9;for(const e of EVENTS){const t=evNext(e,now);if(t<bt){bt=t;best=e;}}chip='הבא: '+best.n+' בעוד '+fmtT(bt);}
   ec.style.display=duel?'none':'';ec.textContent=evReady?'פרס אירוע מחכה לך':chip;ec.classList.toggle('done',evReady);ec.classList.toggle('live',!!lv1);
   if(passSeen<0)passSeen=passLevel(S);else if(passLevel(S)>passSeen){passSeen=passLevel(S);announce('פס העונה: רמה '+passSeen+'! '+passReward(passSeen).t+' מחכה לך',true);panelDirty=true;}
-  const plv=passLevel(S),pb=evReady||plv>A.pass.claimed||TASKS.some(t=>A.daily[t.k]>=t.n&&!A.daily.done[t.k]);
+  const plv=passLevel(S),pb=evReady||(A.login&&!A.login.got)||plv>A.pass.claimed||TASKS.some(t=>A.daily[t.k]>=t.n&&!A.daily.done[t.k]);
   const bt=document.querySelector('#tabs [data-tab=pass]');let b=bt.querySelector('.badge');if(pb&&!b){b=document.createElement('i');b.className='badge';bt.appendChild(b);}else if(!pb&&b)b.remove();
 }
 function renderChar(){
@@ -739,7 +740,7 @@ function renderChar(){
     '<button class="btn sm" data-act="pt" data-k="'+k+'" data-n="10"'+(S.pts<10?' disabled':'')+'>'+L('+10')+'</button>'+
     '<button class="btn sm" data-act="pt" data-k="'+k+'" data-n="all"'+(S.pts<1?' disabled':'')+'>הכל</button></div>';
   h+='</div><div class="card">'+tog('חלוקת נקודות אוטומטית',S.autoPts,'autoPts')+'</div>';
-  h+='<h2>ריסט</h2><div class="card"><p class="hint">ברמה 400 חוזרים לרמה 1 בכפר ושומרים את כל הציוד והשערים הפתוחים. הריסט הבא נותן: '+L('+4%')+' נזק לתמיד, '+L(100*Math.min(S.resets+1,30)+A.bonusPts)+' נקודות סטט בהתחלה, '+L(resetGain(S))+' אותות ריסט.</p>'+
+  h+='<h2>ריסט</h2><div class="card"><p class="hint">ברמה 400 חוזרים לרמה 1 בכפר. הסטטים, הציוד והשערים הפתוחים נשארים, ובדרך חזרה למעלה מקבלים שוב 5 נקודות סטט בכל רמה. כל ריסט מוסיף גם '+L('+4%')+' נזק לתמיד ו-'+L(resetGain(S))+' אותות ריסט.</p>'+
     '<div class="bar gold" style="margin:8px 0"><i style="width:'+(S.lvl/CAP*100)+'%"></i></div>'+
     '<button class="btn pri" style="width:100%" data-act="reset"'+(canReset(S)?'':' disabled')+'>'+(canReset(S)?'בצע ריסט':'רמה '+S.lvl+' מתוך 400')+'</button></div>';
   h+='<h2>הדמויות שלך</h2><p class="hint">דמות שלא משחקים בה ממשיכה להילחם לבד במפה שבה השארת אותה, בקצב של 70%. בכפר היא נחה. הזהב, התיק והשערים משותפים.</p>';
@@ -818,7 +819,7 @@ let passSeen=-1,passScroll=null;
 function renderPass(){
   const lv=passLevel(S),d=new Date(),end=new Date(d.getFullYear(),d.getMonth()+1,1),days=Math.ceil((end-d)/864e5),xp=lv>=30?100:A.pass.xp%100,wait=lv-A.pass.claimed;
   let nextBig=0;for(const m of [10,20,30])if(m>A.pass.claimed){nextBig=m;break;}
-  let h=renderEvents()+'<h2>פס העונה</h2><div class="passHead"><div class="plv"><small>רמה</small><b>'+lv+'</b><small>מתוך 30</small></div><div class="pinfo">'+
+  let h=loginCard()+renderEvents()+'<h2>פס העונה</h2><div class="passHead"><div class="plv"><small>רמה</small><b>'+lv+'</b><small>מתוך 30</small></div><div class="pinfo">'+
     '<div class="kv"><span>'+(lv>=30?'הגעת לרמה המרבית':'ניסיון לרמה '+(lv+1))+'</span><b class="num">'+L(lv>=30?'100%':xp+'/100')+'</b></div>'+
     '<div class="bar gold big"><i style="width:'+xp+'%"></i></div>'+
     '<small>'+(nextBig?'הפרס הגדול הבא: <b>'+passReward(nextBig).t+'</b> ברמה '+nextBig+(nextBig>lv?', עוד '+(nextBig-lv)+' רמות':', מחכה לאיסוף')+' · ':'')+'נשארו '+L(days)+' ימים לעונה</small></div></div>';
@@ -852,15 +853,12 @@ function renderParty(){
 }
 function renderArena(){
   const arenaOpps=A.opps||[];
-  let h=renderGuild()+renderParty()+'<h2>זירה</h2><div class="card"><div class="grid2"><div class="kv"><span>דירוג</span><b class="num" style="color:var(--gold)">'+A.rating+'</b></div><div class="kv"><span>כרטיסים היום</span><b class="num">'+A.tickets+'</b></div></div>'+
+  let h=renderTop()+renderGuild()+renderParty()+'<h2>זירה</h2><div class="card"><div class="grid2"><div class="kv"><span>דירוג</span><b class="num" style="color:var(--gold)">'+A.rating+'</b></div><div class="kv"><span>כרטיסים היום</span><b class="num">'+A.tickets+'</b></div></div>'+
     '<p class="hint" style="margin-top:6px">הקרב אוטומטי, מול הדמות השמורה של היריב. '+(ONLINE?'הדמות שלך שמורה בשרת ומופיעה לשחקנים אחרים.':'מצב מקומי: יוצגו רק דמויות אימון.')+'</p></div><h2>יריבים</h2>';
   arenaOpps.forEach((o,i)=>{h+='<div class="card opp"><div class="z"><b>'+esc(o.n)+'</b>'+(o.bot?'<span class="tag">דמות אימון</span>':'')+
     '<small>'+CLS[o.c].n+' · רמה '+L(o.l)+' · ריסטים '+L(o.r)+' · כוח '+L(fmt(o.p))+'</small></div><button class="btn sm pri" data-act="fight" data-i="'+i+'"'+(A.tickets>0&&SC.mode==='farm'?'':' disabled')+'>הילחם</button></div>';});
   if(!arenaOpps.length)h+='<p class="hint">טוען יריבים...</p>';
-  h+='<button class="btn" data-act="reroll">החלף יריבים</button><h2>טבלת ריסטים</h2>';
-  const rows=players.filter(p=>!p.me).map(p=>({n:p.n,r:p.r,l:p.l}));rows.push({n:S.name,r:totalResets(A),l:S.lvl,me:true});
-  rows.sort((a,b)=>b.r-a.r||b.l-a.l);
-  h+='<div class="card"><ol class="lb">'+rows.slice(0,10).map(r=>'<li'+(r.me?' style="color:var(--gold);font-weight:700"':'')+'>'+esc(r.n)+' · '+L(r.r)+' ריסטים · רמה '+L(r.l)+'</li>').join('')+'</ol></div>';
+  h+='<button class="btn" data-act="reroll">החלף יריבים</button>';
   return h;
 }
 function renderPanel(){
@@ -952,12 +950,12 @@ function setBig(on){prefs.big=!!on;savePrefs();$('app').classList.toggle('wide',
 function openTab(name){
   if(prefs.big)setBig(false);
   tab=name;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
-  if(tab==='arena'){loadArena();if(ONLINE&&!demo){send('pget',{});loadGuild();}}if(tab==='shop')loadMarket();passScroll=null;renderPanel();$('panel').scrollTop=0;
+  if(tab==='arena'){loadArena();if(ONLINE&&!demo){send('pget',{});loadGuild();loadTop();}}if(tab==='shop')loadMarket();passScroll=null;renderPanel();$('panel').scrollTop=0;
 }
 function loadArena(){if(!demo&&S)act('opps',{}).then(()=>{panelDirty=true;});}
 function enterGame(r){
   S=A.chars[A.cur];C=calc(S,auras);enterZone(S.zone,'L',S.floor);SC.hero.hp=C.hp;SC.hero.dead=0;SC.hero.cds=[0,0,0,0,0,0];SC.hero.climb=null;SC.hero.shield=0;touch();renderHud();renderPanel();
-  if(r&&r.afk)showOffline(r.afk);
+  if(r&&r.afk)showOffline(r.afk);else showLogin();
 }
 async function switchTo(i){
   if(busy||SC.mode!=='farm')return;busy=true;const r=await act('switch',{i:i});busy=false;
@@ -1032,6 +1030,7 @@ document.addEventListener('click',async e=>{
   if(a==='fs'){fsToggle();return;}
   if(a==='install'){if(installEvt){const ev=installEvt;installEvt=null;ev.prompt();}renderPanel();return;}
   if(a==='say'){say();return;}
+  if(a==='topBy'){topBy=b.dataset.k==='power'?'power':'resets';renderPanel();return;}
   if(a==='chatCh'){chatCh=b.dataset.c==='g'?'g':'w';renderPanel();return;}
   if(a==='logout'){setSession(null);location.reload();return;}
   if(a==='create'){
@@ -1079,6 +1078,7 @@ document.addEventListener('click',async e=>{
     else if(a==='claimPass'){for(let n=0;n<30&&passLevel(S)>A.pass.claimed;n++){r=await act('claimPass',{});if(!r.ok)break;snd('rare');toast('פרס עונה: '+r.t);}passScroll=null;}
     else if(a==='claimEvent'){r=await act('claimEvent',{id:b.dataset.k});if(r.ok){snd('rare');toast('פרס האירוע: '+r.rt);if(r.levels)afterXp(r.levels);}}
     else if(a==='answer'){r=await act('answer',{a:+b.dataset.i});if(r.ok){snd(r.correct?'ok':'fail');toast(r.correct?'תשובה נכונה. אסוף את הפרס':'תשובה שגויה');}}
+    else if(a==='claimLogin'){r=await act('claimLogin',{});if(r.ok){snd('rare');closeModal();toast('פרס יום '+r.day+': '+r.t);}}
     else if(a==='claimTask'){r=await act('claimTask',{k:b.dataset.k});if(r.ok)toast(r.xp+' ניסיון לפס');}
     else if(a==='fight'){if(SC.mode==='farm'&&A.tickets>0){r=await act('duel',{i:+b.dataset.i});if(r.ok)startDuel(r.duel);}}
     else if(a==='reroll'){loadArena();}
@@ -1089,6 +1089,46 @@ document.addEventListener('click',async e=>{
   touch();if(S){C=calc(S,auras);statsDirty=false;}renderHud();renderPanel();saveLocal();
 });
 
+/* ---------- daily login reward, and a card for other players ---------- */
+function loginTiles(){
+  const lg=A.login||{s:1,got:1},day=clamp(lg.s|0,1,7);
+  return '<div class="lgrid">'+LOGIN_RW.map((rw,i)=>{const d=i+1,got=d<day||(d===day&&lg.got),cur=d===day&&!lg.got,ic=rw.sboxes?'sboxes':rw.boxes?'sboxes':rw.gems?'gems':rw.boost?'wing':'coins';
+    return '<div class="tier'+(got?' got':cur?' open':'')+(d===7?' big':'')+'"><b>יום '+d+'</b><span class="pic">'+PICON[ic]+'</span><em>'+rw.t+'</em><i>'+(got?'נאסף':cur?'היום':'בהמשך')+'</i></div>';}).join('')+'</div>';
+}
+function loginCard(){
+  const lg=A.login;if(!lg)return '';
+  return '<h2>פרס כניסה יומי</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">נכנסים כל יום ואוספים. שבעה ימים ברצף מביאים לתיבת עונה. יום שלא נאסף מחזיר להתחלה.</p>'+loginTiles()+
+    '<button class="btn pri'+(lg.got?'':' glow')+'" data-act="claimLogin"'+(lg.got?' disabled':'')+'>'+(lg.got?'נאסף היום. נתראה מחר':'אסוף את הפרס של היום')+'</button></div>';
+}
+function showLogin(){
+  const lg=A.login;if(!lg||lg.got||demo)return;
+  openModal('<h3>פרס כניסה יומי · יום '+clamp(lg.s|0,1,7)+'</h3>'+loginTiles()+'<div class="acts"><button class="btn" data-act="closeModal">אחר כך</button><button class="btn pri glow" data-act="claimLogin">אסוף</button></div>');
+}
+const gearLine=(g,names)=>g?esc(names[clamp(g[0],1,names.length)-1])+' · '+RAR[g[1]].n+(g[2]?' · '+L('+'+g[2]):''):'אין';
+function showPeer(p){
+  const s=p.s,tl=titleOf(s.r|0),pet=PETS.find(x=>s.r>=x[0]);
+  openModal('<h3 style="color:'+(tl?tl[2]:'var(--gold)')+'">'+(p.g?'['+esc(p.g)+'] ':'')+esc(s.n)+'</h3><p class="hint">'+CLS[s.c].n+(tl?' · '+tl[1]:'')+'</p>'+
+    '<div class="kv"><span>רמה</span><b class="num">'+L(s.l)+'</b></div><div class="kv"><span>ריסטים</span><b class="num">'+L(s.r)+'</b></div><div class="kv"><span>כוח לחימה</span><b class="num">'+L(fmt(s.p))+'</b></div>'+
+    '<div class="kv"><span>נשק</span><b>'+gearLine(s.w,TIERN)+'</b></div><div class="kv"><span>שריון</span><b>'+gearLine(s.ar,TIERN)+'</b></div><div class="kv"><span>כנפיים</span><b>'+gearLine(s.g,WINGN)+'</b></div>'+
+    (pet?'<div class="kv"><span>מלווה</span><b>'+pet[1]+'</b></div>':'')+
+    (party.code?'<p class="hint" style="margin-top:8px">קוד הפארטי שלך: <b dir="ltr">'+esc(party.code)+'</b>. שלח לו אותו בצ\'אט כדי לצרף אותו.</p>':'')+
+    '<div class="acts"><button class="btn pri" data-act="closeModal">סגור</button></div>');
+}
+/* ---------- leaderboard: the top 20 ---------- */
+let topList=null,topBy='resets';
+function loadTop(){if(ONLINE&&!demo)send('top',{});}
+function renderTop(){
+  let h='<h2>טבלת המובילים</h2>';
+  let rows=topList&&topList[topBy];
+  if(!rows){ // local mode, or the list has not arrived yet: fall back to what this device knows
+    rows=players.filter(p=>!p.me).map(p=>({n:p.n,r:p.r,l:p.l,p:p.p||0,c:p.c||''}));rows.push({n:S.name,r:totalResets(A),l:S.lvl,p:C.power,c:S.cls,me:true});
+    rows.sort(topBy==='power'?(a,b)=>b.p-a.p:(a,b)=>b.r-a.r||b.l-a.l);rows=rows.slice(0,20);}
+  h+='<div class="seg"><button class="btn sm'+(topBy==='resets'?' pri':'')+'" data-act="topBy" data-k="resets">לפי ריסטים</button><button class="btn sm'+(topBy==='power'?' pri':'')+'" data-act="topBy" data-k="power">לפי כוח</button><span class="hint">20 הראשונים</span></div><div class="card top">';
+  rows.forEach((r,i)=>{const tl=titleOf(r.r|0);
+    h+='<div class="trow'+(r.me?' me':'')+(i<3?' m'+(i+1):'')+'"><i>'+(i+1)+'</i><div><b style="color:'+(tl?tl[2]:'var(--ink)')+'">'+esc(r.n)+'</b><small>'+(CLS[r.c]?CLS[r.c].n+' · ':'')+'רמה '+L(r.l)+(tl?' · '+tl[1]:'')+'</small></div><span class="num">'+(topBy==='power'?L(fmt(r.p))+'<small>כוח</small>':L(r.r)+'<small>ריסטים</small>')+'</span></div>';});
+  if(!rows.some(r=>r.me))h+='<div class="trow me"><i>-</i><div><b>'+esc(S.name)+'</b><small>עוד לא בעשרים הראשונים</small></div><span class="num">'+(topBy==='power'?L(fmt(C.power))+'<small>כוח</small>':L(totalResets(A))+'<small>ריסטים</small>')+'</span></div>';
+  return h+'</div>';
+}
 /* ---------- other players, chat, guilds ---------- */
 let peers=[],chatLog=[],chatSince=0,chatCh='w',chatUnread=0,onlineN=0,guild={mine:null,top:[],holder:null},me={secret:true,admin:false},beatT=0,beatBusy=false,banned=false;
 async function beat(){

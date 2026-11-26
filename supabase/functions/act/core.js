@@ -51,7 +51,7 @@ const dayKey=()=>{const o=tzParts();return o.year+'-'+(+o.month)+'-'+(+o.day);};
 const seasonKey=()=>{const o=tzParts();return o.year+'-'+(+o.month);};
 
 const AFK=.7, SKLV=[1,20,60,110,180,260], SKCD=[4,12,30,10,25,45];
-const SHARED=['gold','gems','cred','coins','boxes','sboxes','charms','bless','bonusPts','boost','inv','nid','kills','killAcc','pass','day','daily','rating','tickets','autoEq','autoSell','open','zk'];
+const SHARED=['gold','gems','cred','coins','boxes','sboxes','charms','bless','bonusPts','boost','inv','nid','kills','killAcc','pass','day','daily','rating','tickets','autoEq','autoSell','open','zk','login'];
 function newAccount(){
   return {v:2,gold:0,gems:3,cred:0,coins:0,boxes:1,sboxes:0,charms:0,bless:0,bonusPts:0,boost:0,inv:[],nid:1,kills:0,killAcc:0,
     pass:{key:seasonKey(),xp:0,claimed:0},day:dayKey(),daily:{kills:0,resets:0,wins:0,ups:0,done:{}},rating:1000,tickets:5,
@@ -64,6 +64,11 @@ function bind(A,ch){
   for(const k of SHARED)Object.defineProperty(ch,k,{get(){return A[k];},set(v){A[k]=v;},enumerable:false,configurable:true});
   return ch;
 }
+// A reward for showing up: seven days in a row, each better than the last. Missing a day, or not collecting, starts over.
+const LOGIN_RW=[{t:'3 אבני נשמה',gems:3},{t:'תיבת אוצר',boxes:1},{t:'5 אבני נשמה',gems:5},{t:'מגילת ניסיון לחצי שעה',boost:1},{t:'2 תיבות אוצר',boxes:2},{t:'8 אבני נשמה וקמע הגנה',gems:8,charms:1},{t:'תיבת עונה ו-30 מטבעות עונה',sboxes:1,coins:30}];
+const dayNum=()=>{const o=tzParts();return Math.round(Date.UTC(+o.year,+o.month-1,+o.day)/864e5);};
+function loginDay(A){const dn=dayNum();let lg=A.login;if(!lg||typeof lg!=='object')lg=A.login={n:0,s:0,got:1};
+  if(lg.n!==dn){lg.s=lg.n===dn-1&&lg.got?(clamp(lg.s|0,1,7)%7)+1:1;lg.n=dn;lg.got=0;}}
 function ensureDay(s){
   if(s.day!==dayKey()){s.day=dayKey();s.daily={kills:0,resets:0,wins:0,ups:0,done:{}};s.tickets=Math.max(s.tickets,5);}
   if(s.pass.key!==seasonKey())s.pass={key:seasonKey(),xp:0,claimed:0};
@@ -202,8 +207,8 @@ function canReset(s){return s.lvl>=CAP;}
 function resetGain(s){return 10+2*Math.min(s.resets+1,10);}
 function doReset(s){
   if(!canReset(s))return false;const g=resetGain(s);
-  s.resets++;s.lvl=1;s.xp=0;s.stats={str:15,agi:15,vit:15,ene:15};
-  s.pts=100*Math.min(s.resets,30)+s.bonusPts;s.cred+=g;s.coins+=5;s.pass.xp+=150;s.daily.resets++;s.zone=-1;s.floor=0;
+  // Stats and unspent points stay: every run through the levels adds five points a level on top of what was there.
+  s.resets++;s.lvl=1;s.xp=0;s.cred+=g;s.coins+=5;s.pass.xp+=150;s.daily.resets++;s.zone=-1;s.floor=0;
   if(s.autoPts)autoAlloc(s);return true;
 }
 function upCost(it){return {gems:1+Math.floor(it.p/3),gold:500*(it.s==='g'?it.t*2:it.t)*(it.p+1)};}
@@ -264,7 +269,7 @@ function siegeInfo(now){
 const PARTY_XP=.05; // extra XP for each active party member on the same map beyond the second player, party of up to 5
 const partyXp=n=>PARTY_XP*Math.max(0,Math.min(4,n|0)-1); // extra XP per active party member in the same map, up to 3
 const GOLD_SHOP=[{k:'gem',t:'אבן נשמה',d:'חומר לשדרוג ציוד',cost:5000},{k:'box',t:'תיבת אוצר',d:'פריט מהמפה הגבוהה שפתחת, אבנים או זהב',cost:40000},{k:'ticket',t:'כרטיס זירה',d:'קרב נוסף',cost:10000},{k:'scroll',t:'מגילת ניסיון',d:'50% יותר ניסיון למשך 30 דקות',cost:25000}];
-const RESET_SHOP=[{k:'charm',t:'3 קמעות הגנה',d:'שדרוג שנכשל לא מוריד דרגה',cost:4},{k:'bless',t:'ברכת נצח',d:'5% יותר ניסיון לתמיד לכל הדמויות, עד 10 פעמים',cost:8},{k:'pts',t:'50 נקודות סטט קבועות',d:'מתווספות בתחילת כל ריסט',cost:10},{k:'abox',t:'תיבה עתיקה',d:'פריט אגדי או עתיק מהמפה הגבוהה שפתחת',cost:12},{k:'wing',t:'כנפיים בדרגה הבאה',d:'כנפיים נדירות, דרגה אחת מעל הלבושות',cost:25}];
+const RESET_SHOP=[{k:'charm',t:'3 קמעות הגנה',d:'שדרוג שנכשל לא מוריד דרגה',cost:4},{k:'bless',t:'ברכת נצח',d:'5% יותר ניסיון לתמיד לכל הדמויות, עד 10 פעמים',cost:8},{k:'pts',t:'50 נקודות סטט',d:'לדמות הנוכחית, נשארות לתמיד',cost:10},{k:'abox',t:'תיבה עתיקה',d:'פריט אגדי או עתיק מהמפה הגבוהה שפתחת',cost:12},{k:'wing',t:'כנפיים בדרגה הבאה',d:'כנפיים נדירות, דרגה אחת מעל הלבושות',cost:25}];
 const SEASON_SHOP=[{k:'sbox',t:'תיבת עונה',d:'15% לחלק סט עתיק, אחרת נדיר או אגדי',cost:60},{k:'box',t:'תיבת אוצר',d:'',cost:30},{k:'gem5',t:'5 אבני נשמה',d:'',cost:20},{k:'ticket',t:'כרטיס זירה',d:'',cost:10}];
 const totalResets=A=>A.chars.reduce((n,c)=>n+c.resets,0);
 const slotsOpen=A=>1+((A.maxLvl||1)>=50?1:0)+(totalResets(A)>=1?1:0);
@@ -382,7 +387,7 @@ function buildOpps(A,S,players,selfId){
 // apply() is the only code that may change an account. The server runs it on the stored
 // state; the client runs it only in local (unprotected) mode. Arguments are untrusted.
 function apply(A,kind,args,ctx){
-  args=args||{};ctx=ctx||{};const now=_now(),r={ok:true};
+  args=args||{};ctx=ctx||{};const now=_now(),r={ok:true};loginDay(A);
   const fail=m=>({ok:false,msg:m});
   if(kind==='create'){
     const nm=String(args.name||'').replace(/[<>&"'\u0000-\u001f]/g,'').trim().slice(0,14)||'גיבור',cls=CLS[args.cls]?args.cls:'blade';
@@ -462,6 +467,8 @@ function apply(A,kind,args,ctx){
         r.bought=o.t;}
       break;}
     case 'claimPass':{if(passLevel(S)<=A.pass.claimed)return fail('אין פרס לאיסוף');A.pass.claimed++;const rw=passReward(A.pass.claimed);give(A,S,rw);r.t=rw.t;break;}
+    case 'claimLogin':{const lg=A.login;if(!lg||lg.got)return fail('את הפרס של היום כבר אספת');const day=clamp(lg.s|0,1,7),rw=LOGIN_RW[day-1];lg.got=1;
+      A.gems+=rw.gems||0;A.boxes+=rw.boxes||0;A.sboxes+=rw.sboxes||0;A.coins+=rw.coins||0;A.charms+=rw.charms||0;if(rw.boost)A.boost=Math.max(A.boost,now)+18e5;r.t=rw.t;r.day=day;break;}
     case 'claimTask':{const t=TASKS.find(x=>x.k===args.k);if(!t||A.daily[t.k]<t.n||A.daily.done[t.k])return fail('המשימה לא הושלמה');A.daily.done[t.k]=1;A.pass.xp+=t.xp;r.xp=t.xp;break;}
     case 'claimQuest':{const q=QUESTS[A.q|0];if(!q)return fail('אין משימה');const p=q.p(A,S);if(p[0]<p[1])return fail('המשימה לא הושלמה');give(A,S,q.rw);A.q=(A.q|0)+1;r.rt=q.rt;break;}
     case 'opps':A.opps=buildOpps(A,S,ctx.players,ctx.uid);break;
@@ -487,4 +494,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

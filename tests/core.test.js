@@ -108,3 +108,16 @@ test('the build id in the client matches version.txt',()=>{
   const v=fs.readFileSync('web/version.txt','utf8').trim(),m=/^const BUILD='([0-9]{14})';$/m.exec(fs.readFileSync('web/game.js','utf8'));
   assert.ok(m,'BUILD line present');assert.equal(m[1],v);
 });
+
+test('daily login reward: once a day, the streak grows only when collected on consecutive days',()=>{
+  const {A,now}=fresh();const day=86400;
+  const r1=G.apply(A,'claimLogin',{});assert.ok(r1.ok,r1.msg);assert.equal(r1.day,1);assert.equal(A.gems,3+3);
+  assert.equal(G.apply(A,'claimLogin',{}).ok,false,'only once a day');
+  now.add(day);const r2=G.apply(A,'claimLogin',{});assert.equal(r2.day,2);assert.equal(A.boxes,1+1);
+  now.add(day);G.apply(A,'sync',{});assert.equal(A.login.s,3);assert.equal(A.login.got,0); // seen but not collected
+  now.add(day);assert.equal(G.apply(A,'claimLogin',{}).day,1,'an uncollected day breaks the streak');
+  now.add(3*day);assert.equal(G.apply(A,'claimLogin',{}).day,1,'so does a gap');
+  for(let d=2;d<=7;d++){now.add(day);assert.equal(G.apply(A,'claimLogin',{}).day,d);}
+  now.add(day);assert.equal(G.apply(A,'claimLogin',{}).day,1,'after day seven it starts again');
+  const old=G.adopt(JSON.parse(JSON.stringify(Object.assign({},A,{login:undefined}))));assert.ok(G.apply(old,'claimLogin',{}).ok,'accounts from before this feature just start at day one');
+});
