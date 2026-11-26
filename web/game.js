@@ -1071,6 +1071,22 @@ function initMusic(){if(!AC||musG)return;musG=AC.createGain();musG.gain.value=0;
   try{musEl=new Audio('sfx/music.mp3');musEl.loop=true;musEl.preload='auto';musEl.volume=.22;musEl.addEventListener('error',()=>{musFile='fail';});}catch(e){musFile='fail';}
   setInterval(musTick,120);musTick();}
 
+/* ---------- event announcements in the middle of the screen ---------- */
+// From five minutes before an event, once a minute, and once more when it opens.
+const annPrev={},annMark={},annQ=[];let annT=0,annShow=0;
+function announce(txt,live){annQ.push({t:txt,live:!!live});if(annQ.length>4)annQ.shift();}
+function updateAnnounce(dt){
+  const el=$('annc');if(!el)return;
+  if(annShow>0){annShow-=dt;if(annShow<=0)el.classList.remove('on');}
+  else if(annQ.length&&S&&!demo){const a=annQ.shift();el.textContent=a.t;el.classList.toggle('live',a.live);el.classList.add('on');annShow=4.2;snd(a.live?'boss':'ok');}
+  if(!S||demo||(annT+=dt)<1)return;annT=0;
+  const now=Date.now(),list=EVENTS.map(e=>({id:e.id,n:e.n,s:evNext(e,now),d:e.d})),sg=siegeInfo(now);
+  list.push({id:'siege',n:'מצור הטירה',s:sg.on?1e9:sg.next*60-new Date(now).getSeconds(),d:'כל חיסול של חבר גילדה נספר'});
+  for(const e of list){const prev=annPrev[e.id];annPrev[e.id]=e.s;
+    if(prev!=null&&prev<=90&&e.s>prev+120){annMark[e.id]=0;announce(e.n+' התחיל! '+e.d,true);continue;}
+    if(e.s<=300&&e.s>5){const m=Math.ceil(e.s/60);if(annMark[e.id]!==m&&prev!=null){annMark[e.id]=m;announce(e.n+' מתחיל בעוד '+(m===1?'דקה':m+' דקות'));}}}
+}
+
 /* ---------- first steps ---------- */
 const TUT=['החזק את החץ ימינה, או לחץ על השער, כדי לצאת מהכפר אל השדה','לחץ על מפלצת כדי לתקוף אותה. הדמות ממשיכה להילחם לבד','הכפתורים מימין הם הכישורים. הפעל את הראשון','אחרי 40 חיסולים מגיע בוס, והוא פותח את המפה הבאה. בקצה כל קומה יש סולם לקומה חזקה יותר','ברמה 400 עושים ריסט ומתחזקים. האירועים בשעות קבועות מקצרים את הדרך. בהצלחה'];
 let tutStep=-1,tutT=0;
@@ -1081,7 +1097,7 @@ function updateTut(dt){
   tutT+=dt;
   const done=tutStep===0?SC.zi>=0:tutStep===1?(A.kills>=2||pend.kills>=2)&&tutT>3:tutStep===2?(pend.casts>0||A.casts>0)&&tutT>3||tutT>14:tutT>(tutStep===3?12:9);
   if(done){tutNext();return;}
-  el.style.display=SC.mode==='farm'&&!$('modal').classList.contains('on')?'':'none';
+  el.style.display=SC.mode==='farm'&&annShow<=0&&!$('modal').classList.contains('on')?'':'none';
   const t=TUT[tutStep];if(el.dataset.t!==t){el.dataset.t=t;el.firstChild.textContent=t;el.lastChild.textContent='הבנתי · '+(tutStep+1)+'/'+TUT.length;}
 }
 function tutNext(){tutStep++;tutT=0;if(tutStep>=TUT.length){prefs.tut=1;savePrefs();$('tip').style.display='none';}}
@@ -1102,7 +1118,7 @@ function loop(ts){
   if(ONLINE){pend.t+=dt;if(pend.t>8){pend.t=0;if(pend.kills||pend.casts)flushTick();}
     if(!demo&&(beatT+=dt)>(peers.length?2.5:5)){beatT=0;beat();}}
   else if((saveT+=dt)>8){saveT=0;if(localDirty){localDirty=false;saveLocal();}}
-  updateTut(dt);
+  updateTut(dt);updateAnnounce(dt);
 }
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&A&&!demo){if(ONLINE)flushTick();else saveLocal();}});
 window.addEventListener('pagehide',()=>{if(A&&!demo)saveLocal();});
