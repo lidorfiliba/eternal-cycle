@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126181212';
+const BUILD='20261126182500';
 const {LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -686,7 +686,7 @@ function updateWorld(dt){
   if(h.hp<=0){h.dead=3;h.tgt=null;addNum(h.x,gy()-120,'נפלת','#ff5c7a',true);return;}
   h.hp=Math.min(C.hp,h.hp+C.hp*.05*dt);
   // hero
-  const live=alive(),range=CLS[S.cls].range,spd=190*(1+(S.eq.g?S.eq.g.t*.08:0))*(h.buff>0?1.5:1);
+  const live=alive(),range=CLS[S.cls].range,spd=190*(1+(S.eq.g?Math.min(8,S.eq.g.t)*.08:0))*(h.buff>0?1.5:1);
   if(h.tgt&&(h.tgt.die>0||h.tgt.resp>0||h.tgt.gone))h.tgt=null;
   if(h.dir){h.tgt=null;h.tx=null;h.goal=null;h.manual=.5;h.face=h.dir;h.mv=true;h.x=clamp(h.x+h.dir*spd*dt,30,mw-30);
     const atL=h.dir<0&&h.x<=66&&zi>=0,atR=h.dir>0&&h.x>=mw-66&&!!portalState(1);
@@ -913,8 +913,8 @@ function updateDuel(dt){
     if(SC.hero.dz){me.z=clamp(me.z+SC.hero.dz*.95*dt,0,1);vm.mv=true;}}
   if(d.holdAtk)duelAct('atk');
   if(d.net){ // tell the server where I stand, and glide the other side toward where it said he is
-    if((d.posT-=dt)<=0&&(Math.abs(me.x-d.last[0])>.5||Math.abs(me.z-d.last[1])>.01)){d.posT=.09;d.last=[me.x,me.z];netSend({t:'pos',x:Math.round(me.x*10)/10,z:Math.round(me.z*100)/100});}
-    const op=D.f[1-d.me],vo=d.v[1-d.me];vo.mv=false;if(d.tgt){const ex=d.tgt[0]-op.x,ez=d.tgt[1]-op.z;if(Math.abs(ex)>1||Math.abs(ez)>.02){op.x+=ex*Math.min(1,dt*12);op.z+=ez*Math.min(1,dt*12);vo.mv=true;if(Math.abs(ex)>2)vo.face=ex>0?1:-1;}}
+    if((d.posT-=dt)<=0&&(Math.abs(me.x-d.last[0])>.5||Math.abs(me.z-d.last[1])>.01)){d.posT=.05;d.last=[me.x,me.z];netSend({t:'pos',x:Math.round(me.x*10)/10,z:Math.round(me.z*100)/100});}
+    const op=D.f[1-d.me],vo=d.v[1-d.me];vo.mv=false;if(d.tgt){const ex=d.tgt[0]-op.x,ez=d.tgt[1]-op.z;if(Math.abs(ex)>1||Math.abs(ez)>.02){op.x+=ex*Math.min(1,dt*20);op.z+=ez*Math.min(1,dt*20);vo.mv=true;if(Math.abs(ex)>2)vo.face=ex>0?1:-1;}}
   }else{duelAI(d,dt);if(liveOver(D))endDuel(D.win===0);}
   if((d.bt=(d.bt||0)+dt)>.25){d.bt=0;renderDuelBar();}
 }
@@ -957,7 +957,7 @@ function drawDuel(dt){
 /* ---------- the live line to the server: invitations and duels between two connected players ---------- */
 const EMO=['\u{1F44B}','\u{1F602}','\u{1F44D}','\u2764\uFE0F','\u{1F621}','\u{1F483}','GG','\u{1F64F}'];
 let liveDuels=[];
-let mvT=0,mvLast=[0,false,1],ws=null,whisperTo=null,friendsOn={},whoT=0;
+let mvT=0,mvLast=[0,false,1,0],ws=null,whisperTo=null,friendsOn={},whoT=0;
 const isBlocked=(k,n)=>(A&&A.blocked||[]).some(x=>x.k===k||(n&&x.n===n)),isFriend=k=>(A&&A.friends||[]).some(x=>x.k===k);
 function askWho(){const fr=A&&A.friends||[];if(fr.length&&ws&&ws.readyState===1)netSend({t:'who',ks:fr.map(f=>f.k)});}
 function netSend(m){if(ws&&ws.readyState===1)ws.send(JSON.stringify(m));}
@@ -979,7 +979,7 @@ function netMsg(m){
   else if(m.t==='watching'){if(SC.mode!=='farm')return;flushTick();const p0=G.cleanPlayer('a',m.p[0]),p1=G.cleanPlayer('b',m.p[1]);startDuel({o:p1,live:m.L},{side:0,id:m.id,cls:m.cls,spec:p0});const D=SC.duel.D;D.t=+m.T||0;for(let i=0;i<2;i++){const s=m.f[i],f=D.f[i];f.hp=+s.hp;f.stun=+s.stun;f.sh=+s.sh;f.inv=+s.inv;f.pots=s.pots|0;f.x=+m.xz[i][0];f.z=+m.xz[i][1];}}
   else if(m.t==='over'){if(d&&d.spec){d.winner=m.win?d.opp.n:d.spec.n;d.sent=true;d.win=!m.win;d.local=!m.win;d.end=2.4;SC.nums.push({x:W/2,y:H*.4,txt:d.winner+' ניצח',c:'#f2c14e',s:26,life:2.4});}}
   else if(m.t==='emote'){const p=peers.find(q=>q.k===m.k);if(p&&EMO[m.e|0])p.say={m:EMO[m.e|0],t:SC.t+3.5};}
-  else if(m.t==='mv'){const p=peers.find(q=>q.k===m.k);if(p&&SC.mode==='farm'){p.tx=clamp(+m.x||0,30,mapW()-30);p.f=m.f<0?-1:1;p.a=!!m.a;}}
+  else if(m.t==='mv'){const p=peers.find(q=>q.k===m.k);if(p&&SC.mode==='farm'){p.v=clamp(+m.v||0,-1200,1200);p.vT=.5;p.tx=clamp((+m.x||0)+p.v*.1,30,mapW()-30);p.f=m.f<0?-1:1;p.a=!!m.a;}}
   else if(m.t==='ev'){if(!d||!d.net||!m.o||!m.f)return;const D=d.D;D.t=+m.T||D.t;for(let i=0;i<2;i++){const s=m.f[i],f=D.f[i];f.hp=+s.hp;f.stun=+s.stun;f.sh=+s.sh;f.inv=+s.inv;f.pots=s.pots|0;if(s.at)for(const k in f.at)f.at[k]=+s.at[k]||0;}dShow(d,m.o);renderDuelBar();}
   else if(m.t==='end'){if(d&&d.net){d.why=m.why;showResult(d,!!m.win,m.gain|0,false);}}
   else if(m.t==='who'){const was=friendsOn,now={};for(const k of m.on||[])now[String(k)]=1;friendsOn=now;for(const f of A.friends||[])if(now[f.k]&&!was[f.k]&&whoT++>0)toast(f.n+' התחבר');if(!whoT)whoT=1;if(tab==='arena')panelDirty=true;}
@@ -1595,8 +1595,9 @@ function mergePeers(list){
     p.k=k;p.s=G.cleanPlayer(k,o.s);if(p.s.ar&&p.s.ar[1]===4)p.s.set=[4,RAR[4].c];p.tx=x;p.f=o.f<0?-1:1;p.a=!!o.a;p.g=String(o.g||'').slice(0,4);return p;});
 }
 function updatePeers(dt){
-  for(const p of peers){const d=p.tx-p.x;p.mv=Math.abs(d)>4;
-    if(p.mv){p.x+=Math.sign(d)*Math.min(Math.abs(d),Math.max(190,Math.abs(d)*1.2)*dt);p.dir=d<0?-1:1;}
+  for(const p of peers){if(p.v&&p.vT>0){p.vT-=dt;p.tx=clamp(p.tx+p.v*dt,30,mapW()-30);} // keep walking the way he was walking until the next report
+    const d=p.tx-p.x;p.mv=Math.abs(d)>4||(!!p.v&&p.vT>0);
+    if(Math.abs(d)>.5){p.x+=Math.sign(d)*Math.min(Math.abs(d),Math.max(260,Math.abs(p.v||0)*1.25,Math.abs(d)*7)*dt);p.dir=d<0?-1:1;}
     p.an=Math.max(0,p.an-dt*4);if(p.a&&!p.mv&&SC.zi>=0&&(p.sw-=dt)<=0){p.sw=.8+Math.random()*.6;p.an=1;}}
 }
 function bubble(x,y,txt){ // what someone just said, over their head
@@ -1788,7 +1789,7 @@ function loop(ts){
   if(tab==='pass'&&(evT+=dt)>1){evT=0;panelDirty=true;}
   if(ONLINE){pend.t+=dt;if(pend.t>8){pend.t=0;if(pend.kills||pend.casts||(party.code&&SC.zi>=0&&SC.mode==='farm'&&!document.hidden))flushTick();}
     if(!demo&&(beatT+=dt)>(peers.length?(ws&&ws.readyState===1?4:2.5):5)){beatT=0;beat();}
-    if(!demo&&ws&&ws.readyState===1&&SC.mode==='farm'&&!SC.ev&&(mvT+=dt)>.2){const h=SC.hero,at=SC.t-(h.lastAtk||-9)<1.5,x=Math.round(h.x);if(peers.length&&(x!==mvLast[0]||at!==mvLast[1]||h.face!==mvLast[2])){mvT=0;mvLast=[x,at,h.face];netSend({t:'mv',z:SC.zi,fl:SC.fl,x:x,f:h.face,a:at});}}}
+    if(!demo&&ws&&ws.readyState===1&&SC.mode==='farm'&&!SC.ev&&(mvT+=dt)>.08){const h=SC.hero,at=SC.t-(h.lastAtk||-9)<1.5,x=Math.round(h.x),v=Math.round(clamp((x-mvLast[0])/mvT,-1200,1200));if(peers.length&&(x!==mvLast[0]||at!==mvLast[1]||h.face!==mvLast[2]||v!==mvLast[3])){mvLast=[x,at,h.face,v];netSend({t:'mv',z:SC.zi,fl:SC.fl,x:x,f:h.face,a:at,v:v});}mvT=0;}}
   else if((saveT+=dt)>8){saveT=0;if(localDirty){localDirty=false;saveLocal();}}
   updateTut(dt);updateAnnounce(dt);
   if(SC.ev&&Date.now()>SC.evEnd+1500&&!busy){flushTick().then(()=>{if(SC.ev)leaveKeep(true);});SC.evEnd+=8000;}

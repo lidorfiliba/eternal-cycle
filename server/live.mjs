@@ -69,9 +69,9 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
       return start(inv.from, inv.to);
     }
     if (m.t === 'mv') { // where I am on my map, passed straight to the others on the same map and floor, between heartbeats
-      const now = clock(); if (now - (ws.lastMv || 0) < 110) return; ws.lastMv = now;
+      const now = clock(); if (now - (ws.lastMv || 0) < 55) return; ws.lastMv = now;
       ws.room = (Math.floor(Number(m.z)) || 0) + ':' + (Math.floor(Number(m.fl)) || 0);
-      const out = JSON.stringify({ t: 'mv', k: ws.key, x: Math.max(0, Math.min(4000, Math.round(Number(m.x)) || 0)), f: Number(m.f) < 0 ? -1 : 1, a: !!m.a });
+      const out = JSON.stringify({ t: 'mv', k: ws.key, x: Math.max(0, Math.min(4000, Math.round(Number(m.x)) || 0)), f: Number(m.f) < 0 ? -1 : 1, a: !!m.a, v: Math.max(-1200, Math.min(1200, Math.round(Number(m.v)) || 0)) });
       for (const o of socks.values()) if (o !== ws && o.room === ws.room && o.readyState === 1) o.send(out);
       return;
     }
