@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126142811';
+const BUILD='20261126143409';
 const {KEY_SHARDS,KEY_GOLD,EV_XP,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -427,7 +427,7 @@ let AC=null,MG=null;const sndLast={};
 function initAudio(){try{if(!AC){const X=window.AudioContext||window.webkitAudioContext;if(!X)return;AC=new X();MG=AC.createGain();MG.gain.value=.5;MG.connect(AC.destination);}if(AC.state==='suspended')AC.resume();loadSfx();}catch(e){}}
 document.addEventListener('pointerdown',initAudio);document.addEventListener('keydown',initAudio);
 // Recorded effects; anything not loaded falls back to the synthesised version below.
-const SFX={pull:['whoosh'],ult:['ult'],hit:['hit0','hit1','hit2'],crit:['crit0','crit1'],skill:['skill0','skill1'],hurt:['hurt0','hurt1'],kill:['kill'],coin:['coin'],rare:['rare'],boss:['roar'],slam:['slam']};
+const SFX={pull:['whoosh'],ult:['ult'],hit:['hit0','hit1','hit2'],crit:['crit0','crit1'],skill:['skill0','skill1'],hurt:['hurt0','hurt1'],kill:['kill'],coin:['coin'],rare:['rare'],boss:['boss'],slam:['slam']};
 const SFXVOL={pull:.6,ult:.8,hit:.5,crit:.75,skill:.6,hurt:.35,kill:.4,coin:.3,rare:.6,boss:.7,slam:.8},sfxBuf={};let sfxAsked=false;
 function loadSfx(){
   if(sfxAsked||!AC)return;sfxAsked=true;
@@ -764,7 +764,7 @@ function renderHud(){
   if(lv1){const rec=(A.ev||{})[lv1.key]||{};chip=lv1.e.n+(lv1.e.obj&&lv1.e.obj[0]!=='q'?' · '+Math.min(rec[lv1.e.obj[0]]||0,lv1.e.obj[1])+'/'+lv1.e.obj[1]:'')+' · '+mmss((lv1.end-now)/1000);}
   else{let best=null,bt=1e9;for(const e of EVENTS){const t=evNext(e,now);if(t<bt){bt=t;best=e;}}chip='הבא: '+best.n+' בעוד '+fmtT(bt);}
   ec.style.display=duel?'none':'';ec.textContent=evReady?'פרס אירוע מחכה לך':chip;ec.classList.toggle('done',evReady);ec.classList.toggle('live',!!lv1);
-  if(premSeen==null)premSeen=A.prem||0;else if((A.prem||0)>premSeen){announce('התקבלו '+fmt((A.prem||0)-premSeen)+' קרדיטים. תודה!',true);premSeen=A.prem||0;myOrders=null;loadOrders();}else premSeen=A.prem||0;
+  if(premSeen==null)premSeen=A.prem||0;else if((A.prem||0)>premSeen){announce('התרומה אושרה. קיבלת '+fmt((A.prem||0)-premSeen)+' קרדיטים. תודה!',true);premSeen=A.prem||0;myOrders=null;loadOrders();}else premSeen=A.prem||0;
   if(passSeen<0)passSeen=passLevel(S);else if(passLevel(S)>passSeen){passSeen=passLevel(S);announce('פס העונה: רמה '+passSeen+'! '+passReward(passSeen).t+' מחכה לך',true);panelDirty=true;}
   const plv=passLevel(S),pb=evReady||(A.login&&!A.login.got)||plv>A.pass.claimed||TASKS.some(t=>A.daily[t.k]>=t.n&&!A.daily.done[t.k]);
   const bt=document.querySelector('#tabs [data-tab=pass]');let b=bt.querySelector('.badge');if(pb&&!b){b=document.createElement('i');b.className='badge';bt.appendChild(b);}else if(!pb&&b)b.remove();
@@ -1212,27 +1212,27 @@ function renderCredits(){
   const pend=myOrders&&myOrders.orders.find(o=>o.status==='pending');
   h+='<div class="card" style="display:flex;flex-direction:column;gap:8px"><div class="kv"><span>הקרדיטים שלך</span><b class="num" style="color:#7df9ff;font-size:17px">'+L(fmt(A.prem||0))+'</b></div>'+
     (A.vip>Date.now()?'<p class="hint" style="color:var(--gold)">מעמד נצח פעיל עוד '+fmtT((A.vip-Date.now())/1000)+'.</p>':'')+
-    (pend?'<p class="hint">בקשה ל-'+L(fmt(pend.credits))+' קרדיטים ('+L(pend.price)+' ש"ח) ממתינה לאישור התשלום.</p><button class="btn sm" data-act="ordCancel" data-id="'+pend.id+'">בטל בקשה</button>'
-      :'<button class="btn pri" data-act="credBuy">קנה קרדיטים</button>')+'</div>';
+    (pend?'<p class="hint">תרומה של '+L(pend.price)+' ש"ח ('+L(fmt(pend.credits))+' קרדיטים) ממתינה לאישור.</p><button class="btn sm" data-act="ordCancel" data-id="'+pend.id+'">בטל בקשה</button>'
+      :'<p class="hint">המשחק חינמי ומתקיים מתרומות של שחקנים. מי שתורם מקבל קרדיטים כתודה.</p><button class="btn pri" data-act="credBuy">תרום למשחק וקבל קרדיטים</button>')+'</div>';
   return h+shopList('prem',PREM_SHOP,A.prem||0,'קרדיטים');
 }
 async function loadOrders(){if(!ONLINE||demo)return;try{const j=await rpc('oget',{});if(j.orders){myOrders=j.orders;panelDirty=true;}}catch(e){}}
 function showPacks(msg){
   const o=myOrders||{pay:'',orders:[]};
-  if(!o.pay){openModal('<h3>קרדיטים</h3><p class="hint">רכישת קרדיטים עוד לא נפתחה. היא תיפתח כשמפעיל המשחק יגדיר את פרטי התשלום.</p><div class="acts"><button class="btn pri" data-act="closeModal">סגור</button></div>');return;}
-  openModal('<h3>קניית קרדיטים</h3><p class="hint">בוחרים חבילה, משלמים לפי ההוראות, והקרדיטים נכנסים לחשבון אחרי שהתשלום מאושר. הרכישה מגיל 18, או באישור הורה.</p>'+
-    PACKS.map(p=>'<label class="pack"><input type="radio" name="pack" value="'+p.k+'"'+(p.k==='p2'?' checked':'')+'><span><b>'+L(fmt(p.credits))+' קרדיטים</b>'+(p.note?'<small>'+p.note+'</small>':'')+'</span><b class="num">'+L(p.ils)+' ש"ח</b></label>').join('')+
-    '<p class="hint" style="margin-top:8px"><b>איך משלמים:</b></p><p dir="auto" style="white-space:pre-wrap;margin:0 0 8px">'+esc(o.pay)+'</p>'+
-    '<input type="text" id="ordRef" maxlength="60" placeholder="שם המשלם או 4 ספרות אחרונות, כדי לזהות את התשלום" autocomplete="off">'+
+  if(!o.pay){openModal('<h3>תרומה למשחק</h3><p class="hint">התרומות עוד לא נפתחו. הן ייפתחו כשמפעיל המשחק יגדיר איך תורמים.</p><div class="acts"><button class="btn pri" data-act="closeModal">סגור</button></div>');return;}
+  openModal('<h3>תרומה למשחק</h3><p class="hint">בוחרים סכום, תורמים לפי ההוראות, והקרדיטים נכנסים לחשבון אחרי שהתרומה אושרה. תרומה מגיל 18, או באישור הורה.</p>'+
+    PACKS.map(p=>'<label class="pack"><input type="radio" name="pack" value="'+p.k+'"'+(p.k==='p2'?' checked':'')+'><span><b>תרומה של '+L(p.ils)+' ש"ח</b>'+(p.note?'<small>'+p.note+'</small>':'')+'</span><b class="num" style="color:#7df9ff">'+L(fmt(p.credits))+' קרדיטים</b></label>').join('')+
+    '<p class="hint" style="margin-top:8px"><b>איך תורמים:</b></p><p dir="auto" style="white-space:pre-wrap;margin:0 0 8px">'+esc(o.pay)+'</p>'+
+    '<input type="text" id="ordRef" maxlength="60" placeholder="שם התורם או 4 ספרות אחרונות, כדי לזהות את התרומה" autocomplete="off">'+
     (msg?'<p class="hint" style="color:var(--bad)">'+esc(msg)+'</p>':'')+
     '<p class="hint">קרדיטים ופריטים הם חלק מהמשחק בלבד ואין להם ערך כספי. פרטים ב<a href="terms.html" target="_blank" rel="noopener">תקנון</a>.</p>'+
-    '<div class="acts"><button class="btn" data-act="closeModal">ביטול</button><button class="btn pri" data-act="ordSend">שילמתי, שלח בקשה</button></div>');
+    '<div class="acts"><button class="btn" data-act="closeModal">ביטול</button><button class="btn pri" data-act="ordSend">תרמתי, שלח בקשה</button></div>');
 }
 async function ordSend(){
-  const el=document.querySelector('input[name=pack]:checked'),ref=($('ordRef').value||'').trim();if(!el)return;if(ref.length<2){showPacks('כתוב פרט מזהה לתשלום');return;}
+  const el=document.querySelector('input[name=pack]:checked'),ref=($('ordRef').value||'').trim();if(!el)return;if(ref.length<2){showPacks('כתוב פרט שיזהה את התרומה');return;}
   let j=null;try{j=await rpc('onew',{pack:el.value,ref:ref});}catch(e){}
   if(j&&j.orders)myOrders=j.orders;if(!j||!j.result||!j.result.ok){showPacks(j&&j.result&&j.result.msg||'אין חיבור לשרת');return;}
-  closeModal();toast('הבקשה נשלחה. הקרדיטים ייכנסו אחרי אישור התשלום');panelDirty=true;
+  closeModal();toast('תודה! הקרדיטים ייכנסו אחרי שהתרומה תאושר');panelDirty=true;
 }
 /* ---------- leaderboard: the top 20 ---------- */
 let topList=null,topBy='resets';

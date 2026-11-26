@@ -283,7 +283,7 @@ test('paid credits: a request, an admin confirming it once, and spending the cre
   const {db,handle,auth,row}=await world();
   const boss=await auth.register('boss','longenough1','3.3.3.3',0,'x1');const bu=(await auth.session(boss.token)).uid;await handle(bu,'create',{name:'מנהל',cls:'blade'});
   await handle(U(1),'create',{name:'קונה',cls:'blade'});
-  assert.match((await handle(U(1),'onew',{pack:'p2',ref:'x'})).result.msg,/עוד לא נפתחה/,'closed until payment details are set');
+  assert.match((await handle(U(1),'onew',{pack:'p2',ref:'x'})).result.msg,/עוד לא נפתחו/,'closed until payment details are set');
   assert.equal((await handle(U(1),'aset',{key:'pay_info',value:'hack'})).result.ok,false,'players cannot open the shop');
   await db.query("update users set is_admin=true where username='boss'");
   assert.ok((await handle(bu,'aset',{key:'pay_info',value:'העברה למספר 000'})).result.ok);
@@ -302,4 +302,21 @@ test('paid credits: a request, an admin confirming it once, and spending the cre
   const o2=await handle(U(1),'onew',{pack:'p1',ref:''});const id2=o2.orders.orders[0].id;assert.ok((await handle(bu,'aodecide',{id:id2,ok:false})).result.ok);
   assert.equal((await row(U(1))).state.prem,130,'a rejected request adds nothing');
   const s=(await handle(bu,'aorders',{})).shop;assert.equal(Number(s.paid_total),50);assert.equal(s.pending.length,0);
+});
+
+test('daily backup: a snapshot of the accounts, and one account put back from it',async()=>{
+  const {db,handle,auth,row}=await world();
+  const boss=await auth.register('boss','longenough1','3.3.3.3',0,'x1');const bu=(await auth.session(boss.token)).uid;await handle(bu,'create',{name:'מנהל',cls:'blade'});
+  const pl=await auth.register('dana','longenough1','4.4.4.4',0,'x1');const pu=(await auth.session(pl.token)).uid;await handle(pu,'create',{name:'דנה',cls:'storm'});
+  await db.query("update accounts set state=jsonb_set(state,'{gold}','777') where user_id=$1",[pu]);
+  assert.equal((await handle(pu,'abackup',{})).result.ok,false,'players cannot run or read backups');
+  await db.query("update users set is_admin=true where username='boss'");
+  const b=await handle(bu,'abackup',{});assert.ok(b.result.ok,b.result.msg);assert.equal(b.backups.length,1);assert.equal(b.backups[0].accounts,2);
+  const day=(await db.query("select day::text d from backups")).rows[0].d;
+  await db.query("update accounts set state=jsonb_set(state,'{gold}','1') where user_id=$1",[pu]);
+  assert.equal((await handle(pu,'arestore',{day,user:'dana'})).result.ok,false);
+  assert.ok((await handle(bu,'arestore',{day,user:'dana'})).result.ok);assert.equal((await row(pu)).state.gold,777,'the saved game is back');
+  assert.equal((await handle(bu,'arestore',{day:'2020-01-01',user:'dana'})).result.ok,false,'no such day');
+  await handle(bu,'abackup',{});assert.equal((await db.query('select count(*)::int c from backups')).rows[0].c,1,'one snapshot a day');
+  const snap=(await db.query("select data from backups")).rows[0].data;assert.ok(snap.users.length===2&&snap.settings&&snap.orders);
 });

@@ -6,7 +6,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
     sold: "הפריט כבר נמכר", own: "זה פריט שלך", no_gold: "אין מספיק זהב", bag_full: "התיק מלא",
     limit: "אפשר להציע עד 8 פריטים", not_found: "הפריט לא בתיק", bad_price: "מחיר לא תקין", no_account: "אין חשבון",
     in_guild: "אתה כבר בגילדה", no_guild: "לא נמצאה גילדה בשם הזה", guild_full: "הגילדה מלאה", bad_name: "שם: 3 עד 14 אותיות וספרות. תג: 2 עד 4",
-    taken: "השם או התג כבר תפוסים", not_leader: "רק מוביל הגילדה יכול", muted: "הושתקת בצ'אט", order_pending: "יש לך כבר בקשה שממתינה לאישור", order_limit: "יותר מדי בקשות היום. נסה מחר", order_done: "הבקשה כבר טופלה", shop_closed: "רכישת קרדיטים עוד לא נפתחה", slow: "לאט יותר, רגע בין הודעות", empty: "הודעה ריקה", forbidden: "אין הרשאה",
+    taken: "השם או התג כבר תפוסים", not_leader: "רק מוביל הגילדה יכול", muted: "הושתקת בצ'אט", order_pending: "יש לך כבר בקשה שממתינה לאישור", order_limit: "יותר מדי בקשות היום. נסה מחר", order_done: "הבקשה כבר טופלה", shop_closed: "התרומות עוד לא נפתחו", not_found: "לא נמצא", slow: "לאט יותר, רגע בין הודעות", empty: "הודעה ריקה", forbidden: "אין הרשאה",
     not_party: "אפשר למכור ישירות רק לחבר פארטי", in_party: "אתה כבר בפארטי", no_party: "לא נמצא פארטי עם הקוד הזה", full: "הפארטי מלא, עד חמישה שחקנים",
   };
   const MAX_CALLS_PER_MIN = 240;
@@ -76,7 +76,13 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
       if (kind === "aset") res = await admin.rpc("admin_setting", { p_admin: uid, p_key: String(args.key || "").slice(0, 20), p_value: String(args.value == null ? "" : args.value).slice(0, 700) });
       const view = await admin.rpc("admin_orders", { p_admin: uid });
       if (view.error) return { result: { ok: false, msg: errMsg(view) } };
-      return { result: res.error ? { ok: false, msg: errMsg(res) } : { ok: true }, shop: view.data };
+      return { result: res.error ? { ok: false, msg: errMsg(res) } : { ok: true }, shop: view.data, backups: (await admin.rpc("admin_backups", { p_admin: uid })).data || [] };
+    }
+    if (kind === "abackup" || kind === "arestore") { // take a backup now, or put one account back from a given day
+      const ok = await admin.rpc("is_admin", { p_user: uid }); if (ok.data !== true) return { result: { ok: false, msg: MARKET_MSG.forbidden } };
+      const res = kind === "abackup" ? await admin.rpc("backup_run", {})
+        : await admin.rpc("backup_restore_account", { p_admin: uid, p_day: String(args.day || "").slice(0, 10), p_username: String(args.user || "").slice(0, 64) });
+      return { result: res.error ? { ok: false, msg: errMsg(res) } : { ok: true }, backups: (await admin.rpc("admin_backups", { p_admin: uid })).data || [] };
     }
     if (kind === "aview") { const r = await admin.rpc("admin_view", { p_user: uid }); return r.error ? { result: { ok: false, msg: errMsg(r) } } : { result: { ok: true }, admin: r.data }; }
     if (kind === "aact") {
