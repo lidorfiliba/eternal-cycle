@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126154328';
+const BUILD='20261126154727';
 const {DUEL_ROUNDS,duelCan,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -86,7 +86,7 @@ function renderMarket(){
 /* ---------- canvas drawing ---------- */
 const cv=$('cv'),ctx=cv.getContext('2d');let W=360,H=260,DPR=1,ZM=1;
 const calm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-function resize(){const r=cv.getBoundingClientRect();DPR=Math.min(window.devicePixelRatio||1,2);ZM=Math.max(1,Math.min(2.2,r.height/440,r.width/560));W=Math.max(200,r.width/ZM);H=Math.max(140,r.height/ZM);cv.width=Math.max(200,r.width)*DPR;cv.height=Math.max(140,r.height)*DPR;} // on a large screen the scene is enlarged, not just widened
+function resize(){const r=cv.getBoundingClientRect();DPR=Math.min(window.devicePixelRatio||1,2);ZM=Math.max(1,Math.min(1.4,r.height/760,r.width/800));W=Math.max(200,r.width/ZM);H=Math.max(140,r.height/ZM);cv.width=Math.max(200,r.width)*DPR;cv.height=Math.max(140,r.height)*DPR;} // on a large screen the scene is enlarged, not just widened
 window.addEventListener('resize',resize);if(prefs.big)document.getElementById('app').classList.add('wide');if(prefs.big)document.getElementById('bigBtn').textContent='הקטן';setTimeout(()=>fsSync(),0);
 const MW=1500,TW=1150;
 const TOWN={n:'כפר המעגל',sky:['#141033','#4a3a78'],sil:'#0c0a20',amb:'#ffe9a8',kind:'town'};
@@ -791,7 +791,7 @@ function drawDuel(dt){
 function frame(dt){
   SC.t+=dt;SC.dt=dt;if(statsDirty){C=calc(S,auras);statsDirty=false;}
   if(SC.mode==='farm'){updateWorld(dt);updatePeers(dt);}else updateDuel(dt);
-  ctx.setTransform(DPR*ZM,0,0,DPR*ZM,0,0);ctx.imageSmoothingEnabled=false;
+  ctx.setTransform(DPR*ZM,0,0,DPR*ZM,0,0);
   ctx.save();if(SC.shake>0){SC.shake-=dt;ctx.translate((Math.random()-.5)*7,(Math.random()-.5)*5);}
   const cam=SC.cam;if(SC.mode==='duel')SC.cam=0;
   drawBg(SC.zi,SC.t);
