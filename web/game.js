@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126182500';
-const {LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126185048';
+const {mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
@@ -54,11 +54,11 @@ function send(kind,args){
   const p=chain.then(run);chain=p.catch(()=>{});
   return p.catch(()=>{setNet(false);return {ok:false,msg:'net'};});
 }
-const pend={kills:0,casts:0,boss:false,t:0};
+const pend={kills:0,casts:0,boss:false,elite:false,t:0};
 function flushTick(){
   if(!ONLINE||demo||!S)return Promise.resolve();
-  if(!pend.kills&&!pend.casts&&!pend.boss&&!(party.code&&SC.zi>=0))return chain; // in a party, keep checking in: that is how shared experience arrives
-  const a={z:SC.zi,f:SC.fl,kills:pend.kills,casts:pend.casts,boss:pend.boss,ev:SC.ev?1:0},l0=S.lvl;pend.kills=0;pend.casts=0;pend.boss=false;pend.t=0;
+  if(!pend.kills&&!pend.casts&&!pend.boss&&!pend.elite&&!(party.code&&SC.zi>=0))return chain; // in a party, keep checking in: that is how shared experience arrives
+  const a={z:SC.zi,f:SC.fl,kills:pend.kills,casts:pend.casts,boss:pend.boss,elite:pend.elite,ev:SC.ev?1:0},l0=S.lvl;pend.kills=0;pend.casts=0;pend.boss=false;pend.elite=false;pend.t=0;
   return send('tick',a).then(r=>afterTick(r,null,l0));
 }
 async function act(kind,args){await flushTick();return send(kind,args);}
@@ -362,8 +362,9 @@ function drawHero(x,y,sc,look,t,anim,flip,dead,mv,fury){
   if(maxP>=13&&!dead&&!calm&&Math.random()<.35)SC.parts.push({x:x+(Math.random()-.5)*44*sc,y:y-Math.random()*m.bh*k,vx:0,vy:-20,life:.8,c:gc,s:2});
 }
 function drawMon(m,zi,t,flip,sc){
-  const z=ZONES[zi],key=z.spr,sm=SPR[key],fl=SC.mode==='farm'&&!SC.ev?SC.fl:0,fc=fl===2?'#b46bff':fl===1?'#ff9a4a':null,sheet=z.tint?tintedSheet(key,z.tint,.55):null,k=(m.boss?3.6:2)*sc*(1+fl*.08),lift=z.fly?(26+Math.sin(t*3+m.ph)*5)*sc*(m.boss?1.6:1):0,y=m.y-lift;
+  const z=ZONES[zi],key=z.spr,sm=SPR[key],fl=SC.mode==='farm'&&!SC.ev?SC.fl:0,fc=fl===2?'#b46bff':fl===1?'#ff9a4a':null,sheet=z.tint?tintedSheet(key,z.tint,.55):null,k=(m.boss?3.6:m.elite?2.9:2)*sc*(1+fl*.08),lift=z.fly?(26+Math.sin(t*3+m.ph)*5)*sc*(m.boss?1.6:1):0,y=m.y-lift;
   ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(m.x,m.y+1,(m.boss?36:18)*sc,(m.boss?8:4)*sc,0,0,7);ctx.fill();
+  if(m.elite&&!m.boss){ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.34+.14*Math.sin(t*5);const R=sm.bh*k*.75,gr=ctx.createRadialGradient(m.x,y-sm.bh*k*.5,4,m.x,y-sm.bh*k*.5,R);gr.addColorStop(0,'#ffd75e');gr.addColorStop(1,'transparent');ctx.fillStyle=gr;ctx.beginPath();ctx.arc(m.x,y-sm.bh*k*.5,R,0,7);ctx.fill();ctx.restore();label('אלוף',m.x,y-sm.bh*k-10,'#ffd75e',12);}
   if(m.boss){ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.3+.12*Math.sin(t*4);const R=sm.bh*k*.8,gr=ctx.createRadialGradient(m.x,y-sm.bh*k*.5,4,m.x,y-sm.bh*k*.5,R);gr.addColorStop(0,'#ff5c7a');gr.addColorStop(1,'transparent');ctx.fillStyle=gr;ctx.beginPath();ctx.arc(m.x,y-sm.bh*k*.5,R,0,7);ctx.fill();ctx.restore();}
   let an='idle',fi=Math.floor(t*8+m.ph);
   if(m.die>0){an='die';fi=Math.floor((1-m.die/.45)*frames(key,'die'));}
@@ -528,6 +529,12 @@ function spawnBoss(){
   const zi=SC.zi,z=ZONES[zi];if(SC.boss||zi<0)return;
   const b=newMon(MW-280,zi);b.boss=true;b.hp=b.max=zs(zi,SC.fl).hp*30;b.slamT=4;b.wind=0;SC.boss=b;SC.mons.push(b);snd('boss');toast('הבוס של '+z.n+' הופיע בקצה המפה');
 }
+// A champion: one monster of the pack that is far stronger and carries a sure rare drop. The server decides when.
+function syncElite(){
+  if(!A||SC.mode!=='farm'||SC.ev)return;const e=A.elite,want=!!(e&&e.z===SC.zi&&(e.f|0)===SC.fl&&SC.zi>=0),cur=SC.mons.find(m=>m.elite);
+  if(want&&!cur&&!pend.elite){const h=SC.hero,m=newMon(clamp(h.x+(h.x<mapW()/2?1:-1)*(260+Math.random()*120),160,mapW()-160),SC.zi);m.elite=true;m.hp=m.max=zs(SC.zi,SC.fl).hp*ELITE_HP;m.ag=true;SC.mons.push(m);snd('growl');announce('אלוף הופיע במפה. הבס אותו לפני שייעלם',true);}
+  else if(!want&&cur&&cur.die<=0){SC.mons=SC.mons.filter(m=>m!==cur);if(SC.hero.tgt===cur)SC.hero.tgt=null;}
+}
 function dropOrbs(m,rep){
   const add=(c,s)=>SC.drops.push({x:m.x,y:m.y-24,vx:(Math.random()-.5)*160,vy:-160-Math.random()*90,c:c,s:s,age:0,life:4});
   snd(rep.notable?'rare':'kill');if(!rep.notable&&(rep.items||rep.gems))snd('coin');
@@ -563,15 +570,17 @@ function afterTick(r,m,l0){
   const rep=r.rep||{},src=m||{x:SC.hero.x+SC.hero.face*26,y:gy()};
   if(!ONLINE||rep.items||rep.gems||rep.boxes||rep.notable)dropOrbs(src,rep);
   if(rep.items||rep.boxes)panelDirty=true;
+  if(rep.elite){toast('האלוף הובס. השלל שלך',3);snd('rare');}if(rep.eliteDenied)toast('השרת לא אישר את הניצחון על האלוף');
   if(rep.boss||rep.bossDenied){bossPending=false;if(rep.opened!=null)toast('השער אל '+ZONES[rep.opened].n+' נפתח');if(rep.bossDenied)toast('השרת לא אישר את הניצחון על הבוס');}
   if(r.shared>0)addNum(SC.hero.x,gy()-150,'+'+fmt(r.shared)+' ניסיון מהפארטי','#8be28b',true);
   if(r.partyN!=null)partyN=r.partyN;if(r.auras&&r.auras.join()!==auras.join()){auras=r.auras;statsDirty=true;panelDirty=true;}
   if(S.lvl>l0)afterXp(S.lvl-l0);
-  statsDirty=true;syncBoss();
+  statsDirty=true;syncBoss();syncElite();
 }
 function onKill(m,zi){
   const z=ZONES[zi];
   if(demo){burst(m.x,m.y-24,z.c,10);if(m.boss)SC.boss=null;return;}
+  if(m.elite){snd('bossdie');burst(m.x,m.y-36,'#ffd75e',30);addNum(m.x,m.y-120,'האלוף הובס!','#ffd75e',true);m.gone=true;if(ONLINE){pend.elite=true;flushTick();}else{const l0=S.lvl;afterTick(localTick({z:zi,kills:0,elite:true}),m,l0);}return;}
   if(m.boss){snd('bossdie');
     SC.boss=null;bossPending=true;burst(m.x,m.y-40,'#f2c14e',40);if(!calm)SC.shake=.4;addNum(m.x,m.y-150,'הבוס הובס!','#f2c14e',true);
     if(ONLINE){pend.boss=true;flushTick();}else{const l0=S.lvl;afterTick(localTick({z:zi,kills:0,boss:true}),m,l0);}
@@ -664,7 +673,7 @@ function updateWorld(dt){
   h.buff=Math.max(0,h.buff-dt);h.manual=Math.max(0,h.manual-dt);h.autoSk=Math.max(0,h.autoSk-dt);h.anim=Math.max(0,h.anim-dt*4);h.skA=Math.max(0,(h.skA||0)-dt);h.atkT-=dt;h.mv=false;
   // monsters
   for(const m of SC.mons){
-    if(m.die>0){m.die-=dt;if(m.die<=0){if(m.boss)m.gone=true;else m.resp=SC.ev?.9:3.5;}continue;}
+    if(m.die>0){m.die-=dt;if(m.die<=0){if(m.boss||m.elite)m.gone=true;else m.resp=SC.ev?.9:3.5;}continue;}
     if(m.resp>0){m.resp-=dt;if(m.resp<=0){m.hp=m.max;m.x=m.home;m.dead=false;m.stun=0;m.pull=null;m.ag=false;}continue;}
     m.hit=Math.max(0,m.hit-dt*4);m.atkA=Math.max(0,(m.atkA||0)-dt);m.mv=false;
     if(m.pull!=null){m.x+=(m.pull-m.x)*Math.min(1,dt*9);if(Math.abs(m.pull-m.x)<3)m.pull=null;}
@@ -676,7 +685,7 @@ function updateWorld(dt){
     const same=m.boss||(m.up?1:0)===(h.up?1:0);if(!same)m.ag=false;
     if(same&&h.dead<=0&&(m.boss?ad<340:(m.ag||ad<110))){
       if(ad>reach){m.x+=Math.sign(dx)*(m.boss?45:58)*dt;m.mv=true;}
-      else if((m.atkT-=dt)<=0){m.atkT=m.boss?1.2:1;m.atkA=.5;const taken=zs(zi,SC.fl).atk*(m.boss?2:1)*300/(300+C.def)*(h.shield>0?.3:1);h.hp-=taken;snd('hurt');addNum(h.x,gy()-100,'-'+fmt(taken),'#ff5c7a');}
+      else if((m.atkT-=dt)<=0){m.atkT=m.boss?1.2:1;m.atkA=.5;const taken=zs(zi,SC.fl).atk*(m.boss?2:m.elite?1.6:1)*300/(300+C.def)*(h.shield>0?.3:1);h.hp-=taken;snd('hurt');addNum(h.x,gy()-100,'-'+fmt(taken),'#ff5c7a');}
       if(m.boss&&(m.slamT-=dt)<=0&&ad<210){m.wind=1.2;m.slamX=m.x;snd('growl');}
     }else if(Math.abs(m.x-m.home)>4){m.x+=Math.sign(m.home-m.x)*40*dt;m.mv=true;m.back=true;}else m.back=false;
     if(m.up)m.x=clamp(m.x,DECK.x0+18,DECK.x1-18);
@@ -850,9 +859,11 @@ async function tryEgg(k){if(!S||demo||egg.tried[k]||(A.eggs&&A.eggs[k]))return;e
 const DBTN=['atk','s0','s1','s3','s2','dash','pot'];
 const dX=u=>u*(W/LIVE_W),dy=f=>gy()-(1-f.z)*84,dsc=f=>.8+f.z*.2;
 function startDuel(pd,net){
+  if(pd.tower&&!pd.o.w)pd.o.w=[1,0,0,0];
   const D=liveFrom(pd.live,net?net.cls[0]:S.cls,net?net.cls[1]:pd.o.c),me=net?net.side:0;
   SC.duel={opp:pd.o,D:D,me:me,net:net||null,v:[{anim:0,face:1,mv:false,hitT:0},{anim:0,face:-1,mv:false,hitT:0}],end:0,win:null,gain:0,sent:false,ai:{t:.6,threat:0},holdAtk:false,go:1.2,posT:0,tgt:null,last:[0,0]};
   if(net&&net.spec){SC.duel.spec=net.spec;SC.duel.go=0;SC.duel.tg=[null,null];}
+  if(pd.tower){SC.duel.tower=pd.tower;SC.duel.slam=null;SC.duel.slamT=4.5;D.f[1].pots=0;D.f[1].at.atk=1.5;}
   SC.mode='duel';SC.fx=[];SC.nums=[];SC.drops=[];SC.hero.dir=0;SC.hero.dz=0;closeModal();renderDuelBar();
 }
 function renderDuelBar(){
@@ -901,6 +912,16 @@ function duelAI(d,dt){ // the absent player, played here with his own numbers an
   if(r<.5&&act('s3'))return;if(r<.7&&act('s1'))return;if(r<.8&&act('s0'))return;
   act('atk');
 }
+function towerAI(d,dt){ // a floor guardian: walks you down, swings, and marks the ground before a heavy slam
+  const D=d.D,me=D.f[1],en=D.f[0],v=d.v[1],dist=Math.abs(en.x-me.x),dir=en.x>=me.x?1:-1,mad=me.hp<.5;v.mv=false;if(me.stun>D.t)return;
+  if(d.slam){d.slam.t-=dt;if(d.slam.t<=0){const s=d.slam,g=gy()-(1-s.z)*84;d.slam=null;v.anim=1;SC.fx.push({k:'ring',x:dX(s.x),y:g-6,life:.45,c:'#ff5c7a',r:dX(74)});SC.fx.push({k:'flash',x:dX(s.x),y:g-20,r:70,life:.3,d:.3,c:'#ff5c7a'});if(!calm)SC.shake=.4;snd('slam');
+      if(Math.abs(en.x-s.x)<72&&Math.abs(en.z-s.z)<=LIVE_LANE){if(en.inv>D.t)addNum(dX(en.x),dy(en)-110,'חמק!','#9fe8ff',true);else{const dm=D.b[1]*2.6*(en.sh>D.t?.4:1);en.hp-=dm;d.v[0].hitT=.25;addNum(dX(en.x),dy(en)-100,fmt(Math.round(dm*D.pool[0])),'#ff5c7a',true);}}}
+    return;}
+  if(dist>58){me.x+=dir*(mad?96:72)*dt;v.mv=true;}me.x=clamp(me.x,20,LIVE_W-20);v.face=dir;
+  {const dz=en.z-me.z;if(Math.abs(dz)>.08){me.z=clamp(me.z+Math.sign(dz)*(mad?.5:.36)*dt,0,1);v.mv=true;}}
+  if((d.slamT-=dt)<=0&&dist<150){d.slamT=mad?3.6:5.5;d.slam={t:mad?.85:1.1,x:en.x,z:en.z};snd('growl');return;}
+  if(dist<=76&&Math.abs(en.z-me.z)<=LIVE_LANE){const o=liveAct(D,1,'atk',Math.random);if(o)dShow(d,o);}
+}
 function updateDuel(dt){
   const d=SC.duel,D=d.D,me=D.f[d.me],vm=d.v[d.me];
   for(const v of d.v){v.anim=Math.max(0,v.anim-dt*3.2);v.hitT=Math.max(0,v.hitT-dt);}
@@ -915,12 +936,12 @@ function updateDuel(dt){
   if(d.net){ // tell the server where I stand, and glide the other side toward where it said he is
     if((d.posT-=dt)<=0&&(Math.abs(me.x-d.last[0])>.5||Math.abs(me.z-d.last[1])>.01)){d.posT=.05;d.last=[me.x,me.z];netSend({t:'pos',x:Math.round(me.x*10)/10,z:Math.round(me.z*100)/100});}
     const op=D.f[1-d.me],vo=d.v[1-d.me];vo.mv=false;if(d.tgt){const ex=d.tgt[0]-op.x,ez=d.tgt[1]-op.z;if(Math.abs(ex)>1||Math.abs(ez)>.02){op.x+=ex*Math.min(1,dt*20);op.z+=ez*Math.min(1,dt*20);vo.mv=true;if(Math.abs(ex)>2)vo.face=ex>0?1:-1;}}
-  }else{duelAI(d,dt);if(liveOver(D))endDuel(D.win===0);}
+  }else{if(d.tower)towerAI(d,dt);else duelAI(d,dt);if(liveOver(D))endDuel(d.tower?D.f[1].hp<=0:D.win===0);}
   if((d.bt=(d.bt||0)+dt)>.25){d.bt=0;renderDuelBar();}
 }
 async function endDuel(win){ // a fight that ran here: report it; the server checks that it could have happened
   const d=SC.duel;if(!d||d.sent)return;d.sent=true;d.end=9;d.holdAtk=false;d.local=win;renderDuelBar();
-  const r=await send('duelEnd',{win:win});if(SC.duel!==d)return;
+  const r=await send(d.tower?'towerEnd':'duelEnd',{win:win});if(SC.duel!==d)return;if(d.tower&&r&&r.ok)d.rt=r.rt;
   showResult(d,r&&r.ok?!!r.win:win,r&&r.ok?r.gain|0:0,!!(r&&r.denied));
 }
 function showResult(d,win,gain,denied){
@@ -930,6 +951,7 @@ function showResult(d,win,gain,denied){
 function finishDuel(){
   const d=SC.duel,win=d.win;
   if(d.spec){toast(d.winner?d.winner+' ניצח':'הקרב נגמר');SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];renderDuelBar();return;}
+  if(d.tower){toast(d.denied?'השרת לא אישר את הניצחון':d.win?'קומה '+d.tower+' נכבשה. קיבלת '+(d.rt||''):'השומר של קומה '+d.tower+' ניצח. נסה שוב',d.win?4:0);if(d.win)announce('כבשת את קומה '+d.tower+' במגדל הנצח',true);SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];SC.hero.dir=0;SC.hero.dz=0;renderDuelBar();touch();return;}
   toast(d.denied?'השרת לא אישר את הניצחון':d.why==='left'&&win?'היריב עזב. ניצחת':win?'ניצחון. הדירוג עלה ב-'+d.gain+', קיבלת 8 מטבעות עונה':'הפסד. הדירוג ירד ב-12');
   SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];SC.hero.dir=0;SC.hero.dz=0;renderDuelBar();if(d.net)send('sync',{});touch();
 }
@@ -942,15 +964,17 @@ function drawDuel(dt){
     for(let q=0;q<=4;q++){const u=q/4,y=y0+(y1-y0)*u*u,ins=in0+(6-in0)*u*u;ctx.beginPath();ctx.moveTo(ins,y);ctx.lineTo(W-ins,y);ctx.stroke();}
     ctx.strokeStyle='rgba(255,215,94,.6)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(in0,y0);ctx.lineTo(W-in0,y0);ctx.lineTo(W-6,y1);ctx.lineTo(6,y1);ctx.closePath();ctx.stroke();ctx.restore();}
   const lined=Math.abs(f[0].z-f[1].z)<=LIVE_LANE;
+  if(d.slam){const s=d.slam,u=1-clamp(s.t/1.1,0,1),g2=g-(1-s.z)*84;ctx.save();ctx.globalAlpha=.22+.4*u;ctx.fillStyle='#ff3b5c';ctx.beginPath();ctx.ellipse(dX(s.x),g2+2,dX(72),16,0,0,7);ctx.fill();ctx.globalAlpha=.9;ctx.strokeStyle='#ff8aa0';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(dX(s.x),g2+2,dX(72)*u,16*u,0,0,7);ctx.stroke();ctx.restore();}
   for(const i of (f[0].z<=f[1].z?[0,1]:[1,0])){const a=f[i],v=d.v[i],ya=dy(a),s2=sc*dsc(a),ax=dX(a.x),x=ax+(v.hitT>0?(Math.random()-.5)*5:0),down=lost!=null&&(i===me?lost:!lost);
     ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(ax,ya+2,22*s2,6*s2,0,0,7);ctx.fill();
     if(lined&&i!==me&&!d.sent){ctx.strokeStyle='rgba(255,92,122,.55)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(ax,ya+2,28*s2,8*s2,0,0,7);ctx.stroke();}
     if(a.sh>D.t){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle='#9fe8ff';ctx.shadowColor='#9fe8ff';ctx.shadowBlur=12;ctx.globalAlpha=.5+.3*Math.sin(SC.t*9);ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(ax,ya-44*s2,30*s2,50*s2,0,0,7);ctx.stroke();ctx.restore();}
-    ctx.save();if(a.inv>D.t)ctx.globalAlpha=.45;drawHero(x,ya,s2,looks[i],SC.t+i*1.7,v.anim,v.face<0,down?Math.max(.01,dead):0,v.mv,false);ctx.restore();
+    if(d.tower&&i!==me){drawMon({x:x,y:ya,boss:true,hit:v.hitT>0?.9:0,atkA:v.anim>.2?v.anim*.5:0,die:down?Math.max(.01,.45-dead*.4):0,ph:0,mv:v.mv},d.opp.bossZ|0,SC.t,v.face<0,s2*.62);}
+    else{ctx.save();if(a.inv>D.t)ctx.globalAlpha=.45;drawHero(x,ya,s2,looks[i],SC.t+i*1.7,v.anim,v.face<0,down?Math.max(.01,dead):0,v.mv,false);ctx.restore();}
     if(a.stun>D.t)for(let q=0;q<3;q++){const an=SC.t*6+q*2.1;label('✦',ax+Math.cos(an)*16,ya-128*s2+Math.sin(an)*5,'#ffd75e',12);}}
   const side=(x,a,c,nm)=>{hpBar(x-60,26,120,a.hp,c,nm);label('שיקויים '+a.pots+(a.sh>D.t?' · מגן':'')+(a.stun>D.t?' · המום':''),x,48,'#c9c2ea',10.5);};
   side(W*(me?.74:.26),f[me],'#6fe39a',d.spec?d.spec.n:S.name);side(W*(me?.26:.74),f[1-me],'#ff5c7a',d.opp.n);
-  label(d.go>0?'היכון...':mmss(Math.max(0,DUEL_LIVE.time-D.t)),W/2,32,d.go>0?'#ffd75e':'#fff',d.go>0?18:13);if(d.net)label(d.spec?'צופה בקרב חי':'קרב חי מול שחקן',W/2,48,'#7df9ff',10.5);
+  label(d.go>0?'היכון...':mmss(Math.max(0,DUEL_LIVE.time-D.t)),W/2,32,d.go>0?'#ffd75e':'#fff',d.go>0?18:13);if(d.net)label(d.spec?'צופה בקרב חי':'קרב חי מול שחקן',W/2,48,'#7df9ff',10.5);if(d.tower)label('מגדל הנצח · קומה '+d.tower,W/2,64,'#ffd75e',11);
   if(d.go<=0&&!d.sent&&!d.spec){const far=Math.abs(f[1].x-f[0].x)>LIVE_RNG[f[me].cls]+14;if(far||!lined)label(!lined?'עמוד מולו כדי לפגוע':'התקרב כדי לתקוף',dX(f[me].x),dy(f[me])-150*sc*dsc(f[me]),'#ffd75e',11);}
   const hx0=SC.hero.x;SC.hero.x=dX(f[me].x);drawFx(dt);SC.hero.x=hx0;
 }
@@ -1066,6 +1090,8 @@ function renderChar(){
    '<div class="kv"><span>הגנה</span><b class="num">'+fmt(c.def)+'</b></div>'+
    '<div class="kv"><span>בונוס ניסיון</span><b class="num">'+L('+'+Math.round((c.xpM-1)*100)+'%')+'</b></div>'+
    '<div class="kv"><span>טווח תקיפה</span><b>'+(S.cls==='blade'?'קרוב':'רחוק')+'</b></div></div></div>';
+  {const ml=mastery(A.kills),a0=masteryNeed(ml),a1=masteryNeed(ml+1);
+    h+='<h2>דרגת המעגל</h2><div class="card" style="display:block"><div class="kv"><b style="color:var(--gold)">דרגה '+L(ml)+'</b><b class="num">'+L('+'+ml*MASTERY_PCT+'%')+' נזק וחיים</b></div><div class="bar gold" style="margin:6px 0"><i style="width:'+clamp((A.kills-a0)/(a1-a0)*100,0,100)+'%"></i></div><p class="hint">הדרגה הזו לא נגמרת. כל מפלצת שהחשבון חיסל אי פעם נספרת, וכל דרגה מוסיפה '+L(MASTERY_PCT+'%')+' נזק וחיים לכל הדמויות. עוד '+L(fmt(Math.max(0,a1-A.kills)))+' חיסולים לדרגה הבאה.</p></div>';}
   h+='<h2>נקודות סטט: '+L(S.pts)+'</h2><div class="card">';const spentPts=S.stats.str+S.stats.agi+S.stats.vit+S.stats.ene-60;
   for(const k of ['str','agi','vit','ene'])h+='<div class="stat"><div class="n">'+STATN[k][0]+'<small>'+STATN[k][1]+'</small></div><b class="num"'+(S.stats[k]>=STAT_MAX?' style="color:var(--gold)"':'')+'>'+(S.stats[k]>=STAT_MAX?'מלא':fmt(S.stats[k]))+'</b>'+
     '<button class="btn sm" data-act="pt" data-k="'+k+'" data-n="1"'+(S.pts<1?' disabled':'')+'>'+L('+1')+'</button>'+
@@ -1204,7 +1230,7 @@ function renderParty(){
 }
 function renderArena(){
   const arenaOpps=A.opps||[];
-  let h=renderFriends()+(ONLINE&&liveDuels.length?'<h2>קרבות חיים עכשיו</h2>'+liveDuels.map(x=>'<div class="card opp"><div class="z"><b>'+esc(String(x.a))+' נגד '+esc(String(x.b))+'</b><small>דו-קרב חי</small></div><button class="btn sm pri" data-act="watch" data-id="'+(x.id|0)+'"'+(SC.mode==='farm'?'':' disabled')+'>צפה</button></div>').join(''):'')+renderTop()+renderGuild()+renderParty()+'<h2>זירה</h2><div class="card"><div class="grid2"><div class="kv"><span>דירוג</span><b class="num" style="color:var(--gold)">'+A.rating+'</b></div><div class="kv"><span>כרטיסים היום</span><b class="num">'+A.tickets+'</b></div></div>'+
+  let h=renderTower()+renderFriends()+(ONLINE&&liveDuels.length?'<h2>קרבות חיים עכשיו</h2>'+liveDuels.map(x=>'<div class="card opp"><div class="z"><b>'+esc(String(x.a))+' נגד '+esc(String(x.b))+'</b><small>דו-קרב חי</small></div><button class="btn sm pri" data-act="watch" data-id="'+(x.id|0)+'"'+(SC.mode==='farm'?'':' disabled')+'>צפה</button></div>').join(''):'')+renderTop()+renderGuild()+renderParty()+'<h2>זירה</h2><div class="card"><div class="grid2"><div class="kv"><span>דירוג</span><b class="num" style="color:var(--gold)">'+A.rating+'</b></div><div class="kv"><span>כרטיסים היום</span><b class="num">'+A.tickets+'</b></div></div>'+
     '<p class="hint" style="margin-top:6px">קרב חי, שום דבר לא קורה לבד: זזים עם החיצים, תוקפים, ומפעילים שלושה כישורים, מגן, צעד חמיקה ושלושה שיקויים. מכת המהמם עוצרת את היריב לרגע, המגן בולם 60% מהנזק, ובזמן חמיקה אי אפשר לפגוע בך. כשהיריב לא מחובר, המשחק מפעיל את הדמות שלו עם הציוד האמיתי שלו. במקלדת: רווח לתקיפה, 1 עד 4 לכישורים, Q לחמיקה, E לשיקוי. '+(ONLINE?'הדמות שלך שמורה בשרת ומופיעה לשחקנים אחרים.':'מצב מקומי: יוצגו רק דמויות אימון.')+'</p>'+(A.pd?'<button class="btn pri glow" data-act="fight" data-i="0">חזור לקרב שהתחלת</button>':'')+'</div><h2>יריבים</h2>';
   arenaOpps.forEach((o,i)=>{h+='<div class="card opp"><div class="z"><b>'+esc(o.n)+'</b>'+(o.bot?'<span class="tag">דמות אימון</span>':'')+
     '<small>'+CLS[o.c].n+' · רמה '+L(o.l)+' · ריסטים '+L(o.r)+' · כוח '+L(fmt(o.p))+'</small></div><button class="btn sm pri" data-act="fight" data-i="'+i+'"'+(A.tickets>0&&SC.mode==='farm'?'':' disabled')+'>הילחם</button></div>';});
@@ -1470,6 +1496,7 @@ document.addEventListener('click',async e=>{
     else if(a==='challenge'){closeModal();const k=b.dataset.k;if(ws&&ws.readyState===1){netSend({t:'challenge',k:k});toast('ההזמנה נשלחה. מחכים לתשובה');r={ok:true};}else{r=await act('duelStart',{k:k});if(r.ok)startDuel(r.pd);else toast(r.msg==='net'?'אין חיבור לשרת':r.msg);}}
     else if(a==='friend'||a==='block'){const on=b.dataset.on==='1';closeModal();r=await act(a,{k:b.dataset.k,n:b.dataset.n,on:on});if(r.ok){toast(a==='friend'?(on?b.dataset.n+' נוסף לחברים':'הוסר מהחברים'):(on?b.dataset.n+' נחסם. לא תראה הודעות ממנו':'החסימה הוסרה'));askWho();}else toast(r.msg);}
     else if(a==='report'){const why=($('repWhy')||{}).value||'';closeModal();r=await act('report',{k:b.dataset.k,n:b.dataset.n,why:why});toast(r.ok?'הדיווח נשלח. תודה':r.msg);r={ok:true};}
+    else if(a==='tower'){r=await act('towerStart',{});if(r.ok)startDuel(r.pd);else toast(r.msg==='net'?'אין חיבור לשרת':r.msg);}
     else if(a==='pvpYes'||a==='pvpNo'){closeModal();netSend({t:'answer',id:+b.dataset.id,ok:a==='pvpYes'});r={ok:true};}
     else if(a==='pinvite'){closeModal();try{const j=await rpc('say',{m:b.dataset.n+', בוא לפארטי שלי. הקוד: '+party.code,g:false});toast(j&&j.result&&j.result.ok?'ההזמנה נשלחה בצ\'אט':'ההזמנה לא נשלחה');beatT=99;}catch(e){}r={ok:true};}
     else if(a==='reroll'){loadArena();}
@@ -1507,6 +1534,14 @@ function showPeer(p){
     '<div class="grid2" style="margin-top:6px"><button class="btn" data-act="wTo" data-k="'+esc(p.k)+'" data-n="'+esc(s.n)+'">הודעה פרטית</button><button class="btn" data-act="friend" data-on="'+(isFriend(p.k)?0:1)+'" data-k="'+esc(p.k)+'" data-n="'+esc(s.n)+'">'+(isFriend(p.k)?'הסר מהחברים':'הוסף לחברים')+'</button>'+
     '<button class="btn sm" data-act="block" data-on="'+(isBlocked(p.k)?0:1)+'" data-k="'+esc(p.k)+'" data-n="'+esc(s.n)+'">'+(isBlocked(p.k)?'בטל חסימה':'חסום')+'</button><button class="btn sm" data-act="reportAsk" data-k="'+esc(p.k)+'" data-n="'+esc(s.n)+'">דווח</button></div>'+
     '<div class="acts"><button class="btn" data-act="closeModal">סגור</button></div>');
+}
+function renderTower(){
+  const tw=A.tower||{best:0},f=(tw.best|0)+1,b=towerBoss(f),left=TOWER_TRIES-(A.daily.tw|0),rw=towerReward(f),c=calc(S,auras),secs=b.hp/Math.max(1,c.dps);
+  return '<h2>מגדל הנצח</h2><div class="card" style="display:block"><div class="kv"><b style="color:var(--gold)">הקומה הבאה: '+L(f)+'</b><span>השיא שלך: '+L(tw.best|0)+'</span></div>'+
+    '<div class="kv"><span>חיי השומר</span><b class="num">'+L(fmt(b.hp))+'</b></div><div class="kv"><span>ניסיונות שנותרו היום</span><b class="num">'+L(left)+'</b></div>'+
+    '<div class="kv"><span>פרס</span><b>'+[rw.gems?L(rw.gems)+' אבני נשמה':'',rw.gold?L(fmt(rw.gold))+' זהב':'',rw.coins?L(rw.coins)+' מטבעות עונה':'',rw.sboxes?'תיבת עונה':'',rw.feathers?L(rw.feathers)+' נוצות נצח':''].filter(Boolean).join(' · ')+'</b></div>'+
+    '<p class="hint">בכל קומה שומר אחד, חזק מהקודם, ואין קומה אחרונה. נלחמים ביד, עם המהלכים של הזירה, ויש '+L(75)+' שניות. כשהשומר מסמן אזור אדום על הרצפה, צא ממנו או הפעל מגן. ניצחון לא עולה ניסיון, הפסד כן. '+(secs>60?'<span style="color:var(--bad)">לפי הנזק שלך כרגע, הקומה הזו על הגבול. שדרג ציוד או חזור אחרי ריסט.</span>':'')+'</p>'+
+    '<button class="btn pri'+(left>0?' glow':'')+'" style="width:100%" data-act="tower"'+(left>0&&SC.mode==='farm'?'':' disabled')+'>'+(left>0?'טפס לקומה '+L(f):'נגמרו הניסיונות להיום')+'</button></div>';
 }
 function renderFriends(){
   if(!ONLINE)return '';const fr=A.friends||[],bl=A.blocked||[];let h='<h2>חברים</h2>';
@@ -1813,6 +1848,6 @@ async function boot(){
   openModal('<h3>מעגל הנצח</h3><p class="hint">מתחבר לשרת...</p>');
   await startOnline();
 }
-if(typeof window!=='undefined')window.EC={duelAct,netSend,get peers(){return peers;},get ws(){return ws;},get A(){return A;},get S(){return S;},get C(){return C;},set C(v){C=v;},SC,G,send,act,frame,enterZone,pend,flushTick,syncBoss,spawnBoss,touch,get demo(){return demo;}};
+if(typeof window!=='undefined')window.EC={syncElite,duelAct,netSend,get peers(){return peers;},get ws(){return ws;},get A(){return A;},get S(){return S;},get C(){return C;},set C(v){C=v;},SC,G,send,act,frame,enterZone,pend,flushTick,syncBoss,spawnBoss,touch,get demo(){return demo;}};
 startLang();
 boot();

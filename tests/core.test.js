@@ -126,7 +126,7 @@ test('daily login reward: once a day, the streak grows only when collected on co
 test('resets: stats are kept, maps do not change with resets, a stat fills at its maximum, party experience',()=>{
   const {A}=fresh(),s=A.chars[0];s.lvl=G.CAP;s.stats.str=900;s.pts=37;s.autoPts=false;
   assert.ok(G.apply(A,'reset',{}).ok);assert.equal(s.lvl,1);assert.equal(s.stats.str,900);assert.equal(s.pts,37);assert.equal(s.resets,1);
-  assert.deepEqual(G.zs(3,1),G.zs(3,1,9),'a map is the same for everyone');assert.ok(G.ZONES[24].hp>G.ZONES[8].hp*4,'reset maps are the hard content');assert.equal(G.ZONES.length,32);assert.deepEqual([0,3,23,24,31].map(G.tierOf),[1,2,8,9,12]);
+  assert.deepEqual(G.zs(3,1),G.zs(3,1,9),'a map is the same for everyone');assert.ok(G.ZONES[24].hp>G.ZONES[8].hp*4,'reset maps are the hard content');assert.equal(G.ZONES.length,36);assert.deepEqual([0,3,23,24,31].map(G.tierOf),[1,2,8,9,12]);
   const sx=ctx=>{const B=G.adopt(JSON.parse(JSON.stringify(A)));G.setEnv(()=>.5,()=>B.last+20000);G.apply(B,'travel',{z:0});const r=G.apply(B,'tick',{z:0,kills:0},ctx);return [r.shared||0,B.chars[0].lvl];};
   assert.deepEqual(sx({}),[0,1]);assert.ok(sx({shareXp:5000})[1]>5,'experience handed over by the server levels the character');assert.equal(sx({shareXp:5000})[0],5000);
   s.stats.str=G.STAT_MAX-10;s.pts=50;assert.ok(G.apply(A,'pt',{k:'str',n:'all'}).ok);assert.equal(s.stats.str,G.STAT_MAX);assert.equal(s.pts,40);
@@ -316,4 +316,20 @@ test('English: every Hebrew phrase in the game has a translation, and sentences 
   assert.equal(tr('Santrio · רמה 141'),'Santrio · Level 141');assert.equal(tr('abc 123'),'abc 123');assert.ok(!/[֐-׿]/.test(tr('צריך 5 שברי ארגמן. יש לך 2')));
   assert.equal(tr('עוד 20 רמות'),'20 more levels');assert.equal(tr('נשארו 36 ימים לעונה'),'36 days left in the season');assert.equal(tr('נצח 12 קרבות זירה'),'Win 12 arena fights');assert.equal(tr('מביצת הערפל'),'From Mist Marsh');assert.equal(tr('הדירוג עלה ב-14, קיבלת 8 מטבעות עונה'),'Rating +14, and you received 8 Season Coins');
   delete globalThis.localStorage;
+});
+
+test('endless progress: cycle rank from lifetime kills, champions, and the tower',()=>{
+  assert.equal(G.mastery(0),0);assert.equal(G.mastery(1999),0);assert.equal(G.mastery(2000),1);for(const l of [1,2,5,20,80]){assert.equal(G.mastery(G.masteryNeed(l)),l);assert.equal(G.mastery(G.masteryNeed(l)-1),l-1);}
+  assert.ok(G.masteryNeed(100)>G.masteryNeed(50)*3,'each rank costs more than the last');
+  const b1=G.towerBoss(1),b30=G.towerBoss(30);assert.ok(b30.hp>b1.hp*100&&b30.atk>b1.atk*20);assert.ok(G.towerReward(10).feathers>=1&&G.towerReward(3).coins>0&&!G.towerReward(1).coins);
+  let t=Date.UTC(2026,10,26,12,20);G.setEnv(()=>.5,()=>t);
+  const A=G.newAccount();G.apply(A,'create',{name:'Tow',cls:'blade'},{});
+  const s=G.apply(A,'towerStart',{},{});assert.ok(s.ok&&s.pd&&s.pd.tower===1,JSON.stringify(s).slice(0,200));assert.equal(s.left,G.TOWER_TRIES-1);
+  assert.ok(!G.apply(A,'duelEnd',{win:true},{}).ok,'a tower fight cannot be closed as an arena fight');
+  const fast=G.apply(A,'towerEnd',{win:true},{});assert.ok(!fast.ok||fast.denied||!(A.tower&&A.tower.best),'a win reported instantly is not accepted');
+  const s2=G.apply(A,'towerStart',{},{});assert.ok(s2.ok);t+=70000;const g0=A.gems,w=G.apply(A,'towerEnd',{win:true},{});assert.ok(w.ok,JSON.stringify(w).slice(0,200));assert.equal(A.tower.best,1);assert.ok(A.gems>g0);
+  const s3=G.apply(A,'towerStart',{},{});assert.equal(s3.pd.tower,2);t+=70000;G.apply(A,'towerEnd',{win:false},{});assert.equal(A.tower.best,1);
+  for(let i=0;i<G.TOWER_TRIES+2;i++){const q=G.apply(A,'towerStart',{},{});if(!q.ok)break;t+=70000;G.apply(A,'towerEnd',{win:false},{});}
+  assert.ok(!G.apply(A,'towerStart',{},{}).ok,'tries run out for the day');
+  G.setEnv(Math.random,Date.now);
 });

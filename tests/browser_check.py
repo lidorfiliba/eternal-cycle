@@ -53,6 +53,20 @@ async def run(pg,online):
         if i==14: await pg.screenshot(path='/tmp/duel.png')
         if i==30: await pg.evaluate("()=>{if(EC.SC.duel)EC.SC.duel.D.f[1].hp=.01}")
     out['duelEnd']=await pg.evaluate("()=>[EC.SC.mode,EC.A.rating]")
+    if not online:
+        await pg.evaluate("()=>{EC.A.elite={z:EC.SC.zi,f:EC.SC.fl,t:Date.now()-60000};EC.flushTick&&0;}")
+        await pg.evaluate("()=>EC.syncElite()");await pg.wait_for_timeout(700);await pg.screenshot(path='/tmp/elite.png')
+        out['elite']=await pg.evaluate("()=>EC.SC.mons.filter(m=>m.elite).length")
+    await pg.click('[data-tab=arena]');await pg.wait_for_timeout(500)
+    out['towerBtn']=await pg.evaluate("()=>{const b=document.querySelector('[data-act=tower]');if(b)b.click();return !!b&&!b.disabled}");await pg.wait_for_timeout(1200)
+    out['tower']=await pg.evaluate("()=>[EC.SC.mode,EC.SC.duel&&EC.SC.duel.tower]")
+    for i in range(30):
+        if await pg.evaluate("()=>EC.SC.mode")!='duel': break
+        await pg.evaluate("()=>{const d=EC.SC.duel;if(!d||d.sent)return;const me=d.D.f[0],en=d.D.f[1];EC.SC.hero.dir=Math.abs(en.x-me.x)>60?(en.x>me.x?1:-1):0;for(const k of ['s3','s1','s0','atk'])EC.duelAct(k);}")
+        await pg.wait_for_timeout(400)
+        if i==9: await pg.screenshot(path='/tmp/tower.png')
+        if i==12: await pg.evaluate("()=>{if(EC.SC.duel){EC.SC.duel.D.f[1].hp=.01;EC.A.pd.t-=200000}}")
+    out['towerEnd']=await pg.evaluate("()=>[EC.SC.mode,EC.A.tower&&EC.A.tower.best,EC.A.daily.tw]")
     await pg.click('[data-tab=pass]');await pg.wait_for_timeout(1300)
     out['events']=await pg.evaluate("()=>[document.querySelectorAll('#panel .card').length,document.getElementById('evChip').textContent]")
     out['errors']=errs

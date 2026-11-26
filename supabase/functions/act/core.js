@@ -39,12 +39,17 @@ const ZRAW=[
  ['היכל הזהב','גובלין זהב',300,'gob_g',null,'brute','#ffd24a','#2a1a05','#b8862a','#1a1003','#fff3c4',4],
  ['ארמון המראות','אביר מראה',340,'skel','#7af0ff','brute','#9af4ff','#06202a','#2a8aa0','#04141a','#e8ffff',5],
  ['לב המעגל','שלד דם',380,'skel_d',null,'brute','#ff5c5c','#1f0306','#8f1420','#120204','#ffb0b0',7],
- ['קצה העולם','תולעת ריק',392,'worm','#e0d0ff','drake','#f0e8ff','#0a0614','#3a2a5a','#06040c','#ffffff',10]
+ ['קצה העולם','תולעת ריק',392,'worm','#e0d0ff','drake','#f0e8ff','#0a0614','#3a2a5a','#06040c','#ffffff',10],
+ // Far reset maps, for those who keep going: fifteen resets and beyond.
+ ['שדות האפר','גובלין אפר',300,'gob','#9a9a9a','brute','#c8c8c8','#101010','#4a4a4a','#080808','#f0f0f0',15],
+ ['מצולות הזמן','עין הזמן',340,'eye','#5affd0','ghost','#7affdc','#04201c','#1a8a70','#021410','#d8fff4',20],
+ ['כור ההיתוך','שלד מותך',370,'skel','#ff5a1a','brute','#ff7a3a','#2a0a02','#b83a0a','#1a0601','#ffd0a0',30],
+ ['לב הנצח','נחש הבריאה',395,'worm','#ffffff','drake','#fff8e0','#18102a','#7a5ac8','#0c0818','#ffffff',50]
 ];
 const BASEZ=24,REGION=3;
 // Reset maps are built for characters that kept their stats through resets: [life, damage] multipliers by the resets a map needs.
-const RESET_TOUGH={1:[4,2.2],2:[4.5,2.6],3:[5,2.8],4:[5.5,3],5:[6,3.2],7:[7,3.5],10:[8,4]};
-const SIGS=['xp','gold','hp','crit','aspd','cdmg','drop','dmg'],RSIGS=['xp','dmg','gold','cdmg'];
+const RESET_TOUGH={1:[4,2.2],2:[4.5,2.6],3:[5,2.8],4:[5.5,3],5:[6,3.2],7:[7,3.5],10:[8,4],15:[11,5],20:[14,6],30:[19,7.5],50:[28,10]};
+const SIGS=['xp','gold','hp','crit','aspd','cdmg','drop','dmg'],RSIGS=['xp','dmg','gold','cdmg','aspd','crit'];
 const ZONES=ZRAW.map((q,i)=>{
   const min=q[2],req=q[11]||0,base=i<BASEZ,j=i-BASEZ,z={n:q[0],m:q[1],min:min,spr:q[3],tint:q[4],kind:q[5],c:q[6],sky:[q[7],q[8]],sil:q[9],amb:q[10],fly:q[3].indexOf('eye')===0};
   z.sig=base?SIGS[Math.floor(i/REGION)]:RSIGS[Math.floor(j/2)];
@@ -62,7 +67,7 @@ const CLS={
 };
 const STATN={str:['כוח','נזק ללוחם להב'],agi:['זריזות','מהירות, קריטי, הגנה'],vit:['חיוניות','חיים והגנה'],ene:['אנרגיה','נזק למכשפת סער']};
 const RAR=[{n:'רגיל',c:'#b9b4c7',m:1},{n:'קסום',c:'#5aa9ff',m:1.25},{n:'נדיר',c:'#c77dff',m:1.6},{n:'אגדי',c:'#ffb23e',m:2.1},{n:'עתיק',c:'#3df5c8',m:2.8}];
-const TIERN=['חניך','ברזל','כסף ירח','חול זועם','כפור','גחלת','צל','נצח','תהום','קרחון','זהב טהור','מעגל'];
+const TIERN=['חניך','ברזל','כסף ירח','חול זועם','כפור','גחלת','צל','נצח','תהום','קרחון','זהב טהור','מעגל','אפר הזמן','בריאה'];
 // Fifty ranks of wings, each stronger than the one before. Monsters drop only the first eight; every rank above
 // is reached by evolving a +15 wing with season feathers (see wingEvolve), so the top of the ladder takes months.
 const WING_MAX=50,WING_FAM=['דרקון','צללים','כוכבים','סופה','עידן','אינסוף'],WING_GR=['','מחוזקות','נעלות','מלכותיות','קדומות','שמימיות','אלוהיות'];
@@ -75,7 +80,7 @@ const POOL={w:['dmg','crit','cdmg','aspd','xp','gold','drop'],a:['hp','def','xp'
   h:['hp','def','xp','crit','drop','cdmg'],p:['hp','def','xp','gold','drop','crit'],l:['aspd','crit','hp','def','drop','gold'],b:['hp','def','xp','gold','drop','aspd']};
 const SLOTS=['w','h','a','p','l','b','g'],DROPS=['w','h','a','p','l','b'],ARM={h:.35,a:.6,p:.4,l:.3,b:.35};
 const SLOTN={w:'נשק',h:'קסדה',a:'שריון',p:'מכנסיים',l:'כפפות',b:'מגפיים',g:'כנפיים'};
-const SETN=['שומרי היער','חופרי האבק','ילדי הערפל','זעם החולות','לב הכפור','גחלת נצחית','צל המגדל','כתר הנצח','בני התהום','נסיכי הקרח','אוצר ההיכל','לב המעגל'];
+const SETN=['שומרי היער','חופרי האבק','ילדי הערפל','זעם החולות','לב הכפור','גחלת נצחית','צל המגדל','כתר הנצח','בני התהום','נסיכי הקרח','אוצר ההיכל','לב המעגל','שומרי הזמן','יוצרי העולם'];
 const SETB=[[2,'hp',10],[3,'dmg',12],[4,'cdmg',25],[5,'aspd',8],[6,'dmg',25],[6,'xp',20]];
 const rslot=()=>DROPS[Math.floor(_rnd()*DROPS.length)];
 const isSet=it=>it&&it.r===4&&it.s!=='g'&&it.z>=0;
@@ -135,6 +140,9 @@ function itemScore(it){
 // What each class gives to party members fighting on the same map.
 const AURAS={blade:{n:'זעקת קרב',d:'12% נזק'},storm:{n:'רוח סער',d:'10% מהירות תקיפה'},hunter:{n:'עין הצייד',d:'8% קריטי ו-15% נפילות'}};
 const cleanAuras=l=>Array.isArray(l)?[...new Set(l.filter(k=>typeof k==='string'&&AURAS[k]))]:[];
+// The rank of the Cycle: it never ends. Every monster the account has ever killed counts, each rank asks for more
+// kills than the one before, and each gives a little damage and health to every character on the account.
+const MASTERY_PCT=1,mastery=k=>Math.floor(Math.pow(Math.max(0,k|0)/2000,.6)),masteryNeed=l=>Math.ceil(2000*Math.pow(l,1/.6));
 function calc(s,au){
   const c=CLS[s.cls],st=s.stats,a={dmg:0,crit:0,cdmg:0,aspd:0,hp:0,def:0,xp:0,gold:0,drop:0};
   let atk=0,ahp=0,adef=0,wd=0,wh=0;
@@ -143,11 +151,12 @@ function calc(s,au){
   const sc=setCounts(s);for(const z in sc)for(const b of SETB)if(sc[z]>=b[0])a[b[1]]+=b[2];
   const main=st[c.main];
   const base=10+main*c.coef+(st.str+st.agi+st.ene-main)*0.15+atk;
-  let dmg=base*(1+0.04*s.resets)*(1+a.dmg/100)*(1+wd/100);
+  const ml=mastery(s.kills);
+  let dmg=base*(1+0.04*s.resets)*(1+a.dmg/100)*(1+wd/100)*(1+ml*MASTERY_PCT/100);
   let aspd=Math.min(3.2,(1.1+st.agi/500)*(1+a.aspd/100));
   let crit=Math.min(.6,.05+st.agi/3000+a.crit/100);
   const cdmg=2+a.cdmg/100;
-  const hp=(120+st.vit*10+s.lvl*6+ahp)*(1+a.hp/100)*(1+wh/100);
+  const hp=(120+st.vit*10+s.lvl*6+ahp)*(1+a.hp/100)*(1+wh/100)*(1+ml*MASTERY_PCT/100);
   const def=(st.agi*.15+st.vit*.1+adef)*(1+a.def/100);
   if(au&&au.length){if(au.includes('blade'))dmg*=1.12;if(au.includes('storm'))aspd*=1.1;if(au.includes('hunter'))crit=Math.min(.75,crit+.08);}
   const dps=dmg*aspd*(1+crit*(cdmg-1))*1.3;
@@ -324,6 +333,14 @@ function passReward(lv){
 }
 const passLevel=s=>Math.min(PASS_MAX,Math.floor(s.pass.xp/PASS_STEP));
 const RESPEC_COST=15;
+// A champion: now and then one monster of the pack is far stronger than the rest and carries a sure rare drop.
+const ELITE_RATE=.004,ELITE_HP=9,ELITE_LIFE=180000;
+// The Tower of Eternity: one boss a floor, each stronger than the last, with no top. Fought by hand in the arena,
+// with the arena's moves. A floor is the same for everyone; only the first time through each floor pays.
+const TOWER_TRIES=6;
+const towerBoss=f=>({hp:Math.round(9000*Math.pow(1.2,f-1)),atk:Math.round(60*Math.pow(1.13,f-1))});
+function towerReward(f){const rw={gems:2+Math.floor(f/4),gold:800*f};if(f%3===0)rw.coins=6+Math.floor(f/3);if(f%5===0)rw.sboxes=1;if(f%10===0)rw.feathers=1+Math.floor(f/20);return rw;}
+const towerText=r=>[r.gems?r.gems+' אבני נשמה':'',r.gold?r.gold+' זהב':'',r.coins?r.coins+' מטבעות עונה':'',r.sboxes?'תיבת עונה':'',r.feathers?r.feathers+' נוצות נצח':''].filter(Boolean).join(', ');
 // The world boss: health per player around when the first blow lands, and what a share of the damage is worth.
 const WORLD_BASE=120000;
 function worldReward(share,rank,killed){
@@ -666,7 +683,14 @@ function apply(A,kind,args,ctx){
         {const ww=evWindows(now,0).find(w=>w.e.world);if(ww)r.world={key:ww.key,dmg:Math.round(k*Math.sqrt(Math.max(1,c.power)))};}
         if(!inEv){sideAdd(A,'hunt',z,k,now,r);if(rep.notable)sideAdd(A,'rare',z,rep.notable.length,now,r);
           if(!A.sq&&S.lvl>=20&&now-(A.sqAt||0)>25*60000&&_rnd()<k*.0009){A.sqAt=now;r.sqNew=sideOffer(A,z,now);}}
+        if(!inEv&&!A.elite&&_rnd()<k*ELITE_RATE){A.elite={z:z,f:f,t:now};r.elite=true;} // a champion steps out of the pack
         if(!A.bossAt&&!inEv){A.bossM[z]=(A.bossM[z]||0)+k;if(A.bossM[z]>=BOSSN){A.bossM[z]=0;A.bossAt={z:z,t:now};}}}
+      if(A.elite&&(now-A.elite.t>ELITE_LIFE||A.elite.z!==z||A.elite.f!==f)){A.elite=null;r.eliteGone=true;}
+      if(args.elite&&A.elite){ // enough time must have passed to deal its health in damage, as with a boss
+        if((now-A.elite.t)/1000*c.dps*2.8>=zd.hp*ELITE_HP*.9){A.elite=null;rep.levels=(rep.levels||0)+addXp(S,zd.xp*15*c.xpM*pb);
+          const it=makeItem(S,rslot(),tierOf(z),rollRar([0,0,74,22,4]),z);if(_rnd()<.06)makeExcellent(it);gainItem(S,it,rep);(rep.notable=rep.notable||[]).push(it);
+          const g=1+Math.floor(_rnd()*2);A.gems+=g;rep.gems=(rep.gems||0)+g;const sh=1+Math.floor(_rnd()*2);A.shards=(A.shards||0)+sh;rep.shards=(rep.shards||0)+sh;rep.elite=true;A.elites=(A.elites||0)+1;}
+        else rep.eliteDenied=true;}
       if(args.boss){
         const b=A.bossAt;
         // The boss must have been spawned by the server, and enough time must have passed to deal its HP in damage.
@@ -747,6 +771,7 @@ function apply(A,kind,args,ctx){
     case 'opps':A.opps=buildOpps(A,S,ctx.players,ctx.uid);break;
     case 'duel':return fail('אין יותר קרב אוטומטי. הקרב בזירה ידני');
     case 'duelStart':{
+      if(A.pd&&A.pd.tower)A.pd=null;
       if(A.pd&&now-A.pd.t>600000){duelSettle(A,now,false,A.pd.o.rt);A.pd=null;} // walked away from a duel: it counts as lost
       if(!A.pd){let o=null;if(args.k!=null){if(!ctx.target)return fail('השחקן הזה כבר לא כאן');o=Object.assign({},ctx.target);delete o.id;}else o=A.opps&&A.opps[int(args.i,0,3)];if(!o)return fail('רענן את רשימת היריבים');
         const free=evWindows(now,0).some(w=>w.e.id==='royale');if(!free&&A.tickets<1)return fail('אין כרטיסים');
@@ -755,8 +780,18 @@ function apply(A,kind,args,ctx){
         // end, accepts a win only if enough time has passed to have dealt that much damage (see duelEnd).
         A.pd={o:o,D:D,t:now,live:{b:[D.f[0].base,D.f[1].base],cr:[D.f[0].cr,D.f[1].cr],T:[clamp(1/Math.max(.3,me.a),.3,1.2),clamp(1/Math.max(.3,o.a),.3,1.2)],pool:[me.h*5,o.h*5]}};}
       r.pd=A.pd;break;}
+    case 'towerStart':{
+      const tw=A.tower=A.tower||{best:0};if((A.daily.tw|0)>=TOWER_TRIES)return fail('נגמרו הניסיונות למגדל להיום');
+      const f=(tw.best|0)+1,b=towerBoss(f),me=fighter(S),c=calc(S);A.daily.tw=(A.daily.tw|0)+1;
+      // the same screen and moves as a duel: how much of the boss one and a half seconds of my attacking removes, and of me his
+      const L={b:[clamp(c.dps*1.5/b.hp,.004,.6),clamp(b.atk*1.5*300/(300+c.def)/(c.hp*1.6),.01,.9)],cr:[clamp(c.crit,0,.75),0],T:[clamp(1/Math.max(.3,c.aspd),.3,1.2),1.5],pool:[c.hp*1.6,b.hp]};
+      A.pd={tower:f,t:now,live:L,o:{n:'שומר קומה '+f,c:'blade',l:f,r:0,p:b.hp,bossZ:(f*5)%BASEZ}};r.pd=A.pd;r.left=TOWER_TRIES-A.daily.tw;break;}
+    case 'towerEnd':{
+      const pd=A.pd;if(!pd||!pd.tower)return fail('אין קרב פעיל');const el=(now-pd.t)/1000,f=pd.tower;let win=!!args.win;
+      if(win&&el<1/(pd.live.b[0]*DUEL_LIVE.maxRate)*.8){win=false;r.denied=true;}
+      A.pd=null;r.win=win;r.f=f;if(win){A.daily.tw=Math.max(0,(A.daily.tw|0)-1);A.tower.best=Math.max(A.tower.best|0,f);const rw=towerReward(f);give(A,S,rw);r.rt=towerText(rw);}break;}
     case 'duelEnd':{
-      const pd=A.pd;if(!pd||!pd.live)return fail('אין קרב פעיל');const el=(now-pd.t)/1000,claim=!!args.win;
+      const pd=A.pd;if(!pd||!pd.live||pd.tower)return fail('אין קרב פעיל');const el=(now-pd.t)/1000,claim=!!args.win;
       // fastest possible kill: ordinary hits with every crit landing plus every skill on cooldown
       const minT=1/(pd.live.b[0]*DUEL_LIVE.maxRate);let win=claim;
       if(claim&&el<minT*.8){win=false;r.denied=true;}
@@ -782,4 +817,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
