@@ -68,7 +68,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
       if (r.error) return { result: { ok: false, msg: errMsg(r) } };
       return { result: { ok: true }, admin: (await admin.rpc("admin_view", { p_user: uid })).data };
     }
-    let guildMade = false;
+    let guildMade = false, shareXp = 0;
     for (let attempt = 0; attempt < 4; attempt++) {
       const now = clock();
       const { data: row, error } = await admin.from("accounts").select("state,version,calls,calls_at,banned_until,pw_at").eq("user_id", uid).maybeSingle();
@@ -155,12 +155,15 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
         const pm = await admin.rpc("party_mates", { p_user: uid, p_zone: Math.floor(Number(args.z)) });
         const mates = pm.error || !Array.isArray(pm.data) ? [] : pm.data;
         ctx.partyN = mates.length; ctx.auras = mates; // one entry per active member on this map: their class
+        // Experience that party members' kills left for this player. Taken once, even if the save below has to be retried.
+        if (!shareXp) { const tk = await admin.rpc("party_share_take", { p_user: uid }); shareXp = tk.error ? 0 : Number(tk.data) || 0; }
+        ctx.shareXp = shareXp;
         const gt = await admin.rpc("guild_tick", { p_user: uid, p_kills: 0, p_siege: false, p_key: G.siegeInfo(now).key });
         if (!gt.error && gt.data) { ctx.guildLvl = Number(gt.data.lvl) || 0; ctx.castle = !!gt.data.castle; }
       }
       G.setEnv(rnd, () => now); // set right before the synchronous rules call; no await in between
       const r = G.apply(A, kind, args, ctx);
-      if (!r.ok) { await bump(); return { result: r, state: row.state }; } // a refused action changes nothing
+      if (!r.ok) { await bump(); if (shareXp) await admin.rpc("party_share_back", { p_user: uid, p_xp: shareXp }); return { result: r, state: row.state }; } // a refused action changes nothing
 
       const next = plain(A);
       const upd = await admin.from("accounts")
@@ -171,6 +174,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
 
       if (ARENA_KINDS.has(kind)) await saveArena(uid, A);
       const out = { result: r, state: next };
+      if (kind === "tick" && r.kills > 0 && r.partyN > 0 && r.base > 0) await admin.rpc("party_share_add", { p_user: uid, p_zone: Math.floor(Number(args.z)), p_xp: Math.round(r.base * G.PARTY_SHARE) });
       if (kind === "tick" && r.kills > 0) await admin.rpc("guild_tick", { p_user: uid, p_kills: r.kills, p_siege: G.siegeInfo(now).on, p_key: G.siegeInfo(now).key });
       if (kind === "tick" && r.claimed > r.kills + 5) {
         const detail = { claimed: r.claimed, allowed: r.kills, z: args.z };

@@ -259,3 +259,19 @@ test('leaderboard: top players by resets then level, and by power, without accou
   assert.deepEqual(r.top.resets.map(x=>x.n),['ב','א','ג'],'same resets: the higher level leads');assert.deepEqual(r.top.power.map(x=>x.n),['ג','ב','א']);
   assert.equal(r.top.resets[1].me,true);assert.equal(r.top.resets[0].me,false);assert.ok(!JSON.stringify(r).includes(U(2)));
 });
+
+test('party training: a member\'s kills hand experience to the others on the same map, once',async()=>{
+  const {db,handle,clock,poke,row}=await world();
+  for(const [i,n] of [[1,'ותיק'],[2,'חדש'],[3,'רחוק']])await handle(U(i),'create',{name:n,cls:'blade'});
+  await poke(U(1),s=>{s.chars[0].lvl=120;s.chars[0].stats.str=6000;s.chars[0].stats.vit=3000;s.open=3;});
+  await poke(U(2),s=>{s.chars[0].autoPts=false;});
+  const code=(await db.query('select party_create($1) c',[U(1)])).rows[0].c;for(const i of [2,3])await db.query('select party_join($1,$2)',[U(i),code]);
+  await handle(U(1),'travel',{z:0});await handle(U(2),'travel',{z:0});await handle(U(3),'travel',{z:-1});
+  clock.add(20);const t=await handle(U(1),'tick',{z:0,kills:30});assert.ok(t.result.kills>=20,'kills '+t.result.kills);assert.equal(t.result.partyN,1);
+  const waiting=Number((await db.query('select xp from party_share where user_id=$1',[U(2)])).rows[0].xp);assert.equal(waiting,Math.round(t.result.base*G.PARTY_SHARE));
+  assert.equal((await db.query('select count(*)::int c from party_share where user_id=$1',[U(3)])).rows[0].c,0,'only members on the same map');
+  const before=(await row(U(2))).state.chars[0].lvl;
+  const got=await handle(U(2),'tick',{z:0,kills:0});assert.equal(got.result.shared,waiting);assert.ok(got.state.chars[0].lvl>before,'the newcomer levelled without a kill');
+  assert.equal((await handle(U(2),'tick',{z:0,kills:0})).result.shared,undefined,'nothing left to take');
+  assert.equal(Number((await db.query('select coalesce(sum(xp),0) s from party_share where user_id=$1',[U(1)])).rows[0].s),0,'no kills, nothing shared back');
+});

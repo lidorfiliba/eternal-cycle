@@ -22,7 +22,9 @@ const ZONES=[
 const BASEZ=8;
 const MHP=[90,400,880,1540,2420,3400,4480,5450,1900,4100,6700,9000], MATK=[13,37,71,113,164,214,265,307,135,253,371,462];
 const ZSPR=['mush','gob','eye','worm','skel_f','gob_r','eye_p','skel_g','mush_d','worm_i','gob_g','skel_d'],ZMON=['פטריית טחב','גובלין מערות','עין מרחפת','תולעת אש','שלד כפור','גובלין גחלת','עין צל','שלד נצח','פטריית תהום','תולעת קרח','גובלין זהב','שלד דם'];
-ZONES.forEach((z,i)=>{z.spr=ZSPR[i];z.m=ZMON[i];z.fly=ZSPR[i].indexOf('eye')===0;z.hp=MHP[i];z.atk=MATK[i];z.xp=Math.round(10*Math.pow(1+z.min/50,1.6));z.gold=Math.round(3*Math.pow(i+1,1.5));if(z.req){z.xp=z.xpo;z.gold=z.go;}});
+// Reset maps are built for characters that kept their stats through resets: [life, damage] multipliers by the resets a map needs.
+const RESET_TOUGH={1:[4,2.2],2:[4.5,2.6],4:[5.5,3],7:[7,3.5]};
+ZONES.forEach((z,i)=>{z.spr=ZSPR[i];z.m=ZMON[i];z.fly=ZSPR[i].indexOf('eye')===0;z.hp=MHP[i];z.atk=MATK[i];z.xp=Math.round(10*Math.pow(1+z.min/50,1.6));z.gold=Math.round(3*Math.pow(i+1,1.5));if(z.req){z.xp=z.xpo;z.gold=z.go;const t=RESET_TOUGH[z.req]||[1,1];z.hp=Math.round(z.hp*t[0]);z.atk=Math.round(z.atk*t[1]);}});
 const CLS={
  blade:{n:'לוחם להב',main:'str',coef:1.5,combo:'סערת להבים',c:'#ff8a4d',wn:'להב',range:50,sk:['סערת להבים','שרשרת ברזל','זעם הקרב','מכת מחץ','חומת פלדה','אלף להבים'],al:{str:.6,agi:.15,vit:.25}},
  storm:{n:'מכשפת סער',main:'ene',coef:1.5,combo:'ברק שרשרת',c:'#6fd3ff',wn:'מטה',range:175,sk:['ברק שרשרת','מערבולת','הארת סער','כדור אש','מגן קסם','מטר מטאורים'],al:{ene:.6,agi:.15,vit:.25}},
@@ -119,13 +121,14 @@ function floorMin(z,f){
   for(const o of ZONES)if(!!o.req===!!d.req&&o.min>d.min&&o.min<nxt)nxt=o.min;
   return d.min+Math.round(f*(nxt-d.min)/FLOORS);
 }
-// Monsters grow with the character's resets, up to reset 20: a quarter more life and 15% more damage each time, and 5% more gold.
-const STAT_MAX=32767,RESET_HARD=20;
-function zs(z,f,r){const d=ZONES[z];f=clamp(f|0,0,FLOORS-1);r=clamp(r|0,0,RESET_HARD);return {hp:Math.round(d.hp*(1+.4*f)*(1+.25*r)),atk:Math.round(d.atk*(1+.3*f)*(1+.15*r)),xp:Math.round(d.xp*(1+.3*f)),gold:(1+.3*f)*(1+.05*r),drop:1+.15*f};}
+// A map is the same for everyone on it, whatever their resets, so a veteran can fight beside a newcomer.
+// The challenge for players who have reset is in the reset maps (see RESET_TOUGH).
+const STAT_MAX=32767,PARTY_SHARE=.5;
+function zs(z,f){const d=ZONES[z];f=clamp(f|0,0,FLOORS-1);return {hp:Math.round(d.hp*(1+.4*f)),atk:Math.round(d.atk*(1+.3*f)),xp:Math.round(d.xp*(1+.3*f)),gold:1+.3*f,drop:1+.15*f};}
 function canFloor(s,z,f){return z<0?f===0:(f>=0&&f<FLOORS&&canEnter(s,z)&&s.lvl>=floorMin(z,f));}
 function afkFloor(s,z){let f=z===s.zone?clamp(s.floor|0,0,FLOORS-1):0;while(f>0&&s.lvl<floorMin(z,f))f--;return f;}
-function zoneInfo(zi,c,f,fl,r){
-  const z=zs(zi,fl,r),kt=z.hp/c.dps+0.55,taken=z.atk*300/(300+c.def);
+function zoneInfo(zi,c,f,fl){
+  const z=zs(zi,fl),kt=z.hp/c.dps+0.55,taken=z.atk*300/(300+c.def);
   const e=clamp(c.hp/(taken*20),.3,1),kps=e/kt*(f||1);
   return {kps,xps:kps*z.xp*c.xpM,taken,e};
 }
@@ -194,7 +197,7 @@ function offline(s,secs){
   const perZone={};
   if(afkZone(s)<0)return rep;
   while(left>0.5&&guard++<900){
-    s._now=now;const c=calc(s),zi=afkZone(s),zf=zoneInfo(zi,c,AFK,afkFloor(s,zi),s.resets);
+    s._now=now;const c=calc(s),zi=afkZone(s),zf=zoneInfo(zi,c,AFK,afkFloor(s,zi));
     let step=left;
     if(s.boost>now)step=Math.min(step,(s.boost-now)/1000+0.01);
     if(s.lvl<CAP){const t=(need(s.lvl)-s.xp)/zf.xps;if(t<step)step=t+1e-6;}
@@ -203,7 +206,7 @@ function offline(s,secs){
     left-=step;now+=step*1000;
   }
   delete s._now;
-  const c=calc(s),fz=zs(0,afkFloor(s,afkZone(s)),s.resets);c.goldM*=fz.gold;c.dropM*=fz.drop;
+  const c=calc(s),fz=zs(0,afkFloor(s,afkZone(s)));c.goldM*=fz.gold;c.dropM*=fz.drop;
   for(const zi in perZone){const k=Math.floor(perZone[zi]);if(k>0){rep.kills+=k;rollLoot(s,+zi,k,c,rep);}}
   return rep;
 }
@@ -374,7 +377,7 @@ function adopt(o){
 }
 function findIt(A,S,id){for(const k of SLOTS)if(S.eq[k]&&S.eq[k].id===id)return {it:S.eq[k],eq:k};const i=A.inv.findIndex(x=>x.id===id);return i>=0?{it:A.inv[i],i:i}:null;}
 // Highest kill rate a legitimate client can reach in a zone, skills and buffs included.
-function maxKps(S,zi,au){const c=calc(S,au),z=zs(zi,afkFloor(S,zi),S.resets);return Math.min(2.1,1/Math.max(.35,z.hp/(c.dps*2.8)+.3));}
+function maxKps(S,zi,au){const c=calc(S,au),z=zs(zi,afkFloor(S,zi));return Math.min(2.1,1/Math.max(.35,z.hp/(c.dps*2.8)+.3));}
 const BOTN=['שומר השער','נודד האפר','בת הסער','צל ראשון','להב שקט','עין הנץ'];
 function buildOpps(A,S,players,selfId){
   const me=fighter(S),out=[];
@@ -427,10 +430,12 @@ function apply(A,kind,args,ctx){
       if(!canEnter(S,z))return fail('המפה נעולה');
       if(!canFloor(S,z,f))return fail('צריך רמה '+floorMin(z,f)+' לקומה הזו');
       if(z!==S.zone||f!==(S.floor|0)){S.zone=z;S.floor=f;A.bossAt=null;A.allow=Math.min(A.allow||0,3);}
-      const zd=zs(z,f,S.resets),rep={},em=evMods(now),au=cleanAuras(ctx.auras),c=calc(S,au),pn=int(ctx.partyN,0,4),gl=int(ctx.guildLvl,0,10),cs=ctx.castle?1:0,pb=(1+partyXp(pn))*em.xp*(1+gl*.01+cs*.1);c.dropM*=em.drop*zd.drop*(au.includes('hunter')?1.15:1);r.auras=au;c.goldM*=zd.gold*(1+cs*.1);r.partyN=pn;r.guildLvl=gl;r.castle=cs;
+      const zd=zs(z,f),rep={},em=evMods(now),au=cleanAuras(ctx.auras),c=calc(S,au),pn=int(ctx.partyN,0,4),gl=int(ctx.guildLvl,0,10),cs=ctx.castle?1:0,pb=(1+partyXp(pn))*em.xp*(1+gl*.01+cs*.1);c.dropM*=em.drop*zd.drop*(au.includes('hunter')?1.15:1);r.auras=au;c.goldM*=zd.gold*(1+cs*.1);r.partyN=pn;r.guildLvl=gl;r.castle=cs;
       const k=Math.min(int(args.kills,0,1000),Math.floor(A.allow||0));r.claimed=int(args.kills,0,1000);r.kills=k;
       A.casts=(A.casts||0)+int(args.casts,0,30);
-      if(k>0){A.allow-=k;rep.levels=addXp(S,k*zd.xp*c.xpM*pb);rollLoot(S,z,k,c,rep);evAdd(A,now,'k',k);
+      {const sh=Math.max(0,Math.min(Number(ctx.shareXp)||0,5e7));if(sh>0){r.shared=Math.round(sh);rep.levels=(rep.levels||0)+addXp(S,sh);}} // from party members' kills here; the server supplies it
+      r.base=k*zd.xp;
+      if(k>0){A.allow-=k;rep.levels=(rep.levels||0)+addXp(S,k*zd.xp*c.xpM*pb);rollLoot(S,z,k,c,rep);evAdd(A,now,'k',k);
         if(!A.bossAt){A.bossM[z]=(A.bossM[z]||0)+k;if(A.bossM[z]>=BOSSN){A.bossM[z]=0;A.bossAt={z:z,t:now};}}}
       if(args.boss){
         const b=A.bossAt;
@@ -498,4 +503,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {STAT_MAX,RESET_HARD,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

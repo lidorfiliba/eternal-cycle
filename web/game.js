@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126131633';
-const {STAT_MAX,RESET_HARD,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126132151';
+const {STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -55,7 +55,7 @@ function send(kind,args){
 const pend={kills:0,casts:0,boss:false,t:0};
 function flushTick(){
   if(!ONLINE||demo||!S)return Promise.resolve();
-  if(!pend.kills&&!pend.casts&&!pend.boss)return chain;
+  if(!pend.kills&&!pend.casts&&!pend.boss&&!(party.code&&SC.zi>=0))return chain; // in a party, keep checking in: that is how shared experience arrives
   const a={z:SC.zi,f:SC.fl,kills:pend.kills,casts:pend.casts,boss:pend.boss},l0=S.lvl;pend.kills=0;pend.casts=0;pend.boss=false;pend.t=0;
   return send('tick',a).then(r=>afterTick(r,null,l0));
 }
@@ -432,7 +432,7 @@ function snd(n){
 }
 
 /* ---------- world ---------- */
-function newMon(home,zi){const z=zs(zi,SC.fl,S.resets);return {home:home,x:home,y:gy(),hp:z.hp,max:z.hp,hit:0,die:0,ph:Math.random()*6,resp:0,stun:0,atkT:1,pull:null};}
+function newMon(home,zi){const z=zs(zi,SC.fl);return {home:home,x:home,y:gy(),hp:z.hp,max:z.hp,hit:0,die:0,ph:Math.random()*6,resp:0,stun:0,atkT:1,pull:null};}
 function enterZone(z,side,f){
   const h=SC.hero;SC.zi=z;SC.fl=z<0?0:clamp(f|0,0,FLOORS-1);SC.mons=[];SC.boss=null;SC.drops=[];SC.fx=[];SC.nums=[];SC.parts=[];h.tgt=null;h.goal=null;h.tx=null;h.manual=0;
   h.x=side==='R'?mapW()-110:110;h.face=side==='R'?-1:1;
@@ -442,7 +442,7 @@ function enterZone(z,side,f){
 }
 function spawnBoss(){
   const zi=SC.zi,z=ZONES[zi];if(SC.boss||zi<0)return;
-  const b=newMon(MW-280,zi);b.boss=true;b.hp=b.max=zs(zi,SC.fl,S.resets).hp*30;b.slamT=4;b.wind=0;SC.boss=b;SC.mons.push(b);snd('boss');toast('הבוס של '+z.n+' הופיע בקצה המפה');
+  const b=newMon(MW-280,zi);b.boss=true;b.hp=b.max=zs(zi,SC.fl).hp*30;b.slamT=4;b.wind=0;SC.boss=b;SC.mons.push(b);snd('boss');toast('הבוס של '+z.n+' הופיע בקצה המפה');
 }
 function dropOrbs(m,rep){
   const add=(c,s)=>SC.drops.push({x:m.x,y:m.y-24,vx:(Math.random()-.5)*160,vy:-160-Math.random()*90,c:c,s:s,age:0,life:4});
@@ -471,6 +471,7 @@ function afterTick(r,m,l0){
   if(!ONLINE||rep.items||rep.gems||rep.boxes||rep.notable)dropOrbs(src,rep);
   if(rep.items||rep.boxes)panelDirty=true;
   if(rep.boss||rep.bossDenied){bossPending=false;if(rep.opened!=null)toast('השער אל '+ZONES[rep.opened].n+' נפתח');if(rep.bossDenied)toast('השרת לא אישר את הניצחון על הבוס');}
+  if(r.shared>0)addNum(SC.hero.x,gy()-150,'+'+fmt(r.shared)+' ניסיון מהפארטי','#8be28b',true);
   if(r.partyN!=null)partyN=r.partyN;if(r.auras&&r.auras.join()!==auras.join()){auras=r.auras;statsDirty=true;panelDirty=true;}
   if(S.lvl>l0)afterXp(S.lvl-l0);
   statsDirty=true;syncBoss();
@@ -486,7 +487,7 @@ function onKill(m,zi){
   burst(m.x,m.y-24,z.c,10);
   if(ONLINE){ // predict XP now; loot and the real numbers arrive with the next server tick
     pend.kills++;snd('kill');SC.drops.push({x:m.x,y:m.y-24,vx:(Math.random()-.5)*160,vy:-200,c:'#f2c14e',s:3,age:0,life:4});
-    const l0=S.lvl;addXp(S,zs(zi,SC.fl,S.resets).xp*C.xpM);afterXp(S.lvl-l0);if(pend.kills>=25)flushTick();
+    const l0=S.lvl;addXp(S,zs(zi,SC.fl).xp*C.xpM);afterXp(S.lvl-l0);if(pend.kills>=25)flushTick();
   }else{const l0=S.lvl;afterTick(localTick({z:zi,kills:1}),m,l0);}
 }
 async function travelTo(z,side,f){
@@ -567,7 +568,7 @@ function updateWorld(dt){
     if(ad>420)m.ag=false;
     if(h.dead<=0&&(m.boss?ad<340:(m.ag||ad<110))){
       if(ad>reach){m.x+=Math.sign(dx)*(m.boss?45:58)*dt;m.mv=true;}
-      else if((m.atkT-=dt)<=0){m.atkT=m.boss?1.2:1;m.atkA=.5;const taken=zs(zi,SC.fl,S.resets).atk*(m.boss?2:1)*300/(300+C.def)*(h.shield>0?.3:1);h.hp-=taken;snd('hurt');addNum(h.x,gy()-100,'-'+fmt(taken),'#ff5c7a');}
+      else if((m.atkT-=dt)<=0){m.atkT=m.boss?1.2:1;m.atkA=.5;const taken=zs(zi,SC.fl).atk*(m.boss?2:1)*300/(300+C.def)*(h.shield>0?.3:1);h.hp-=taken;snd('hurt');addNum(h.x,gy()-100,'-'+fmt(taken),'#ff5c7a');}
       if(m.boss&&(m.slamT-=dt)<=0&&ad<210){m.wind=1.2;m.slamX=m.x;}
     }else if(Math.abs(m.x-m.home)>4){m.x+=Math.sign(m.home-m.x)*40*dt;m.mv=true;m.back=true;}else m.back=false;
   }
@@ -740,7 +741,7 @@ function renderChar(){
     '<button class="btn sm" data-act="pt" data-k="'+k+'" data-n="10"'+(S.pts<10?' disabled':'')+'>'+L('+10')+'</button>'+
     '<button class="btn sm" data-act="pt" data-k="'+k+'" data-n="all"'+(S.pts<1?' disabled':'')+'>הכל</button></div>';
   h+='</div><div class="card">'+tog('חלוקת נקודות אוטומטית',S.autoPts,'autoPts')+'</div>';
-  h+='<h2>ריסט</h2><div class="card"><p class="hint">ברמה 400 חוזרים לרמה 1 בכפר. הסטטים, הציוד והשערים הפתוחים נשארים, ובדרך חזרה למעלה מקבלים שוב 5 נקודות סטט בכל רמה. כל ריסט מוסיף גם '+L('+4%')+' נזק לתמיד ו-'+L(resetGain(S))+' אותות ריסט. המפלצות מתחזקות איתך: בכל ריסט, עד ריסט '+RESET_HARD+', יש להן '+L('25%')+' יותר חיים ו-'+L('15%')+' יותר נזק, והן מפילות '+L('5%')+' יותר זהב. כל סטט מתמלא ב-'+L(fmt(STAT_MAX))+'.</p>'+
+  h+='<h2>ריסט</h2><div class="card"><p class="hint">ברמה 400 חוזרים לרמה 1 בכפר. הסטטים, הציוד והשערים הפתוחים נשארים, ובדרך חזרה למעלה מקבלים שוב 5 נקודות סטט בכל רמה. כל ריסט מוסיף גם '+L('+4%')+' נזק לתמיד ו-'+L(resetGain(S))+' אותות ריסט. המפות הרגילות זהות לכולם. האתגר למי שעשה ריסט נמצא במפות הריסט: מפלצות חזקות בהרבה, ויותר ניסיון וזהב. כל סטט מתמלא ב-'+L(fmt(STAT_MAX))+'.</p>'+
     '<div class="bar gold" style="margin:8px 0"><i style="width:'+(S.lvl/CAP*100)+'%"></i></div>'+
     '<button class="btn pri" style="width:100%" data-act="reset"'+(canReset(S)?'':' disabled')+'>'+(canReset(S)?'בצע ריסט':'רמה '+S.lvl+' מתוך 400')+'</button></div>';
   h+='<h2>הדמויות שלך</h2><p class="hint">דמות שלא משחקים בה ממשיכה להילחם לבד במפה שבה השארת אותה, בקצב של 70%. בכפר היא נחה. הזהב, התיק והשערים משותפים.</p>';
@@ -771,7 +772,7 @@ function renderGear(){
 function renderZones(){
   let h='<p class="hint">בכל מפה שלוש קומות: בכל קומה המפלצות חזקות יותר, ויש יותר ניסיון, זהב וסיכוי לשלל. עוברים בין קומות ומפות דרך השערים שבקצוות, או בקפיצה מכאן. שער חדש נפתח אחרי ניצחון על הבוס של המפה. הבוס מופיע אחרי '+L(BOSSN)+' חיסולים כשאתה משחק בעצמך.</p>';
   h+='<div class="card zone'+(SC.zi<0?' cur':'')+'"><div class="sw" style="background:linear-gradient('+TOWN.sky[0]+','+TOWN.sky[1]+')"></div><div class="z"><b>'+TOWN.n+'</b><small>נפח, סוחרת, שומר המעגל, כרוז העונה, שער הזירה</small></div><button class="btn sm" data-act="zone" data-i="-1"'+(SC.zi<0?' disabled':'')+'>'+(SC.zi<0?'כאן':'קפוץ')+'</button></div>';
-  ZONES.forEach((z,i)=>{const opened=z.req?S.resets>=z.req:i<=A.open,lv=z.min<=S.lvl,zf=zoneInfo(i,C,AFK,0,S.resets),cur=SC.zi===i;
+  ZONES.forEach((z,i)=>{const opened=z.req?S.resets>=z.req:i<=A.open,lv=z.min<=S.lvl,zf=zoneInfo(i,C,AFK),cur=SC.zi===i;
     if(i===BASEZ)h+='<h2>מפות ריסט</h2><p class="hint">נפתחות לפי מספר הריסטים של הדמות. המפלצות חזקות יותר, הניסיון והזהב גבוהים יותר, והציוד בדרגות חדשות עם סטים עתיקים משלו. נכנסים אליהן מכאן.</p>';
     h+='<div class="card zone'+(cur?' cur':'')+(opened&&lv?'':' lock')+'"><div class="sw" style="background:linear-gradient('+z.sky[0]+','+z.sky[1]+')"></div><div class="z"><b>'+z.n+'</b>'+
       '<small>'+z.m+' · מרמה '+L(z.min)+(opened&&lv?' · '+L(fmt(zf.xps*60))+' ניסיון לדקה בלי לשחק'+(zf.e<1?' · מסוכן':''):'')+'</small>'+
@@ -844,7 +845,7 @@ function renderParty(){
   let h='<h2>פארטי</h2>';
   if(!ONLINE)return h+'<p class="hint">פארטי עובד רק במצב מקוון, מול השרת.</p>';
   const per=Math.round(PARTY_XP*100),buffs=Object.keys(AURAS).map(k=>'<div class="kv"><span>'+esc(CLS[k].n)+' · '+esc(AURAS[k].n)+'</span><b'+(auras.includes(k)?' style="color:var(--good)"':'')+'>'+L('+')+esc(AURAS[k].d)+(auras.includes(k)?' · פעיל':'')+'</b></div>').join('');
-  const rules='<p class="hint">עד חמישה שחקנים. כל מקצוע נותן באף משלו לחברי הפארטי שנלחמים איתו באותה מפה, גם מול בוסים. מהשחקן השלישי באותה מפה, כל חבר מוסיף '+L(per+'%')+' ניסיון, עד '+L(per*3+'%')+'.</p>'+buffs;
+  const rules='<p class="hint">עד חמישה שחקנים. כל מקצוע נותן באף משלו לחברי הפארטי שנלחמים איתו באותה מפה, גם מול בוסים. מהשחקן השלישי באותה מפה, כל חבר מוסיף '+L(per+'%')+' ניסיון, עד '+L(per*3+'%')+'. בנוסף, כל חיסול של חבר במפה שלך נותן לך '+L(Math.round(PARTY_SHARE*100)+'%')+' מהניסיון שלו, כך ששחקן חזק יכול לאמן שחקן חדש.</p>'+buffs;
   if(!party.code)return h+'<div class="card" style="display:flex;flex-direction:column;gap:8px">'+rules+'<p class="hint">חברי פארטי יכולים גם למכור פריטים ישירות זה לזה.</p>'+
     '<button class="btn pri" data-act="pcreate">צור פארטי</button><input type="text" id="pcode" maxlength="6" placeholder="קוד פארטי של חבר" autocomplete="off" dir="ltr"><button class="btn" data-act="pjoin">הצטרף עם קוד</button></div>';
   h+='<div class="card"><div class="kv"><span>קוד להזמנת חברים</span><b class="num" dir="ltr" style="letter-spacing:2px;color:var(--gold)">'+esc(party.code)+'</b></div>';
@@ -1292,7 +1293,7 @@ function loop(ts){
   frame(dt);
   if((hudT+=dt)>.2){hudT=0;renderHud();const ae=document.activeElement;if(panelDirty&&!$('sheet').classList.contains('on')&&!(ae&&ae.tagName==='INPUT'&&$('panel').contains(ae)))renderPanel();}
   if(tab==='pass'&&(evT+=dt)>1){evT=0;panelDirty=true;}
-  if(ONLINE){pend.t+=dt;if(pend.t>8){pend.t=0;if(pend.kills||pend.casts)flushTick();}
+  if(ONLINE){pend.t+=dt;if(pend.t>8){pend.t=0;if(pend.kills||pend.casts||(party.code&&SC.zi>=0&&SC.mode==='farm'&&!document.hidden))flushTick();}
     if(!demo&&(beatT+=dt)>(peers.length?2.5:5)){beatT=0;beat();}}
   else if((saveT+=dt)>8){saveT=0;if(localDirty){localDirty=false;saveLocal();}}
   updateTut(dt);updateAnnounce(dt);
