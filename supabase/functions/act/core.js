@@ -48,7 +48,7 @@ const ZRAW=[
 ];
 const BASEZ=24,REGION=3;
 // Reset maps are built for characters that kept their stats through resets: [life, damage] multipliers by the resets a map needs.
-const RESET_TOUGH={1:[4,2.2],2:[4.5,2.6],3:[5,2.8],4:[5.5,3],5:[6,3.2],7:[7,3.5],10:[8,4],15:[11,5],20:[14,6],30:[19,7.5],50:[28,10]};
+const RESET_TOUGH={1:[4,4],2:[4.5,6],3:[5,8],4:[5.5,11],5:[6.5,14],7:[10.5,20],10:[15,28],15:[34,70],20:[42,95],30:[65,165],50:[130,400]};
 const SIGS=['xp','gold','hp','crit','aspd','cdmg','drop','dmg'],RSIGS=['xp','dmg','gold','cdmg','aspd','crit'];
 const ZONES=ZRAW.map((q,i)=>{
   const min=q[2],req=q[11]||0,base=i<BASEZ,j=i-BASEZ,z={n:q[0],m:q[1],min:min,spr:q[3],tint:q[4],kind:q[5],c:q[6],sky:[q[7],q[8]],sil:q[9],amb:q[10],fly:q[3].indexOf('eye')===0};
