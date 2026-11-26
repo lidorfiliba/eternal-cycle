@@ -67,6 +67,25 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
       if (!m.ok) return send(inv.from, { t: 'declined' });
       return start(inv.from, inv.to);
     }
+    if (m.t === 'mv') { // where I am on my map, passed straight to the others on the same map and floor, between heartbeats
+      const now = clock(); if (now - (ws.lastMv || 0) < 110) return; ws.lastMv = now;
+      ws.room = (Math.floor(Number(m.z)) || 0) + ':' + (Math.floor(Number(m.fl)) || 0);
+      const out = JSON.stringify({ t: 'mv', k: ws.key, x: Math.max(0, Math.min(4000, Math.round(Number(m.x)) || 0)), f: Number(m.f) < 0 ? -1 : 1, a: !!m.a });
+      for (const o of socks.values()) if (o !== ws && o.room === ws.room && o.readyState === 1) o.send(out);
+      return;
+    }
+    if (m.t === 'who') { // which of these players are connected right now
+      const ks = Array.isArray(m.ks) ? m.ks.slice(0, 60).map(String) : []; return send(uid, { t: 'who', on: ks.filter((k) => keys.has(k)) });
+    }
+    if (m.t === 'whisper') { // a private message to one connected player; never stored
+      const now = clock(); if (now - (ws.lastW || 0) < 900) return; ws.lastW = now;
+      const text = String(m.m || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 160), to = keys.get(String(m.k)); if (!text) return;
+      const acc = (await admin.from('accounts').select('muted_until,banned_until').eq('user_id', uid).maybeSingle()).data;
+      if (acc && ((acc.muted_until && new Date(acc.muted_until).getTime() > now) || (acc.banned_until && new Date(acc.banned_until).getTime() > now))) return send(uid, { t: 'muted' });
+      if (!to || !socks.has(to)) return send(uid, { t: 'offline', k: String(m.k) });
+      if (!ws.name) { const p = await snap(uid); ws.name = p ? p.n : ''; } if (!ws.name) return;
+      send(to, { t: 'whisper', from: { k: ws.key, n: ws.name }, m: text }); return send(uid, { t: 'whispered', k: String(m.k), m: text });
+    }
     if (!d || d.done) return;
     d.D.t = (clock() - d.t0) / 1000 - 1.2; // the first 1.2 seconds are the countdown
     if (m.t === 'pos') {

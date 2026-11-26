@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126173254';
+const BUILD='20261126174121';
 const {LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -950,7 +950,9 @@ function drawDuel(dt){
   const hx0=SC.hero.x;SC.hero.x=dX(f[me].x);drawFx(dt);SC.hero.x=hx0;
 }
 /* ---------- the live line to the server: invitations and duels between two connected players ---------- */
-let ws=null;
+let mvT=0,mvLast=[0,false,1],ws=null,whisperTo=null,friendsOn={},whoT=0;
+const isBlocked=(k,n)=>(A&&A.blocked||[]).some(x=>x.k===k||(n&&x.n===n)),isFriend=k=>(A&&A.friends||[]).some(x=>x.k===k);
+function askWho(){const fr=A&&A.friends||[];if(fr.length&&ws&&ws.readyState===1)netSend({t:'who',ks:fr.map(f=>f.k)});}
 function netSend(m){if(ws&&ws.readyState===1)ws.send(JSON.stringify(m));}
 function netOpen(){
   if(!CFG.api||!session||!session.token||demo||(ws&&ws.readyState<2))return;
@@ -966,8 +968,14 @@ function netMsg(m){
     openModal('<h3 style="color:var(--gold)">'+esc(String(f.n||''))+' מאתגר אותך לדו-קרב חי</h3><p class="hint">'+(CLS[f.c]?CLS[f.c].n:'')+' · רמה '+L(f.l|0)+' · ריסטים '+L(f.r|0)+' · כוח '+L(fmt(f.p|0))+'</p><p class="hint">קרב בזמן אמת בין שניכם. המנצח עולה בדירוג. ההזמנה פגה תוך 20 שניות.</p><div class="acts"><button class="btn" data-act="pvpNo" data-id="'+(m.id|0)+'">סרב</button><button class="btn pri glow" data-act="pvpYes" data-id="'+(m.id|0)+'">קבל</button></div>');}
   else if(m.t==='start'){flushTick();startDuel({o:G.cleanPlayer('opp',m.opp),live:m.L},{side:m.side?1:0,id:m.id,cls:m.cls});announce('דו-קרב חי מול '+SC.duel.opp.n,true);}
   else if(m.t==='pos'){if(d&&d.net)d.tgt=[+m.x||0,+m.z||0];}
+  else if(m.t==='mv'){const p=peers.find(q=>q.k===m.k);if(p&&SC.mode==='farm'){p.tx=clamp(+m.x||0,30,mapW()-30);p.f=m.f<0?-1:1;p.a=!!m.a;}}
   else if(m.t==='ev'){if(!d||!d.net||!m.o||!m.f)return;const D=d.D;D.t=+m.T||D.t;for(let i=0;i<2;i++){const s=m.f[i],f=D.f[i];f.hp=+s.hp;f.stun=+s.stun;f.sh=+s.sh;f.inv=+s.inv;f.pots=s.pots|0;if(s.at)for(const k in f.at)f.at[k]=+s.at[k]||0;}dShow(d,m.o);renderDuelBar();}
   else if(m.t==='end'){if(d&&d.net){d.why=m.why;showResult(d,!!m.win,m.gain|0,false);}}
+  else if(m.t==='who'){const was=friendsOn,now={};for(const k of m.on||[])now[String(k)]=1;friendsOn=now;for(const f of A.friends||[])if(now[f.k]&&!was[f.k]&&whoT++>0)toast(f.n+' התחבר');if(!whoT)whoT=1;if(tab==='arena')panelDirty=true;}
+  else if(m.t==='whisper'){const f=m.from||{},k=String(f.k||''),n=String(f.n||'').slice(0,14);if(isBlocked(k,n))return;chatLog.push({c:'p',n:n,g:'',m:String(m.m||'').slice(0,160),me:false,k:k});chatAt=Date.now();if(!(tab==='chat'&&chatCh==='p'))chatUnread++;snd('click');toast('הודעה פרטית מ-'+n);if(!whisperTo)whisperTo={k:k,n:n};const l=$('chatList');if(l&&chatCh==='p'){l.innerHTML=chatRows();l.scrollTop=l.scrollHeight;}renderChatBar();}
+  else if(m.t==='whispered'){chatLog.push({c:'p',n:S.name,g:'',m:String(m.m||''),me:true,k:String(m.k||''),to:whisperTo&&whisperTo.k===m.k?whisperTo.n:''});const l=$('chatList');if(l&&chatCh==='p'){l.innerHTML=chatRows();l.scrollTop=l.scrollHeight;}}
+  else if(m.t==='offline')toast('הוא לא מחובר כרגע');
+  else if(m.t==='muted')toast('אתה מושתק ולא יכול לשלוח הודעות');
   else if(m.t==='declined')toast('ההזמנה לדו-קרב לא התקבלה');
   else if(m.t==='busy')toast('השחקן באמצע קרב אחר');
   else if(m.t==='noticket')toast('אין לך כרטיס זירה');
@@ -1185,7 +1193,7 @@ function renderParty(){
 }
 function renderArena(){
   const arenaOpps=A.opps||[];
-  let h=renderTop()+renderGuild()+renderParty()+'<h2>זירה</h2><div class="card"><div class="grid2"><div class="kv"><span>דירוג</span><b class="num" style="color:var(--gold)">'+A.rating+'</b></div><div class="kv"><span>כרטיסים היום</span><b class="num">'+A.tickets+'</b></div></div>'+
+  let h=renderFriends()+renderTop()+renderGuild()+renderParty()+'<h2>זירה</h2><div class="card"><div class="grid2"><div class="kv"><span>דירוג</span><b class="num" style="color:var(--gold)">'+A.rating+'</b></div><div class="kv"><span>כרטיסים היום</span><b class="num">'+A.tickets+'</b></div></div>'+
     '<p class="hint" style="margin-top:6px">קרב חי, שום דבר לא קורה לבד: זזים עם החיצים, תוקפים, ומפעילים שלושה כישורים, מגן, צעד חמיקה ושלושה שיקויים. מכת המהמם עוצרת את היריב לרגע, המגן בולם 60% מהנזק, ובזמן חמיקה אי אפשר לפגוע בך. כשהיריב לא מחובר, המשחק מפעיל את הדמות שלו עם הציוד האמיתי שלו. במקלדת: רווח לתקיפה, 1 עד 4 לכישורים, Q לחמיקה, E לשיקוי. '+(ONLINE?'הדמות שלך שמורה בשרת ומופיעה לשחקנים אחרים.':'מצב מקומי: יוצגו רק דמויות אימון.')+'</p>'+(A.pd?'<button class="btn pri glow" data-act="fight" data-i="0">חזור לקרב שהתחלת</button>':'')+'</div><h2>יריבים</h2>';
   arenaOpps.forEach((o,i)=>{h+='<div class="card opp"><div class="z"><b>'+esc(o.n)+'</b>'+(o.bot?'<span class="tag">דמות אימון</span>':'')+
     '<small>'+CLS[o.c].n+' · רמה '+L(o.l)+' · ריסטים '+L(o.r)+' · כוח '+L(fmt(o.p))+'</small></div><button class="btn sm pri" data-act="fight" data-i="'+i+'"'+(A.tickets>0&&SC.mode==='farm'?'':' disabled')+'>הילחם</button></div>';});
@@ -1259,7 +1267,7 @@ async function checkVersion(){
   try{await Promise.all(['./','index.html','game.js','core.js','config.js'].map(u=>fetch(u,{cache:'reload'}).catch(()=>null)));}catch(e){}
   location.reload();
 }
-setInterval(paceTick,5000);setInterval(()=>{if(ONLINE&&S&&!demo)netOpen();},6000);setInterval(()=>{if(worldWin()||(tab==='pass'&&evWindows(Date.now(),60).some(w=>w.e.world)))loadWorld();},10000);setInterval(checkVersion,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(checkVersion,1500);});setTimeout(checkVersion,8000);
+setInterval(paceTick,5000);setInterval(()=>{if(ONLINE&&S&&!demo){netOpen();askWho();}},6000);setInterval(()=>{if(worldWin()||(tab==='pass'&&evWindows(Date.now(),60).some(w=>w.e.world)))loadWorld();},10000);setInterval(checkVersion,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(checkVersion,1500);});setTimeout(checkVersion,8000);
 
 /* ---------- full screen and installing as an app ---------- */
 const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement,fsCan=!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);
@@ -1379,7 +1387,9 @@ document.addEventListener('click',async e=>{
   if(a==='install'){if(installEvt){const ev=installEvt;installEvt=null;ev.prompt();}renderPanel();return;}
   if(a==='say'){say();return;}
   if(a==='topBy'){topBy=b.dataset.k==='power'?'power':'resets';renderPanel();return;}
-  if(a==='chatCh'){chatCh=b.dataset.c==='g'?'g':'w';renderPanel();return;}
+  if(a==='chatCh'){chatCh=b.dataset.c==='g'?'g':b.dataset.c==='p'?'p':'w';renderPanel();return;}
+  if(a==='wTo'){closeModal();whisperTo={k:b.dataset.k,n:b.dataset.n};chatCh='p';openTab('chat');setTimeout(()=>{const el=$('chatIn');if(el)el.focus();},60);return;}
+  if(a==='reportAsk'){openModal('<h3>לדווח על '+esc(b.dataset.n)+'?</h3><p class="hint">הדיווח מגיע למנהל המשחק. כתוב בקצרה מה קרה.</p><input type="text" id="repWhy" maxlength="100" placeholder="למשל: קללות בצ\'אט" autocomplete="off"><div class="acts"><button class="btn" data-act="closeModal">ביטול</button><button class="btn pri" data-act="report" data-k="'+esc(b.dataset.k)+'" data-n="'+esc(b.dataset.n)+'">שלח דיווח</button></div>');return;}
   if(a==='logout'){setSession(null);location.reload();return;}
   if(a==='create'){
     if(clickBusy)return;clickBusy=true;const nm=($('nm').value||'').trim().slice(0,14)||'גיבור',extra=!!b.dataset.x;
@@ -1443,6 +1453,8 @@ document.addEventListener('click',async e=>{
     else if(a==='fight'){if(SC.mode==='farm'&&(A.tickets>0||A.pd)){r=await act('duelStart',{i:+b.dataset.i});if(r.ok)startDuel(r.pd);}}
     else if(a==='da'){return;}
     else if(a==='challenge'){closeModal();const k=b.dataset.k;if(ws&&ws.readyState===1){netSend({t:'challenge',k:k});toast('ההזמנה נשלחה. מחכים לתשובה');r={ok:true};}else{r=await act('duelStart',{k:k});if(r.ok)startDuel(r.pd);else toast(r.msg==='net'?'אין חיבור לשרת':r.msg);}}
+    else if(a==='friend'||a==='block'){const on=b.dataset.on==='1';closeModal();r=await act(a,{k:b.dataset.k,n:b.dataset.n,on:on});if(r.ok){toast(a==='friend'?(on?b.dataset.n+' נוסף לחברים':'הוסר מהחברים'):(on?b.dataset.n+' נחסם. לא תראה הודעות ממנו':'החסימה הוסרה'));askWho();}else toast(r.msg);}
+    else if(a==='report'){const why=($('repWhy')||{}).value||'';closeModal();r=await act('report',{k:b.dataset.k,n:b.dataset.n,why:why});toast(r.ok?'הדיווח נשלח. תודה':r.msg);r={ok:true};}
     else if(a==='pvpYes'||a==='pvpNo'){closeModal();netSend({t:'answer',id:+b.dataset.id,ok:a==='pvpYes'});r={ok:true};}
     else if(a==='pinvite'){closeModal();try{const j=await rpc('say',{m:b.dataset.n+', בוא לפארטי שלי. הקוד: '+party.code,g:false});toast(j&&j.result&&j.result.ok?'ההזמנה נשלחה בצ\'אט':'ההזמנה לא נשלחה');beatT=99;}catch(e){}r={ok:true};}
     else if(a==='reroll'){loadArena();}
@@ -1477,7 +1489,17 @@ function showPeer(p){
     (pet?'<div class="kv"><span>מלווה</span><b>'+pet[1]+'</b></div>':'')+
     '<div class="grid2" style="margin-top:10px"><button class="btn pri" data-act="challenge" data-k="'+esc(p.k)+'"'+(A.tickets>0&&SC.mode==='farm'?'':' disabled')+'>אתגר לדו-קרב</button><button class="btn" data-act="pinvite" data-n="'+esc(s.n)+'"'+(party.code?'':' disabled')+'>'+(party.code?'שלח קוד פארטי':'אין לך פארטי')+'</button></div>'+
     '<p class="hint" style="margin-top:6px">אם הוא מחובר הוא מקבל הזמנה, ואם הוא מקבל אותה נלחמים זה בזה בזמן אמת. אחרת נלחמים בדמות שלו, שהמשחק מפעיל. עולה כרטיס זירה.</p>'+
+    '<div class="grid2" style="margin-top:6px"><button class="btn" data-act="wTo" data-k="'+esc(p.k)+'" data-n="'+esc(s.n)+'">הודעה פרטית</button><button class="btn" data-act="friend" data-on="'+(isFriend(p.k)?0:1)+'" data-k="'+esc(p.k)+'" data-n="'+esc(s.n)+'">'+(isFriend(p.k)?'הסר מהחברים':'הוסף לחברים')+'</button>'+
+    '<button class="btn sm" data-act="block" data-on="'+(isBlocked(p.k)?0:1)+'" data-k="'+esc(p.k)+'" data-n="'+esc(s.n)+'">'+(isBlocked(p.k)?'בטל חסימה':'חסום')+'</button><button class="btn sm" data-act="reportAsk" data-k="'+esc(p.k)+'" data-n="'+esc(s.n)+'">דווח</button></div>'+
     '<div class="acts"><button class="btn" data-act="closeModal">סגור</button></div>');
+}
+function renderFriends(){
+  if(!ONLINE)return '';const fr=A.friends||[],bl=A.blocked||[];let h='<h2>חברים</h2>';
+  if(!fr.length)h+='<p class="hint">עוד אין חברים. לחץ על שחקן במפה ובחר "הוסף לחברים". כשחבר מתחבר תקבל הודעה.</p>';
+  for(const f of fr){const on=!!friendsOn[f.k];h+='<div class="card opp"><div class="z"><b>'+esc(f.n)+'</b><small style="color:'+(on?'var(--good)':'var(--dim)')+'">'+(on?'מחובר עכשיו':'לא מחובר')+'</small></div>'+
+    '<button class="btn sm" data-act="wTo" data-k="'+esc(f.k)+'" data-n="'+esc(f.n)+'"'+(on?'':' disabled')+'>הודעה</button><button class="btn sm'+(on?' pri':'')+'" data-act="challenge" data-k="'+esc(f.k)+'"'+(A.tickets>0&&SC.mode==='farm'?'':' disabled')+'>דו-קרב</button><button class="btn sm" data-act="friend" data-on="0" data-k="'+esc(f.k)+'" data-n="'+esc(f.n)+'">הסר</button></div>';}
+  if(bl.length)h+='<p class="hint">חסומים: '+bl.map(x=>esc(x.n)+' <button class="btn sm" data-act="block" data-on="0" data-k="'+esc(x.k)+'" data-n="'+esc(x.n)+'">בטל</button>').join(' · ')+'</p>';
+  return h;
 }
 /* ---------- the keep: a tiered event fought in its own place, entered with a crafted key ---------- */
 const keepWin=()=>{const n=Date.now();return evWindows(n,0).find(w=>w.e.tiered&&w.live&&keepOpen(w,n)&&!(A&&A.ev&&A.ev[w.key]&&A.ev[w.key].no));};
@@ -1590,24 +1612,26 @@ function drawPeers(g0,sc){
 }
 function addChat(list){
   const first=chatSince===0;if(!first&&list.length)chatAt=Date.now();
-  for(const m of list){const i=+m.i;if(!(i>chatSince))continue;chatSince=i;const sys=m.n==='\u2605';chatLog.push({c:m.c==='g'?'g':'w',n:String(m.n||''),g:String(m.g||''),m:String(m.m||''),me:!!m.me,sys:sys});if(!sys&&!first){const who=m.me?SC.hero:peers.find(p=>p.s&&p.s.n===m.n);if(who)who.say={m:String(m.m||'').slice(0,60),t:SC.t+6};}if(sys){if(!first)announce('\u2605 '+String(m.m||''));}else if(!first&&tab!=='chat'&&!m.me)chatUnread++;}
+  for(const m of list){const i=+m.i;if(!(i>chatSince))continue;chatSince=i;const sys=m.n==='\u2605';if(!sys&&!m.me&&isBlocked('',String(m.n||'')))continue;chatLog.push({c:m.c==='g'?'g':'w',n:String(m.n||''),g:String(m.g||''),m:String(m.m||''),me:!!m.me,sys:sys});if(!sys&&!first){const who=m.me?SC.hero:peers.find(p=>p.s&&p.s.n===m.n);if(who)who.say={m:String(m.m||'').slice(0,60),t:SC.t+6};}if(sys){if(!first)announce('\u2605 '+String(m.m||''));}else if(!first&&tab!=='chat'&&!m.me)chatUnread++;}
   if(chatLog.length>120)chatLog.splice(0,chatLog.length-120);
   const l=$('chatList');if(l){l.innerHTML=chatRows();l.scrollTop=l.scrollHeight;}
 }
 function chatRows(){
   const rows=chatLog.filter(m=>m.c===chatCh).slice(-60);
-  if(!rows.length)return '<p class="hint">'+(chatCh==='g'?'עוד אין הודעות בגילדה.':'עוד אין הודעות. תהיה הראשון.')+'</p>';
+  if(!rows.length)return '<p class="hint">'+(chatCh==='p'?'הודעות פרטיות עוברות רק בין שני שחקנים מחוברים ולא נשמרות. בוחרים למי לכתוב מכרטיס השחקן או מרשימת החברים.':chatCh==='g'?'עוד אין הודעות בגילדה.':'עוד אין הודעות. תהיה הראשון.')+'</p>';
+  if(chatCh==='p')return rows.map(m=>'<div class="cl'+(m.me?' me':'')+'"><b>'+(m.me?'אל '+esc(m.to||''):esc(m.n))+'</b> <span dir="auto">'+esc(m.m)+'</span>'+(m.me?'':' <button class="btn sm" data-act="wTo" data-k="'+esc(m.k)+'" data-n="'+esc(m.n)+'">השב</button>')+'</div>').join('');
   return rows.map(m=>m.sys?'<div class="cl" style="color:var(--gold)">\u2605 <span dir="auto">'+esc(m.m)+'</span></div>':'<div class="cl'+(m.me?' me':'')+'"><b>'+(m.g?'['+esc(m.g)+'] ':'')+esc(m.n)+'</b> <span dir="auto">'+esc(m.m)+'</span></div>').join('');
 }
 function renderChat(){
   if(!ONLINE)return '<h2>צ\'אט</h2><p class="hint">הצ\'אט עובד רק במצב מקוון, מול השרת.</p>';
   chatUnread=0;
-  return '<div class="seg"><button class="btn sm'+(chatCh==='w'?' pri':'')+'" data-act="chatCh" data-c="w">כולם</button><button class="btn sm'+(chatCh==='g'?' pri':'')+'" data-act="chatCh" data-c="g">גילדה</button><span class="hint">'+L(onlineN)+' מחוברים עכשיו</span></div>'+
-    '<div id="chatList">'+chatRows()+'</div><div class="chatSend"><input type="text" id="chatIn" maxlength="160" placeholder="כתוב הודעה" autocomplete="off" enterkeyhint="send"><button class="btn pri" data-act="say">שלח</button></div>'+
+  return '<div class="seg"><button class="btn sm'+(chatCh==='w'?' pri':'')+'" data-act="chatCh" data-c="w">כולם</button><button class="btn sm'+(chatCh==='g'?' pri':'')+'" data-act="chatCh" data-c="g">גילדה</button><button class="btn sm'+(chatCh==='p'?' pri':'')+'" data-act="chatCh" data-c="p">פרטי</button><span class="hint">'+L(onlineN)+' מחוברים עכשיו</span></div>'+
+    '<div id="chatList">'+chatRows()+'</div><div class="chatSend"><input type="text" id="chatIn" maxlength="160" placeholder="'+(chatCh==='p'?(whisperTo?'הודעה פרטית אל '+esc(whisperTo.n):'בחר שחקן מכרטיס שחקן או מהחברים'):'כתוב הודעה')+'" autocomplete="off" enterkeyhint="send"><button class="btn pri" data-act="say">שלח</button></div>'+
     '<p class="hint">שמור על שפה מכבדת. קללות, הטרדה ופרסום מביאים להשתקה.</p>';
 }
 async function say(){
   const el=$('chatIn');if(!el)return;const m=el.value.trim();if(!m)return;el.value='';if(m==='מעגל הנצח'){tryEgg('circle');return;}
+  if(chatCh==='p'){if(!whisperTo){toast('בחר קודם למי לכתוב');return;}if(!ws||ws.readyState!==1){toast('אין חיבור חי לשרת כרגע');el.value=m;return;}netSend({t:'whisper',k:whisperTo.k,m:m});return;}
   let j=null;try{j=await rpc('say',{m:m,g:chatCh==='g'});}catch(e){}
   const r=j&&j.result;if(!r||!r.ok){toast(r&&r.msg||'ההודעה לא נשלחה');if(!el.value)el.value=m;return;}
   beatT=99;
@@ -1747,7 +1771,8 @@ function loop(ts){
   if((hudT+=dt)>.2){hudT=0;renderHud();const ae=document.activeElement;if(panelDirty&&!$('sheet').classList.contains('on')&&!(ae&&ae.tagName==='INPUT'&&$('panel').contains(ae)))renderPanel();}
   if(tab==='pass'&&(evT+=dt)>1){evT=0;panelDirty=true;}
   if(ONLINE){pend.t+=dt;if(pend.t>8){pend.t=0;if(pend.kills||pend.casts||(party.code&&SC.zi>=0&&SC.mode==='farm'&&!document.hidden))flushTick();}
-    if(!demo&&(beatT+=dt)>(peers.length?2.5:5)){beatT=0;beat();}}
+    if(!demo&&(beatT+=dt)>(peers.length?(ws&&ws.readyState===1?4:2.5):5)){beatT=0;beat();}
+    if(!demo&&ws&&ws.readyState===1&&SC.mode==='farm'&&!SC.ev&&(mvT+=dt)>.2){const h=SC.hero,at=SC.t-(h.lastAtk||-9)<1.5,x=Math.round(h.x);if(peers.length&&(x!==mvLast[0]||at!==mvLast[1]||h.face!==mvLast[2])){mvT=0;mvLast=[x,at,h.face];netSend({t:'mv',z:SC.zi,fl:SC.fl,x:x,f:h.face,a:at});}}}
   else if((saveT+=dt)>8){saveT=0;if(localDirty){localDirty=false;saveLocal();}}
   updateTut(dt);updateAnnounce(dt);
   if(SC.ev&&Date.now()>SC.evEnd+1500&&!busy){flushTick().then(()=>{if(SC.ev)leaveKeep(true);});SC.evEnd+=8000;}

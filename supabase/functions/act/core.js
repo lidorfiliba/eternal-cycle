@@ -635,6 +635,13 @@ function apply(A,kind,args,ctx){
       A.cur=i;S=A.chars[i];const gap=(now-(S.last||now))/1000;
       if(gap>5){const rep=offline(S,gap);if(rep.kills>0)r.afk=[{name:S.name,zone:S.zone,rep:rep}];}
       S.last=now;A.allow=0;A.bossAt=null;A.opps=null;break;}
+    // Friends and blocked players are kept by the short key the server hands out for a player, with the name as it was then.
+    case 'friend':case 'block':{const k=String(args.k||''),n=String(args.n||'').replace(/[<>&"'\u2605\u0000-\u001f]/g,'').trim().slice(0,14),key=kind==='friend'?'friends':'blocked',max=kind==='friend'?40:60;
+      if(!/^[0-9a-f]{10}$/.test(k)||!n)return fail('שחקן לא מוכר');const list=(A[key]||[]).filter(x=>x&&x.k!==k);
+      if(args.on){if(list.length>=max)return fail('הרשימה מלאה');list.push({k:k,n:n});if(kind==='block')A.friends=(A.friends||[]).filter(x=>x.k!==k);}
+      A[key]=list;r.list=list;break;}
+    case 'report':{const k=String(args.k||''),n=String(args.n||'').replace(/[<>&"'\u0000-\u001f]/g,'').trim().slice(0,14),why=String(args.why||'').replace(/[<>\u0000-\u001f]/g,'').trim().slice(0,100);
+      if(!/^[0-9a-f]{10}$/.test(k)||!n||why.length<3)return fail('כתוב בקצרה מה קרה');if(now-(A.repAt||0)<60000)return fail('אפשר לדווח פעם בדקה');A.repAt=now;r.report={k:k,n:n,why:why};break;}
     case 'gcreate':{if(A.gold<GUILD_FEE)return fail('פתיחת גילדה עולה '+GUILD_FEE+' זהב');A.gold-=GUILD_FEE;break;}
     case 'travel':{
       S.evIn=null;const z=int(args.z,-1,ZONES.length-1),f=z<0?0:int(args.f,0,FLOORS-1);if(!canEnter(S,z))return fail('המפה נעולה');

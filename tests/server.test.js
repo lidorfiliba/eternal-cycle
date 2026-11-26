@@ -375,3 +375,26 @@ test('live duel over the socket: invite, server-decided hits, result written to 
     a.send({t:'challenge',k:b.key});const inv2=await b.wait('invite');b.send({t:'answer',id:inv2.id,ok:true});await a.wait('start');await b.wait('start');b.ws.close();assert.equal((await a.wait('end')).win,true,'leaving forfeits');
   }finally{for(const u of [a,b])if(u.ws)u.ws.close();srv.live.close();srv.close();}
 });
+test('friends, blocking, reports and private messages',async()=>{
+  const {makeServer}=await import('../server/index.mjs');const {WebSocket}=await import('ws');const {createHash}=await import('node:crypto');const {db}=await world();
+  const srv=makeServer(fakeAdmin(db),'test-secret');await new Promise(r=>srv.listen(0,r));const port=srv.address().port,base='http://127.0.0.1:'+port;
+  const post=async(body,tok)=>(await (await fetch(base,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},tok?{'x-ec-token':tok}:{}),body:JSON.stringify(body)})).json());
+  const mkUser=async n=>{const r=await post({kind:'register',args:{user:n,pass:'correct-horse-9',q:0,a:'rex'}});await post({kind:'create',args:{name:n,cls:'blade'}},r.token);
+    const uid=(await db.query('select user_id from users where username=$1',[n])).rows[0].user_id;return {tok:r.token,uid,key:createHash('md5').update(uid+'peer').digest('hex').slice(0,10)};};
+  const open=async u=>{const ws=new WebSocket('ws://127.0.0.1:'+port+'/ws');u.q=[];u.wait=t=>new Promise((res,rej)=>{const go=()=>{const i=u.q.findIndex(m=>m.t===t);if(i>=0)return res(u.q.splice(i,1)[0]);setTimeout(go,10);};go();setTimeout(()=>rej(new Error('no '+t+' message')),4000);});
+    ws.on('message',d=>u.q.push(JSON.parse(String(d))));await new Promise(r=>ws.on('open',r));ws.send(JSON.stringify({t:'hello',token:u.tok}));await u.wait('hi');u.ws=ws;u.send=m=>ws.send(JSON.stringify(m));};
+  const a=await mkUser('dana'),b=await mkUser('omer');
+  try{
+    assert.equal((await post({kind:'friend',args:{k:'nope',n:'x',on:true}},a.tok)).result.ok,false);
+    const f=await post({kind:'friend',args:{k:b.key,n:'omer',on:true}},a.tok);assert.deepEqual(f.state.friends,[{k:b.key,n:'omer'}]);
+    const bl=await post({kind:'block',args:{k:b.key,n:'omer',on:true}},a.tok);assert.equal(bl.state.blocked.length,1);assert.equal(bl.state.friends.length,0,'blocking removes the friendship');
+    assert.equal((await post({kind:'report',args:{k:b.key,n:'omer',why:'x'}},a.tok)).result.ok,false);
+    assert.ok((await post({kind:'report',args:{k:b.key,n:'omer',why:'קללות בצאט'}},a.tok)).result.ok);assert.match((await post({kind:'report',args:{k:b.key,n:'omer',why:'שוב קללות'}},a.tok)).result.msg,/פעם בדקה/);
+    const rep=(await db.query("select name,msg from chat where ch='r'")).rows;assert.equal(rep.length,1);assert.equal(rep[0].name,'dana');assert.match(rep[0].msg,/omer/);
+    assert.equal((await post({kind:'beat',args:{x:1,f:1,a:false,s:0}},b.tok)).beat.chat.length,0,'reports never show in the chat of players');
+    await open(a);a.send({t:'who',ks:[b.key]});assert.deepEqual((await a.wait('who')).on,[]);a.send({t:'whisper',k:b.key,m:'היי'});await a.wait('offline');
+    await open(b);a.send({t:'who',ks:[b.key]});assert.deepEqual((await a.wait('who')).on,[b.key]);
+    await new Promise(r=>setTimeout(r,950));a.send({t:'whisper',k:b.key,m:'מה <b>נשמע</b>'});const w=await b.wait('whisper');assert.equal(w.from.n,'dana');assert.equal(w.from.k,a.key);assert.equal(w.m,'מה bנשמע/b');await a.wait('whispered');
+    await db.query("update accounts set muted_until=now()+interval '1 hour' where user_id=$1",[a.uid]);await new Promise(r=>setTimeout(r,950));a.send({t:'whisper',k:b.key,m:'עוד'});await a.wait('muted');
+  }finally{for(const u of [a,b])if(u.ws)u.ws.close();srv.live.close();srv.close();}
+});

@@ -91,7 +91,9 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
         : await admin.rpc("backup_restore_account", { p_admin: uid, p_day: String(args.day || "").slice(0, 10), p_username: String(args.user || "").slice(0, 64) });
       return { result: res.error ? { ok: false, msg: errMsg(res) } : { ok: true }, backups: (await admin.rpc("admin_backups", { p_admin: uid })).data || [] };
     }
-    if (kind === "aview") { const r = await admin.rpc("admin_view", { p_user: uid }); return r.error ? { result: { ok: false, msg: errMsg(r) } } : { result: { ok: true }, admin: r.data }; }
+    if (kind === "aview") { const r = await admin.rpc("admin_view", { p_user: uid }); if (r.error) return { result: { ok: false, msg: errMsg(r) } };
+      const rp = await admin.from("chat").select("id,name,msg,at").eq("ch", "r").order("id", { ascending: false }).limit(40); // players' reports, newest first
+      return { result: { ok: true }, admin: Object.assign({}, r.data, { reports: rp.data || [] }) }; }
     if (kind === "aact") {
       const r = await admin.rpc("admin_act", { p_user: uid, p_action: String(args.action || "").slice(0, 12), p_target: String(args.target || "").slice(0, 64), p_hours: Math.floor(Number(args.hours)) || 24 });
       if (r.error) return { result: { ok: false, msg: errMsg(r) } };
@@ -215,6 +217,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
       if (!upd.data || !upd.data.length) continue; // another request saved first; redo on fresh state
 
       if (ARENA_KINDS.has(kind)) await saveArena(uid, A);
+      if (kind === "report" && r.report) { try { const ch = A.chars[A.cur]; await admin.from("chat").insert({ ch: "r", user_id: uid, name: ch ? String(ch.name).slice(0, 14) : "?", tag: "", msg: ("על " + r.report.n + " [" + r.report.k + "]: " + r.report.why).slice(0, 160) }); } catch (_e) { /* the report is best effort */ } }
       { // feats the whole server hears about; a failure here never fails the action
         const ch = A.chars[A.cur], nm = ch ? String(ch.name).slice(0, 14) : "", rep = r.rep || {}; let feat = "";
         if (kind === "upgrade" && r.code === "ok" && r.p >= 11) feat = nm + " שדרג פריט ל-+" + r.p;
