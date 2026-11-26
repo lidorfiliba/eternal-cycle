@@ -857,7 +857,7 @@ function apply(A,kind,args,ctx){
     case 'wingEvolve':{const f=findIt(A,S,int(args.id,0,1e12));if(!f||f.it.s!=='g')return fail('הפריט לא נמצא');const it=f.it;
       if(it.t>=WING_MAX)return fail('אלו הכנפיים הגבוהות ביותר');if(it.p<15)return fail('רק כנפיים +15 מתפתחות');
       const n=wingFeathers(it.t);if((A.feathers||0)<n)return fail('צריך '+n+' נוצות נצח. יש לך '+(A.feathers||0));
-      A.feathers-=n;r.need=n;if(_rnd()<wingChance(it.t)){it.t++;r.evolved=true;r.t=it.t;}else r.evolved=false;break;} // the wing itself is never lost, and it keeps its +15
+      A.feathers-=n;r.need=n;if(_rnd()<wingChance(it.t)){it.t++;it.p=0;r.evolved=true;r.t=it.t;}else r.evolved=false;break;} // the wing itself is never lost; the new rank starts at +0 and is upgraded again
     case 'upgrade':{const f=findIt(A,S,int(args.id,0,1e12));if(!f)return fail('הפריט לא נמצא');r.code=upgrade(S,f.it);r.p=f.it.p;r.r=f.it.r;break;}
     case 'openBox':{const sk=args.k==='s';if((sk?A.sboxes:A.boxes)<1)return fail('אין תיבות');if(sk)A.sboxes--;else A.boxes--;r.box=openBox(S,sk?'s':'');break;}
     case 'buy':{

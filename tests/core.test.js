@@ -243,7 +243,7 @@ test('wings: fifty ranks, each stronger; only +15 wings evolve, with feathers, a
   const w=mk(8,14);A.inv.push(w);A.feathers=10;assert.match(G.apply(A,'wingEvolve',{id:w.id}).msg,/\+15|15/);
   w.p=15;A.feathers=1;assert.match(G.apply(A,'wingEvolve',{id:w.id}).msg,/נוצות/);A.feathers=10;const need=G.wingFeathers(8);
   const fail=G.apply(A,'wingEvolve',{id:w.id});assert.ok(fail.ok);assert.equal(fail.evolved,false);assert.equal(w.t,8);assert.equal(w.p,15);assert.equal(A.feathers,10-need);
-  x=.01;const ok=G.apply(A,'wingEvolve',{id:w.id});assert.equal(ok.evolved,true);assert.equal(w.t,9);assert.equal(w.p,15,'the upgrade level is kept, so evolving never weakens');assert.equal(A.feathers,10-2*need);
+  x=.01;const ok=G.apply(A,'wingEvolve',{id:w.id});assert.equal(ok.evolved,true);assert.equal(w.t,9);assert.equal(w.p,0,'the next rank starts at +0');assert.equal(G.apply(A,'wingEvolve',{id:w.id}).ok,false,'and cannot be evolved again until it is back at +15');w.p=15;assert.equal(A.feathers,10-2*need);
   w.t=50;assert.equal(G.apply(A,'wingEvolve',{id:w.id}).ok,false);A.coins=100;assert.ok(G.apply(A,'buy',{shop:'season',k:'feather'}).ok);assert.equal(A.coins,60);
   assert.ok(G.wingChance(1)>G.wingChance(49)&&G.wingFeathers(49)>G.wingFeathers(1));
 });
