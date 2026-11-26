@@ -96,7 +96,7 @@ const mapW=()=>SC.zi<0?TW:MW, gy=()=>Math.min(H*.8,H-112);
 function lookOf(s){const g=it=>it?[it.t,it.r,it.p,it.season?1:0]:null;return {c:s.cls,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g)};}
 function glowAmt(p,r,t){let g=p>=13?24:p>=11?16+5*Math.sin(t*6):p>=9?12:p>=7?7:0;if(r>=3)g=Math.max(g,6);return g;}
 function gearColor(g,t,fallback){if(!g)return fallback;if(g[2]>=15)return 'hsl('+((t*90)%360)+',95%,68%)';return RAR[g[1]].c;}
-const WPAL={1:['#2f7a45','#b6ef86'],2:['#2260c9','#a8e8ff'],3:['#c42d18','#ffbe55'],4:['#caa02e','#fff8d2'],s:['#a637ee','#62f3e2']};
+const WPAL={1:['#2f7a45','#b6ef86'],2:['#2260c9','#a8e8ff'],3:['#c42d18','#ffbe55'],4:['#caa02e','#fff8d2'],5:['#35106b','#d596ff'],6:['#1b6ea8','#effcff'],7:['#a8740a','#fff1a8'],8:['#ff4fa3','#7df9ff'],s:['#a637ee','#62f3e2']};
 const SPR={"mh":{"w":128,"h":69,"ax":28,"ay":69,"bh":52,"a":{"idle":[0,8],"run":[1,8],"atk":[2,6],"atk2":[3,6],"hit":[4,4],"die":[5,6]}},"ew":{"w":94,"h":69,"ax":26,"ay":69,"bh":58,"a":{"idle":[0,8],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,5]}},"hu":{"w":91,"h":66,"ax":42,"ay":66,"bh":42,"a":{"idle":[0,8],"run":[1,8],"atk":[2,7],"atk2":[3,5],"hit":[4,3],"die":[5,8]}},"mush":{"w":71,"h":45,"ax":32,"ay":45,"bh":37,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"gob":{"w":88,"h":46,"ax":44,"ay":46,"bh":36,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"skel":{"w":98,"h":59,"ax":32,"ay":57,"bh":51,"a":{"idle":[0,4],"run":[1,4],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"eye":{"w":56,"h":41,"ax":27,"ay":33,"bh":33,"a":{"idle":[0,8],"atk":[1,8],"hit":[2,4],"die":[3,4]}},"worm":{"w":77,"h":54,"ax":30,"ay":54,"bh":45,"a":{"idle":[0,9],"run":[1,9],"atk":[2,16],"hit":[3,3],"die":[4,8]}},"skel_f":{"w":98,"h":59,"ax":32,"ay":57,"bh":51,"a":{"idle":[0,4],"run":[1,4],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"gob_r":{"w":88,"h":46,"ax":44,"ay":46,"bh":36,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"eye_p":{"w":56,"h":41,"ax":27,"ay":33,"bh":33,"a":{"idle":[0,8],"atk":[1,8],"hit":[2,4],"die":[3,4]}},"skel_g":{"w":98,"h":59,"ax":32,"ay":57,"bh":51,"a":{"idle":[0,4],"run":[1,4],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"n_smith":{"w":128,"h":69,"ax":28,"ay":69,"bh":52,"a":{"idle":[0,8]}},"n_merch":{"w":91,"h":66,"ax":42,"ay":66,"bh":42,"a":{"idle":[0,8]}},"n_guard":{"w":94,"h":69,"ax":26,"ay":69,"bh":58,"a":{"idle":[0,8]}},"n_herald":{"w":91,"h":66,"ax":42,"ay":66,"bh":42,"a":{"idle":[0,8]}},"n_arena":{"w":128,"h":69,"ax":28,"ay":69,"bh":52,"a":{"idle":[0,8]}},"mush_d":{"w":71,"h":45,"ax":32,"ay":45,"bh":37,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"worm_i":{"w":77,"h":54,"ax":30,"ay":54,"bh":45,"a":{"idle":[0,9],"run":[1,9],"atk":[2,16],"hit":[3,3],"die":[4,8]}},"gob_g":{"w":88,"h":46,"ax":44,"ay":46,"bh":36,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"skel_d":{"w":98,"h":59,"ax":32,"ay":57,"bh":51,"a":{"idle":[0,4],"run":[1,4],"atk":[2,8],"hit":[3,4],"die":[4,4]}}};
 const IMG={},CLSSPR={blade:'mh',storm:'ew',hunter:'hu'};
 function loadSprites(){for(const k in SPR){const im=new Image();im.src='assets/'+k+'.png';IMG[k]=im;}}
@@ -110,17 +110,78 @@ function spr(key,an,fi,x,y,k,flip,glowC,glowB,alpha){
   ctx.restore();return true;
 }
 const frames=(key,an)=>{const m=SPR[key];return (m.a[an]||m.a.idle)[1];};
-const wcv=document.createElement('canvas');wcv.width=96;wcv.height=72;const wctx=wcv.getContext('2d');
+const wcv=document.createElement('canvas');wcv.width=144;wcv.height=112;const wctx=wcv.getContext('2d');
+// Eight wing styles by tier: leaf, storm feathers, flame, angel, bat, ice shards, double golden, energy blades with a halo.
 function drawWings(x,y,g,t,k){
-  const pal=g[3]?WPAL.s:WPAL[g[0]],n=3+g[0],flap=Math.sin(t*3)*.16,c=wctx;
-  c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,96,72);c.translate(48,46);c.scale(.5,.5);
+  const T=clamp(g[0]|0,1,8),c=wctx,flap=Math.sin(t*3)*.16;let pal=g[3]?WPAL.s:WPAL[T];
+  if(T===8&&!g[3]){const h=(t*70)%360;pal=['hsl('+h+',90%,58%)','hsl('+((h+120)%360)+',95%,78%)'];}
+  c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,144,112);c.translate(72,72);c.scale(.5,.5);
+  const grad=(len,a,b)=>{const gr=c.createLinearGradient(0,0,len,0);gr.addColorStop(0,a||pal[0]);gr.addColorStop(1,b||pal[1]);return gr;};
+  const feather=(len,w)=>{c.beginPath();c.moveTo(0,0);c.quadraticCurveTo(len*.5,-w,len,-2);c.quadraticCurveTo(len*.55,w*.8,0,3);c.fill();};
   for(const side of [-1,1]){c.save();c.scale(side,1);
-    for(let i=n-1;i>=0;i--){c.save();c.rotate(-(.15+i*.3)+flap*(1+i*.25));
-      const len=24+i*6+g[0]*4,gr=c.createLinearGradient(0,0,len,0);gr.addColorStop(0,pal[0]);gr.addColorStop(1,pal[1]);
-      c.fillStyle=gr;c.beginPath();c.moveTo(0,0);c.quadraticCurveTo(len*.5,-11,len,-2);c.quadraticCurveTo(len*.55,9,0,3);c.fill();c.restore();}
+    if(T===5){ // bat membrane with finger bones
+      c.save();c.rotate(-.5+flap*1.4);c.fillStyle=grad(86);c.beginPath();c.moveTo(0,0);c.lineTo(34,-46);c.lineTo(86,-34);
+      c.quadraticCurveTo(70,-16,78,2);c.quadraticCurveTo(58,-2,56,20);c.quadraticCurveTo(38,10,30,28);c.quadraticCurveTo(18,10,0,6);c.fill();
+      c.strokeStyle=pal[1];c.lineWidth=2.5;c.beginPath();for(const p of [[86,-34],[78,2],[56,20],[30,28]]){c.moveTo(34,-46);c.lineTo(p[0],p[1]);}c.moveTo(0,0);c.lineTo(34,-46);c.stroke();c.restore();
+    }else if(T===6){ // ice shards
+      for(let i=5;i>=0;i--){c.save();c.rotate(-(.05+i*.27)+flap*(1+i*.2));const len=34+i*9;c.fillStyle=grad(len);c.beginPath();c.moveTo(0,-2);c.lineTo(len*.55,-9-i);c.lineTo(len,0);c.lineTo(len*.5,6);c.lineTo(0,3);c.fill();
+        c.strokeStyle='rgba(255,255,255,.75)';c.lineWidth=1.5;c.beginPath();c.moveTo(4,0);c.lineTo(len-3,0);c.stroke();c.restore();}
+    }else if(T===8){ // energy blades
+      for(let i=6;i>=0;i--){c.save();c.rotate(-(.0+i*.26)+flap*(1+i*.3));const len=42+i*9;c.fillStyle=grad(len);c.globalAlpha=.9;c.beginPath();c.moveTo(6,-3);c.lineTo(len,-1);c.lineTo(len+10,0);c.lineTo(len,1);c.lineTo(6,3);c.fill();
+        c.globalAlpha=1;c.fillStyle='#fff';c.fillRect(8,-.8,len-8,1.6);c.restore();}
+    }else{ // feathered families: leaf, storm, flame, angel, golden double
+      const n=T===1?3:T===2?5:T===3?5:T===4?7:8,layers=T===7?2:1;
+      for(let L=layers-1;L>=0;L--)for(let i=n-1;i>=0;i--){c.save();
+        const wob=T===3?Math.sin(t*9+i*1.7)*.08:0;c.rotate(-(.15+i*(T===1?.42:.26))+flap*(1+i*.25)+wob+L*.5);
+        const len=(T===1?26:T===3?30:24)+i*(T>=4?8:6)+T*3-L*14;c.fillStyle=L?grad(len,pal[1],'#fff'):grad(len);
+        if(T===3){c.beginPath();c.moveTo(0,0);c.bezierCurveTo(len*.3,-16,len*.6,6,len,-10+Math.sin(t*12+i)*4);c.bezierCurveTo(len*.7,10,len*.3,2,0,4);c.fill();}
+        else feather(len,T===1?15:T>=4?12:11);
+        c.restore();}
+    }
     c.restore();}
-  ctx.save();ctx.imageSmoothingEnabled=false;const gl=glowAmt(g[2],g[1],t);if(gl){ctx.shadowColor=pal[1];ctx.shadowBlur=gl;}
-  ctx.globalAlpha=.95;ctx.drawImage(wcv,Math.round(x-48*k),Math.round(y-46*k),96*k,72*k);ctx.restore();
+  if(T===8||T===4||T===7){c.strokeStyle=pal[1];c.lineWidth=T===8?4:3;c.globalAlpha=T===8?.9:.6;c.beginPath();c.ellipse(0,-64,20,6,0,0,7);c.stroke();c.globalAlpha=1;}
+  ctx.save();ctx.imageSmoothingEnabled=false;const gl=Math.max(glowAmt(g[2],g[1],t),T>=5?5+T:0);if(gl){ctx.shadowColor=pal[1];ctx.shadowBlur=gl;}
+  ctx.globalAlpha=.95;ctx.drawImage(wcv,Math.round(x-72*k),Math.round(y-72*k),144*k,112*k);ctx.restore();
+  if(T>=6&&!calm&&Math.random()<.2)SC.parts.push({x:x+(Math.random()-.5)*60*k,y:y-Math.random()*30*k,vx:0,vy:T===6?14:-16,life:.7,c:pal[1],s:2});
+}
+// The weapon carried on the back: its shape follows the item tier (six designs per class), its glow the upgrade level.
+const TCOL=['#9aa3ad','#c9d2dc','#bfe3ff','#e8c27a','#9fe8ff','#ff8a4d','#a487ff','#ffd75e','#b07cff','#8fe6ff','#ffe27a','#ff6b8a'];
+function drawBackWeapon(x,y,look,t,k,flip){
+  const w=look.w;if(!w)return;const tier=clamp(w[0]|0,1,12),st=Math.floor((tier-1)/2),p=w[2]|0,base=TCOL[tier-1],edge=p>=15?'hsl('+((t*90)%360)+',95%,72%)':RAR[w[1]].c,gl=glowAmt(p,w[1],t);
+  ctx.save();ctx.translate(x,y+Math.sin(t*2.2)*1.5*k);ctx.scale(flip?-k:k,k);ctx.rotate(look.c==='hunter'?-.95:-.62);
+  if(gl||tier>=7){ctx.shadowColor=edge;ctx.shadowBlur=Math.max(gl,tier>=7?6:0);}
+  ctx.lineJoin='round';ctx.lineCap='round';
+  const shaft=(a,b,wd,col)=>{ctx.strokeStyle=col;ctx.lineWidth=wd;ctx.beginPath();ctx.moveTo(0,a);ctx.lineTo(0,b);ctx.stroke();};
+  const poly=(pts,fill)=>{ctx.fillStyle=fill;ctx.beginPath();pts.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.closePath();ctx.fill();ctx.strokeStyle=edge;ctx.lineWidth=.7;ctx.stroke();};
+  if(look.c==='blade'){
+    const len=[15,18,19,21,24,26][st],wd=[1.6,2.4,1.8,2.6,3.2,2.8][st];
+    shaft(2,7,1.6,'#5a4630');ctx.fillStyle=edge;ctx.fillRect(-4-st*.4,0,8+st*.8,1.6);ctx.beginPath();ctx.arc(0,8,1.5,0,7);ctx.fill();
+    if(st===2)poly([[-wd,0],[wd,0],[wd+2.5,-len*.6],[1.5,-len],[-wd*.4,-len*.55]],base); // saber
+    else if(st===3)poly([[-wd,0],[wd,0],[wd+1.5,-len*.25],[wd-.6,-len*.4],[wd+1.5,-len*.6],[0,-len],[-wd-1.5,-len*.6],[-wd+.6,-len*.4],[-wd-1.5,-len*.25]],base); // flame blade
+    else if(st===4)poly([[-wd,0],[wd,0],[wd+1.5,-len*.7],[0,-len],[-wd-1.5,-len*.7]],base); // crystal greatsword
+    else if(st===5){poly([[-wd,0],[wd,0],[wd,-len*.75],[0,-len],[-wd,-len*.75]],base);ctx.fillStyle=edge;for(let i=1;i<4;i++){ctx.beginPath();ctx.arc(0,-len*i*.22,.9,0,7);ctx.fill();}} // rune blade
+    else poly([[-wd,0],[wd,0],[wd*.8,-len*.8],[0,-len],[-wd*.8,-len*.8]],base);
+    ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(0,-2);ctx.lineTo(0,-len*.8);ctx.stroke();
+  }else if(look.c==='storm'){
+    const len=22+st*1.2;shaft(8,-len,1.7,st>=3?'#3b2a5c':'#6b4a2e');const ty=-len-2,pul=1+.12*Math.sin(t*5);
+    if(st===1){ctx.strokeStyle=edge;ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(0,ty-2,4.5,.6,Math.PI*2-.6+1.2);ctx.stroke();} // crescent
+    else if(st===2)poly([[0,ty-9],[3,ty-3],[0,ty+2],[-3,ty-3]],base); // crystal
+    else if(st===3){for(const dx of [-3.4,0,3.4])poly([[dx-1,ty+1],[dx+1,ty+1],[dx,ty-7-(dx?0:3)]],base);} // trident
+    else if(st===4){ctx.fillStyle=base;ctx.strokeStyle=edge;ctx.lineWidth=.7;ctx.beginPath();for(let i=0;i<10;i++){const r=i%2?2.4:6,a=i*Math.PI/5-Math.PI/2+t;ctx.lineTo(Math.cos(a)*r,ty-4+Math.sin(a)*r);}ctx.closePath();ctx.fill();ctx.stroke();} // star
+    else if(st===5){ctx.strokeStyle=edge;ctx.lineWidth=1.4;for(const r of [3,6]){ctx.beginPath();ctx.ellipse(0,ty-4,r,r*.45,t*(r===3?2:-1.4),0,7);ctx.stroke();}}
+    ctx.fillStyle=st===5?'#fff':base;ctx.beginPath();ctx.arc(0,ty-(st===0?2:4),(st===0?3.4:2.2)*pul,0,7);ctx.fill();
+  }else{
+    const len=26+st*1.3;shaft(10,-len,1.4,'#6b4a2e');const ty=-len;
+    if(st===1)poly([[0,ty-9],[2.4,ty-2],[4.5,ty+2],[1,ty],[0,ty+3],[-1,ty],[-4.5,ty+2],[-2.4,ty-2]],base); // barbed
+    else if(st===2)poly([[-1,ty+4],[1,ty+4],[4.5,ty-4],[1.5,ty-12],[-1,ty-3]],base); // glaive
+    else if(st===3){poly([[-2.6,ty+1],[-1,ty-9],[0,ty+1]],base);poly([[0,ty+1],[1,ty-9],[2.6,ty+1]],base);} // twin tip
+    else if(st===4)poly([[0,ty-11],[2.2,ty-3],[5,ty-1],[2,ty+1],[0,ty+4],[-2,ty+1],[-5,ty-1],[-2.2,ty-3]],base); // harpoon
+    else if(st===5){poly([[0,ty-12],[2.4,ty-2],[-2.4,ty-2]],base);poly([[1,ty],[7,ty-5],[6,ty+4]],base);} // halberd
+    else poly([[0,ty-8],[2.6,ty-1],[0,ty+2],[-2.6,ty-1]],base);
+    ctx.fillStyle=edge;ctx.fillRect(-1.6,ty+3,3.2,1.4);
+  }
+  ctx.restore();
+  if(p>=9&&!calm&&Math.random()<(p>=13?.3:.12))SC.parts.push({x:x+(flip?1:-1)*(4+Math.random()*10)*k,y:y-(6+Math.random()*22)*k,vx:0,vy:-14,life:.6,c:edge,s:2});
 }
 function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
 function drawHero(x,y,sc,look,t,anim,flip,dead,mv,fury){
@@ -131,6 +192,7 @@ function drawHero(x,y,sc,look,t,anim,flip,dead,mv,fury){
     ctx.save();ctx.translate(x,y);ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.4+.15*Math.sin(t*5);ctx.scale(1,.3);ctx.fillStyle=gr;ctx.beginPath();ctx.arc(0,0,50,0,7);ctx.fill();ctx.restore();}
   ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(x,y+1,20*sc,5*sc,0,0,7);ctx.fill();
   if(look.g&&!dead)drawWings(x-(flip?-1:1)*5*k,y-m.bh*k*.62,look.g,t,k);
+  if(look.w&&!dead&&!look.spr)drawBackWeapon(x-(flip?-1:1)*7*k,y-m.bh*k*.5,look,t,k,flip);
   let an='idle',fi=Math.floor(t*8);
   if(dead){an='die';fi=Math.min(frames(key,'die')-1,Math.floor((dead===true?9:dead)*8));}
   else if(anim>0){an=look.sk&&m.a.atk2?'atk2':'atk';fi=Math.floor((1-anim)*frames(key,an));}
@@ -474,6 +536,7 @@ function drawWorld(){
     drawHero(h.x,g0,sc,lk,SC.t,h.anim,h.face<0,h.dead>0?3-h.dead:0,h.mv,h.buff>0);
     hpBar(h.x-30,g0-hk.bh*2*sc-16,60,h.hp/C.hp,'#6fe39a');}
   drawFx(SC.dt);ctx.restore();
+  if(window.EC&&window.EC.gallery)window.EC.gallery(drawHero,ctx); // debug hook for looking at gear art
   if(SC.boss){hpBar(W*.2,92,W*.6,SC.boss.hp/SC.boss.max,'#ff5c7a','בוס: '+ZONES[zi].m);}
 }
 

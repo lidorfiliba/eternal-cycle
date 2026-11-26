@@ -14,10 +14,10 @@ const ZONES=[
  {n:'מגדל הצללים',m:'אביר צל',min:300,kind:'brute',c:'#a487ff',sky:['#0c0820','#3a2378'],sil:'#070414',amb:'#c9b3ff',sig:'drop',wing:3},
  {n:'שער הנצח',m:'דרקון נצח',min:350,kind:'drake',c:'#f2c14e',sky:['#1a1030','#8a5a2a'],sil:'#0f081c',amb:'#fff0b0',sig:'dmg',wing:4},
  // Reset maps: open only to characters that have reset, stronger monsters and better rewards for the same level.
- {n:'מעמקי השכחה',m:'פטריית תהום',min:100,req:1,kind:'blob',c:'#b07cff',sky:['#12062a','#3b1466'],sil:'#0a0318',amb:'#d6b3ff',sig:'xp',xpo:99,go:48},
- {n:'קרחון האלים',m:'תולעת קרח',min:200,req:2,kind:'crawler',c:'#8fe6ff',sky:['#061a2e','#2f7fa8'],sil:'#04101c',amb:'#e8fbff',sig:'dmg',xpo:223,go:82},
- {n:'היכל הזהב',m:'גובלין זהב',min:300,req:4,kind:'brute',c:'#ffd24a',sky:['#2a1a05','#b8862a'],sil:'#1a1003',amb:'#fff3c4',sig:'gold',xpo:383,go:112},
- {n:'לב המעגל',m:'שלד דם',min:380,req:7,kind:'brute',c:'#ff5c5c',sky:['#1f0306','#8f1420'],sil:'#120204',amb:'#ffb0b0',sig:'cdmg',xpo:532,go:136}
+ {n:'מעמקי השכחה',wing:5,m:'פטריית תהום',min:100,req:1,kind:'blob',c:'#b07cff',sky:['#12062a','#3b1466'],sil:'#0a0318',amb:'#d6b3ff',sig:'xp',xpo:99,go:48},
+ {n:'קרחון האלים',wing:6,m:'תולעת קרח',min:200,req:2,kind:'crawler',c:'#8fe6ff',sky:['#061a2e','#2f7fa8'],sil:'#04101c',amb:'#e8fbff',sig:'dmg',xpo:223,go:82},
+ {n:'היכל הזהב',wing:7,m:'גובלין זהב',min:300,req:4,kind:'brute',c:'#ffd24a',sky:['#2a1a05','#b8862a'],sil:'#1a1003',amb:'#fff3c4',sig:'gold',xpo:383,go:112},
+ {n:'לב המעגל',wing:8,m:'שלד דם',min:380,req:7,kind:'brute',c:'#ff5c5c',sky:['#1f0306','#8f1420'],sil:'#120204',amb:'#ffb0b0',sig:'cdmg',xpo:532,go:136}
 ];
 const BASEZ=8;
 const MHP=[90,400,880,1540,2420,3400,4480,5450,1900,4100,6700,9000], MATK=[13,37,71,113,164,214,265,307,135,253,371,462];
@@ -31,7 +31,7 @@ const CLS={
 const STATN={str:['כוח','נזק ללוחם להב'],agi:['זריזות','מהירות, קריטי, הגנה'],vit:['חיוניות','חיים והגנה'],ene:['אנרגיה','נזק למכשפת סער']};
 const RAR=[{n:'רגיל',c:'#b9b4c7',m:1},{n:'קסום',c:'#5aa9ff',m:1.25},{n:'נדיר',c:'#c77dff',m:1.6},{n:'אגדי',c:'#ffb23e',m:2.1},{n:'עתיק',c:'#3df5c8',m:2.8}];
 const TIERN=['חניך','ברזל','כסף ירח','חול זועם','כפור','גחלת','צל','נצח','תהום','קרחון','זהב טהור','מעגל'];
-const WINGN=['כנפי עלה','כנפי סער','כנפי להבה','כנפי נצח'];
+const WINGN=['כנפי עלה','כנפי סער','כנפי להבה','כנפי נצח','כנפי תהום','כנפי קרחון','כנפי זהב','כנפי המעגל'];
 const AFF={dmg:['נזק',3,8],crit:['סיכוי קריטי',1,4],cdmg:['נזק קריטי',8,20],aspd:['מהירות תקיפה',2,6],hp:['חיים',4,10],def:['הגנה',4,10],xp:['ניסיון',3,8],gold:['זהב',5,15],drop:['סיכוי שלל',2,6]};
 const POOL={w:['dmg','crit','cdmg','aspd','xp','gold','drop'],a:['hp','def','xp','gold','drop','crit'],g:['dmg','hp','xp','aspd','cdmg'],
   h:['hp','def','xp','crit','drop','cdmg'],p:['hp','def','xp','gold','drop','crit'],l:['aspd','crit','hp','def','drop','gold'],b:['hp','def','xp','gold','drop','aspd']};
@@ -351,7 +351,7 @@ function cleanPlayer(id,o){
 }
 function cleanItem(o){
   if(!o||SLOTS.indexOf(o.s)<0)return null;
-  const it={id:0,s:o.s,t:numOr(o.t,1,1,o.s==='g'?4:12)|0,r:numOr(o.r,0,0,4)|0,p:numOr(o.p,0,0,15)|0,z:numOr(o.z,-1,-1,ZONES.length-1)|0,af:[]};
+  const it={id:0,s:o.s,t:numOr(o.t,1,1,o.s==='g'?8:12)|0,r:numOr(o.r,0,0,4)|0,p:numOr(o.p,0,0,15)|0,z:numOr(o.z,-1,-1,ZONES.length-1)|0,af:[]};
   if(o.season&&o.s==='g')it.season=true;
   if(Array.isArray(o.af))for(const f of o.af.slice(0,4))if(Array.isArray(f)&&AFF[f[0]]&&POOL[it.s].indexOf(f[0])>=0)it.af.push([f[0],Math.round(numOr(f[1],0,0,AFF[f[0]][2]*1.3)*10)/10]);
   return it;
