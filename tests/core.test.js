@@ -27,7 +27,7 @@ test('locked or under-level maps are refused',()=>{
   const {A,now}=fresh();now.add(5);
   assert.equal(G.apply(A,'tick',{z:5,kills:5}).ok,false);
   assert.equal(G.apply(A,'travel',{z:1}).ok,false);
-  A.open=7;assert.equal(G.apply(A,'travel',{z:7}).ok,false,'level gate still holds');
+  A.open=G.BASEZ-1;assert.equal(G.apply(A,'travel',{z:21}).ok,false,'level gate still holds');
 });
 test('a boss kill is refused unless the server spawned the boss and time allows the damage',()=>{
   const {A,now}=fresh();G.apply(A,'travel',{z:0});now.add(5);
@@ -60,19 +60,20 @@ test('character slots are gated and names are sanitised',()=>{
   A.maxLvl=50;const r=G.apply(A,'create',{name:'<img src=x onerror=1>  ארוך מאוד מאוד מאוד',cls:'zzz'});assert.ok(r.ok);
   const c=A.chars[1];assert.ok(c.name.length<=14&&!/[<>&"']/.test(c.name));assert.equal(c.cls,'blade');
 });
+let DROPS_I=0;
 test('AFK-only time to first reset stays in the designed range and sets work',()=>{
-  const now=clock(1.8e12);G.setEnv(Math.random,now);const A=G.newAccount();G.apply(A,'create',{name:'x',cls:'blade'});A.open=7;const s=A.chars[0];let t=0;
-  while(s.lvl<G.CAP&&t<40*3600){let z=0;for(let i=0;i<8;i++)if(G.ZONES[i].min<=s.lvl)z=i;s.zone=z;s.last=now();G.offline(s,300);now.add(300);t+=300;}
+  const now=clock(1.8e12);G.setEnv(Math.random,now);const A=G.newAccount();G.apply(A,'create',{name:'x',cls:'blade'});A.open=G.BASEZ-1;const s=A.chars[0];let t=0;
+  while(s.lvl<G.CAP&&t<40*3600){let z=0;for(let i=0;i<G.BASEZ;i++)if(G.ZONES[i].min<=s.lvl)z=i;s.zone=z;s.last=now();G.offline(s,300);now.add(300);t+=300;}
   console.log('AFK-only minutes to first reset:',t/60);assert.ok(t/60>200&&t/60<480,'minutes: '+t/60);
-  for(const k of G.DROPS)s.eq[k]=G.makeItem(s,k,8,4,7);
-  assert.equal(G.setCounts(s)[7],6);const full=G.calc(s).dmg;s.eq.b=null;assert.ok(G.calc(s).dmg<full);
+  for(const k of G.DROPS)s.eq[k]=G.makeItem(s,k,8,4,21+DROPS_I++%3);
+  assert.equal(G.setCounts(s)[7],6,'pieces of one tier form a set, whichever map of the region they came from');const full=G.calc(s).dmg;s.eq.b=null;assert.ok(G.calc(s).dmg<full);
 });
 test('reset maps open by reset count and level, never by editing the opened-map counter',()=>{
-  const {A,now}=fresh();const s=A.chars[0];now.add(5);A.open=7;s.lvl=250;s.stats.str=900;
-  assert.equal(G.apply(A,'travel',{z:9}).ok,false,'no resets yet');
-  s.resets=2;assert.equal(G.apply(A,'travel',{z:9}).ok,true);
-  assert.equal(G.apply(A,'travel',{z:10}).ok,false,'needs 4 resets and level 300');
-  now.add(10);const r=G.apply(A,'tick',{z:9,kills:5});assert.ok(r.ok&&r.kills>0);
+  const {A,now}=fresh();const s=A.chars[0];now.add(5);A.open=G.BASEZ-1;s.lvl=250;s.stats.str=9000;
+  assert.equal(G.apply(A,'travel',{z:26}).ok,false,'no resets yet');
+  s.resets=2;assert.equal(G.apply(A,'travel',{z:26}).ok,true);
+  assert.equal(G.apply(A,'travel',{z:28}).ok,false,'needs 4 resets and level 300');
+  now.add(10);const r=G.apply(A,'tick',{z:26,kills:5});assert.ok(r.ok&&r.kills>0);
   assert.equal(G.apply(A,'travel',{z:99}).ok,false);assert.equal(G.apply(A,'travel',{z:-7}).ok,true,'clamped to the village');
 });
 test('party: experience from the third player on, class buffs from the server context only',()=>{
@@ -87,11 +88,11 @@ test('party: experience from the third player on, class buffs from the server co
 });
 test('floors: deeper floors need more levels, pay more, and cannot be forged',()=>{
   const {A,now}=fresh();const s=A.chars[0];now.add(5);
-  assert.deepEqual([0,1,2].map(f=>G.floorMin(0,f)),[1,11,20]);assert.ok(G.zs(0,2).xp>G.zs(0,0).xp&&G.zs(0,2).hp>G.zs(0,0).hp);
+  assert.deepEqual([0,1,2].map(f=>G.floorMin(0,f)),[1,4,7]);assert.ok(G.zs(0,2).xp>G.zs(0,0).xp&&G.zs(0,2).hp>G.zs(0,0).hp);
   assert.equal(G.apply(A,'travel',{z:0,f:2}).ok,false);assert.equal(G.apply(A,'tick',{z:0,f:2,kills:3}).ok,false);
-  s.lvl=25;s.stats.str=200;assert.ok(G.apply(A,'travel',{z:0,f:2}).ok);assert.equal(s.floor,2);
+  s.lvl=8;s.stats.str=200;assert.ok(G.apply(A,'travel',{z:0,f:2}).ok);assert.equal(s.floor,2);
   assert.equal(G.apply(A,'travel',{z:0,f:9}).ok,true,'clamped to the top floor');assert.equal(s.floor,2);
-  const xp=f=>{const t=fresh();const c=t.A.chars[0];c.lvl=25;c.stats.str=200;c.autoPts=false;G.apply(t.A,'travel',{z:0,f:f});t.now.add(10);G.setEnv(()=>.5,t.now);G.apply(t.A,'tick',{z:0,f:f,kills:1});return c.xp;};
+  const xp=f=>{const t=fresh();const c=t.A.chars[0];c.lvl=8;c.stats.str=200;c.autoPts=false;G.apply(t.A,'travel',{z:0,f:f});t.now.add(10);G.setEnv(()=>.5,t.now);G.apply(t.A,'tick',{z:0,f:f,kills:1});return c.xp;};
   assert.ok(xp(2)>xp(0)*1.5);
   G.apply(A,'travel',{z:-1,f:2});assert.equal(s.floor,0,'the village has no floors');
 });
@@ -125,7 +126,7 @@ test('daily login reward: once a day, the streak grows only when collected on co
 test('resets: stats are kept, maps do not change with resets, a stat fills at its maximum, party experience',()=>{
   const {A}=fresh(),s=A.chars[0];s.lvl=G.CAP;s.stats.str=900;s.pts=37;s.autoPts=false;
   assert.ok(G.apply(A,'reset',{}).ok);assert.equal(s.lvl,1);assert.equal(s.stats.str,900);assert.equal(s.pts,37);assert.equal(s.resets,1);
-  assert.deepEqual(G.zs(3,1),G.zs(3,1,9),'a map is the same for everyone');assert.ok(G.ZONES[8].hp>G.ZONES[3].hp*4,'reset maps are the hard content');
+  assert.deepEqual(G.zs(3,1),G.zs(3,1,9),'a map is the same for everyone');assert.ok(G.ZONES[24].hp>G.ZONES[8].hp*4,'reset maps are the hard content');assert.equal(G.ZONES.length,32);assert.deepEqual([0,3,23,24,31].map(G.tierOf),[1,2,8,9,12]);
   const sx=ctx=>{const B=G.adopt(JSON.parse(JSON.stringify(A)));G.setEnv(()=>.5,()=>B.last+20000);G.apply(B,'travel',{z:0});const r=G.apply(B,'tick',{z:0,kills:0},ctx);return [r.shared||0,B.chars[0].lvl];};
   assert.deepEqual(sx({}),[0,1]);assert.ok(sx({shareXp:5000})[1]>5,'experience handed over by the server levels the character');assert.equal(sx({shareXp:5000})[0],5000);
   s.stats.str=G.STAT_MAX-10;s.pts=50;assert.ok(G.apply(A,'pt',{k:'str',n:'all'}).ok);assert.equal(s.stats.str,G.STAT_MAX);assert.equal(s.pts,40);
@@ -185,4 +186,13 @@ test('wear the best: strongest piece per slot from the shared bag; gear worn by 
   assert.equal(s.eq.w,strong);assert.equal(s.eq.h,helm);assert.equal(s.eq.a,null,'the other character keeps what it wears');assert.ok(other.eq.a);
   assert.ok(A.inv.includes(old)&&A.inv.includes(weak)&&A.inv.length===2);
   assert.equal(G.apply(A,'bestEq',{}).n,0,'nothing better left');
+});
+
+test('saved games from the 8 + 4 map list are renumbered once',()=>{
+  const old={v:2,gold:5,gems:1,cred:0,coins:0,boxes:0,sboxes:0,charms:0,bless:0,bonusPts:0,boost:0,inv:[{id:1,s:'h',t:3,r:1,p:0,z:2,af:[]},{id:2,s:'a',t:10,r:4,p:0,z:9,af:[]}],nid:3,kills:0,killAcc:0,pass:{key:'x',xp:0,claimed:0},day:'x',daily:{kills:0,resets:0,wins:0,ups:0,done:{}},rating:1000,tickets:5,
+    autoEq:true,autoSell:1,open:4,zk:{'2':50,'9':7},bossM:{'4':12},q:0,chars:[{name:'a',cls:'blade',lvl:200,xp:0,resets:2,pts:0,stats:{str:15,agi:15,vit:15,ene:15},zone:4,floor:1,eq:{w:{id:9,s:'w',t:5,r:2,p:3,z:4,af:[]},h:null,a:null,p:null,l:null,b:null,g:null},last:0}],cur:0,last:0};
+  const A=G.adopt(JSON.parse(JSON.stringify(old))),s=A.chars[0];
+  assert.equal(A.open,12);assert.equal(s.zone,12);assert.equal(G.ZONES[s.zone].n,'מצודת הכפור','the character stands in the same place');
+  assert.deepEqual(A.zk,{'6':50,'26':7});assert.deepEqual(A.bossM,{'12':12});assert.equal(A.inv[0].z,6);assert.equal(A.inv[1].z,26);assert.equal(s.eq.w.z,12);assert.equal(s.eq.w.t,5,'tiers are untouched');
+  const again=G.adopt(JSON.parse(JSON.stringify(A)));assert.equal(again.open,12,'only once');assert.equal(again.chars[0].zone,12);
 });

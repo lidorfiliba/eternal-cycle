@@ -32,7 +32,7 @@ async def run(pg,online):
         out['server']=await pg.evaluate("()=>{const d=JSON.parse(EC_SERVER.db);return {kills:d.kills,lvl:d.chars[0].lvl,zone:d.chars[0].zone,calls:EC_SERVER.calls.length}}")
         out['client']=await pg.evaluate("()=>({kills:EC.A.kills,lvl:EC.S.lvl})")
         out['forged']=await pg.evaluate("async()=>{const r=await EC.send('tick',{z:0,kills:5000,boss:true});const d=JSON.parse(EC_SERVER.db);return {claimed:r.claimed,granted:r.kills,denied:!!r.rep.bossDenied,open:d.open}}")
-        out['forgedTravel']=await pg.evaluate("async()=>(await EC.send('travel',{z:7})).ok")
+        out['forgedTravel']=await pg.evaluate("async()=>(await EC.send('travel',{z:21})).ok")
         out['localEdit']=await pg.evaluate("async()=>{EC.A.gold=9e9;EC.S.lvl=400;const r=await EC.send('reset',{});return {ok:r.ok,gold:EC.A.gold,lvl:EC.S.lvl}}")
     else:
         out['local']=await pg.evaluate("()=>({kills:EC.A.kills,lvl:EC.S.lvl,gold:EC.A.gold})")

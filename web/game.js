@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126144041';
-const {KEY_SHARDS,KEY_GOLD,EV_XP,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126145228';
+const {tierOf,REGION,KEY_SHARDS,KEY_GOLD,EV_XP,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -95,7 +95,7 @@ const SC={t:0,cam:0,mons:[],boss:null,hero:{x:110,face:1,dir:0,hp:1,atkT:0,anim:
 const amb=[];for(let i=0;i<26;i++)amb.push({x:Math.random(),y:Math.random(),s:.5+Math.random()*1.5,v:.02+Math.random()*.05});
 const mapW=()=>SC.zi<0?TW:MW, gy=()=>Math.min(H*.8,H-112);
 function lookOf(s){const g=it=>it?[it.t,it.r,it.p,it.season?1:0,it.ex?(isFull(it)?2:1):0]:null,o={c:s.cls,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g),sp:armorPlus(s),r:A&&A.chars&&A.chars.includes(s)?totalResets(A):s.resets|0};
-  const sc=setCounts(s);let bz=-1,bn=0;for(const z in sc)if(sc[z]>bn){bn=sc[z];bz=+z;}if(bn>=4&&ZONES[bz])o.set=[bn,ZONES[bz].c];return o;}
+  const sc=setCounts(s);let bz=-1,bn=0;for(const z in sc)if(sc[z]>bn){bn=sc[z];bz=+z;}if(bn>=4)o.set=[bn,TCOL[clamp(bz,0,11)]];return o;}
 function glowAmt(p,r,t){let g=p>=13?24:p>=11?16+5*Math.sin(t*6):p>=9?12:p>=7?7:0;if(r>=3)g=Math.max(g,6);return g;}
 function gearColor(g,t,fallback){if(!g)return fallback;if(g[2]>=15)return 'hsl('+((t*90)%360)+',95%,68%)';return RAR[g[1]].c;}
 const WPAL={1:['#2f7a45','#b6ef86'],2:['#2260c9','#a8e8ff'],3:['#c42d18','#ffbe55'],4:['#caa02e','#fff8d2'],5:['#35106b','#d596ff'],6:['#1b6ea8','#effcff'],7:['#a8740a','#fff1a8'],8:['#ff4fa3','#7df9ff'],s:['#a637ee','#62f3e2']};
@@ -330,7 +330,7 @@ function drawHero(x,y,sc,look,t,anim,flip,dead,mv,fury){
   if(maxP>=13&&!dead&&!calm&&Math.random()<.35)SC.parts.push({x:x+(Math.random()-.5)*44*sc,y:y-Math.random()*m.bh*k,vx:0,vy:-20,life:.8,c:gc,s:2});
 }
 function drawMon(m,zi,t,flip,sc){
-  const z=ZONES[zi],key=z.spr,sm=SPR[key],k=(m.boss?3.6:2)*sc,lift=z.fly?(26+Math.sin(t*3+m.ph)*5)*sc*(m.boss?1.6:1):0,y=m.y-lift;
+  const z=ZONES[zi],key=z.spr,sm=SPR[key],fl=SC.mode==='farm'&&!SC.ev?SC.fl:0,fc=fl===2?'#b46bff':fl===1?'#ff9a4a':null,sheet=z.tint?tintedSheet(key,z.tint,.55):null,k=(m.boss?3.6:2)*sc*(1+fl*.08),lift=z.fly?(26+Math.sin(t*3+m.ph)*5)*sc*(m.boss?1.6:1):0,y=m.y-lift;
   ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(m.x,m.y+1,(m.boss?36:18)*sc,(m.boss?8:4)*sc,0,0,7);ctx.fill();
   if(m.boss){ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.3+.12*Math.sin(t*4);const R=sm.bh*k*.8,gr=ctx.createRadialGradient(m.x,y-sm.bh*k*.5,4,m.x,y-sm.bh*k*.5,R);gr.addColorStop(0,'#ff5c7a');gr.addColorStop(1,'transparent');ctx.fillStyle=gr;ctx.beginPath();ctx.arc(m.x,y-sm.bh*k*.5,R,0,7);ctx.fill();ctx.restore();}
   let an='idle',fi=Math.floor(t*8+m.ph);
@@ -339,7 +339,7 @@ function drawMon(m,zi,t,flip,sc){
   else if(m.atkA>0){an='atk';fi=Math.floor((1-m.atkA/.5)*frames(key,'atk'));}
   else if(m.mv&&sm.a.run){an='run';fi=Math.floor(t*10+m.ph)%frames(key,'run');}
   else fi=fi%frames(key,'idle');
-  spr(key,an,fi,m.x,y,k,flip,m.hit>.6?'#fff':m.boss?'#ff5c7a':null,m.hit>.6?10:m.boss?8:0,m.die>0?clamp(m.die/.2,0,1):null);
+  spr(key,an,fi,m.x,y,k,flip,m.hit>.6?'#fff':m.boss?'#ff5c7a':fc,m.hit>.6?10:m.boss?8:fc?6:0,m.die>0?clamp(m.die/.2,0,1):null,sheet);
   if(m.stun>0){ctx.save();ctx.strokeStyle='#5fd4ff';ctx.lineWidth=2;ctx.globalAlpha=.85;ctx.beginPath();ctx.ellipse(m.x,y-sm.bh*k-6,16*sc,5*sc,0,(t*6)%6.28,(t*6)%6.28+4);ctx.stroke();ctx.restore();}
   if(m.die<=0&&!m.boss){const w=34,hpw=clamp(m.hp/m.max,0,1)*w,by=y-sm.bh*k-10;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(m.x-w/2,by,w,4);ctx.fillStyle='#ff5c7a';ctx.fillRect(m.x-w/2,by,hpw,4);}
 }
@@ -351,7 +351,7 @@ function drawBg(zi,t){
     const off=SC.cam*(layer?.5:.2),amp=layer?H*.16:H*.3,base=g0-(layer?H*.05:H*.14);
     for(let x=0;x<=W+8;x+=8){const u=(x+off)*.02*(layer?1.3:.8)+zi*7;
       let y=Math.sin(u)*.5+Math.sin(u*2.3+1)*.3+Math.sin(u*5.1)*.2;
-      if(z.kind==='brute'||z.kind==='town'||zi===6)y=Math.round(y*3)/3;
+      if(z.kind==='brute'||z.kind==='town')y=Math.round(y*3)/3;
       ctx.lineTo(x,base-(.5+y*.5)*amp);}
     ctx.lineTo(W+8,g0);ctx.fill();}
   ctx.globalAlpha=1;
@@ -679,7 +679,7 @@ function drawWorld(){
     hpBar(h.x-30,g0-hk.bh*2*sc-16,60,h.hp/C.hp,'#6fe39a');nameTag(h.x,g0-hk.bh*2*sc-22,S.name,lk.r,guild.mine?guild.mine.tag:'',!!(guild.mine&&guild.mine.castle));}
   drawFx(SC.dt);ctx.restore();
   if(window.EC&&window.EC.gallery)window.EC.gallery(drawHero,ctx); // debug hook for looking at gear art
-  if(SC.boss){hpBar(W*.2,92,W*.6,SC.boss.hp/SC.boss.max,'#ff5c7a','בוס: '+ZONES[zi].m);}
+  if(SC.boss){hpBar(W*.2,92,W*.6,SC.boss.hp/SC.boss.max,'#ff5c7a','בוס: '+monName(zi,SC.ev?0:SC.fl));}
 }
 
 /* ---------- arena duel ---------- */
@@ -738,6 +738,7 @@ function itemCard(it){
 function findItem(id){for(const k of SLOTS)if(S.eq[k]&&S.eq[k].id===id)return {it:S.eq[k],eq:k};const i=A.inv.findIndex(x=>x.id===id);return i>=0?{it:A.inv[i],i:i}:null;}
 function tog(lbl,on,act){return '<div class="tog"><span>'+lbl+'</span><button class="btn sm'+(on?' on':'')+'" data-act="'+act+'">'+(on?'פעיל':'כבוי')+'</button></div>';}
 const zoneName=z=>z<0?TOWN.n:ZONES[z].n;
+const monName=(zi,fl)=>ZONES[zi].m+(fl===1?' זועם':fl===2?' קדמון':'');
 
 function renderHud(){
   $('hName').textContent=S.name;$('hCls').textContent=CLS[S.cls].n;$('hLv').textContent=S.lvl;$('hRs').textContent=S.resets;
@@ -822,10 +823,11 @@ function renderZones(){
   let h='<p class="hint">בכל מפה שלוש קומות: בכל קומה המפלצות חזקות יותר, ויש יותר ניסיון, זהב וסיכוי לשלל. עוברים בין קומות ומפות דרך השערים שבקצוות, או בקפיצה מכאן. שער חדש נפתח אחרי ניצחון על הבוס של המפה. הבוס מופיע אחרי '+L(BOSSN)+' חיסולים כשאתה משחק בעצמך.</p>';
   h+='<div class="card zone'+(SC.zi<0?' cur':'')+'"><div class="sw" style="background:linear-gradient('+TOWN.sky[0]+','+TOWN.sky[1]+')"></div><div class="z"><b>'+TOWN.n+'</b><small>נפח, סוחרת, שומר המעגל, כרוז העונה, שער הזירה</small></div><button class="btn sm" data-act="zone" data-i="-1"'+(SC.zi<0?' disabled':'')+'>'+(SC.zi<0?'כאן':'קפוץ')+'</button></div>';
   ZONES.forEach((z,i)=>{const opened=z.req?S.resets>=z.req:i<=A.open,lv=z.min<=S.lvl,zf=zoneInfo(i,C,AFK),cur=SC.zi===i;
+    if(i<BASEZ&&i%REGION===0)h+='<h2>אזור '+L(i/REGION+1)+' · ציוד '+TIERN[tierOf(i)-1]+'</h2>';
     if(i===BASEZ)h+='<h2>מפות ריסט</h2><p class="hint">נפתחות לפי מספר הריסטים של הדמות. המפלצות חזקות יותר, הניסיון והזהב גבוהים יותר, והציוד בדרגות חדשות עם סטים עתיקים משלו. נכנסים אליהן מכאן.</p>';
     h+='<div class="card zone'+(cur?' cur':'')+(opened&&lv?'':' lock')+'"><div class="sw" style="background:linear-gradient('+z.sky[0]+','+z.sky[1]+')"></div><div class="z"><b>'+z.n+'</b>'+
       '<small>'+z.m+' · מרמה '+L(z.min)+(opened&&lv?' · '+L(fmt(zf.xps*60))+' ניסיון לדקה בלי לשחק'+(zf.e<1?' · מסוכן':''):'')+'</small>'+
-      '<small>שלל: ציוד '+TIERN[i]+' עם בונוס '+AFF[z.sig][0]+(z.wing?' · '+WINGN[z.wing-1]:'')+' · סט '+SETN[i]+'</small>'+
+      '<small>שלל: ציוד '+TIERN[tierOf(i)-1]+' עם בונוס '+AFF[z.sig][0]+(z.wing?' · '+WINGN[z.wing-1]:'')+' · סט '+SETN[tierOf(i)-1]+'</small>'+
       (!opened?'<small style="color:var(--bad)">'+(z.req?'נפתח אחרי '+L(z.req)+' ריסטים של הדמות (יש '+L(S.resets)+')':'נעול: הבס את הבוס של '+ZONES[i-1].n)+'</small>':!lv?'<small style="color:var(--bad)">צריך רמה '+z.min+'</small>':'')+'</div>'+
       (opened&&lv?'<div style="display:flex;flex-direction:column;gap:4px">'+[0,1,2].map(f=>{const ok=S.lvl>=floorMin(i,f),here=cur&&SC.fl===f;return '<button class="btn sm" data-act="zone" data-i="'+i+'" data-f="'+f+'"'+(ok&&!here?'':' disabled')+'>'+(here?'כאן':'קומה '+(f+1)+(ok?'':' · '+L(floorMin(i,f))))+'</button>';}).join('')+'</div>':'')+'</div>';});
   return h;
@@ -934,7 +936,7 @@ function openSheet(id){
   if(it.s==='g')h+='<div class="kv"><span>נזק</span><b class="num">'+L('+'+v.wd+'%')+'</b></div><div class="kv"><span>חיים</span><b class="num">'+L('+'+v.wh+'%')+'</b></div><div class="kv"><span>מהירות הליכה</span><b class="num">'+L('+'+it.t*8+'%')+'</b></div>';
   for(const a of it.af)h+='<div class="kv aff"><span style="color:inherit">'+AFF[a[0]][0]+'</span><b class="num">'+L('+'+a[1]+'%')+'</b></div>';
   h+=diff+'</div>';
-  if(isSet(it)){const n=setCounts(S)[it.z]||0;h+='<div class="card r4"><b style="color:var(--r4)">סט עתיק: '+SETN[it.z]+' · לבושים '+L(n+'/6')+'</b>'+setLines(it.z,n)+'</div>';}
+  if(isSet(it)){const n=setCounts(S)[it.t-1]||0;h+='<div class="card r4"><b style="color:var(--r4)">סט עתיק: '+SETN[it.t-1]+' · לבושים '+L(n+'/6')+'</b>'+setLines(it.t-1,n)+'</div>';}
   if(it.ex&&!isFull(it))h+='<button class="btn'+(A.jewels>0?' pri':'')+'" data-act="exAdd" data-id="'+it.id+'"'+(A.jewels>0?'':' disabled')+' style="width:100%;margin-bottom:6px">הוסף אופציה · אבני שלמות: '+L(A.jewels||0)+'</button>';
   if(it.p<15)h+='<p class="hint">שדרוג לדרגה '+L('+'+(it.p+1))+': '+L(uc.gems)+' אבני נשמה ו-'+L(fmt(uc.gold))+' זהב · סיכוי '+L(Math.round(upChance(it)*100)+'%')+(it.p>=7?' · כישלון מוריד דרגה אחת'+(A.charms?' (יש קמע הגנה)':''):'')+'</p>';
   h+='<div class="acts">'+(f.eq!=null?'<button class="btn" data-act="unequip" data-id="'+it.id+'">הסר</button>':'<button class="btn pri" data-act="equip" data-id="'+it.id+'">לבש</button>')+

@@ -4,27 +4,57 @@ let _rnd=Math.random,_now=Date.now;
 function setEnv(rnd,now){_rnd=rnd||Math.random;_now=now||Date.now;}
 
 const CAP=400, BAG=30;
-const ZONES=[
- {n:'יער הלחישות',m:'זחלן טחב',min:1,kind:'blob',c:'#7bd66a',sky:['#0f2a2b','#1d4a3a'],sil:'#0a1c1c',amb:'#c8ff8a',sig:'xp'},
- {n:'מערות האבק',m:'עכביש אבן',min:30,kind:'crawler',c:'#b49a7a',sky:['#1a1420','#3a2c33'],sil:'#120d16',amb:'#d9c7a8',sig:'gold'},
- {n:'ביצת הערפל',m:'רפאי ביצה',min:70,kind:'ghost',c:'#8fe0d0',sky:['#0c1f2a','#24505a'],sil:'#081419',amb:'#9ff5e6',sig:'hp',wing:1},
- {n:'חולות הזעם',m:'עקרב חול',min:120,kind:'crawler',c:'#e0a044',sky:['#3a1c1a','#a8572a'],sil:'#24100f',amb:'#ffd58a',sig:'crit'},
- {n:'מצודת הכפור',m:'גולם קרח',min:180,kind:'brute',c:'#9fd0ff',sky:['#0d1838','#3d6aa8'],sil:'#0a1026',amb:'#ffffff',sig:'aspd',wing:2},
- {n:'הר הגחלים',m:'שד גחלת',min:240,kind:'ghost',c:'#ff6a3d',sky:['#1f0a0c','#7a1f14'],sil:'#120506',amb:'#ffb066',sig:'cdmg'},
- {n:'מגדל הצללים',m:'אביר צל',min:300,kind:'brute',c:'#a487ff',sky:['#0c0820','#3a2378'],sil:'#070414',amb:'#c9b3ff',sig:'drop',wing:3},
- {n:'שער הנצח',m:'דרקון נצח',min:350,kind:'drake',c:'#f2c14e',sky:['#1a1030','#8a5a2a'],sil:'#0f081c',amb:'#fff0b0',sig:'dmg',wing:4},
- // Reset maps: open only to characters that have reset, stronger monsters and better rewards for the same level.
- {n:'מעמקי השכחה',wing:5,m:'פטריית תהום',min:100,req:1,kind:'blob',c:'#b07cff',sky:['#12062a','#3b1466'],sil:'#0a0318',amb:'#d6b3ff',sig:'xp',xpo:99,go:48},
- {n:'קרחון האלים',wing:6,m:'תולעת קרח',min:200,req:2,kind:'crawler',c:'#8fe6ff',sky:['#061a2e','#2f7fa8'],sil:'#04101c',amb:'#e8fbff',sig:'dmg',xpo:223,go:82},
- {n:'היכל הזהב',wing:7,m:'גובלין זהב',min:300,req:4,kind:'brute',c:'#ffd24a',sky:['#2a1a05','#b8862a'],sil:'#1a1003',amb:'#fff3c4',sig:'gold',xpo:383,go:112},
- {n:'לב המעגל',wing:8,m:'שלד דם',min:380,req:7,kind:'brute',c:'#ff5c5c',sky:['#1f0306','#8f1420'],sil:'#120204',amb:'#ffb0b0',sig:'cdmg',xpo:532,go:136}
+// Maps. The main road has twenty-four: the eight original regions, each followed by two more. Eight reset maps follow.
+// [name, monster, lowest level, sprite, recolor (client only), kind, color, sky top, sky bottom, silhouette, light]
+const ZRAW=[
+ ['יער הלחישות','פטריית טחב',1,'mush',null,'blob','#7bd66a','#0f2a2b','#1d4a3a','#0a1c1c','#c8ff8a'],
+ ['חורשת הפטריות','פטריית ארגמן',10,'mush','#e0527a','blob','#e86a8f','#2a0f24','#4a1d3a','#1c0a16','#ffb0d0'],
+ ['שדה הזחלים','זחל ביצה',20,'worm','#6fd24a','crawler','#8fe05a','#102a14','#2a5a22','#0a1c0c','#d8ff9a'],
+ ['מערות האבק','גובלין מערות',30,'gob',null,'crawler','#b49a7a','#1a1420','#3a2c33','#120d16','#d9c7a8'],
+ ['המכרה הנטוש','כורה אבוד',43,'gob','#6a8fb0','brute','#8aa8c4','#10161f','#2a3a4a','#0a0f16','#b8d4ea'],
+ ['נקיק העטלפים','עין מערות',56,'eye','#a8743a','ghost','#c08a4a','#1c120a','#40291a','#120b06','#e8c08a'],
+ ['ביצת הערפל','עין מרחפת',70,'eye',null,'ghost','#8fe0d0','#0c1f2a','#24505a','#081419','#9ff5e6'],
+ ['אגם הדמדומים','פטריית ביצה',86,'mush','#2fb8a8','blob','#4ad0c0','#0a1a26','#1f4a5c','#06121a','#8aeaf0'],
+ ['החורבות הטבועות','שלד טבוע',103,'skel','#4a9a6a','brute','#6ab88a','#0a1c18','#1f4a3c','#061410','#a0f0c8'],
+ ['חולות הזעם','תולעת אש',120,'worm',null,'crawler','#e0a044','#3a1c1a','#a8572a','#24100f','#ffd58a'],
+ ['נווה השרב','שודד חולות',140,'gob','#d8a85a','crawler','#e8bc6a','#3a2a12','#b0803a','#241a0a','#ffe6a8'],
+ ['קבר המלכים','שומר קבר',160,'skel','#d4b04a','brute','#e0c05a','#2a2010','#7a5c24','#1a1408','#fff0b0'],
+ ['מצודת הכפור','שלד כפור',180,'skel_f',null,'brute','#9fd0ff','#0d1838','#3d6aa8','#0a1026','#ffffff'],
+ ['מעבר הסופות','תולעת סופה',200,'worm_i','#b0e8ff','crawler','#b8ecff','#0c1c30','#4a86b0','#081420','#f0fbff'],
+ ['אגם הקרח','עין כפור',220,'eye','#7ac8ff','ghost','#8ad4ff','#081830','#2a6ab0','#051020','#d8f2ff'],
+ ['הר הגחלים','גובלין גחלת',240,'gob_r',null,'ghost','#ff6a3d','#1f0a0c','#7a1f14','#120506','#ffb066'],
+ ['נהר הלבה','תולעת לבה',260,'worm','#ff4a2a','crawler','#ff5a3a','#240806','#9a2410','#160403','#ffa060'],
+ ['כבשן הענקים','שלד גחלת',280,'skel','#ff8a3a','brute','#ff9a4a','#200c06','#8a3a12','#140703','#ffc890'],
+ ['מגדל הצללים','עין צל',300,'eye_p',null,'brute','#a487ff','#0c0820','#3a2378','#070414','#c9b3ff'],
+ ['ספריית הלחשים','עין אסורה',316,'eye_p','#ff6ad8','ghost','#e07aff','#140822','#4a1f70','#0b0416','#f0b8ff'],
+ ['גשר הנשמות','גובלין רפאים',333,'gob','#9a7aff','ghost','#b09aff','#0a0a24','#2a2a78','#060616','#d0c8ff'],
+ ['שער הנצח','שלד נצח',350,'skel_g',null,'drake','#f2c14e','#1a1030','#8a5a2a','#0f081c','#fff0b0'],
+ ['גן הכוכבים','פטריית כוכב',367,'mush','#ffd75e','blob','#ffe07a','#10102e','#4a3a8a','#0a0a1e','#fff6c8'],
+ ['כס הנצח','נחש נצח',384,'worm','#ffe08a','drake','#fff0a0','#201408','#a8782a','#140c04','#ffffe0'],
+ // Reset maps: open only to characters that have reset. Far tougher monsters, more experience and gold. [.., resets needed]
+ ['מעמקי השכחה','פטריית תהום',100,'mush_d',null,'blob','#b07cff','#12062a','#3b1466','#0a0318','#d6b3ff',1],
+ ['יער הקוצים האפל','גובלין קוצים',150,'gob','#8a4ad0','crawler','#a060e0','#140a26','#3a1a66','#0c0618','#d0a8ff',1],
+ ['קרחון האלים','תולעת קרח',200,'worm_i',null,'crawler','#8fe6ff','#061a2e','#2f7fa8','#04101c','#e8fbff',2],
+ ['מפלי הדם','עין דם',250,'eye','#ff3a4a','ghost','#ff5a6a','#240408','#8a1420','#160205','#ffb0b8',3],
+ ['היכל הזהב','גובלין זהב',300,'gob_g',null,'brute','#ffd24a','#2a1a05','#b8862a','#1a1003','#fff3c4',4],
+ ['ארמון המראות','אביר מראה',340,'skel','#7af0ff','brute','#9af4ff','#06202a','#2a8aa0','#04141a','#e8ffff',5],
+ ['לב המעגל','שלד דם',380,'skel_d',null,'brute','#ff5c5c','#1f0306','#8f1420','#120204','#ffb0b0',7],
+ ['קצה העולם','תולעת ריק',392,'worm','#e0d0ff','drake','#f0e8ff','#0a0614','#3a2a5a','#06040c','#ffffff',10]
 ];
-const BASEZ=8;
-const MHP=[90,400,880,1540,2420,3400,4480,5450,1900,4100,6700,9000], MATK=[13,37,71,113,164,214,265,307,135,253,371,462];
-const ZSPR=['mush','gob','eye','worm','skel_f','gob_r','eye_p','skel_g','mush_d','worm_i','gob_g','skel_d'],ZMON=['פטריית טחב','גובלין מערות','עין מרחפת','תולעת אש','שלד כפור','גובלין גחלת','עין צל','שלד נצח','פטריית תהום','תולעת קרח','גובלין זהב','שלד דם'];
+const BASEZ=24,REGION=3;
 // Reset maps are built for characters that kept their stats through resets: [life, damage] multipliers by the resets a map needs.
-const RESET_TOUGH={1:[4,2.2],2:[4.5,2.6],4:[5.5,3],7:[7,3.5]};
-ZONES.forEach((z,i)=>{z.spr=ZSPR[i];z.m=ZMON[i];z.fly=ZSPR[i].indexOf('eye')===0;z.hp=MHP[i];z.atk=MATK[i];z.xp=Math.round(10*Math.pow(1+z.min/50,1.6));z.gold=Math.round(3*Math.pow(i+1,1.5));if(z.req){z.xp=z.xpo;z.gold=z.go;const t=RESET_TOUGH[z.req]||[1,1];z.hp=Math.round(z.hp*t[0]);z.atk=Math.round(z.atk*t[1]);}});
+const RESET_TOUGH={1:[4,2.2],2:[4.5,2.6],3:[5,2.8],4:[5.5,3],5:[6,3.2],7:[7,3.5],10:[8,4]};
+const SIGS=['xp','gold','hp','crit','aspd','cdmg','drop','dmg'],RSIGS=['xp','dmg','gold','cdmg'];
+const ZONES=ZRAW.map((q,i)=>{
+  const min=q[2],req=q[11]||0,base=i<BASEZ,j=i-BASEZ,z={n:q[0],m:q[1],min:min,spr:q[3],tint:q[4],kind:q[5],c:q[6],sky:[q[7],q[8]],sil:q[9],amb:q[10],fly:q[3].indexOf('eye')===0};
+  z.sig=base?SIGS[Math.floor(i/REGION)]:RSIGS[Math.floor(j/2)];
+  z.hp=Math.round(90+9*min+.018*min*min);z.atk=Math.round(13+.84*min);z.xp=Math.round(10*Math.pow(1+min/50,1.6));z.gold=Math.round(3+.19*min);
+  if(base){const w=[0,0,1,0,2,0,3,4][Math.floor(i/REGION)];if(w)z.wing=w;}
+  else{const t=RESET_TOUGH[req]||[4,2.2];z.req=req;z.wing=5+Math.floor(j/2);z.xp=Math.round(z.xp*1.7);z.gold=Math.round(48+(min-100)*.314);z.hp=Math.round(z.hp*1.55*t[0]);z.atk=Math.round(z.atk*1.4*t[1]);}
+  return z;});
+// Gear tier of what a map drops: the main road climbs one tier per region (1 to 8), reset maps hold tiers 9 to 12.
+const tierOf=zi=>zi<BASEZ?1+Math.floor(zi/REGION):9+Math.floor((zi-BASEZ)/2);
+const MHP=ZONES.map(z=>z.hp),MATK=ZONES.map(z=>z.atk),ZSPR=ZONES.map(z=>z.spr),ZMON=ZONES.map(z=>z.m);
 const CLS={
  blade:{n:'לוחם להב',main:'str',coef:1.5,combo:'סערת להבים',c:'#ff8a4d',wn:'להב',range:50,sk:['סערת להבים','שרשרת ברזל','זעם הקרב','מכת מחץ','חומת פלדה','אלף להבים'],al:{str:.6,agi:.15,vit:.25}},
  storm:{n:'מכשפת סער',main:'ene',coef:1.5,combo:'ברק שרשרת',c:'#6fd3ff',wn:'מטה',range:175,sk:['ברק שרשרת','מערבולת','הארת סער','כדור אש','מגן קסם','מטר מטאורים'],al:{ene:.6,agi:.15,vit:.25}},
@@ -43,7 +73,7 @@ const SETN=['שומרי היער','חופרי האבק','ילדי הערפל','�
 const SETB=[[2,'hp',10],[3,'dmg',12],[4,'cdmg',25],[5,'aspd',8],[6,'dmg',25],[6,'xp',20]];
 const rslot=()=>DROPS[Math.floor(_rnd()*DROPS.length)];
 const isSet=it=>it&&it.r===4&&it.s!=='g'&&it.z>=0;
-function setCounts(s){const c={};for(const k of DROPS){const it=s.eq[k];if(isSet(it))c[it.z]=(c[it.z]||0)+1;}return c;}
+function setCounts(s){const c={};for(const k of DROPS){const it=s.eq[k];if(isSet(it))c[it.t-1]=(c[it.t-1]||0)+1;}return c;} // a set is its gear tier: pieces from any map of that tier belong together
 const UPCH=[.75,.65,.55,.5,.45,.4,.35,.3,.25];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const need=L=>Math.round((4+0.07*L)/1.5*10*Math.pow(1+L/50,1.6)*(1+1.25*Math.min(1,L/100)));
@@ -57,7 +87,7 @@ const SHARED=['gold','gems','cred','coins','boxes','sboxes','charms','bless','bo
 function newAccount(){
   return {v:2,gold:0,gems:3,cred:0,coins:0,boxes:1,sboxes:0,charms:0,bless:0,bonusPts:0,boost:0,inv:[],nid:1,kills:0,killAcc:0,
     pass:{key:seasonKey(),xp:0,claimed:0},day:dayKey(),daily:{kills:0,resets:0,wins:0,ups:0,done:{}},rating:1000,tickets:5,
-    autoEq:true,autoSell:1,open:0,zk:{},bossM:{},q:0,casts:0,wins:0,boss7:0,maxLvl:1,chars:[],cur:0,last:_now()};
+    autoEq:true,autoSell:1,zv:1,open:0,zk:{},bossM:{},q:0,casts:0,wins:0,boss7:0,maxLvl:1,chars:[],cur:0,last:_now()};
 }
 function newChar(name,cls){
   return {name:name,cls:cls,lvl:1,xp:0,resets:0,pts:0,stats:{str:15,agi:15,vit:15,ene:15},zone:-1,floor:0,autoPts:true,auto:true,eq:{w:null,h:null,a:null,p:null,l:null,b:null,g:null},last:_now()};
@@ -84,7 +114,7 @@ function itemVals(it){
 }
 function itemName(it,cls){
   if(it.s==='g')return (it.ex?(isFull(it)?'אקסלנט מלא · ':'אקסלנט · '):'')+(it.season?'כנפי העונה':WINGN[it.t-1]);
-  return (it.ex?(isFull(it)?'אקסלנט מלא · ':'אקסלנט · '):'')+(it.s==='w'?CLS[cls].wn:SLOTN[it.s])+(isSet(it)?' · '+SETN[it.z]:' '+TIERN[it.t-1]);
+  return (it.ex?(isFull(it)?'אקסלנט מלא · ':'אקסלנט · '):'')+(it.s==='w'?CLS[cls].wn:SLOTN[it.s])+(isSet(it)?' · '+SETN[it.t-1]:' '+TIERN[it.t-1]);
 }
 function itemScore(it){
   const v=itemVals(it);let b=it.s==='w'?v.atk:ARM[it.s]?v.hp+v.def*10:v.wd*100;if(isSet(it))b*=1.15;
@@ -192,7 +222,7 @@ function rollLoot(s,zi,kills,c,rep){
   const nb=pois(kills*.0012);s.boxes+=nb;rep.boxes=(rep.boxes||0)+nb;
   const ni=Math.min(80,pois(kills*.03*c.dropM));
   const exc=z.req?.03:.012;
-  for(let i=0;i<ni;i++){const it=makeItem(s,rslot(),zi+1,rollRar([62,25,9,3.3,.7]),zi);if(_rnd()<exc)makeExcellent(it);
+  for(let i=0;i<ni;i++){const it=makeItem(s,rslot(),tierOf(zi),rollRar([62,25,9,3.3,.7]),zi);if(_rnd()<exc)makeExcellent(it);
     const where=gainItem(s,it,rep);rep.items=(rep.items||0)+1;if((it.r>=2||it.ex)&&where!=='sold'){(rep.notable=rep.notable||[]).push(it);}}
   if(z.wing){const nw=Math.min(4,pois(kills*.0015*c.dropM));
     for(let i=0;i<nw;i++){const it=makeItem(s,'g',z.wing,rollRar([50,30,14,5,1]),zi);if(_rnd()<exc*2)makeExcellent(it);gainItem(s,it,rep);(rep.notable=rep.notable||[]).push(it);}}
@@ -238,10 +268,10 @@ function upgrade(s,it){
 }
 function openBox(s,kind){
   const zi=Math.min(s.open,BASEZ-1);
-  if(kind==='a'){const it=makeItem(s,rslot(),zi+1,_rnd()<.25?4:3,zi);if(_rnd()<.2)makeExcellent(it);return {it:it,where:gainItem(s,it)};}
-  if(kind==='s'){const it=makeItem(s,rslot(),zi+1,rollRar([0,0,55,30,15]),zi);if(_rnd()<.08)makeExcellent(it);return {it:it,where:gainItem(s,it)};}
+  if(kind==='a'){const it=makeItem(s,rslot(),tierOf(zi),_rnd()<.25?4:3,zi);if(_rnd()<.2)makeExcellent(it);return {it:it,where:gainItem(s,it)};}
+  if(kind==='s'){const it=makeItem(s,rslot(),tierOf(zi),rollRar([0,0,55,30,15]),zi);if(_rnd()<.08)makeExcellent(it);return {it:it,where:gainItem(s,it)};}
   const x=_rnd();
-  if(x<.55){const it=makeItem(s,rslot(),zi+1,rollRar([0,45,35,16,4]),zi);if(_rnd()<.02)makeExcellent(it);return {it:it,where:gainItem(s,it)};}
+  if(x<.55){const it=makeItem(s,rslot(),tierOf(zi),rollRar([0,45,35,16,4]),zi);if(_rnd()<.02)makeExcellent(it);return {it:it,where:gainItem(s,it)};}
   if(x<.85){const n=3+Math.floor(_rnd()*4);s.gems+=n;return {txt:n+' אבני נשמה'};}
   const g=Math.round(ZONES[zi].gold*400*(0.8+_rnd()*.6));s.gold+=g;return {txt:g+' זהב'};
 }
@@ -302,12 +332,12 @@ const QUESTS=[
  {t:'הבס את הבוס של יער הלחישות',p:(A,S)=>[A.open>=1?1:0,1],rw:{gems:5},rt:'5 אבני נשמה'},
  {t:'שדרג פריט לדרגה 3',p:(A,S)=>[anyEq(A,it=>it.p>=3)?1:0,1],rw:{gold:3000},rt:'3,000 זהב'},
  {t:'הגע לרמה 70',p:(A,S)=>[A.maxLvl||1,70],rw:{boxes:1},rt:'תיבת אוצר'},
- {t:'הבס את הבוס של ביצת הערפל',p:(A,S)=>[A.open>=3?1:0,1],rw:{wing:[1,1]},rt:'כנפי עלה קסומות'},
+ {t:'הבס את הבוס של ביצת הערפל',p:(A,S)=>[A.open>=7?1:0,1],rw:{wing:[1,1]},rt:'כנפי עלה קסומות'},
  {t:'נצח קרב בזירה',p:(A,S)=>[A.wins||0,1],rw:{coins:20},rt:'20 מטבעות עונה'},
  {t:'הגע לרמה 200',p:(A,S)=>[A.maxLvl||1,200],rw:{gems:10},rt:'10 אבני נשמה'},
  {t:'הגע לרמה 400 ובצע ריסט ראשון',p:(A,S)=>[totalResets(A),1],rw:{cred:10},rt:'10 אותות ריסט'},
  {t:'צור דמות שנייה',p:(A,S)=>[A.chars.length,2],rw:{boxes:2},rt:'2 תיבות אוצר'},
- {t:'הבס את הבוס של שער הנצח',p:(A,S)=>[A.boss7?1:0,1],rw:{cred:20},rt:'20 אותות ריסט'}
+ {t:'הבס את הבוס של כס הנצח, המפה האחרונה',p:(A,S)=>[A.boss7?1:0,1],rw:{cred:20},rt:'20 אותות ריסט'}
 ];
 function give(A,S,r){
   if(r.sboxes)A.sboxes+=r.sboxes;if(r.gold)A.gold+=r.gold;if(r.cred)A.cred+=r.cred;if(r.coins)A.coins+=r.coins;if(r.gems)A.gems+=r.gems;if(r.boxes)A.boxes+=r.boxes;
@@ -399,6 +429,12 @@ function cleanItem(o){
 function adopt(o){
   if(!o||o.v!==2||!Array.isArray(o.chars))return null;
   o.bossM=o.bossM||{};o.zk=o.zk||{};o.sboxes=o.sboxes||0;o.inv=o.inv||[];
+  if(!o.zv){ // saved before the map list grew: old map i is now map 3i on the main road, old reset map i is 24+2(i-8)
+    const mz=z=>z<0||z==null?z:z<8?z*3:z<12?24+(z-8)*2:z,mk=m=>{const n={};for(const k in m)n[mz(+k)]=m[k];return n;};
+    if(o.chars.length||o.inv.length||o.open){o.open=Math.min(23,(o.open|0)*3);o.zk=mk(o.zk);o.bossM=mk(o.bossM);o.boss7=0;o.bossAt=null;
+      for(const it of o.inv)if(it&&it.z>=0)it.z=mz(it.z);
+      for(const ch of o.chars){ch.zone=mz(ch.zone|0);ch.evIn=null;for(const k in ch.eq||{})if(ch.eq[k]&&ch.eq[k].z>=0)ch.eq[k].z=mz(ch.eq[k].z);}}
+    o.zv=1;}
   o.chars.forEach(c=>{bind(o,c);c.floor=c.floor|0;for(const k of SLOTS)if(!(k in c.eq))c.eq[k]=null;});
   o.cur=o.chars.length?clamp(o.cur|0,0,o.chars.length-1):0;return o;
 }
@@ -475,9 +511,9 @@ function apply(A,kind,args,ctx){
         if(b&&b.z===z&&(now-b.t)/1000*c.dps*2.8>=zd.hp*30*.9){
           if(_rnd()<.08){A.jewels=(A.jewels||0)+1;rep.jewel=1;}
           A.bossAt=null;rep.levels=(rep.levels||0)+addXp(S,zd.xp*40*c.xpM*pb);rollLoot(S,z,1,c,rep);
-          const it=makeItem(S,rslot(),z+1,rollRar([0,0,70,25,5]),z);gainItem(S,it,rep);(rep.notable=rep.notable||[]).push(it);
+          const it=makeItem(S,rslot(),tierOf(z),rollRar([0,0,70,25,5]),z);gainItem(S,it,rep);(rep.notable=rep.notable||[]).push(it);
           const g=2+Math.floor(_rnd()*3);A.gems+=g;rep.gems=(rep.gems||0)+g;if(_rnd()<.3){A.boxes++;rep.boxes=(rep.boxes||0)+1;}
-          if(z===7)A.boss7=1;if(A.open===z&&z<BASEZ-1){A.open=z+1;rep.opened=z+1;}rep.boss=true;evAdd(A,now,'b',1);
+          if(z===BASEZ-1)A.boss7=1;if(A.open===z&&z<BASEZ-1){A.open=z+1;rep.opened=z+1;}rep.boss=true;evAdd(A,now,'b',1);
         }else rep.bossDenied=true;
       }
       r.rep=rep;break;}
@@ -554,4 +590,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {KEY_SHARDS,KEY_GOLD,EV_XP,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {tierOf,REGION,KEY_SHARDS,KEY_GOLD,EV_XP,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

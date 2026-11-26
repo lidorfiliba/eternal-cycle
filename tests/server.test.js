@@ -65,7 +65,7 @@ test('forged ticks are clamped, logged, and parallel requests cannot double-coun
   const rs=await Promise.all([1,2,3,4].map(()=>handle(U(1),'tick',{z:0,kills:900})));
   const after=(await row(U(1))).state.kills;assert.ok(after-before<=21,'four parallel claims for one 10s window gave '+(after-before));
   assert.ok(rs.every(x=>x.result),'every request got an answer');
-  assert.equal((await handle(U(1),'travel',{z:6})).result.ok,false);
+  assert.equal((await handle(U(1),'travel',{z:18})).result.ok,false);
   assert.equal((await handle(U(1),'reset',{})).result.ok,false);
 });
 test('a refused action leaves the stored account untouched',async()=>{
