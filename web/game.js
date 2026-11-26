@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126165410';
+const BUILD='20261126165512';
 const {worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -176,7 +176,13 @@ function drawWings(x,y,g,t,k,flip,cls,bh,mv,anim){
   const flap=Math.sin(t*(mv?7:2.6))*(mv?1.5:1),lean=(mv?.22:0)-(anim>0?anim*.35:0),OX=130,OY=185; // beat faster on the run, trail back, open on a strike
   c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,340,280);
   c.save();c.translate(OX-14,OY-4);c.rotate(-.42+flap*.11+lean*.7);c.scale(.74,.74);c.globalAlpha=.72;wingShape(c,T,pal,t+.4,true);c.restore(); // far wing, behind and higher
+  if(hi){ // the high ranks grow more wings: a lower pair from the third grade, a small crest pair from the sixth, and a jewel at the root
+    const T2=[4,5,6,2,7,8][(fam+2)%6],p2=[pal[1],'#ffffff'];
+    if(gr>=2||fam>=2){c.save();c.translate(OX-4,OY+6);c.rotate(.95+flap*.2+lean*.5);c.scale(.5+gr*.02,.5+gr*.02);c.globalAlpha=.9;wingShape(c,fam>=3?T2:T,pal,t+.8,false);c.restore();}
+    if(gr>=5||fam>=4){c.save();c.translate(OX-2,OY-6);c.rotate(-.75+flap*.08);c.scale(.42,.42);c.globalAlpha=.95;wingShape(c,T2,p2,t+1.3,false);c.restore();}
+  }
   c.save();c.translate(OX,OY);c.rotate(flap*.14+lean);c.globalAlpha=1;wingShape(c,T,pal,t,false);c.restore();
+  if(hi){const jr=5+fam*.6;c.save();c.translate(OX-3,OY-2);const jg=c.createRadialGradient(-1.5,-1.5,0,0,0,jr);jg.addColorStop(0,'#ffffff');jg.addColorStop(.45,pal[1]);jg.addColorStop(1,pal[0]);c.fillStyle=jg;c.beginPath();c.moveTo(0,-jr);c.lineTo(jr*.8,0);c.lineTo(0,jr);c.lineTo(-jr*.8,0);c.closePath();c.fill();c.strokeStyle='#fff8d2';c.lineWidth=1.2;c.stroke();c.restore();}
   if(T===4||T>=7){c.save();c.strokeStyle=T===8?pal[1]:'#fff3b0';c.lineWidth=5;c.globalAlpha=.85;c.beginPath();c.ellipse(OX-(at[0]+3)*2,OY-bh*2*(1-at[1])-20,22,6.5,0,0,7);c.stroke();c.restore();}
   const u=k*.5,ax=x-f*at[0]*k,ay=y-bh*k*at[1];
   ctx.save();ctx.translate(Math.round(ax),Math.round(ay));ctx.scale(-f*u,u);ctx.imageSmoothingEnabled=true;
