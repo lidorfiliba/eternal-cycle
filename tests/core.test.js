@@ -355,3 +355,33 @@ test('two ancient sets per tier, and the perfect ancient piece',()=>{
   assert.ok(G.PERFECT_BOSS<=.0005&&G.PERFECT_ELITE<=.002,'the odds stay tiny');
   G.setEnv(Math.random,Date.now);
 });
+
+test('jewelry: two rings and a necklace give percent damage and health, drop, upgrade and stay out of sets',()=>{
+  G.setEnv(()=>.5,()=>1.8e12);const A=G.newAccount();G.apply(A,'create',{name:'Jew',cls:'blade'},{});const s=A.chars[0];s.stats.str=5000;
+  assert.ok('r' in s.eq&&'q' in s.eq&&'n' in s.eq);const c0=G.calc(s);
+  const r=G.makeItem(s,'r',5,3,12),q=G.makeItem(s,'q',5,3,12),n=G.makeItem(s,'n',5,4,12);r.af=[];q.af=[];n.af=[];
+  assert.ok(G.itemVals(r).wd>0&&!G.itemVals(r).wh);assert.ok(G.itemVals(q).wh>0&&!G.itemVals(q).wd);assert.ok(G.itemVals(n).wd>0&&G.itemVals(n).wh>0);assert.equal(n.v,undefined);
+  s.eq.r=r;const c1=G.calc(s);assert.ok(c1.dmg>c0.dmg*1.04&&Math.abs(c1.hp-c0.hp)<1);s.eq.q=q;const c2=G.calc(s);assert.ok(c2.hp>c1.hp*1.04);s.eq.n=n;assert.equal(Object.keys(G.setCounts(s)).length,0,'a necklace is not a set piece');
+  const v0=G.itemVals(r).wd;r.p=15;assert.ok(G.itemVals(r).wd>v0*1.8);assert.ok(G.itemScore(r)>0&&G.itemName(r,'blade').includes('טבעת עוצמה'));
+  const it=G.jewelDrop(s,12,{},[0,0,100,0,0],0);assert.ok(G.JEW.includes(it.s)&&it.r===2&&it.t===G.tierOf(12));
+  const old=G.adopt(JSON.parse(JSON.stringify(Object.assign({},A,{chars:A.chars.map(c=>({...c,eq:{w:null,h:null,a:null,p:null,l:null,b:null,g:null}}))}))));assert.ok('n' in old.chars[0].eq,'a save from before jewelry gets the new slots');
+  const ci=G.cleanItem({s:'a',t:14,r:4,p:3,z:30,v:1,pf:1,ex:1,af:[]});assert.equal(ci.t,14);assert.ok(ci.v&&ci.pf,'trading keeps the tier, the set and the perfect mark');
+  G.setEnv(Math.random,Date.now);
+});
+test('the last circle: rules of the fight, the ring, places and prizes',()=>{
+  let seed=11;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};let t=Date.UTC(2026,10,26,10,10,30);G.setEnv(rnd,()=>t);
+  const P=(n,m)=>G.cleanPlayer(n,{n:n,c:'blade',l:100,d:400*m,a:1.2,h:5000*m,f:200,cr:.1});
+  const hs=[P('a',1),P('b',1)],ps=hs.concat(G.brBots(hs,4,rnd));assert.equal(ps.length,6);assert.ok(ps[5].bot&&ps[5].d<=hs[0].d*1.06);
+  const B=G.brNew(ps,rnd);assert.equal(G.brAct(B,0,'atk',rnd),null,'nothing happens during the countdown');B.t=0;
+  B.f[0].x=300;B.f[0].z=.5;B.f[1].x=340;B.f[1].z=.5;for(let i=2;i<6;i++){B.f[i].x=800;B.f[i].z=0;}
+  const o=G.brAct(B,0,'atk',rnd);assert.ok(o&&o.to===1&&o.dm>=.012*.5&&o.dm<=.22*1.5*1.5*1.1+.01,'a hit lands on the nearest fighter in reach');assert.equal(G.brAct(B,0,'atk',rnd),null,'the attack has a cooldown');
+  B.f[1].z=0;B.t=5;assert.equal(G.brAct(B,0,'atk',rnd),null,'another lane is out of reach');B.f[1].z=.5;
+  assert.ok(G.brAct(B,1,'dash',rnd));assert.ok(G.brAct(B,0,'s0',rnd).miss,'a dash dodges');B.t=20;B.f[1].hp=.001;const k=G.brAct(B,0,'s3',rnd);assert.ok(k.dead&&!B.f[1].alive&&B.f[0].kills===1&&B.out[0]===1);
+  assert.deepEqual(G.brRing(Object.assign({},B,{t:0})),[0,G.BR.W]);const R=G.brRing(Object.assign({},B,{t:G.BR.TIME}));assert.ok(R[1]-R[0]<1,'the ring closes all the way');
+  let n=0;while(!B.over&&n++<3000)G.brStep(B,.2,rnd);assert.ok(B.over&&B.t<=G.BR.TIME+1);const rank=G.brRank(B);assert.equal(rank.length,6);assert.equal(rank[rank.length-1],1,'the first to fall is last');assert.equal(new Set(rank).size,6);
+  const A=G.newAccount();G.apply(A,'create',{name:'Win',cls:'blade'},{});const c0=A.coins,f0=A.feathers||0,rt=G.brReward(A,0,2);assert.ok(rt.includes('תיבה עתיקה'));assert.equal(A.coins,c0+40);assert.equal((A.feathers||0),f0+1);
+  const got=A.inv.concat(Object.values(A.chars[0].eq).filter(Boolean));assert.ok(got.some(it=>it.r===4&&G.DROPS.includes(it.s)),'two or more players: the chest holds an ancient piece');assert.ok(got.some(it=>G.JEW.includes(it.s)));
+  const A2=G.newAccount();G.apply(A2,'create',{name:'Sec',cls:'blade'},{});const sb=A2.sboxes;G.brReward(A2,1,2);assert.equal(A2.sboxes,sb+1);const c5=A2.coins;G.brReward(A2,4,2);assert.equal(A2.coins,c5+5);
+  const w=G.brWindow(Date.UTC(2026,10,26,10,10,30));assert.equal(w.phase,'sign');assert.equal(G.brWindow(Date.UTC(2026,10,26,10,13,0)).phase,'fight');assert.equal(G.brWindow(Date.UTC(2026,10,26,10,40,0)),null);
+  G.setEnv(Math.random,Date.now);
+});

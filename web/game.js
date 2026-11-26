@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126193618';
-const {SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126200604';
+const {BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
@@ -884,6 +884,7 @@ function showGuide(){
       '6. הכפתור "לבש את הכי חזק" בתיק מחשב את כל זה בשבילך.</p></div>'+
     '<div class="card" style="display:block"><b>בונוס סט עתיק</b><p class="hint" style="margin-top:4px">חלקים עתיקים מאותה דרגה: '+SETB.map(b=>L(b[0])+' חלקים: '+AFF[b[1]][0]+' '+L('+'+b[2]+'%')).join(' · ')+'. הנשק נספר כחלק השישי.</p><p class="hint" style="margin-top:4px">לכל דרגה יש סט שני, של שורדים ומחפשי אוצרות: '+SETB2.map(b=>L(b[0])+' חלקים: '+AFF[b[1]][0]+' '+L('+'+b[2]+'%')).join(' · ')+'. חלקים משני הסטים לא נספרים יחד.</p></div>'+
     '<div class="card" style="display:block"><b style="color:#ffd75e">עתיק מושלם</b><p class="hint" style="margin-top:4px">הפריט הנדיר ביותר במשחק: חלק סט עתיק עם כל האופציות ובסיס חזק ב-'+L(Math.round((PERFECT_M-1)*100)+'%')+'. הוא נופל רק מבוסים, מאלופים ומקומות גבוהות במגדל הנצח, בסיכוי זעום. סט מלא כזה הוא עניין של חודשים.</p></div>'+
+    '<div class="card" style="display:block"><b>תכשיטים</b><p class="hint" style="margin-top:4px">שלושה מקומות נוספים: טבעת עוצמה מוסיפה נזק באחוזים, טבעת חיים מוסיפה חיים, ושרשרת נותנת קצת משניהם. הם נופלים לעיתים רחוקות מכל מפלצת, תמיד מאלופים, ומהתיבה של המעגל האחרון. אפשר לשדרג אותם כמו כל פריט, והם לא חלק מסט.</p></div>'+
     '<div class="card" style="display:block"><b>סיכויי שדרוג</b><p class="hint" style="margin-top:4px">עד '+L('+6')+' תמיד מצליח. אחר כך: '+up+'. מ-'+L('+7')+' כישלון מוריד דרגה, אלא אם יש קמע הגנה.</p></div>'+
     '<p class="hint">המספרים לפי המקצוע שלך. הדרגה שהנשק שלך בה מסומנת בזהב.</p>'+rows+
     '</div><div class="acts"><button class="btn pri" data-act="closeModal">סגור</button></div>');
@@ -891,6 +892,98 @@ function showGuide(){
 // The world boss: one health bar for the whole server.
 const worldWin=()=>evWindows(Date.now(),0).find(w=>w.e.world&&w.live);
 function loadWorld(){if(!ONLINE||demo||Date.now()-worldAt<8000)return;worldAt=Date.now();rpc('wget',{}).then(j=>{if(j&&j.world!==undefined){world=j.world;panelDirty=true;}}).catch(()=>{});}
+function brCard(live){
+  const up=ws&&ws.readyState===1,bw=brWindow(Date.now()),d=SC.duel,inb=d&&d.br;
+  let h='<p class="hint">נלחמים ביד, עם מהלכי הזירה, מול שחקנים אחרים שמחוברים עכשיו. מקומות ריקים מתמלאים בלוחמים של השרת. מי שלא מחובר, או לא נכנס בזמן, לא משתתף. מקום שני ושלישי מקבלים תיבות ומטבעות, וכל משתתף מקבל 5 מטבעות עונה.</p>';
+  if(!ONLINE||demo)return h+'<p class="hint" style="color:var(--bad)">האירוע הזה קיים רק במשחק המחובר לשרת.</p>';
+  if(inb)return h+'<p class="hint" style="color:var(--good)">אתה בזירה'+(d.br.phase==='lobby'?' · '+L(d.br.n)+' לוחמים נרשמו':'')+'</p>'+(d.br.phase==='lobby'?'<button class="btn" style="width:100%" data-act="brLeave">צא מהזירה</button>':'');
+  if(live&&bw&&bw.phase==='sign')return h+'<button class="btn pri glow" style="width:100%" data-act="brJoin"'+(up&&SC.mode==='farm'?'':' disabled')+'>'+(up?'השתגר לזירה · ההרשמה נסגרת בעוד '+L(mmss((bw.signEnd-Date.now())/1000)):'אין חיבור חי לשרת')+'</button>';
+  if(live)return h+'<p class="hint" style="color:var(--bad)">ההרשמה נסגרה. הקרב כבר התחיל.</p>';
+  return h;
+}
+/* ---------- The Last Circle: a live fight of up to eight, held by the server ---------- */
+const bX=u=>(u-(SC.duel&&SC.duel.br?SC.duel.br.cam:0))*(W/LIVE_W);
+function brEnter(n,left){
+  flushTick();const me={x:BR.W/2,z:.5,hp:1,cls:S.cls,at:{atk:0,s0:0,s1:0,s2:0,s3:0,dash:0,pot:0},stun:0,sh:0,inv:0,pots:BR.pots,alive:true,kills:0};
+  SC.duel={br:{phase:'lobby',n:n,until:Date.now()+left,looks:[lookOf(S)],names:[S.name],bot:[0],tg:[null],ring:[0,BR.W],cam:BR.W/2-LIVE_W/2,deadT:[0]},D:{f:[me],t:0,T:[1],pool:[1]},me:0,v:[{anim:0,face:1,mv:false,hitT:0}],end:0,sent:false,go:1,holdAtk:false,opp:lookOf(S),posT:0,last:[0,0]};
+  SC.mode='duel';SC.fx=[];SC.nums=[];SC.drops=[];SC.hero.dir=0;SC.hero.dz=0;closeModal();renderDuelBar();announce('הגעת לזירת המעגל האחרון. הקרב מתחיל כשההרשמה נסגרת',true);
+}
+function brBegin(m){
+  const d=SC.duel;if(!d||!d.br)return;const b=d.br,fs=Array.isArray(m.f)?m.f:[];d.me=m.me|0;b.phase='fight';b.looks=[];b.names=[];b.bot=[];b.tg=[];b.deadT=[];d.v=[];d.D.f=[];
+  fs.forEach((raw,i)=>{const p=G.cleanPlayer('f'+i,raw),xz=m.xz&&m.xz[i]||[BR.W/2,.5];b.looks.push(i===d.me?lookOf(S):p);b.names.push(p.n);b.bot.push(raw.bot?1:0);b.tg.push(null);b.deadT.push(0);
+    d.D.f.push({x:+xz[0],z:+xz[1],hp:1,cls:p.c,at:{atk:0,s0:1,s1:3,s2:0,s3:8,dash:0,pot:0},stun:0,sh:0,inv:0,pots:BR.pots,alive:true,kills:0});d.v.push({anim:0,face:1,mv:false,hitT:0});});
+  d.D.t=+m.T||-4;d.go=Math.max(.1,-d.D.t);b.cam=clamp(d.D.f[d.me].x-LIVE_W/2,0,BR.W-LIVE_W);snd('boss');renderDuelBar();
+}
+function brState(m){
+  const d=SC.duel;if(!d||!d.br||d.br.phase==='lobby')return;const b=d.br,D=d.D;D.t=+m.T;if(Array.isArray(m.ring))b.ring=[+m.ring[0],+m.ring[1]];
+  (m.s||[]).forEach((q,i)=>{const f=D.f[i];if(!f)return;const was=f.alive;f.hp=+q[2];f.alive=!!q[3];f.sh=q[4]?D.t+.3:0;f.stun=q[5]?D.t+.3:0;f.kills=q[7]|0;f.inv=q[8]?D.t+.3:0;if(i!==d.me){b.tg[i]=[+q[0],+q[1]];d.v[i].face=q[6]<0?-1:1;}
+    else if(Math.abs(f.x-q[0])>130){f.x=+q[0];f.z=+q[1];} // the server did not accept where I think I am
+    if(was&&!f.alive){b.deadT[i]=.01;burst(bX(f.x),gy()-(1-f.z)*84-40,'#ff5c7a',26);snd('bossdie');if(i===d.me){SC.nums.push({x:W/2,y:H*.4,txt:'נפלת',c:'#ff5c7a',s:30,life:2.2});renderDuelBar();}}});
+  for(const o of m.ev||[])brShow(d,o);
+}
+function brShow(d,o){
+  const D=d.D,b=d.br;if(o.k==='ring'){const v=D.f[o.to];if(v)addNum(bX(v.x),dy(v)-110,b.names[o.to]+' נשרף בטבעת','#ff5c7a',false);return;}
+  const a=D.f[o.by];if(!a)return;const va=d.v[o.by],ax=bX(a.x),g=dy(a),col=gearColor(b.looks[o.by].w,SC.t,CLS[a.cls].c),k=o.k;
+  if(k==='s2'){snd('fury');SC.fx.push({k:'rune',x:ax,y:g-2,r:70,life:.9,d:.9,c:'#9fe8ff'});return;}
+  if(k==='dash'){for(let q=0;q<4;q++)SC.parts.push({x:ax,y:g-20-q*14,vx:(Math.random()-.5)*120,vy:0,life:.4,c:'#9fe8ff',s:3});return;}
+  if(k==='pot'){burst(ax,g-50,'#6fe39a',18);addNum(ax,g-112,'+30%','#6fe39a',true);return;}
+  const v=D.f[o.to];if(!v)return;const vx=bX(v.x),ge=dy(v),big=k!=='atk';va.anim=1;va.face=v.x>=a.x?1:-1;
+  if(k==='s3'){snd('ult');SC.fx.push({k:'rune',x:ax,y:g-2,r:150,life:1,d:1,c:col});if(!calm&&(o.by===d.me||o.to===d.me))SC.shake=.4;SC.fx.push({k:'flash',x:vx,y:ge-40,r:90,life:.35,d:.35,c:col});}
+  else if(k==='s1'){SC.fx.push({k:'pillar',x:vx,y:ge,life:.45,d:.45,c:col});SC.fx.push({k:'star',x:vx,y:ge-44,r:46,rot:.4,life:.4,d:.4,c:col});}
+  else if(k==='s0')SC.fx.push({k:'rune',x:ax,y:g-2,r:64,life:.6,d:.6,c:col});
+  attackFx(a.cls,ax,g,va.face,[{x:vx,y:ge-10}],big,col);
+  if(o.miss){addNum(vx,ge-110,'חמק!','#9fe8ff',true);return;}
+  d.v[o.to].hitT=.18;if(o.by===d.me||o.to===d.me)snd(o.crit?'crit':big?'skill':'hit');addNum(vx,ge-92,Math.max(1,Math.round(o.dm*100))+'%',o.crit?'#ffd75e':big?col:'#fff',o.crit||big);
+  if(o.stun)addNum(vx,ge-128,'הלם','#ffd75e',false);
+  if(o.dead){addNum(vx,ge-140,b.names[o.by]+' חיסל את '+b.names[o.to],'#ffd75e',true);}
+}
+function brOver(m){
+  const d=SC.duel;if(!d||!d.br)return;const b=d.br,pl=m.place|0;b.phase='end';d.sent=true;d.holdAtk=false;d.end=4.5;b.res=m;renderDuelBar();
+  SC.nums.push({x:W/2,y:H*.36,txt:pl===0?'ניצחת במעגל האחרון!':'מקום '+(pl+1)+' מתוך '+(m.n|0),c:pl===0?'#f2c14e':'#c9c2ea',s:pl===0?30:26,life:4.4});snd(pl===0?'rare':'slam');if(pl===0&&!calm)SC.fx.push({k:'screen',life:1,d:1,c:'#ffd75e'});
+}
+function brExit(msg){const d=SC.duel;if(!d||!d.br)return;const m=d.br.res;SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];SC.hero.dir=0;SC.hero.dz=0;renderDuelBar();
+  if(m){toast((m.place===0?'ניצחת במעגל האחרון. קיבלת ':'מקום '+((m.place|0)+1)+' במעגל האחרון. קיבלת ')+String(m.rt||''),7);send('sync',{});}else if(msg)toast(msg);touch();}
+function updateBr(dt){
+  const d=SC.duel,b=d.br,D=d.D,me=D.f[d.me],vm=d.v[d.me];
+  for(const v of d.v){v.anim=Math.max(0,v.anim-dt*3.2);v.hitT=Math.max(0,v.hitT-dt);}
+  for(let i=0;i<b.deadT.length;i++)if(b.deadT[i]>0)b.deadT[i]+=dt;
+  if(b.phase==='end'){if((d.end-=dt)<=0)brExit();return;}
+  if(b.phase==='fight'){D.t+=dt;if(d.go>0&&D.t>=0){d.go=0;renderDuelBar();snd('boss');}}
+  vm.mv=false;
+  if(me.alive&&me.stun<=D.t&&(b.phase==='lobby'||D.t>=0)){
+    if(SC.hero.dir){me.x=clamp(me.x+SC.hero.dir*(me.cls==='blade'?165:145)*dt,10,BR.W-10);vm.mv=true;vm.face=SC.hero.dir;}
+    if(SC.hero.dz){me.z=clamp(me.z+SC.hero.dz*.95*dt,0,1);vm.mv=true;}}
+  if(b.phase==='fight'){
+    if(d.holdAtk)duelAct('atk');
+    if(me.alive&&(d.posT-=dt)<=0&&(Math.abs(me.x-d.last[0])>.5||Math.abs(me.z-d.last[1])>.01)){d.posT=.08;d.last=[me.x,me.z];netSend({t:'brPos',x:Math.round(me.x),z:Math.round(me.z*100)/100,f:vm.face});}
+    D.f.forEach((f,i)=>{if(i===d.me)return;const tg=b.tg[i],v=d.v[i];v.mv=false;if(tg&&f.alive){const ex=tg[0]-f.x,ez=tg[1]-f.z;if(Math.abs(ex)>1||Math.abs(ez)>.02){f.x+=ex*Math.min(1,dt*10);f.z+=ez*Math.min(1,dt*10);v.mv=Math.abs(ex)>3;}}});
+  }
+  // the view follows me, or the middle of the ring once I am out
+  const fx=me.alive||b.phase==='lobby'?me.x:(b.ring[0]+b.ring[1])/2;b.cam+=(clamp(fx-LIVE_W/2,0,BR.W-LIVE_W)-b.cam)*Math.min(1,dt*6);
+  if((d.bt=(d.bt||0)+dt)>.25){d.bt=0;renderDuelBar();if(tab==='pass'&&b.phase==='lobby')panelDirty=true;}
+}
+function drawBr(dt){
+  const d=SC.duel,b=d.br,D=d.D,sc=clamp(H/300,.8,1.45),g=gy(),y0=g-84,y1=g+6,x0=bX(0),x1=bX(BR.W);
+  {ctx.save();const gr=ctx.createLinearGradient(0,y0,0,y1);gr.addColorStop(0,'rgba(60,44,110,.55)');gr.addColorStop(1,'rgba(120,90,190,.38)');ctx.fillStyle=gr;ctx.fillRect(x0,y0,x1-x0,y1-y0);
+    ctx.strokeStyle='rgba(255,215,94,.2)';ctx.lineWidth=1;for(let u=0;u<=BR.W;u+=50){ctx.beginPath();ctx.moveTo(bX(u),y0);ctx.lineTo(bX(u),y1);ctx.stroke();}for(let q=0;q<=4;q++){const y=y0+(y1-y0)*q/4;ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();}
+    ctx.strokeStyle='rgba(255,215,94,.6)';ctx.lineWidth=2;ctx.strokeRect(x0,y0,x1-x0,y1-y0);
+    if(b.phase!=='lobby'){const rl=bX(b.ring[0]),rr2=bX(b.ring[1]),a=.3+.1*Math.sin(SC.t*5);for(const [l,r] of [[x0,rl],[rr2,x1]]){if(r<=l)continue;const fg=ctx.createLinearGradient(0,y0-150,0,y1);fg.addColorStop(0,'rgba(255,60,90,0)');fg.addColorStop(1,'rgba(255,60,90,'+a+')');ctx.fillStyle=fg;ctx.fillRect(l,y0-150,r-l,y1-y0+150);}
+      ctx.strokeStyle='#ff5c7a';ctx.shadowColor='#ff5c7a';ctx.shadowBlur=12;ctx.lineWidth=3;for(const x of [rl,rr2]){ctx.beginPath();ctx.moveTo(x,y0-150);ctx.lineTo(x,y1);ctx.stroke();}}
+    ctx.restore();}
+  const ord=D.f.map((_,i)=>i).sort((p,q)=>D.f[p].z-D.f[q].z);
+  for(const i of ord){const a=D.f[i],v=d.v[i],dead=b.deadT[i]||0;if(dead>1.6)continue;const ya=dy(a),s2=sc*dsc(a),ax=bX(a.x);if(ax<-80||ax>W+80)continue;const x=ax+(v.hitT>0?(Math.random()-.5)*5:0);
+    ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(ax,ya+2,22*s2,6*s2,0,0,7);ctx.fill();
+    if(i===d.me&&a.alive){ctx.strokeStyle='rgba(125,249,255,.7)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(ax,ya+2,28*s2,8*s2,0,0,7);ctx.stroke();}
+    if(a.sh>D.t){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle='#9fe8ff';ctx.shadowColor='#9fe8ff';ctx.shadowBlur=12;ctx.globalAlpha=.6;ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(ax,ya-44*s2,30*s2,50*s2,0,0,7);ctx.stroke();ctx.restore();}
+    ctx.save();if(a.inv>D.t)ctx.globalAlpha=.45;drawHero(x,ya,s2,b.looks[i],SC.t+i*1.7,v.anim,v.face<0,dead>0?Math.max(.01,dead):0,v.mv,false);ctx.restore();
+    if(dead>0)continue;const top=ya-132*s2;hpBar(ax-26,top,52,a.hp,i===d.me?'#6fe39a':'#ff5c7a');label(b.names[i]+(a.kills?' · '+a.kills:''),ax,top-6,i===d.me?'#7df9ff':b.bot[i]?'#c9c2ea':'#ffd75e',10.5);
+    if(a.stun>D.t)label('✦',ax,top-20,'#ffd75e',12);}
+  drawFx(dt);
+  const alive=D.f.filter(f=>f.alive).length;
+  if(b.phase==='lobby'){label('זירת המעגל האחרון',W/2,34,'#ffd75e',14);label(b.n+' לוחמים נרשמו · הקרב מתחיל בעוד '+mmss(Math.max(0,(b.until-Date.now())/1000)),W/2,54,'#c9c2ea',11);label('אפשר להסתובב בינתיים. מקומות ריקים יתמלאו בלוחמי השרת',W/2,72,'#8f88b8',10);}
+  else{label('המעגל האחרון · נותרו '+alive,W/2,34,'#ffd75e',13);label(D.t<0?'מתחילים בעוד '+Math.ceil(-D.t):mmss(Math.max(0,BR.TIME-D.t))+(D.f[d.me].alive?'':' · אתה צופה'),W/2,52,'#c9c2ea',11);
+    const me=D.f[d.me];if(me.alive&&D.t>=0&&(me.x<b.ring[0]||me.x>b.ring[1]))label('אתה מחוץ לטבעת! חזור פנימה',W/2,H*.3,'#ff5c7a',15);}
+}
 function worldCard(w,live){
   if(!ONLINE)return '<p class="hint">בוס העולם קיים רק במצב מקוון.</p>';
   if(!world||!w||world.key!==w.key)return live?'<p class="hint">טוען את מצב הקרב...</p>':'';
@@ -950,6 +1043,8 @@ function dashMove(d,i){const D=d.D,me=D.f[i],en=D.f[1-i],mine=i===d.me,side=mine
   me.x=clamp(me.x+dir*DUEL_LIVE.dash.d,20,LIVE_W-20);me.z=clamp(me.z+side*.55,0,1);}
 function duelAct(k){
   const d=SC.duel;if(!d||d.sent||d.go>0||d.spec)return;const D=d.D,me=D.f[d.me];
+  if(d.br){if(d.br.phase!=='fight'||!me.alive||D.t<0||me.stun>D.t||me.at[k]>D.t||(k==='pot'&&!me.pots))return;netSend({t:'brAct',k:k});
+    if(k==='dash'){me.at.dash=D.t+DUEL_LIVE.dash.cd;const dir=SC.hero.dir||d.v[d.me].face;me.x=clamp(me.x+dir*DUEL_LIVE.dash.d,10,BR.W-10);netSend({t:'brPos',x:Math.round(me.x),z:me.z,f:dir});}else me.at[k]=D.t+(k==='atk'?.25:.5);return;}
   if(d.net){if(me.stun>D.t||me.at[k]>D.t)return;netSend({t:'act',k:k});if(k==='dash'){me.at.dash=D.t+DUEL_LIVE.dash.cd;dashMove(d,d.me);netSend({t:'pos',x:me.x,z:me.z});}else if(k==='atk')me.at.atk=D.t+D.T[d.me];return;}
   const o=liveAct(D,0,k,Math.random);if(!o)return;if(k==='dash')dashMove(d,0);dShow(d,o);renderDuelBar();if(k==='s1'||k==='s3')d.ai.threat=.5;
 }
@@ -981,6 +1076,7 @@ function towerAI(d,dt){ // a floor guardian: walks you down, swings, and marks t
   if(dist<=76&&Math.abs(en.z-me.z)<=LIVE_LANE){const o=liveAct(D,1,'atk',Math.random);if(o)dShow(d,o);}
 }
 function updateDuel(dt){
+  if(SC.duel.br)return updateBr(dt);
   const d=SC.duel,D=d.D,me=D.f[d.me],vm=d.v[d.me];
   for(const v of d.v){v.anim=Math.max(0,v.anim-dt*3.2);v.hitT=Math.max(0,v.hitT-dt);}
   if(d.end>0){d.end-=dt;if(d.end<=0)finishDuel();return;}
@@ -1014,6 +1110,7 @@ function finishDuel(){
   SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];SC.hero.dir=0;SC.hero.dz=0;renderDuelBar();if(d.net)send('sync',{});touch();
 }
 function drawDuel(dt){
+  if(SC.duel.br)return drawBr(dt);
   const d=SC.duel,D=d.D,sc=clamp(H/300,.8,1.45),f=D.f,g=gy(),me=d.me,lost=d.sent?(d.win!=null?!d.win:!d.local):null,dead=d.sent?Math.min(2.4,d.end>2.4?(9-d.end):2.4-d.end+.6):0,looks=[];looks[me]=d.spec?d.spec:lookOf(S);looks[1-me]=d.opp;
   { // the floor, seen at an angle: far edge narrower, lines running into the distance
     const y0=g-84,y1=g+6,in0=W*.13;ctx.save();const gr=ctx.createLinearGradient(0,y0,0,y1);gr.addColorStop(0,'rgba(60,44,110,.55)');gr.addColorStop(1,'rgba(120,90,190,.38)');ctx.fillStyle=gr;
@@ -1042,13 +1139,15 @@ let liveDuels=[];
 let mvT=0,mvLast=[0,false,1,0],ws=null,whisperTo=null,friendsOn={},whoT=0;
 const isBlocked=(k,n)=>(A&&A.blocked||[]).some(x=>x.k===k||(n&&x.n===n)),isFriend=k=>(A&&A.friends||[]).some(x=>x.k===k);
 function askWho(){const fr=A&&A.friends||[];if(fr.length&&ws&&ws.readyState===1)netSend({t:'who',ks:fr.map(f=>f.k)});}
+let brAsk=false;
+function brJoin(){if(!(ws&&ws.readyState===1)||SC.mode!=='farm')return false;brAsk=true;netSend({t:'brJoin'});return true;}
 function netSend(m){if(ws&&ws.readyState===1)ws.send(JSON.stringify(m));}
 function netOpen(){
   if(!CFG.api||!session||!session.token||demo||(ws&&ws.readyState<2))return;
   try{ws=new WebSocket(CFG.api.replace(/^http/,'ws').replace(/\/+$/,'')+'/ws');}catch(e){ws=null;return;}
   const sock=ws;sock.onopen=()=>sock.send(JSON.stringify({t:'hello',token:session.token}));
   sock.onmessage=e=>{let m;try{m=JSON.parse(e.data);}catch(_){return;}if(m&&typeof m==='object')netMsg(m);};
-  sock.onclose=()=>{if(ws===sock)ws=null;const d=SC.duel;if(d&&d.net&&!d.sent){d.why='lost';showResult(d,false,0,false);toast('החיבור לקרב נותק');}};
+  sock.onclose=()=>{if(ws===sock)ws=null;const d=SC.duel;if(d&&d.br){d.br.res=null;brExit('החיבור לשרת נותק. יצאת מהזירה');return;}if(d&&d.net&&!d.sent){d.why='lost';showResult(d,false,0,false);toast('החיבור לקרב נותק');}};
   sock.onerror=()=>{};
 }
 function netMsg(m){
@@ -1067,6 +1166,12 @@ function netMsg(m){
   else if(m.t==='who'){const was=friendsOn,now={};for(const k of m.on||[])now[String(k)]=1;friendsOn=now;for(const f of A.friends||[])if(now[f.k]&&!was[f.k]&&whoT++>0)toast(f.n+' התחבר');if(!whoT)whoT=1;if(tab==='arena')panelDirty=true;}
   else if(m.t==='whisper'){const f=m.from||{},k=String(f.k||''),n=String(f.n||'').slice(0,14);if(isBlocked(k,n))return;chatLog.push({c:'p',n:n,g:'',m:String(m.m||'').slice(0,160),me:false,k:k});chatAt=Date.now();if(!(tab==='chat'&&chatCh==='p'))chatUnread++;snd('click');toast('הודעה פרטית מ-'+n);if(!whisperTo)whisperTo={k:k,n:n};const l=$('chatList');if(l&&chatCh==='p'){l.innerHTML=chatRows();l.scrollTop=l.scrollHeight;}renderChatBar();}
   else if(m.t==='whispered'){chatLog.push({c:'p',n:S.name,g:'',m:String(m.m||''),me:true,k:String(m.k||''),to:whisperTo&&whisperTo.k===m.k?whisperTo.n:''});const l=$('chatList');if(l&&chatCh==='p'){l.innerHTML=chatRows();l.scrollTop=l.scrollHeight;}}
+  else if(m.t==='brLobby'){if(d&&d.br){if(d.br.phase==='lobby'){d.br.n=m.n|0;d.br.until=Date.now()+(+m.left||0);}}else if(SC.mode==='farm'&&brAsk){brAsk=false;brEnter(m.n|0,+m.left||0);}if(tab==='pass')panelDirty=true;}
+  else if(m.t==='brNo'){brAsk=false;toast('ההרשמה למעגל האחרון סגורה כרגע');}
+  else if(m.t==='brStart')brBegin(m);
+  else if(m.t==='brS')brState(m);
+  else if(m.t==='brMe'){if(d&&d.br){const f=d.D.f[d.me];if(m.at)for(const k in f.at)f.at[k]=+m.at[k]||0;f.pots=m.pots|0;renderDuelBar();}}
+  else if(m.t==='brEnd')brOver(m);
   else if(m.t==='offline')toast('הוא לא מחובר כרגע');
   else if(m.t==='muted')toast('אתה מושתק ולא יכול לשלוח הודעות');
   else if(m.t==='declined')toast('ההזמנה לדו-קרב לא התקבלה');
@@ -1095,10 +1200,13 @@ const SVG={
  p:'<svg viewBox="0 0 40 40"><path d="M11 6h18l2 28h-8l-3-18-3 18h-8z" fill="currentColor"/></svg>',
  l:'<svg viewBox="0 0 40 40"><path d="M12 34V19l-4-6 3-2 4 5V7h4v9h1V5h4v11h1V8h4v15l-3 11z" fill="currentColor"/></svg>',
  b:'<svg viewBox="0 0 40 40"><path d="M14 6h9v16l10 5v7H12z" fill="currentColor"/></svg>',
- g:'<svg viewBox="0 0 40 40"><path d="M20 30C12 30 3 22 3 8c6 2 11 6 17 16C26 14 31 10 37 8c0 14-9 22-17 22z" fill="currentColor"/><path d="M20 24v10" stroke="#fff8" stroke-width="2"/></svg>'
+ g:'<svg viewBox="0 0 40 40"><path d="M20 30C12 30 3 22 3 8c6 2 11 6 17 16C26 14 31 10 37 8c0 14-9 22-17 22z" fill="currentColor"/><path d="M20 24v10" stroke="#fff8" stroke-width="2"/></svg>',
+ r:'<svg viewBox="0 0 40 40"><circle cx="20" cy="25" r="10" fill="none" stroke="currentColor" stroke-width="4"/><path d="M20 4l6 7-6 6-6-6z" fill="#ff5c7a"/></svg>',
+ q:'<svg viewBox="0 0 40 40"><circle cx="20" cy="25" r="10" fill="none" stroke="currentColor" stroke-width="4"/><path d="M20 4l6 7-6 6-6-6z" fill="#6fe39a"/></svg>',
+ n:'<svg viewBox="0 0 40 40"><path d="M6 6c0 14 6 20 14 20s14-6 14-20" fill="none" stroke="currentColor" stroke-width="3"/><path d="M20 24l6 7-6 7-6-7z" fill="#ffd75e"/></svg>'
 };
 const gcls=p=>p>=13?' g13':p>=11?' g11':p>=9?' g9':p>=7?' g7':'';
-function mainLine(it){const v=itemVals(it);return it.s==='w'?'נזק '+fmt(v.atk):ARM[it.s]?'חיים '+fmt(v.hp)+' · הגנה '+v.def:'נזק '+L('+'+v.wd+'%');}
+function mainLine(it){const v=itemVals(it);return it.s==='w'?'נזק '+fmt(v.atk):ARM[it.s]?'חיים '+fmt(v.hp)+' · הגנה '+v.def:JEWV[it.s]?[v.wd?'נזק '+L('+'+v.wd+'%'):'',v.wh?'חיים '+L('+'+v.wh+'%'):''].filter(Boolean).join(' · '):'נזק '+L('+'+v.wd+'%');}
 function itemCard(it){
   return '<button class="it r'+it.r+gcls(it.p)+(it.pf?' ex full pf':it.ex?(isFull(it)?' ex full':' ex'):'')+'" data-act="item" data-id="'+it.id+'" style="color:var(--r'+it.r+')">'+SVG[it.s]+
     '<span class="nm">'+esc(itemName(it,S.cls))+(it.p?' '+L('+'+it.p):'')+'</span><span class="sub">'+mainLine(it)+'</span></button>';
@@ -1229,7 +1337,7 @@ function renderEvents(){
         tierLine='<div class="tiers">'+TIER_MIN.map((m,i)=>'<i class="'+(i+1===t?'on':i+1<t?'past':'')+'">'+(i+1)+'</i>').join('')+'</div><p class="hint"><b style="color:var(--gold)">דרגה '+L(t)+'</b> · רמות '+L(rg[0]+'-'+rg[1])+' · פרס: '+L(rw.lv)+' רמות, '+L(rw.gems)+' אבני נשמה, '+L(rw.coins)+' מטבעות עונה</p>'+
           (nx<=7&&!rec.tr?'<p class="hint" style="color:#8fd3ff">עוד '+L(TIER_MIN[nx-1]-S.lvl)+' רמות לדרגה '+L(nx)+', שנותנת '+L(tierReward(nx).lv)+' רמות. תגיע לפני שהשער נפתח.</p>':'');}}
     h+='<div class="card'+(live?' zone cur':'')+'" style="display:block"><div class="kv"><b'+(live?' style="color:var(--gold)"':'')+'>'+e.n+tn+'</b><b class="num" style="color:var(--'+(live?'good':'dim')+')">'+(live?'פעיל · '+L(mmss((w.end-now)/1000)):'בעוד '+fmtT(evNext(e,now)))+'</b></div>'+
-      '<p class="hint">'+e.d+' · '+e.when+(e.rt&&!e.tiered?' · פרס: '+e.rt:'')+'</p>'+tierLine+(e.tiered?keepCard(e,w,rec,live):'')+(e.world?worldCard(w,live):'');
+      '<p class="hint">'+e.d+' · '+e.when+(e.rt&&!e.tiered?' · פרס: '+e.rt:'')+'</p>'+tierLine+(e.tiered?keepCard(e,w,rec,live):'')+(e.world?worldCard(w,live):'')+(e.br?brCard(live):'');
     if(w&&e.obj){
       const have=Math.min(rec[e.obj[0]]||0,e.obj[1]),done=have>=e.obj[1];
       if(e.id==='quiz'&&live&&!rec.t){const q=quizFor(w.key);h+='<p style="margin:8px 0 6px;font-weight:700">'+q.q+'</p><div class="grid2">'+q.o.map((o,i)=>'<button class="btn sm" data-act="answer" data-i="'+i+'">'+L(o)+'</button>').join('')+'</div>';}
@@ -1312,6 +1420,7 @@ function openSheet(id){
     (it.pf?'<p class="extag" style="color:#ffd75e">עתיק מושלם · כל האופציות · בסיס חזק ב-'+L(Math.round((PERFECT_M-1)*100)+'%')+'</p>':it.ex?'<p class="extag">'+(isFull(it)?'אקסלנט מלא · כל ':'אקסלנט · ')+L(it.af.length+'/'+POOL[it.s].length)+' אופציות</p>':'')+'<div>';
   if(it.s==='w')h+='<div class="kv"><span>נזק נשק</span><b class="num">'+fmt(v.atk)+'</b></div>';
   if(ARM[it.s])h+='<div class="kv"><span>חיים</span><b class="num">'+fmt(v.hp)+'</b></div><div class="kv"><span>הגנה</span><b class="num">'+v.def+'</b></div>';
+  if(JEWV[it.s])h+=(v.wd?'<div class="kv"><span>נזק</span><b class="num">'+L('+'+v.wd+'%')+'</b></div>':'')+(v.wh?'<div class="kv"><span>חיים</span><b class="num">'+L('+'+v.wh+'%')+'</b></div>':'');
   if(it.s==='g')h+='<div class="kv"><span>נזק</span><b class="num">'+L('+'+v.wd+'%')+'</b></div><div class="kv"><span>חיים</span><b class="num">'+L('+'+v.wh+'%')+'</b></div><div class="kv"><span>מהירות הליכה</span><b class="num">'+L('+'+it.t*8+'%')+'</b></div>';
   for(const a of it.af)h+='<div class="kv aff"><span style="color:inherit">'+AFF[a[0]][0]+'</span><b class="num">'+L('+'+a[1]+'%')+'</b></div>';
   h+=diff+'</div>';
@@ -1557,6 +1666,8 @@ document.addEventListener('click',async e=>{
     else if(a==='friend'||a==='block'){const on=b.dataset.on==='1';closeModal();r=await act(a,{k:b.dataset.k,n:b.dataset.n,on:on});if(r.ok){toast(a==='friend'?(on?b.dataset.n+' נוסף לחברים':'הוסר מהחברים'):(on?b.dataset.n+' נחסם. לא תראה הודעות ממנו':'החסימה הוסרה'));askWho();}else toast(r.msg);}
     else if(a==='report'){const why=($('repWhy')||{}).value||'';closeModal();r=await act('report',{k:b.dataset.k,n:b.dataset.n,why:why});toast(r.ok?'הדיווח נשלח. תודה':r.msg);r={ok:true};}
     else if(a==='tower'){r=await act('towerStart',{});if(r.ok)startDuel(r.pd);else toast(r.msg==='net'?'אין חיבור לשרת':r.msg);}
+    else if(a==='brJoin'){if(!brJoin())toast('אין חיבור חי לשרת');r={ok:true};}
+    else if(a==='brLeave'){netSend({t:'brLeave'});const dd=SC.duel;if(dd&&dd.br){dd.br.res=null;brExit('יצאת מהזירה');}r={ok:true};}
     else if(a==='pvpYes'||a==='pvpNo'){closeModal();netSend({t:'answer',id:+b.dataset.id,ok:a==='pvpYes'});r={ok:true};}
     else if(a==='pinvite'){closeModal();try{const j=await rpc('say',{m:b.dataset.n+', בוא לפארטי שלי. הקוד: '+party.code,g:false});toast(j&&j.result&&j.result.ok?'ההזמנה נשלחה בצ\'אט':'ההזמנה לא נשלחה');beatT=99;}catch(e){}r={ok:true};}
     else if(a==='reroll'){loadArena();}
@@ -1908,6 +2019,6 @@ async function boot(){
   openModal('<h3>מעגל הנצח</h3><p class="hint">מתחבר לשרת...</p>');
   await startOnline();
 }
-if(typeof window!=='undefined')window.EC={syncElite,spawnBoss,castArt,ARTS,duelAct,netSend,get peers(){return peers;},get ws(){return ws;},get A(){return A;},get S(){return S;},get C(){return C;},set C(v){C=v;},SC,G,send,act,frame,enterZone,pend,flushTick,syncBoss,spawnBoss,touch,get demo(){return demo;}};
+if(typeof window!=='undefined')window.EC={brJoin,syncElite,spawnBoss,castArt,ARTS,duelAct,netSend,get peers(){return peers;},get ws(){return ws;},get A(){return A;},get S(){return S;},get C(){return C;},set C(v){C=v;},SC,G,send,act,frame,enterZone,pend,flushTick,syncBoss,spawnBoss,touch,get demo(){return demo;}};
 startLang();
 boot();

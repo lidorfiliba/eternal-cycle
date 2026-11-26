@@ -53,8 +53,62 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
     d.timer = setInterval(() => { d.D.t = (clock() - d.t0) / 1000 - 1.2; if (G.liveOver(d.D)) finish(d, d.D.win, 'time'); }, tickMs); d.timer.unref();
   }
 
+  // The Last Circle: a fight of up to eight for whoever is connected and came to the arena during sign-up.
+  // The server holds the whole fight (rules: brNew, brAct, brStep in core.js) and plays the empty places itself.
+  let br = null;
+  const brAll = (m) => { if (!br) return; const s = JSON.stringify(m); for (const uid of br.joined.keys()) { const o = socks.get(uid); if (o && o.readyState === 1) o.send(s); } };
+  const brState = (B) => ({ t: 'brS', T: B.t, ring: G.brRing(B).map(Math.round), s: B.f.map((f) => [Math.round(f.x), Math.round(f.z * 100) / 100, Math.round(f.hp * 1000) / 1000, f.alive ? 1 : 0, f.sh > B.t ? 1 : 0, f.stun > B.t ? 1 : 0, f.face < 0 ? -1 : 1, f.kills, f.inv > B.t ? 1 : 0]) });
+  async function brFinish(b) {
+    if (b.done) return; b.done = true; clearInterval(b.timer); if (br === b) br = null;
+    const rank = G.brRank(b.B), humans = b.idx.size, win = b.B.f[rank[0]];
+    for (const [uid, i] of b.idx) {
+      const place = rank.indexOf(i), rt = await mutate(uid, (A) => G.brReward(A, place, humans));
+      send(uid, { t: 'brEnd', place, n: b.B.f.length, rt: typeof rt === 'string' ? rt : '', win: win.n });
+    }
+    if (!win.bot) { try { await admin.from('chat').insert({ ch: 'w', user_id: null, name: '★', tag: '', msg: (win.n + ' נשאר אחרון במעגל האחרון וזכה בתיבה עתיקה').slice(0, 160) }); } catch (_e) { /* not worth failing for */ } }
+  }
+  function brStart(b) {
+    const hs = [...b.joined.entries()].filter(([uid]) => socks.has(uid) && !inDuel.has(uid)).slice(0, G.BR.MAX);
+    if (!hs.length) { if (br === b) br = null; return; }
+    const ps = hs.map(([, p]) => p), all = ps.concat(G.brBots(ps, Math.max(0, G.BR.FILL - ps.length), rnd));
+    b.phase = 'fight'; b.B = G.brNew(all, rnd); b.joined = new Map(hs); b.idx = new Map(hs.map(([uid], i) => [uid, i]));
+    hs.forEach(([uid], i) => send(uid, { t: 'brStart', me: i, f: all.map((p) => Object.assign(pub(p), { bot: p.bot ? 1 : 0 })), T: b.B.t, xz: b.B.f.map((f) => [f.x, f.z]) }));
+    b.last = clock();
+    b.timer = setInterval(() => { const now = clock(), dt = Math.max(0, Math.min(.5, (now - b.last) / 1000)); b.last = now; const ev = G.brStep(b.B, dt, rnd), m = brState(b.B); if (ev.length) m.ev = ev; brAll(m); if (b.B.over) brFinish(b); }, 200); b.timer.unref();
+  }
+  const brClock = setInterval(() => {
+    const w = G.brWindow(clock());
+    if (!br && w && w.phase === 'sign') br = { key: w.key, phase: 'sign', joined: new Map(), end: w.signEnd, idx: new Map() };
+    else if (br && br.phase === 'sign' && !(w && w.phase === 'sign' && w.key === br.key)) brStart(br);
+  }, 1000); brClock.unref();
+  async function brMsg(ws, m) {
+    const uid = ws.uid, b = br;
+    if (m.t === 'brJoin') {
+      if (!b || b.phase !== 'sign' || inDuel.has(uid)) return send(uid, { t: 'brNo' });
+      const p = await snap(uid); if (!p || br !== b || b.phase !== 'sign') return send(uid, { t: 'brNo' });
+      b.joined.set(uid, p); return brAll({ t: 'brLobby', n: b.joined.size, left: Math.max(0, b.end - clock()) });
+    }
+    if (!b || !b.joined.has(uid)) return;
+    if (m.t === 'brLeave') {
+      if (b.phase === 'sign') { b.joined.delete(uid); return brAll({ t: 'brLobby', n: b.joined.size, left: Math.max(0, b.end - clock()) }); }
+      const i = b.idx.get(uid); if (i != null && b.B.f[i].alive) { G.brKill(b.B, i, -1); if (b.B.over) brFinish(b); } return;
+    }
+    if (b.phase !== 'fight') return; const i = b.idx.get(uid), B = b.B, f = B.f[i]; if (!f || !f.alive || B.t < 0) return;
+    if (m.t === 'brPos') {
+      if (f.stun > B.t) return; const now = clock(), el = Math.min(1, (now - (ws.brT || now)) / 1000); ws.brT = now;
+      const lim = 240 * el + (f.inv > B.t ? 190 : 24), nx = Number(m.x) || 0, nz = Math.max(0, Math.min(1, Number(m.z) || 0));
+      f.x = Math.max(10, Math.min(G.BR.W - 10, f.x + Math.max(-lim, Math.min(lim, nx - f.x)))); f.z += Math.max(-1.4 * el - .05, Math.min(1.4 * el + .05, nz - f.z)); f.face = Number(m.f) < 0 ? -1 : 1; return;
+    }
+    if (m.t === 'brAct') {
+      const o = G.brAct(B, i, String(m.k), rnd); if (!o) return;
+      const out = brState(B); out.ev = [o]; brAll(out); send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t });
+      if (B.over) brFinish(b);
+    }
+  }
+
   async function onMsg(ws, m) {
     const uid = ws.uid, d = inDuel.get(uid), side = d ? d.u.indexOf(uid) : -1;
+    if (typeof m.t === 'string' && m.t.slice(0, 2) === 'br') return brMsg(ws, m);
     if (m.t === 'challenge') {
       const to = keys.get(String(m.k)); if (!to || to === uid || !socks.has(to)) return send(uid, { t: 'gone', k: String(m.k) });
       if (inDuel.has(uid) || inDuel.has(to)) return send(uid, { t: 'busy' });
@@ -134,9 +188,10 @@ export function attachLive(server, { admin, auth, G, rnd, clock = Date.now, tick
       });
       ws.on('close', () => { if (!ws.uid || socks.get(ws.uid) !== ws) return; socks.delete(ws.uid); keys.delete(ws.key);
         { const x = watching.get(ws.uid); if (x) { x.watch.delete(ws.uid); watching.delete(ws.uid); } }
+        if (br && br.joined.has(ws.uid)) { const b = br; if (b.phase === 'sign') b.joined.delete(ws.uid); else { const i = b.idx.get(ws.uid); if (i != null && b.B.f[i].alive) { G.brKill(b.B, i, -1); if (b.B.over) brFinish(b); } } }
         const d = inDuel.get(ws.uid); if (d && !d.done) finish(d, 1 - d.u.indexOf(ws.uid), 'left'); });
       ws.on('error', () => {});
     });
   });
-  return { socks, duels, close: () => { for (const d of duels.values()) clearInterval(d.timer); wss.close(); } };
+  return { socks, duels, brNow: () => br, brOpen: (ms) => (br = { key: 'manual', phase: 'sign', joined: new Map(), end: clock() + ms, idx: new Map() }), brBegin: () => { if (br && br.phase === 'sign') brStart(br); }, close: () => { for (const d of duels.values()) clearInterval(d.timer); clearInterval(brClock); if (br && br.timer) clearInterval(br.timer); wss.close(); } };
 }

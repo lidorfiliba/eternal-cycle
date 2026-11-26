@@ -401,3 +401,28 @@ test('friends, blocking, reports and private messages',async()=>{
     await db.query("update accounts set muted_until=now()+interval '1 hour' where user_id=$1",[a.uid]);await new Promise(r=>setTimeout(r,950));a.send({t:'whisper',k:b.key,m:'עוד'});await a.wait('muted');
   }finally{for(const u of [a,b])if(u.ws)u.ws.close();srv.live.close();srv.close();}
 });
+
+test('the last circle over the socket: only connected players who joined fight, the server decides, prizes are written',async()=>{
+  const {makeServer}=await import('../server/index.mjs');const {WebSocket}=await import('ws');const {createHash}=await import('node:crypto');const {db}=await world();
+  const srv=makeServer(fakeAdmin(db),'test-secret');await new Promise(r=>srv.listen(0,r));const port=srv.address().port,base='http://127.0.0.1:'+port;
+  const post=async(body,tok)=>(await (await fetch(base,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},tok?{'x-ec-token':tok}:{}),body:JSON.stringify(body)})).json());
+  const mkUser=async(n,cls)=>{const r=await post({kind:'register',args:{user:n,pass:'correct-horse-9',q:0,a:'rex'}});await post({kind:'create',args:{name:n,cls:cls}},r.token);await post({kind:'travel',args:{z:0}},r.token);
+    const uid=(await db.query('select user_id from users where username=$1',[n])).rows[0].user_id;return {tok:r.token,uid,key:createHash('md5').update(uid+'peer').digest('hex').slice(0,10)};};
+  const open=async u=>{const ws=new WebSocket('ws://127.0.0.1:'+port+'/ws');u.q=[];u.wait=t=>new Promise((res,rej)=>{const go=()=>{const i=u.q.findIndex(m=>m.t===t);if(i>=0)return res(u.q.splice(i,1)[0]);setTimeout(go,10);};go();setTimeout(()=>rej(new Error('no '+t+' message')),4000);});
+    ws.on('message',d=>u.q.push(JSON.parse(String(d))));await new Promise(r=>ws.on('open',r));ws.send(JSON.stringify({t:'hello',token:u.tok}));await u.wait('hi');u.ws=ws;u.send=m=>ws.send(JSON.stringify(m));};
+  const a=await mkUser('gimel','blade'),b=await mkUser('dalet','storm'),c=await mkUser('hey','hunter');
+  try{
+    await open(a);await open(b);await open(c);const st=async u=>(await db.query('select state from accounts where user_id=$1',[u.uid])).rows[0].state;
+    a.send({t:'brJoin'});assert.equal((await a.wait('brNo')).t,'brNo','no sign-up is open');
+    srv.live.brOpen(60000);a.send({t:'brJoin'});assert.equal((await a.wait('brLobby')).n,1);b.send({t:'brJoin'});assert.equal((await b.wait('brLobby')).n,2);
+    srv.live.brBegin();const sa=await a.wait('brStart'),sb=await b.wait('brStart');assert.equal(sa.f.length,6,'empty places are filled');assert.equal(sa.me,0);assert.equal(sb.me,1);assert.equal(sa.f[1].id,undefined);assert.equal(sa.f.filter(f=>f.bot).length,4);
+    c.send({t:'brJoin'});assert.equal((await c.wait('brNo')).t,'brNo','too late to join');
+    const br=srv.live.brNow(),B=br.B;a.send({t:'brAct',k:'atk'});await new Promise(r=>setTimeout(r,120));assert.equal(B.f[1].hp,1,'no hits during the countdown');
+    B.t=1;for(let i=2;i<6;i++){B.f[i].x=880;B.f[i].z=0;B.f[i].think=99;}B.f[0].x=300;B.f[0].z=.5;B.f[1].x=330;B.f[1].z=.5;
+    a.send({t:'brAct',k:'atk'});let hit=null;for(let i=0;i<40&&!hit;i++){const m=await a.wait('brS');if(m.ev&&m.ev.some(e=>e.by===0&&e.to===1))hit=m;}assert.ok(hit&&B.f[1].hp<1,'the server applied the hit');
+    a.send({t:'brPos',x:9999,z:.5,f:1});await new Promise(r=>setTimeout(r,120));assert.ok(B.f[0].x<600,'a player cannot jump across the arena: '+B.f[0].x);
+    const g=(await import('../web/core.js'));for(let i=2;i<6;i++)g.brKill(B,i,-1);B.f[1].hp=.0001;B.f[0].x=300;B.f[1].x=330;B.f[0].at.atk=0;a.send({t:'brAct',k:'atk'});
+    const ea=await a.wait('brEnd'),eb=await b.wait('brEnd');assert.equal(ea.place,0);assert.equal(eb.place,1);assert.ok(ea.rt.includes('תיבה עתיקה'),ea.rt);
+    const A1=await st(a),B1=await st(b);assert.equal(A1.coins,40);assert.equal(A1.brW,1);assert.equal(B1.coins,20);assert.equal(B1.sboxes,1);assert.equal((await st(c)).coins,0,'who did not join gets nothing');assert.equal(srv.live.brNow(),null);
+  }finally{for(const u of [a,b,c])if(u.ws)u.ws.close();srv.live.close();srv.close();}
+});
