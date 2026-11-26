@@ -1,0 +1,62 @@
+name: deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+  backend:
+    needs: test
+    if: ${{ vars.SUPABASE_PROJECT_REF != '' }}
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase link --project-ref "$REF"
+      - run: supabase db push
+      - run: supabase functions deploy act --project-ref "$REF"
+  site:
+    needs: [test, backend]
+    if: ${{ always() && needs.test.result == 'success' && (needs.backend.result == 'success' || needs.backend.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write public config
+        env:
+          REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          ANON: ${{ vars.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -n "$REF" ] && [ -n "$ANON" ]; then
+            printf 'window.EC_CONFIG={url:"https://%s.supabase.co",anon:"%s"};\n' "$REF" "$ANON" > web/config.js
+          fi
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: deploy
+        uses: actions/deploy-pages@v4

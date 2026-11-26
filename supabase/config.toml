@@ -1,0 +1,4 @@
+project_id = "eternal-cycle"
+
+[functions.act]
+verify_jwt = true
