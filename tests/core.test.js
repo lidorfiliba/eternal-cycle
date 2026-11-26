@@ -202,3 +202,13 @@ test('saved games from the 8 + 4 map list are renumbered once',()=>{
   assert.deepEqual(A.zk,{'6':50,'26':7});assert.deepEqual(A.bossM,{'12':12});assert.equal(A.inv[0].z,6);assert.equal(A.inv[1].z,26);assert.equal(s.eq.w.z,12);assert.equal(s.eq.w.t,5,'tiers are untouched');
   const again=G.adopt(JSON.parse(JSON.stringify(A)));assert.equal(again.open,12,'only once');assert.equal(again.chars[0].zone,12);
 });
+
+test('the season pass is long: play feeds it only up to a daily amount, tasks come on top, saved levels survive',()=>{
+  const st={now:Date.parse('2026-11-26T12:20:00Z')};G.setEnv(()=>.5,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'a',cls:'blade'});const s=A.chars[0];s.lvl=200;s.stats.str=9000;s.stats.vit=5000;s.autoPts=false;
+  G.apply(A,'travel',{z:0});for(let i=0;i<600;i++){st.now+=20000;G.apply(A,'tick',{z:0,kills:40});}
+  assert.ok(A.kills>10000,'kills '+A.kills);assert.equal(A.pass.xp,G.PASS_DAY,'a whole day of grinding stops at the daily amount');
+  A.daily.kills=5000;assert.ok(G.apply(A,'claimTask',{k:'kills'}).ok);assert.equal(A.pass.xp,G.PASS_DAY+60,'tasks are on top of it');
+  st.now+=86400000;G.apply(A,'tick',{z:0,kills:0});st.now+=20000;G.apply(A,'tick',{z:0,kills:40});st.now+=60000;for(let i=0;i<8;i++){st.now+=20000;G.apply(A,'tick',{z:0,kills:40});}assert.ok(A.pass.xp>G.PASS_DAY+60,'the next day it moves again');
+  assert.ok(G.PASS_MAX*G.PASS_STEP/(G.PASS_DAY+260)>20,'even a perfect player needs more than twenty days');assert.ok(G.passReward(60).wing&&G.passReward(40).wing&&G.passReward(20).wing);
+  const old=JSON.parse(JSON.stringify(A));old.zv=1;old.pass.xp=1000;const B=G.adopt(old);assert.equal(B.pass.xp,2000);assert.equal(B.zv,2);
+});

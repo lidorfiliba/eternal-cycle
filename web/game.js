@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126152037';
-const {tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126152802';
+const {PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -524,6 +524,7 @@ function afterXp(ups){
   if(!(ups>0))return;snd('lvl');statsDirty=true;panelDirty=true;const h=SC.hero;
   h.luAt=SC.t;SC.fx.push({k:'lvl',x:h.x,y:gy(),life:.9,c:'#f2c14e'});SC.fx.push({k:'rune',x:h.x,y:gy()-2,r:64,life:1,d:1,c:'#ffd75e'});SC.fx.push({k:'pillar',x:h.x,y:gy(),life:.7,d:.7,c:'#ffd75e'});addNum(h.x,gy()-120,'רמה '+S.lvl,'#f2c14e',true);
   for(let i=0;i<6;i++)if(S.lvl>=SKLV[i]&&S.lvl-ups<SKLV[i]&&i>0)toast('כישור חדש: '+CLS[S.cls].sk[i]);
+  if(splashN(S.lvl)>splashN(S.lvl-ups))toast('המכה הרגילה שלך פוגעת עכשיו גם ב-'+splashN(S.lvl)+' מפלצות סמוכות');
   if(S.lvl>=CAP)toast('רמה 400. אפשר לבצע ריסט');
 }
 let bossPending=false;
@@ -571,6 +572,18 @@ function strike(m,mult,col,big){
   if(m.hp<=0&&m.die<=0){m.die=.45;m.dead=true;onKill(m,SC.zi);}
 }
 const alive=()=>SC.mons.filter(m=>m.die<=0&&m.resp<=0);
+// Every ordinary hit also reaches monsters near the target: the blade cleaves, lightning chains, the spear goes through.
+// More of them with level (one from 30, two from 120, three from 250, four from 350), each for 60% of the hit.
+const splashN=l=>l>=350?4:l>=250?3:l>=120?2:l>=30?1:0;
+function splash(m,col){
+  const n=splashN(S.lvl);if(!n||m.boss)return;const h=SC.hero,cls=S.cls,R=cls==='blade'?80:cls==='storm'?130:170;
+  const near=alive().filter(o=>o!==m&&!o.boss&&(cls==='hunter'?(o.x-m.x)*h.face>0&&Math.abs(o.x-m.x)<R:Math.abs(o.x-m.x)<R)).sort((a,b)=>Math.abs(a.x-m.x)-Math.abs(b.x-m.x)).slice(0,n);
+  let px=m.x;for(const o of near){
+    if(cls==='storm')SC.fx.push({k:'bolt',pts:[[px,m.y-28],[(px+o.x)/2+(Math.random()-.5)*14,m.y-40-Math.random()*14],[o.x,o.y-26]],life:.2,c:col});
+    else if(cls==='hunter')SC.fx.push({k:'line',x1:px,y1:m.y-26,x2:o.x,y2:o.y-26,life:.14,c:col,w:2});
+    else SC.fx.push({k:'slash',x:o.x-6*h.face,y:o.y-28,rot:Math.random()*1.2-.6+(h.face<0?3.14:0),life:.2,c:col});
+    SC.fx.push({k:'flash',x:o.x,y:o.y-26,r:16,life:.16,d:.16,c:col});px=o.x;strike(o,.6,col,false);}
+}
 function cast(i,auto){
   const h=SC.hero;if(SC.mode!=='farm'||SC.zi<0||h.dead>0||h.climb||S.lvl<SKLV[i]||h.cds[i]>0)return false;
   const col=gearColor(lookOf(S).w,SC.t,CLS[S.cls].c),melee=S.cls==='blade';
@@ -663,7 +676,7 @@ function updateWorld(dt){
     if(Math.abs(dx)>r){h.x+=Math.sign(dx)*spd*dt;h.mv=true;}
     else{
       if(S.auto&&h.autoSk<=0&&h.cds[0]<=0&&S.lvl>=SKLV[0]&&cast(0,true))h.autoSk=8;
-      if(h.atkT<=0){h.atkT=1/(C.aspd*(h.buff>0?2:1));h.anim=1;h.lastAtk=SC.t;const col=gearColor(lookOf(S).w,SC.t,CLS[S.cls].c);attackFx(S.cls,h.x,gy(),h.face,[m],false,col);strike(m,1,col,false);if(m.dead)h.atkT=Math.max(h.atkT,.3);}
+      if(h.atkT<=0){h.atkT=1/(C.aspd*(h.buff>0?2:1));h.anim=1;h.lastAtk=SC.t;const col=gearColor(lookOf(S).w,SC.t,CLS[S.cls].c);attackFx(S.cls,h.x,gy(),h.face,[m],false,col);strike(m,1,col,false);splash(m,col);if(m.dead)h.atkT=Math.max(h.atkT,.3);}
     }
   }else if(h.tx!=null){const dx=h.tx-h.x;h.face=dx>=0?1:-1;
     if(Math.abs(dx)<6){h.tx=null;if(h.goal){const g=h.goal;h.goal=null;arrive(g);}}else{h.x+=Math.sign(dx)*Math.min(Math.abs(dx),spd*dt);h.mv=true;}}
@@ -906,14 +919,15 @@ const PICON={
   wing:'<svg viewBox="0 0 24 24"><path d="M12 19C9 12 5 9 1 8c1 4 3 6 5 7-2 0-3 0-4-1 1 3 4 5 10 5zM12 19c3-7 7-10 11-11-1 4-3 6-5 7 2 0 3 0 4-1-1 3-4 5-10 5z" fill="#ffd75e" stroke="#fff6cf" stroke-width="1"/></svg>'};
 let passSeen=-1,passScroll=null;
 function renderPass(){
-  const lv=passLevel(S),d=new Date(),end=new Date(d.getFullYear(),d.getMonth()+1,1),days=Math.ceil((end-d)/864e5),xp=lv>=30?100:A.pass.xp%100,wait=lv-A.pass.claimed;
-  let nextBig=0;for(const m of [10,20,30])if(m>A.pass.claimed){nextBig=m;break;}
-  let h=loginCard()+renderEvents()+'<h2>פס העונה</h2><div class="passHead"><div class="plv"><small>רמה</small><b>'+lv+'</b><small>מתוך 30</small></div><div class="pinfo">'+
-    '<div class="kv"><span>'+(lv>=30?'הגעת לרמה המרבית':'ניסיון לרמה '+(lv+1))+'</span><b class="num">'+L(lv>=30?'100%':xp+'/100')+'</b></div>'+
+  const lv=passLevel(S),d=new Date(),end=new Date(d.getFullYear(),d.getMonth()+(d.getMonth()%2?1:2),1),days=Math.ceil((end-d)/864e5),xp=lv>=PASS_MAX?100:Math.floor(A.pass.xp%PASS_STEP/PASS_STEP*100),pd=Math.min(PASS_DAY,A.daily.pxp||0),wait=lv-A.pass.claimed;
+  let nextBig=0;for(const m of [20,40,60])if(m>A.pass.claimed){nextBig=m;break;}
+  let h=loginCard()+renderEvents()+'<h2>פס העונה</h2><div class="passHead"><div class="plv"><small>רמה</small><b>'+lv+'</b><small>מתוך '+PASS_MAX+'</small></div><div class="pinfo">'+
+    '<div class="kv"><span>'+(lv>=PASS_MAX?'הגעת לרמה המרבית':'ניסיון לרמה '+(lv+1))+'</span><b class="num">'+L(lv>=PASS_MAX?'100%':(A.pass.xp%PASS_STEP)+'/'+PASS_STEP)+'</b></div>'+
     '<div class="bar gold big"><i style="width:'+xp+'%"></i></div>'+
-    '<small>'+(nextBig?'הפרס הגדול הבא: <b>'+passReward(nextBig).t+'</b> ברמה '+nextBig+(nextBig>lv?', עוד '+(nextBig-lv)+' רמות':', מחכה לאיסוף')+' · ':'')+'נשארו '+L(days)+' ימים לעונה</small></div></div>';
+    '<small>'+(nextBig?'הפרס הגדול הבא: <b>'+passReward(nextBig).t+'</b> ברמה '+nextBig+(nextBig>lv?', עוד '+(nextBig-lv)+' רמות':', מחכה לאיסוף')+' · ':'')+'נשארו '+L(days)+' ימים לעונה</small></div></div>'+
+    '<div class="card" style="display:block"><div class="kv"><span>ניסיון לפס ממשחק היום</span><b class="num"'+(pd>=PASS_DAY?' style="color:var(--good)"':'')+'>'+L(pd+'/'+PASS_DAY)+'</b></div><div class="bar gold"><i style="width:'+Math.round(pd/PASS_DAY*100)+'%"></i></div><p class="hint">העונה נמשכת חודשיים. חיסולים, ריסטים וניצחונות בזירה מקדמים את הפס עד '+L(PASS_DAY)+' ביום, והמשימות היומיות מתווספות מעל זה. מי שמשחק כל יום מסיים בנחת.</p></div>';
   h+='<div class="track" id="passTrack">';
-  for(let i=1;i<=30;i++){const rw=passReward(i),got=i<=A.pass.claimed,open=!got&&i<=lv,cur=i===lv+1,big=!!rw.wing,ic=rw.wing?'wing':rw.sboxes?'sboxes':rw.gems?'gems':'coins';
+  for(let i=1;i<=PASS_MAX;i++){const rw=passReward(i),got=i<=A.pass.claimed,open=!got&&i<=lv,cur=i===lv+1,big=!!rw.wing,ic=rw.wing?'wing':rw.sboxes?'sboxes':rw.gems?'gems':'coins';
     h+='<div class="tier'+(got?' got':open?' open':cur?' cur':'')+(big?' big':'')+'"><b>'+i+'</b><span class="pic">'+PICON[ic]+'</span><em>'+rw.t+'</em><i>'+(got?'נאסף':open?'מוכן':cur?L(xp+'%'):'נעול')+'</i></div>';}
   h+='</div>';
   h+='<button class="btn pri'+(wait>0?' glow':'')+'" data-act="claimPass"'+(wait>0?'':' disabled')+'>'+(wait>1?'אסוף '+wait+' פרסים':wait===1?'אסוף פרס רמה '+(A.pass.claimed+1):'אין פרס לאיסוף כרגע')+'</button>';
@@ -1178,7 +1192,7 @@ document.addEventListener('click',async e=>{
         toast(c==='ok'?'השדרוג הצליח. דרגה '+r.p:c==='saved'?'נכשל. קמע ההגנה שמר על הדרגה':c==='down'?'נכשל. הדרגה ירדה ל-'+r.p:c==='fail'?'השדרוג נכשל':'חסרים חומרים',c==='ok'?r.r:null);touch();C=calc(S,auras);openSheet(id);}}
     else if(a==='openBox'){r=await act('openBox',{k:b.dataset.k});if(r.ok)boxFx(r.box);}
     else if(a==='buy'){r=await act('buy',{shop:b.dataset.s,k:b.dataset.k});if(r.ok){if(r.box)boxFx(r.box);else{snd('coin');toast('נקנה: '+r.bought);}}}
-    else if(a==='claimPass'){for(let n=0;n<30&&passLevel(S)>A.pass.claimed;n++){r=await act('claimPass',{});if(!r.ok)break;snd('rare');toast('פרס עונה: '+r.t);}passScroll=null;}
+    else if(a==='claimPass'){for(let n=0;n<PASS_MAX&&passLevel(S)>A.pass.claimed;n++){r=await act('claimPass',{});if(!r.ok)break;snd('rare');toast('פרס עונה: '+r.t);}passScroll=null;}
     else if(a==='claimEvent'){r=await act('claimEvent',{id:b.dataset.k});if(r.ok){snd('rare');toast('פרס האירוע: '+r.rt);if(r.levels)afterXp(r.levels);}}
     else if(a==='answer'){r=await act('answer',{a:+b.dataset.i});if(r.ok){snd(r.correct?'ok':'fail');toast(r.correct?'תשובה נכונה. אסוף את הפרס':'תשובה שגויה');}}
     else if(a==='exAdd'){const id=+b.dataset.id;r=await act('exAdd',{id:id});if(r.ok){snd('rare');toast(r.full?'הפריט הגיע לאקסלנט מלא':'נוספה אופציה: '+AFF[r.opt[0]][0]+' '+r.opt[1]+'%',4);openSheet(id);}}

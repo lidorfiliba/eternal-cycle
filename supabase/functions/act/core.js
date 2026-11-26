@@ -80,14 +80,19 @@ const need=L=>Math.round((4+0.07*L)/1.5*10*Math.pow(1+L/50,1.6)*(1+1.25*Math.min
 const pois=x=>{let n=Math.floor(x);if(_rnd()<x-n)n++;return n;};
 function tzParts(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jerusalem',year:'numeric',month:'numeric',day:'numeric'}).formatToParts(new Date(_now()));const o={};for(const x of p)o[x.type]=x.value;return o;}
 const dayKey=()=>{const o=tzParts();return o.year+'-'+(+o.month)+'-'+(+o.day);};
-const seasonKey=()=>{const o=tzParts();return o.year+'-'+(+o.month);};
+// A season lasts two months (Jan-Feb, Mar-Apr, ...); its key is the first of the two.
+const seasonKey=()=>{const o=tzParts(),m=+o.month;return o.year+'-'+(m%2?m:m-1);};
+// The pass is long, not hard: 60 levels, and playing (kills, resets, arena wins) feeds it only up to a daily
+// amount, so the fastest finish takes weeks. Daily tasks are on top of that amount.
+const PASS_MAX=60,PASS_STEP=200,PASS_DAY=250;
+function passAdd(s,n){const g=Math.max(0,Math.min(n,PASS_DAY-(s.daily.pxp||0)));s.daily.pxp=(s.daily.pxp||0)+g;s.pass.xp+=g;}
 
 const AFK=.7, SKLV=[1,20,60,110,180,260], SKCD=[4,12,30,10,25,45];
 const SHARED=['gold','gems','cred','coins','boxes','sboxes','charms','bless','bonusPts','boost','inv','nid','kills','killAcc','pass','day','daily','rating','tickets','autoEq','autoSell','open','zk','login','jewels','prem','vip','shards','keys'];
 function newAccount(){
   return {v:2,gold:0,gems:3,cred:0,coins:0,boxes:1,sboxes:0,charms:0,bless:0,bonusPts:0,boost:0,inv:[],nid:1,kills:0,killAcc:0,
     pass:{key:seasonKey(),xp:0,claimed:0},day:dayKey(),daily:{kills:0,resets:0,wins:0,ups:0,done:{}},rating:1000,tickets:5,
-    autoEq:true,autoSell:1,zv:1,open:0,zk:{},bossM:{},q:0,casts:0,wins:0,boss7:0,maxLvl:1,chars:[],cur:0,last:_now()};
+    autoEq:true,autoSell:1,zv:2,open:0,zk:{},bossM:{},q:0,casts:0,wins:0,boss7:0,maxLvl:1,chars:[],cur:0,last:_now()};
 }
 function newChar(name,cls){
   return {name:name,cls:cls,lvl:1,xp:0,resets:0,pts:0,stats:{str:15,agi:15,vit:15,ene:15},zone:-1,floor:0,autoPts:true,auto:true,eq:{w:null,h:null,a:null,p:null,l:null,b:null,g:null},last:_now()};
@@ -228,7 +233,7 @@ function rollLoot(s,zi,kills,c,rep){
     for(let i=0;i<nw;i++){const it=makeItem(s,'g',z.wing,rollRar([50,30,14,5,1]),zi);if(_rnd()<exc*2)makeExcellent(it);gainItem(s,it,rep);(rep.notable=rep.notable||[]).push(it);}}
   {const ns=pois(kills*.012);if(ns){s.shards=(s.shards||0)+ns;rep.shards=(rep.shards||0)+ns;}}
   s.kills+=kills;s.daily.kills+=kills;s.killAcc+=kills;s.zk[zi]=(s.zk[zi]||0)+kills;
-  if(s.killAcc>=100){const n=Math.floor(s.killAcc/100);s.killAcc-=n*100;s.pass.xp+=n*5;}
+  if(s.killAcc>=100){const n=Math.floor(s.killAcc/100);s.killAcc-=n*100;passAdd(s,n*5);}
 }
 function offline(s,secs){
   ensureDay(s);
@@ -254,7 +259,7 @@ function resetGain(s){return 10+2*Math.min(s.resets+1,10);}
 function doReset(s){
   if(!canReset(s))return false;const g=resetGain(s);
   // Stats and unspent points stay: every run through the levels adds five points a level on top of what was there.
-  s.resets++;s.lvl=1;s.xp=0;s.cred+=g;s.coins+=5;s.pass.xp+=150;s.daily.resets++;s.zone=-1;s.floor=0;
+  s.resets++;s.lvl=1;s.xp=0;s.cred+=g;s.coins+=5;passAdd(s,150);s.daily.resets++;s.zone=-1;s.floor=0;
   if(s.autoPts)autoAlloc(s);return true;
 }
 function upCost(it){return {gems:1+Math.floor(it.p/3),gold:500*(it.s==='g'?it.t*2:it.t)*(it.p+1)};}
@@ -276,14 +281,15 @@ function openBox(s,kind){
   const g=Math.round(ZONES[zi].gold*400*(0.8+_rnd()*.6));s.gold+=g;return {txt:g+' זהב'};
 }
 function passReward(lv){
-  if(lv===30)return {t:'כנפי העונה',wing:[4,4,true]};
-  if(lv===20)return {t:'כנפי להבה אגדיות',wing:[3,3]};
-  if(lv===10)return {t:'כנפי סער נדירות',wing:[2,2]};
+  if(lv===60)return {t:'כנפי העונה',wing:[4,4,true]};
+  if(lv===40)return {t:'כנפי להבה אגדיות',wing:[3,3]};
+  if(lv===20)return {t:'כנפי סער נדירות',wing:[2,2]};
+  if(lv%10===0)return {t:'2 תיבות עונה',sboxes:2};
   if(lv%5===0)return {t:'תיבת עונה',sboxes:1};
-  if(lv%2===0)return {t:(3+Math.floor(lv/5))+' אבני נשמה',gems:3+Math.floor(lv/5)};
+  if(lv%2===0)return {t:(3+Math.floor(lv/10))+' אבני נשמה',gems:3+Math.floor(lv/10)};
   return {t:'15 מטבעות עונה',coins:15};
 }
-const passLevel=s=>Math.min(30,Math.floor(s.pass.xp/100));
+const passLevel=s=>Math.min(PASS_MAX,Math.floor(s.pass.xp/PASS_STEP));
 const TASKS=[{k:'kills',n:1500,t:'חסל 1,500 מפלצות',xp:60},{k:'resets',n:1,t:'בצע ריסט',xp:100},{k:'wins',n:2,t:'נצח 2 קרבות זירה',xp:60},{k:'ups',n:3,t:'נסה 3 שדרוגים',xp:40}];
 function fighter(s){const c=calc(s);const g=it=>it?[it.t,it.r,it.p,it.season?1:0,it.ex?(isFull(it)?2:1):0]:null;let mn=99,sum=0;for(const k in ARM){const p=s.eq[k]?s.eq[k].p|0:0;sum+=p;if(p<mn)mn=p;}
   return {n:s.name,c:s.cls,l:s.lvl,r:s.resets,p:c.power,d:Math.round(c.dmg),a:Math.round(c.aspd*100)/100,h:Math.round(c.hp),f:Math.round(c.def),cr:Math.round(c.crit*100)/100,cd:Math.round(c.cdmg*100)/100,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g),rt:s.rating,sp:[mn===99?0:mn,Math.round(sum/5)]};} // sp: lowest and average armor upgrade, for the glow others see
@@ -433,12 +439,13 @@ function cleanItem(o){
 function adopt(o){
   if(!o||o.v!==2||!Array.isArray(o.chars))return null;
   o.bossM=o.bossM||{};o.zk=o.zk||{};o.sboxes=o.sboxes||0;o.inv=o.inv||[];
+  if(o.zv===1&&o.pass){o.pass.xp=(o.pass.xp|0)*2;o.zv=2;} // a pass level used to cost half as much: keep the level reached
   if(!o.zv){ // saved before the map list grew: old map i is now map 3i on the main road, old reset map i is 24+2(i-8)
     const mz=z=>z<0||z==null?z:z<8?z*3:z<12?24+(z-8)*2:z,mk=m=>{const n={};for(const k in m)n[mz(+k)]=m[k];return n;};
     if(o.chars.length||o.inv.length||o.open){o.open=Math.min(23,(o.open|0)*3);o.zk=mk(o.zk);o.bossM=mk(o.bossM);o.boss7=0;o.bossAt=null;
       for(const it of o.inv)if(it&&it.z>=0)it.z=mz(it.z);
       for(const ch of o.chars){ch.zone=mz(ch.zone|0);ch.evIn=null;for(const k in ch.eq||{})if(ch.eq[k]&&ch.eq[k].z>=0)ch.eq[k].z=mz(ch.eq[k].z);}}
-    o.zv=1;}
+    if(o.pass)o.pass.xp=(o.pass.xp|0)*2;o.zv=2;}
   o.chars.forEach(c=>{bind(o,c);c.floor=c.floor|0;for(const k of SLOTS)if(!(k in c.eq))c.eq[k]=null;});
   o.cur=o.chars.length?clamp(o.cur|0,0,o.chars.length-1):0;return o;
 }
@@ -576,7 +583,7 @@ function apply(A,kind,args,ctx){
       const o=A.opps&&A.opps[int(args.i,0,3)];if(!o)return fail('רענן את רשימת היריבים');
       const free=evWindows(now,0).some(w=>w.e.id==='royale');if(!free&&A.tickets<1)return fail('אין כרטיסים');
       if(!free)A.tickets--;const sim=simDuel(fighter(S),o),win=sim.win===0;let gain=0;
-      if(win){gain=clamp(Math.round(24-(A.rating-o.rt)/25),8,40);A.rating+=gain;A.coins+=8;A.pass.xp+=15;A.daily.wins++;A.wins=(A.wins||0)+1;evAdd(A,now,'w',1);}
+      if(win){gain=clamp(Math.round(24-(A.rating-o.rt)/25),8,40);A.rating+=gain;A.coins+=8;passAdd(A,15);A.daily.wins++;A.wins=(A.wins||0)+1;evAdd(A,now,'w',1);}
       else{A.rating=Math.max(0,A.rating-12);A.coins+=2;}
       A.opps=null;r.duel={ev:sim.ev,win:sim.win,ma:sim.ma,mb:sim.mb,opp:o,gain:gain};break;}
     case 'answer':{
@@ -595,4 +602,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
