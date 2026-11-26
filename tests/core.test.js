@@ -132,3 +132,19 @@ test('resets: stats are kept, maps do not change with resets, a stat fills at it
   assert.equal(G.apply(A,'pt',{k:'str',n:5}).ok,false,'a full stat takes no more');
   s.autoPts=true;G.apply(A,'autoPts',{});G.apply(A,'autoPts',{});s.pts=40;G.autoAlloc(s);assert.equal(s.stats.str,G.STAT_MAX);assert.equal(s.pts,0,'automatic allocation spills into the other stats');
 });
+
+test('excellent items: extra options up to a full set, perfection stones, kept through cleaning',()=>{
+  const {A}=fresh(),s=A.chars[0];let full=0,seen=new Set();
+  for(let i=0;i<4000;i++){const it=G.makeExcellent(G.makeItem(s,'w',5,1,0));assert.ok(it.ex&&it.af.length>=2&&it.af.length<=7);assert.equal(new Set(it.af.map(f=>f[0])).size,it.af.length,'no option twice');seen.add(it.af.length);if(G.isFull(it))full++;}
+  assert.ok(full>0&&full<200,'full is rare: '+full);assert.ok(seen.has(2)&&seen.has(4));
+  const it=G.makeItem(s,'a',6,2,0);it.ex=1;A.inv.push(it);const n0=it.af.length;
+  assert.equal(G.apply(A,'exAdd',{id:it.id}).ok,false,'needs a stone');A.jewels=10;
+  const r=G.apply(A,'exAdd',{id:it.id});assert.ok(r.ok);assert.equal(it.af.length,n0+1);assert.equal(A.jewels,9);
+  while(!G.isFull(it))assert.ok(G.apply(A,'exAdd',{id:it.id}).ok);assert.equal(it.af.length,6);assert.equal(G.apply(A,'exAdd',{id:it.id}).ok,false,'nothing left to add');
+  assert.match(G.itemName(it,'blade'),/^אקסלנט מלא/);
+  const plain=G.makeItem(s,'h',3,1,0);A.inv.push(plain);assert.equal(G.apply(A,'exAdd',{id:plain.id}).ok,false,'only excellent items');
+  const c=G.cleanItem(JSON.parse(JSON.stringify(it)));assert.equal(c.ex,1);assert.equal(c.af.length,6);
+  const forged=G.cleanItem({s:'h',t:3,r:1,af:[['hp',5],['def',5],['xp',5],['crit',2],['drop',2],['cdmg',9]]});assert.equal(forged.af.length,4,'without the mark the usual limit holds');
+  s.autoSell=4;const ex=G.makeExcellent(G.makeItem(s,'b',2,0,0));assert.equal(G.stash(s,ex,{}),true,'never sold automatically');
+  assert.ok(G.fighter(Object.assign(s,{eq:Object.assign(s.eq,{w:G.makeExcellent(G.makeItem(s,'w',2,0,0))})})).w[4]>=1);
+});
