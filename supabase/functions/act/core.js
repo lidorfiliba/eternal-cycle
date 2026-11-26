@@ -246,8 +246,8 @@ function passReward(lv){
 }
 const passLevel=s=>Math.min(30,Math.floor(s.pass.xp/100));
 const TASKS=[{k:'kills',n:1500,t:'חסל 1,500 מפלצות',xp:60},{k:'resets',n:1,t:'בצע ריסט',xp:100},{k:'wins',n:2,t:'נצח 2 קרבות זירה',xp:60},{k:'ups',n:3,t:'נסה 3 שדרוגים',xp:40}];
-function fighter(s){const c=calc(s);const g=it=>it?[it.t,it.r,it.p,it.season?1:0]:null;
-  return {n:s.name,c:s.cls,l:s.lvl,r:s.resets,p:c.power,d:Math.round(c.dmg),a:Math.round(c.aspd*100)/100,h:Math.round(c.hp),f:Math.round(c.def),cr:Math.round(c.crit*100)/100,cd:Math.round(c.cdmg*100)/100,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g),rt:s.rating};}
+function fighter(s){const c=calc(s);const g=it=>it?[it.t,it.r,it.p,it.season?1:0]:null;let mn=99,sum=0;for(const k in ARM){const p=s.eq[k]?s.eq[k].p|0:0;sum+=p;if(p<mn)mn=p;}
+  return {n:s.name,c:s.cls,l:s.lvl,r:s.resets,p:c.power,d:Math.round(c.dmg),a:Math.round(c.aspd*100)/100,h:Math.round(c.hp),f:Math.round(c.def),cr:Math.round(c.crit*100)/100,cd:Math.round(c.cdmg*100)/100,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g),rt:s.rating,sp:[mn===99?0:mn,Math.round(sum/5)]};} // sp: lowest and average armor upgrade, for the glow others see
 function simDuel(A,B){
   const f=[{hp:A.h*5,n:0,t:.2,o:A},{hp:B.h*5,n:0,t:.35,o:B}],ev=[];let guard=0;
   while(f[0].hp>0&&f[1].hp>0&&guard++<600){
@@ -359,7 +359,7 @@ function cleanPlayer(id,o){
   o=o||{};
   return {id:String(id),n:String(o.n||'אלמוני').slice(0,14),c:CLS[o.c]?o.c:'blade',l:numOr(o.l,1,1,CAP)|0,r:numOr(o.r,0,0,99999)|0,p:numOr(o.p,1,1,1e9)|0,
     d:numOr(o.d,10,1,1e8),a:numOr(o.a,1,.3,3.2),h:numOr(o.h,100,1,1e9),f:numOr(o.f,0,0,1e7),cr:numOr(o.cr,.05,0,.6),cd:numOr(o.cd,2,1,10),
-    w:gearOr(o.w),ar:gearOr(o.ar),g:gearOr(o.g),rt:numOr(o.rt,1000,0,99999)|0};
+    w:gearOr(o.w),ar:gearOr(o.ar),g:gearOr(o.g),rt:numOr(o.rt,1000,0,99999)|0,sp:Array.isArray(o.sp)?[numOr(o.sp[0],0,0,15)|0,numOr(o.sp[1],0,0,15)|0]:[0,0]};
 }
 function cleanItem(o){
   if(!o||SLOTS.indexOf(o.s)<0)return null;

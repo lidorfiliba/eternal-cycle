@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261126132521';
+const BUILD='20261126134211';
 const {STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -94,7 +94,7 @@ const NPCS=[{x:270,n:'הנפח',tab:'gear',c:'blade',col:'#ff8a4d',spr:'n_smith'
 const SC={t:0,cam:0,mons:[],boss:null,hero:{x:110,face:1,dir:0,hp:1,atkT:0,anim:0,dead:0,mAtk:1,tgt:null,tx:null,goal:null,manual:0,buff:0,shield:0,cds:[0,0,0,0,0,0],autoSk:0,mv:false},fx:[],parts:[],nums:[],drops:[],shake:0,mode:'farm',duel:null,zi:-1,fl:0};
 const amb=[];for(let i=0;i<26;i++)amb.push({x:Math.random(),y:Math.random(),s:.5+Math.random()*1.5,v:.02+Math.random()*.05});
 const mapW=()=>SC.zi<0?TW:MW, gy=()=>Math.min(H*.8,H-112);
-function lookOf(s){const g=it=>it?[it.t,it.r,it.p,it.season?1:0]:null,o={c:s.cls,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g),r:A&&A.chars&&A.chars.includes(s)?totalResets(A):s.resets|0};
+function lookOf(s){const g=it=>it?[it.t,it.r,it.p,it.season?1:0]:null,o={c:s.cls,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g),sp:armorPlus(s),r:A&&A.chars&&A.chars.includes(s)?totalResets(A):s.resets|0};
   const sc=setCounts(s);let bz=-1,bn=0;for(const z in sc)if(sc[z]>bn){bn=sc[z];bz=+z;}if(bn>=4&&ZONES[bz])o.set=[bn,ZONES[bz].c];return o;}
 function glowAmt(p,r,t){let g=p>=13?24:p>=11?16+5*Math.sin(t*6):p>=9?12:p>=7?7:0;if(r>=3)g=Math.max(g,6);return g;}
 function gearColor(g,t,fallback){if(!g)return fallback;if(g[2]>=15)return 'hsl('+((t*90)%360)+',95%,68%)';return RAR[g[1]].c;}
@@ -230,6 +230,40 @@ function drawPet(x,y,sc,tier,t,flip){
 const TITLES=[[30,'בן אלמוות','#ff6b8a'],[15,'אגדה','#ffd75e'],[7,'אלוף המעגל','#c77dff'],[3,'לוחם מעגל','#5aa9ff'],[1,'מתעורר','#8be28b']];
 const titleOf=r=>TITLES.find(x=>r>=x[0])||null;
 function nameTag(x,y,name,r,tag,crown){const tl=titleOf(r|0);label((crown?'♛ ':'')+(tag?'['+tag+'] ':'')+name,x,y,tl?tl[2]:'#e9e4ff',12);if(tl)label(tl[1],x,y-14,tl[2],10.5);}
+// Upgraded armor shows on the body the way it does in MU. `sp` is [lowest, average] upgrade level over the five armor pieces.
+// Average +7 a faint shimmer, +9 a steady glow, +11 a pulse with a band of light crossing the body.
+// Every piece at +13: an aura of rising flame around the whole body; at +15 it turns to shifting colors.
+function armorPlus(s){let mn=99,sum=0;for(const k in ARM){const it=s.eq[k],p=it?it.p|0:0;sum+=p;if(p<mn)mn=p;}return [mn===99?0:mn,Math.round(sum/5)];}
+const GLOW_NAME=[[15,'הילת קשת'],[13,'הילת להבה'],[11,'זוהר פועם'],[9,'זוהר'],[7,'נצנוץ']];
+function glowTier(sp){if(!sp)return 0;const mn=sp[0]|0,av=sp[1]|0;return mn>=15?15:mn>=13?13:av>=11?11:av>=9?9:av>=7?7:0;}
+function armorGlowColor(look,t,tier){if(tier>=15)return 'hsl('+((t*80)%360)+',95%,66%)';const a=look.ar;return look.set?look.set[1]:a?(a[1]===4?RAR[4].c:TCOL[clamp(a[0],1,12)-1]):'#ffe9a6';}
+function sprFrame(sheet,key,an,fi,x,y,k,flip,alpha,dx,dy,sx,sy){ // one frame of a sheet, drawn about the feet, optionally stretched
+  const m=SPR[key],a=m.a[an]||m.a.idle;fi=Math.max(0,Math.min(a[1]-1,fi|0));
+  ctx.save();ctx.translate(Math.round(x+(dx||0)),Math.round(y+(dy||0)));ctx.scale((flip?-k:k)*(sx||1),k*(sy||1));ctx.imageSmoothingEnabled=false;ctx.globalAlpha=alpha;
+  ctx.drawImage(sheet,fi*m.w,a[0]*m.h,m.w,m.h,-m.ax,-m.ay,m.w,m.h);ctx.restore();
+}
+function silhouette(key,col){const im=IMG[key];if(!im||!im.complete||!im.naturalWidth)return null;const id='sil'+key+col;if(TINT[id])return TINT[id];
+  const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;const x=c.getContext('2d');x.drawImage(im,0,0);x.globalCompositeOperation='source-in';x.fillStyle=col;x.fillRect(0,0,c.width,c.height);
+  if(Object.keys(TINT).length>80)for(const k in TINT)if(k.startsWith('sil'))delete TINT[k];
+  return TINT[id]=c;}
+function drawArmorAura(key,an,fi,x,y,k,flip,tier,col,t,bh){ // behind the body
+  if(tier<9)return;const hueStep=tier>=15?Math.floor(t*6)%12:0,c=tier>=15?'hsl('+hueStep*30+',95%,66%)':col,sil=silhouette(key,c);if(!sil)return;
+  ctx.save();ctx.globalCompositeOperation='lighter';ctx.shadowColor=c;
+  if(tier>=13){ // flame: copies of the outline, taller and fainter, wavering upward
+    for(let i=1;i<=4;i++){const w=Math.sin(t*7+i*1.7)*2.2*k*.5,up=i*(3.2+Math.sin(t*5+i)*1.2)*k*.5;ctx.shadowBlur=10+i*5;
+      sprFrame(sil,key,an,fi,x,y,k,flip,.34-i*.06,w,-up*.35,1+i*.035,1+i*.075);}
+    if(!calm)for(let n=0;n<2;n++)if(Math.random()<.5)SC.parts.push({x:x+(Math.random()-.5)*30*k*.5,y:y-Math.random()*bh*k,vx:(Math.random()-.5)*10,vy:-70-Math.random()*50,life:.7,c:c,s:Math.random()<.3?3:2});
+  }else{const pulse=tier>=11?.5+.5*Math.sin(t*5):.6;ctx.shadowBlur=tier>=11?16:10;sprFrame(sil,key,an,fi,x,y,k,flip,.16+.14*pulse,0,-1,1.05,1.04);}
+  ctx.restore();
+}
+function drawArmorShine(key,an,fi,x,y,k,flip,tier,t,bh){ // over the body: sparkles, and from +11 a band of light that crosses it
+  if(tier<7)return;
+  if(!calm&&Math.random()<(tier>=11?.22:tier>=9?.14:.07))SC.nums.push({x:x+(Math.random()-.5)*34*k*.5,y:y-Math.random()*bh*k,txt:'✦',c:'#ffffff',s:7+Math.random()*6,life:.35});
+  if(tier<11)return;const sil=silhouette(key,'#ffffff');if(!sil)return;const m=SPR[key],per=tier>=13?1.6:2.4,u=(t%per)/per;if(u>.45)return;
+  const span=m.w*k,bx=x-span/2+u/.45*span,bw=7*k;
+  ctx.save();ctx.beginPath();ctx.moveTo(bx,y+4);ctx.lineTo(bx+bw,y+4);ctx.lineTo(bx+bw+bh*k*.5,y-m.h*k);ctx.lineTo(bx+bh*k*.5,y-m.h*k);ctx.closePath();ctx.clip();
+  ctx.globalCompositeOperation='lighter';sprFrame(sil,key,an,fi,x,y,k,flip,.5);ctx.restore();
+}
 // The weapon carried on the back: its shape follows the item tier (six designs per class), its glow the upgrade level.
 const TCOL=['#9aa3ad','#c9d2dc','#bfe3ff','#e8c27a','#9fe8ff','#ff8a4d','#a487ff','#ffd75e','#b07cff','#8fe6ff','#ffe27a','#ff6b8a'];
 function drawBackWeapon(x,y,look,t,k,flip){
@@ -288,9 +322,11 @@ function drawHero(x,y,sc,look,t,anim,flip,dead,mv,fury){
   if(look.g&&!dead)drawWings(bx,by,look.g,t,k,flip,look.c,m.bh,mv,anim);
   if(look.w&&!dead&&!look.spr)drawBackWeapon(bx-(flip?-1:1)*7*k,by-m.bh*k*.5,look,t,k,flip);
   let gl=0;if(look.w)gl=Math.max(gl,glowAmt(look.w[2],look.w[1],t));if(look.ar)gl=Math.max(gl,glowAmt(look.ar[2],look.ar[1],t)*.7);if(fury)gl=Math.max(gl,14);
-  const sheet=armorSheet(key,look);
+  const sheet=armorSheet(key,look),gt=look.spr||dead?0:glowTier(look.sp),ac=gt?armorGlowColor(look,t,gt):null;
+  if(gt)drawArmorAura(key,an,fi,x,y,k,flip,gt,ac,t,m.bh);
   if(mv&&maxP>=11&&!dead&&!calm)spr(key,an,fi-1,x-(flip?-1:1)*12*sc,y,k,flip,null,0,.28,sheet); // afterimage at +11
-  spr(key,an,fi,x,y,k,flip,gc,dead?0:anim>0?Math.min(gl,6):gl,null,sheet);
+  spr(key,an,fi,x,y,k,flip,gt>=7?ac:gc,dead?0:Math.max(anim>0?Math.min(gl,6):gl,gt>=13?10:gt>=9?8:gt>=7?5:0),null,sheet);
+  if(gt)drawArmorShine(key,an,fi,x,y,k,flip,gt,t,m.bh);
   if(maxP>=13&&!dead&&!calm&&Math.random()<.35)SC.parts.push({x:x+(Math.random()-.5)*44*sc,y:y-Math.random()*m.bh*k,vx:0,vy:-20,life:.8,c:gc,s:2});
 }
 function drawMon(m,zi,t,flip,sc){
@@ -755,7 +791,8 @@ function renderChar(){
 }
 function setLines(z,n){return SETB.map(b=>'<div class="kv"'+(n>=b[0]?' style="color:var(--r4)"':'')+'><span style="color:inherit">'+L(b[0])+' חלקים</span><b>'+AFF[b[1]][0]+' '+L('+'+b[2]+'%')+'</b></div>').join('');}
 function renderGear(){
-  let h='<h2>ציוד לבוש</h2><div class="items">';
+  const sp=armorPlus(S),gtier=glowTier(sp),gn=GLOW_NAME.find(x=>gtier>=x[0]);
+  let h='<h2>ציוד לבוש</h2><div class="card"><div class="kv"><span>זוהר השריון</span><b style="color:var(--gold)">'+(gn?gn[1]:'עדיין אין')+'</b></div><p class="hint">חמשת חלקי השריון קובעים את הזוהר על הגוף. ממוצע השדרוג שלך '+L('+'+sp[1])+', והחלק הנמוך ביותר '+L('+'+sp[0])+'. נצנוץ בממוצע '+L('+7')+', זוהר ב-'+L('+9')+', זוהר פועם ב-'+L('+11')+'. כשכל החלקים ב-'+L('+13')+' נדלקת הילת להבה סביב כל הגוף, וב-'+L('+15')+' היא מחליפה צבעים.</p></div><div class="items">';
   for(const k of SLOTS)h+=S.eq[k]?itemCard(S.eq[k]):'<div class="it empty">'+SLOTN[k]+'</div>';
   h+='</div>';
   const sc=setCounts(S);for(const z in sc)h+='<div class="card r4"><b style="color:var(--r4)">סט עתיק: '+SETN[z]+' · '+L(sc[z]+'/6')+'</b>'+setLines(z,sc[z])+'</div>';
