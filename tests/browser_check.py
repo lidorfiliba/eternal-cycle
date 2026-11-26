@@ -43,8 +43,15 @@ async def run(pg,online):
         if online and t in ('arena','chat'): await pg.screenshot(path=f'/tmp/{t}.png')
     out['chatBar']=await pg.inner_text('#chatBar') if online else ''
     out['opps']=await pg.evaluate("()=>(EC.A.opps||[]).length")
-    await pg.click('[data-tab=arena]');await pg.wait_for_timeout(300);await pg.click('[data-act=fight]');await pg.wait_for_timeout(1200)
+    await pg.click('[data-tab=arena]');await pg.wait_for_timeout(300);await pg.click('[data-act=fight]');await pg.wait_for_timeout(900)
     out['duel']=await pg.evaluate("()=>[EC.SC.mode,EC.A.tickets]")
+    for i in range(45):
+        if await pg.evaluate("()=>EC.SC.mode")!='duel': break
+        for a in ('u','c','h','a'):
+            if await pg.evaluate("(a)=>{const b=document.querySelector('#duelBar [data-a='+a+']');if(b&&!b.disabled){b.click();return true}return false}",a): break
+        await pg.wait_for_timeout(260 if i else 900)
+        if i==3: await pg.screenshot(path='/tmp/duel.png')
+    out['duelEnd']=await pg.evaluate("()=>[EC.SC.mode,EC.A.rating]")
     await pg.click('[data-tab=pass]');await pg.wait_for_timeout(1300)
     out['events']=await pg.evaluate("()=>[document.querySelectorAll('#panel .card').length,document.getElementById('evChip').textContent]")
     out['errors']=errs

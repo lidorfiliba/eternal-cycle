@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126152802';
-const {PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126154328';
+const {DUEL_ROUNDS,duelCan,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
 
@@ -84,9 +84,9 @@ function renderMarket(){
 }
 
 /* ---------- canvas drawing ---------- */
-const cv=$('cv'),ctx=cv.getContext('2d');let W=360,H=260,DPR=1;
+const cv=$('cv'),ctx=cv.getContext('2d');let W=360,H=260,DPR=1,ZM=1;
 const calm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-function resize(){const r=cv.getBoundingClientRect();DPR=Math.min(window.devicePixelRatio||1,2);W=Math.max(200,r.width);H=Math.max(140,r.height);cv.width=W*DPR;cv.height=H*DPR;}
+function resize(){const r=cv.getBoundingClientRect();DPR=Math.min(window.devicePixelRatio||1,2);ZM=Math.max(1,Math.min(2.2,r.height/440,r.width/560));W=Math.max(200,r.width/ZM);H=Math.max(140,r.height/ZM);cv.width=Math.max(200,r.width)*DPR;cv.height=Math.max(140,r.height)*DPR;} // on a large screen the scene is enlarged, not just widened
 window.addEventListener('resize',resize);if(prefs.big)document.getElementById('app').classList.add('wide');if(prefs.big)document.getElementById('bigBtn').textContent='הקטן';setTimeout(()=>fsSync(),0);
 const MW=1500,TW=1150;
 const TOWN={n:'כפר המעגל',sky:['#141033','#4a3a78'],sil:'#0c0a20',amb:'#ffe9a8',kind:'town'};
@@ -691,7 +691,7 @@ window.addEventListener('keyup',e=>{const k=e.key;if((k==='ArrowLeft'||k==='a')&
 window.addEventListener('blur',()=>{SC.hero.dir=0;});
 cv.addEventListener('pointerdown',e=>{
   if(!S||demo||busy||SC.mode!=='farm'||SC.hero.dead>0||SC.hero.climb)return;
-  const r=cv.getBoundingClientRect(),wx=e.clientX-r.left+SC.cam,py=e.clientY-r.top,h=SC.hero,g0=gy();
+  const r=cv.getBoundingClientRect(),wx=(e.clientX-r.left)/ZM+SC.cam,py=(e.clientY-r.top)/ZM,h=SC.hero,g0=gy();
   h.tgt=null;h.goal=null;h.tx=null;
   if(py>g0-170){
     for(const m of alive())if(Math.abs(wx-m.x)<(m.boss?60:32)&&py>g0-(m.boss?170:95)){h.tgt=m;return;}
@@ -727,39 +727,77 @@ function drawWorld(){
 }
 
 /* ---------- arena duel ---------- */
-function startDuel(du){
-  const tot=du.ev.length?du.ev[du.ev.length-1].t:1;
-  SC.duel={opp:du.opp,r:du,i:0,t:0,ts:Math.max(1,tot/7),ha:du.ma,hb:du.mb,end:0,an:[0,0]};SC.mode='duel';SC.fx=[];SC.nums=[];SC.drops=[];
+const DACT={a:['תקיפה','בונה קומבו ואנרגיה'],h:['מכת מחץ','40 אנרגיה · שוברת הגנה'],g:['הגנה','חוסמת תקיפה ומחזירה'],c:['קומבו','אחרי 3 פגיעות ברצף'],u:['אולטימטיבי','100 אנרגיה'],p:['שיקוי','ממלא 30% חיים']};
+function startDuel(pd,live){
+  SC.duel={opp:pd.o,D:pd.D,an:[0,0],end:0,win:null,gain:0,busy:false,say:[null,null],sayT:0,live:live||null,pool:[C.hp*5,pd.o.h*5],shown:pd.D.n};
+  SC.mode='duel';SC.fx=[];SC.nums=[];SC.drops=[];renderDuelBar();
+}
+// Pace: levels gained over the last minutes, as experience per hour, kills per minute and time left to the reset.
+const pace={q:[],k:0};
+function paceTick(){
+  if(!S||SC.mode!=='farm')return;const now=Date.now(),lv=S.resets*CAP+S.lvl+(S.lvl>=CAP?0:S.xp/need(S.lvl));
+  if(pace.q.length&&(lv<pace.q[pace.q.length-1][1]||lv-pace.q[pace.q.length-1][1]>50))pace.q=[];
+  pace.q.push([now,lv,A.kills+pend.kills]);while(pace.q.length>2&&now-pace.q[0][0]>300000)pace.q.shift();
+  const a=pace.q[0],dt=(now-a[0])/1000;let t='';
+  if(dt>=20&&SC.zi>=0){const lph=(lv-a[1])/dt*3600,kpm=(A.kills+pend.kills-a[2])/dt*60;
+    if(lph>0||kpm>0)t=L(fmt(Math.round(kpm)))+' חיסולים בדקה · '+L(lph>=10?Math.round(lph):lph.toFixed(1))+' רמות בשעה'+(S.lvl<CAP&&lph>0?' · ריסט בעוד '+fmtT((CAP-(S.lvl+S.xp/need(S.lvl)))/lph*3600):'');}
+  const el=$('paceTag');if(el.dataset.t!==t){el.dataset.t=t;el.innerHTML=t;}el.style.display=t?'':'none';
+}
+function renderDuelBar(){
+  const d=SC.duel,bar=$('duelBar');if(!d){bar.style.display='none';return;}bar.style.display='grid';const me=d.D.f[0],wait=d.busy||d.end>0||(d.live&&d.live.sent);
+  bar.querySelectorAll('button').forEach(b=>{const a=b.dataset.a,ok=duelCan(me,a),t=DACT[a][0]+(a==='p'?' ×'+me.pots:'')+'<small>'+(a==='c'?'קומבו '+Math.min(3,me.combo)+'/3':DACT[a][1])+'</small>';
+    if(b.dataset.h!==t){b.dataset.h=t;b.innerHTML=t;}b.disabled=!ok||!!wait;b.classList.toggle('rdy',ok&&(a==='c'||a==='u')&&!wait);});
+}
+function showRound(rd,D){ // play one settled round: side 0 is always this player
+  const d=SC.duel;if(!d||!rd)return;d.D=D;d.shown=D.n;d.say=[DACT[rd.a[0]][0],DACT[rd.a[1]][0]];d.sayT=1.6;const ax=W*.26,bx=W*.74,g=gy();
+  for(let i=0;i<2;i++){const x=rd.a[i],sx=i?bx:ax,tx=i?ax:bx,look=i?d.opp:lookOf(S),cls=i?d.opp.c:S.cls,col=gearColor(look.w,SC.t,CLS[cls].c);
+    if(x==='g')SC.fx.push({k:'ring',x:sx,y:g-40,life:.5,c:'#9fe8ff',r:60});
+    if(x==='p'){burst(sx,g-50,'#6fe39a',18);addNum(sx,g-110,'+30%','#6fe39a',true);snd('fury');}
+    if(rd.d[i]>0){d.an[i]=1;const big=x!=='a';attackFx(cls,sx,g,i?-1:1,[{x:tx,y:g-10}],big,col);
+      if(x==='c'||x==='u'){SC.fx.push({k:'rune',x:sx,y:g-2,r:x==='u'?110:70,life:.8,d:.8,c:col});SC.fx.push({k:'star',x:tx,y:g-44,r:x==='u'?70:46,rot:.3,life:.45,d:.45,c:col});if(x==='u'&&!calm)SC.fx.push({k:'screen',life:.3,d:.3,c:col});snd('ult');}
+      else snd(rd.crit[i]?'crit':x==='h'?'skill':'hit');
+      addNum(tx,g-90-(i?0:14),fmt(Math.round(rd.d[i]*d.pool[1-i])),rd.crit[i]?'#ffd75e':big?col:'#fff',rd.crit[i]||big);}
+    if(rd.ctr[i]>0)addNum(i?ax:bx,g-60,'נגד '+fmt(Math.round(rd.ctr[i]*d.pool[1-i])),'#9fe8ff',false);}
+  renderDuelBar();
+}
+function endDuel(win,gain){const d=SC.duel;if(!d)return;d.win=win;d.gain=gain|0;d.end=2.2;SC.nums.push({x:W/2,y:H*.4,txt:win?'ניצחון!':'הפסד',c:win?'#f2c14e':'#ff5c7a',s:34,life:2.2});snd(win?'rare':'slam');renderDuelBar();}
+async function duelAct(a){
+  const d=SC.duel;if(!d||d.busy||d.end>0)return;
+  if(d.live){pvpAct(a);return;}
+  d.busy=true;renderDuelBar();const r=await send('duelAct',{a:a});if(SC.duel!==d)return;d.busy=false;
+  if(!r.ok){toast(r.msg==='net'?'אין חיבור לשרת':r.msg);renderDuelBar();return;}
+  showRound(r.round,r.D);if(r.D.over)endDuel(r.win,r.gain);
 }
 function updateDuel(dt){
-  const d=SC.duel;d.an[0]=Math.max(0,d.an[0]-dt*4);d.an[1]=Math.max(0,d.an[1]-dt*4);
-  if(d.end>0){d.end-=dt;if(d.end<=0)finishDuel();return;}
-  d.t+=dt*d.ts;const ax=W*.26,bx=W*.74;
-  while(d.i<d.r.ev.length&&d.r.ev[d.i].t<=d.t){const e=d.r.ev[d.i++];d.an[e.who]=1;
-    const tx=e.who?ax:bx,sx=e.who?bx:ax,look=e.who?d.opp:lookOf(S),cls=e.who?d.opp.c:S.cls,col=gearColor(look.w,SC.t,CLS[cls].c);
-    attackFx(cls,sx,gy(),e.who?-1:1,[{x:tx,y:gy()-10}],e.combo,col);
-    snd(e.crit?'crit':'hit');if(e.who)d.ha-=e.d;else d.hb-=e.d;addNum(tx,gy()-90,fmt(e.d),e.crit?'#ffd75e':'#fff',e.crit||e.combo);}
-  if(d.i>=d.r.ev.length){d.end=1.8;SC.nums.push({x:W/2,y:H*.4,txt:d.r.win===0?'ניצחון!':'הפסד',c:d.r.win===0?'#f2c14e':'#ff5c7a',s:34,life:1.8});}
+  const d=SC.duel;d.an[0]=Math.max(0,d.an[0]-dt*3);d.an[1]=Math.max(0,d.an[1]-dt*3);if(d.sayT>0)d.sayT-=dt;
+  if(d.end>0){d.end-=dt;if(d.end<=0)finishDuel();}
 }
 function finishDuel(){
-  const d=SC.duel,win=d.r.win===0;
-  toast(win?'ניצחון. הדירוג עלה ב-'+d.r.gain+', קיבלת 8 מטבעות עונה':'הפסד. הדירוג ירד ב-12');
-  SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];touch();
+  const d=SC.duel,win=d.win;
+  toast(win?'ניצחון. הדירוג עלה ב-'+d.gain+', קיבלת 8 מטבעות עונה':'הפסד. הדירוג ירד ב-12');
+  SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];renderDuelBar();touch();
+}
+function drawDuel(dt){
+  const d=SC.duel,sc=clamp(H/300,.8,1.45),f=d.D.f,ax=W*.26,bx=W*.74,g=gy(),dead=d.end>0?2.2-d.end:0;
+  drawHero(ax,g,sc,lookOf(S),SC.t,d.an[0],false,d.win===false?dead:0);drawHero(bx,g,sc,d.opp,SC.t+1.7,d.an[1],true,d.win===true?dead:0);
+  const side=(x,ff,c,nm)=>{hpBar(x-55,26,110,ff.hp,c,nm);ctx.fillStyle='rgba(0,0,0,.6)';rr(x-55,36,110,5,2);ctx.fill();ctx.fillStyle=ff.en>=100?'#ffd75e':'#5fb4ff';rr(x-55,36,Math.max(2,110*ff.en/100),5,2);ctx.fill();
+    label('קומבו '+Math.min(3,ff.combo)+'/3 · שיקויים '+ff.pots,x,54,ff.combo>=3?'#ffd75e':'#c9c2ea',10.5);};
+  side(ax,f[0],'#6fe39a',S.name);side(bx,f[1],'#ff5c7a',d.opp.n);
+  label('סיבוב '+Math.min(DUEL_ROUNDS,d.D.n+1)+'/'+DUEL_ROUNDS,W/2,30,'#fff',12);
+  if(d.live&&d.end<=0)label(d.live.sent?'מחכה ליריב...':'בחר פעולה · '+Math.max(0,Math.ceil((d.live.dl-Date.now())/1000)),W/2,46,'#ffd75e',11.5);
+  if(d.sayT>0&&d.say[0]){ctx.globalAlpha=clamp(d.sayT*2,0,1);label(d.say[0],ax,g-150*sc,'#fff',14);label(d.say[1],bx,g-150*sc,'#fff',14);ctx.globalAlpha=1;}
+  const hx0=SC.hero.x;SC.hero.x=ax;drawFx(dt);SC.hero.x=hx0;
 }
 function frame(dt){
   SC.t+=dt;SC.dt=dt;if(statsDirty){C=calc(S,auras);statsDirty=false;}
   if(SC.mode==='farm'){updateWorld(dt);updatePeers(dt);}else updateDuel(dt);
-  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.setTransform(DPR*ZM,0,0,DPR*ZM,0,0);ctx.imageSmoothingEnabled=false;
   ctx.save();if(SC.shake>0){SC.shake-=dt;ctx.translate((Math.random()-.5)*7,(Math.random()-.5)*5);}
   const cam=SC.cam;if(SC.mode==='duel')SC.cam=0;
   drawBg(SC.zi,SC.t);
   if(SC.ev&&SC.mode==='farm'){const gr=ctx.createLinearGradient(0,0,0,H);gr.addColorStop(0,'rgba(150,10,40,.42)');gr.addColorStop(1,'rgba(60,0,20,.25)');ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);}
   if(SC.mode==='farm')drawWorld();
-  else{const d=SC.duel,sc=clamp(H/300,.8,1.45);
-    drawHero(W*.26,gy(),sc,lookOf(S),SC.t,d.an[0],false,d.end>0&&d.r.win===1?1.8-d.end:0);
-    drawHero(W*.74,gy(),sc,d.opp,SC.t+1.7,d.an[1],true,d.end>0&&d.r.win===0?1.8-d.end:0);
-    hpBar(W*.26-45,22,90,d.ha/d.r.ma,'#6fe39a',S.name);hpBar(W*.74-45,22,90,d.hb/d.r.mb,'#ff5c7a',d.opp.n);
-    const hx0=SC.hero.x;SC.hero.x=W*.26;drawFx(dt);SC.hero.x=hx0;}
+  else drawDuel(dt);
   SC.cam=cam;ctx.restore();
 }
 
@@ -794,7 +832,7 @@ function renderHud(){
   {const left=(A.boost-Date.now())/1000,bt=left>0&&!duel?'ניסיון '+L('+50%')+' · '+mmss(left):'';if($('boostTag').dataset.t!==bt){$('boostTag').dataset.t=bt;$('boostTag').innerHTML=bt;}}
   {const kw=!duel&&!SC.ev&&S&&!demo?keepWin():null,kb=$('keepBtn');kb.style.display=kw?'':'none';if(kw){const t=(A.keys>0||(A.ev&&A.ev[kw.key]&&A.ev[kw.key].in)?'שגר למצודה':'המצודה פתוחה · אין מפתח')+' · הכניסה נסגרת בעוד '+mmss((kw.end-(kw.e.dur-KEEP_GATE)*60000-Date.now())/1000);if(kb.textContent!==t)kb.textContent=t;}}
   $('resetNow').style.display=canReset(S)&&!duel?'block':'none';
-  $('autoBtn').style.display=$('skills').style.display=duel||zi<0?'none':'';$('mv').style.display=duel?'none':'';
+  $('autoBtn').style.display=$('skills').style.display=duel||zi<0?'none':'';$('paceTag').style.visibility=$('bigBtn').style.visibility=$('sndBtn').style.visibility=$('fsBtn').style.visibility=duel?'hidden':'';if(duel)renderDuelBar();$('mv').style.display=duel?'none':'';
   $('sndBtn').textContent=prefs.mute?'צליל כבוי':'צליל פעיל';$('sndBtn').classList.toggle('on',!prefs.mute);
   $('autoBtn').textContent='אוטומטי: '+(S.auto?'פעיל':'כבוי');$('autoBtn').classList.toggle('on',!!S.auto);
   const bs=$('skills').children,h=SC.hero;
@@ -957,7 +995,7 @@ function renderParty(){
 function renderArena(){
   const arenaOpps=A.opps||[];
   let h=renderTop()+renderGuild()+renderParty()+'<h2>זירה</h2><div class="card"><div class="grid2"><div class="kv"><span>דירוג</span><b class="num" style="color:var(--gold)">'+A.rating+'</b></div><div class="kv"><span>כרטיסים היום</span><b class="num">'+A.tickets+'</b></div></div>'+
-    '<p class="hint" style="margin-top:6px">הקרב אוטומטי, מול הדמות השמורה של היריב. '+(ONLINE?'הדמות שלך שמורה בשרת ומופיעה לשחקנים אחרים.':'מצב מקומי: יוצגו רק דמויות אימון.')+'</p></div><h2>יריבים</h2>';
+    '<p class="hint" style="margin-top:6px">הקרב ידני, בסיבובים: בכל סיבוב שניכם בוחרים פעולה באותו רגע. תקיפה מנצחת מכת מחץ, מכת מחץ שוברת הגנה, הגנה חוסמת תקיפה ומחזירה. שלוש פגיעות ברצף פותחות קומבו, 100 אנרגיה פותחות אולטימטיבי, ויש 3 שיקויים. כשהיריב לא מחובר, השרת משחק במקומו עם הציוד האמיתי שלו. '+(ONLINE?'הדמות שלך שמורה בשרת ומופיעה לשחקנים אחרים.':'מצב מקומי: יוצגו רק דמויות אימון.')+'</p>'+(A.pd?'<button class="btn pri glow" data-act="fight" data-i="0">חזור לקרב שהתחלת</button>':'')+'</div><h2>יריבים</h2>';
   arenaOpps.forEach((o,i)=>{h+='<div class="card opp"><div class="z"><b>'+esc(o.n)+'</b>'+(o.bot?'<span class="tag">דמות אימון</span>':'')+
     '<small>'+CLS[o.c].n+' · רמה '+L(o.l)+' · ריסטים '+L(o.r)+' · כוח '+L(fmt(o.p))+'</small></div><button class="btn sm pri" data-act="fight" data-i="'+i+'"'+(A.tickets>0&&SC.mode==='farm'?'':' disabled')+'>הילחם</button></div>';});
   if(!arenaOpps.length)h+='<p class="hint">טוען יריבים...</p>';
@@ -1026,7 +1064,7 @@ async function checkVersion(){
   try{await Promise.all(['./','index.html','game.js','core.js','config.js'].map(u=>fetch(u,{cache:'reload'}).catch(()=>null)));}catch(e){}
   location.reload();
 }
-setInterval(checkVersion,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(checkVersion,1500);});setTimeout(checkVersion,8000);
+setInterval(paceTick,5000);setInterval(checkVersion,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(checkVersion,1500);});setTimeout(checkVersion,8000);
 
 /* ---------- full screen and installing as an app ---------- */
 const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement,fsCan=!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);
@@ -1198,7 +1236,8 @@ document.addEventListener('click',async e=>{
     else if(a==='exAdd'){const id=+b.dataset.id;r=await act('exAdd',{id:id});if(r.ok){snd('rare');toast(r.full?'הפריט הגיע לאקסלנט מלא':'נוספה אופציה: '+AFF[r.opt[0]][0]+' '+r.opt[1]+'%',4);openSheet(id);}}
     else if(a==='claimLogin'){r=await act('claimLogin',{});if(r.ok){snd('rare');closeModal();toast('פרס יום '+r.day+': '+r.t);}}
     else if(a==='claimTask'){r=await act('claimTask',{k:b.dataset.k});if(r.ok)toast(r.xp+' ניסיון לפס');}
-    else if(a==='fight'){if(SC.mode==='farm'&&A.tickets>0){r=await act('duel',{i:+b.dataset.i});if(r.ok)startDuel(r.duel);}}
+    else if(a==='fight'){if(SC.mode==='farm'&&(A.tickets>0||A.pd)){r=await act('duelStart',{i:+b.dataset.i});if(r.ok)startDuel(r.pd);}}
+    else if(a==='da'){duelAct(b.dataset.a);return;}
     else if(a==='reroll'){loadArena();}
     else if(a==='pt'){r=await act('pt',{k:b.dataset.k,n:b.dataset.n});}
     else if(a==='autoPts'||a==='autoEq'||a==='autoSell'){r=await act(a,{});}

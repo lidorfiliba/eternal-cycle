@@ -212,3 +212,24 @@ test('the season pass is long: play feeds it only up to a daily amount, tasks co
   assert.ok(G.PASS_MAX*G.PASS_STEP/(G.PASS_DAY+260)>20,'even a perfect player needs more than twenty days');assert.ok(G.passReward(60).wing&&G.passReward(40).wing&&G.passReward(20).wing);
   const old=JSON.parse(JSON.stringify(A));old.zv=1;old.pass.xp=1000;const B=G.adopt(old);assert.equal(B.pass.xp,2000);assert.equal(B.zv,2);
 });
+
+test('the manual duel: choices decide between equals, gear decides between unequals, and the rules of each action hold',()=>{
+  const F=(d,h)=>({d:d,a:1.2,h:h,f:200,cr:0,cd:2,rt:1000});let seed=7;const rnd=()=>{seed=(seed*1103515245+12345)%2147483648;return seed/2147483648;};G.setEnv(rnd,()=>1e12);
+  {const D=G.duelNew(F(1000,10000),F(1000,10000));assert.ok(Math.abs(D.f[0].base-.09)<1e-9&&Math.abs(D.f[1].base-.09)<1e-9);
+    assert.equal(G.duelCan(D.f[0],'h'),false);assert.equal(G.duelCan(D.f[0],'c'),false);assert.equal(G.duelCan(D.f[0],'u'),false);assert.ok(G.duelCan(D.f[0],'p'));
+    const r=G.duelRound(D,'a','g');assert.ok(r.d[0]<.09*.3,'a guarded attack does little');assert.ok(r.ctr[1]>0&&D.f[0].hp<1,'and is struck back');assert.equal(D.f[0].combo,0);
+    G.duelRound(D,'a','a');G.duelRound(D,'a','a');assert.equal(D.f[0].combo,2);assert.equal(D.f[0].en,60);
+    const h=G.duelRound(D,'h','g');assert.ok(h.d[0]>.09*1.5,'a heavy blow goes through a guard');assert.equal(D.f[0].combo,3);assert.equal(D.f[0].en,20);
+    const hp=D.f[1].hp,c=G.duelRound(D,'c','p');assert.ok(c.d[0]>.09*2.5);assert.equal(D.f[0].combo,0);assert.equal(D.f[1].pots,2);assert.ok(D.f[1].hp<hp+.3);
+    assert.equal(G.duelRound(D,'u','a').a[0],'a','an action that is not available falls back to an attack');}
+  const play=(A,B,p0,p1)=>{let w=0;for(let i=0;i<200;i++){const D=G.duelNew(A,B);while(!D.over)G.duelRound(D,p0(D,0),p1(D,1));if(D.win===0)w++;}return w/200;};
+  const spam=()=>'a',even=F(1000,10000);
+  assert.ok(play(even,even,G.duelAI,spam)>.7,'thoughtful play beats mashing attack: '+play(even,even,G.duelAI,spam));
+  assert.ok(play(F(2500,20000),even,spam,G.duelAI)>.8,'much better gear still wins while mashing');
+  const eq=play(even,even,G.duelAI,G.duelAI);assert.ok(eq>.3&&eq<.7,'equals playing the same way split: '+eq);assert.ok(play(F(1250,11500),even,G.duelAI,G.duelAI)>.7,'with equal play the better gear wins');
+  const st={now:Date.parse('2026-11-26T12:20:00Z')};G.setEnv(rnd,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'a',cls:'blade'});
+  assert.equal(G.apply(A,'duelAct',{a:'a'}).ok,false);G.apply(A,'opps',{},{players:[],uid:'x'});const t0=A.tickets,s0=G.apply(A,'duelStart',{i:1});assert.ok(s0.ok);assert.equal(A.tickets,t0-1);
+  assert.ok(G.apply(A,'duelStart',{i:0}).ok,'asking again resumes');assert.equal(A.tickets,t0-1);assert.equal(G.apply(A,'duelAct',{a:'u'}).ok,false);
+  let r,n=0;const rt=A.rating;do{r=G.apply(A,'duelAct',{a:G.duelAI(A.pd.D,0)});n++;}while(r.ok&&!r.D.over&&n<40);assert.ok(r.D.over);assert.equal(A.pd,null);assert.notEqual(A.rating,rt);
+  G.apply(A,'opps',{},{players:[],uid:'x'});G.apply(A,'duelStart',{i:0});st.now+=11*60000;G.apply(A,'opps',{},{players:[],uid:'x'});const r1=A.rating;G.apply(A,'duelStart',{i:0});assert.equal(A.rating,r1-12,'a duel left for ten minutes is lost');
+});

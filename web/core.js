@@ -306,6 +306,60 @@ function simDuel(A,B){
   return {ev:ev,win:win,ma:A.h*5,mb:B.h*5};
 }
 
+/* ---------- the manual duel: rounds in which both sides choose at once ----------
+   Nothing is automatic. Each round a fighter picks one action, both are revealed together and the server settles them:
+     a  attack   - the ordinary hit; builds the combo and 20 energy
+     h  heavy    - 2.2x for 40 energy; goes through a guard, but an ordinary attack lands first and weakens it
+     g  guard    - takes a quarter of an attack and strikes back; useless against a heavy blow
+     c  combo    - 3.2x, needs three landed hits in a row
+     u  ultimate - 4.5x for 100 energy
+     p  potion   - restores 30% health, three a duel, and leaves the drinker open
+   Health is a share of the fighter's own pool. Gear and stats set how much of it a hit removes; the square root
+   keeps a stronger fighter clearly ahead without making the choices irrelevant. The same engine runs a duel
+   against an absent player (the server picks his actions) and one between two players who are both present. */
+const DUEL_ROUNDS=30,DUEL_POTS=3,DUEL_MULT={a:1,h:2.2,c:3.2,u:4.5,g:0,p:0};
+function duelNew(A,B){
+  const raw=(x,y)=>x.d*Math.max(.3,x.a)*300/(300+y.f)/Math.max(1,y.h*5),K=.09/Math.sqrt(Math.max(1e-12,raw(A,B)*raw(B,A)));
+  const mk=(x,y)=>({hp:1,en:0,pots:DUEL_POTS,combo:0,base:clamp(raw(x,y)*K,.03,.3),cr:clamp(+x.cr||0,0,.75)});
+  return {f:[mk(A,B),mk(B,A)],n:0,over:0,win:-1};
+}
+const duelCan=(f,a)=>a==='a'||a==='g'||(a==='h'&&f.en>=40)||(a==='c'&&f.combo>=3)||(a==='u'&&f.en>=100)||(a==='p'&&f.pots>0);
+function duelRound(D,a0,a1){
+  if(D.over)return null;const f=D.f,act=[duelCan(f[0],a0)?a0:'a',duelCan(f[1],a1)?a1:'a'],d=[0,0],crit=[false,false],ctr=[0,0];
+  for(let i=0;i<2;i++)if(act[i]==='p'){f[i].pots--;f[i].hp=Math.min(1,f[i].hp+.3);}
+  for(let i=0;i<2;i++){const me=f[i],x=act[i],y=act[1-i];let m=DUEL_MULT[x];if(!m)continue;
+    if(x==='h'&&y==='a')m*=.7;
+    if(y==='g'){m*=x==='a'?.25:x==='h'?.9:x==='c'?.4:.55;if(x==='a')ctr[1-i]=f[1-i].base*.6;}
+    crit[i]=_rnd()<me.cr;d[i]=me.base*m*(crit[i]?1.5:1)*(.9+_rnd()*.2);}
+  for(let i=0;i<2;i++){const me=f[i],en=f[1-i],x=act[i],y=act[1-i],landed=d[i]>0&&y!=='g';
+    en.hp-=d[i]+ctr[i];
+    if(x==='a'){me.en=Math.min(100,me.en+20);me.combo=landed?me.combo+1:0;}
+    else if(x==='h'){me.en-=40;me.combo++;}
+    else if(x==='c')me.combo=0;else if(x==='u'){me.en=0;me.combo=0;}
+    else if(x==='g')me.en=Math.min(100,me.en+12);else me.combo=0;
+    if((x==='h'||x==='c'||x==='u')&&y!=='g')en.combo=0;}
+  D.n++;
+  if(f[0].hp<=0||f[1].hp<=0||D.n>=DUEL_ROUNDS){D.over=1;D.win=f[0].hp>=f[1].hp?0:1;}
+  return {a:act,d:[d[0],d[1]],crit:crit,ctr:ctr};
+}
+// What the server plays for a fighter who is not there. It reads the same state a player sees.
+function duelAI(D,i){
+  const me=D.f[i],op=D.f[1-i],r=_rnd();
+  if(me.hp<.38&&me.pots>0&&r<.65)return 'p';
+  if(me.en>=100&&r<.8)return 'u';
+  if(me.combo>=3&&r<.75)return 'c';
+  if((op.combo>=3||op.en>=100)&&r<.5)return 'g';
+  if(me.en>=40&&r<.38)return 'h';
+  return r<.78?'a':'g';
+}
+// Rating, coins and the rest for the account that fought as side `side`.
+function duelSettle(A,now,won,oppRt){
+  let gain=0;
+  if(won){gain=clamp(Math.round(24-(A.rating-(oppRt||A.rating))/25),8,40);A.rating+=gain;A.coins+=8;passAdd(A,15);A.daily.wins++;A.wins=(A.wins||0)+1;evAdd(A,now,'w',1);}
+  else{A.rating=Math.max(0,A.rating-12);A.coins+=2;}
+  return gain;
+}
+
 /* ---------- economy tables ---------- */
 const BOSSN=40;
 const GUILD_FEE=20000; // gold to found a guild
@@ -579,13 +633,18 @@ function apply(A,kind,args,ctx){
     case 'claimTask':{const t=TASKS.find(x=>x.k===args.k);if(!t||A.daily[t.k]<t.n||A.daily.done[t.k])return fail('המשימה לא הושלמה');A.daily.done[t.k]=1;A.pass.xp+=t.xp;r.xp=t.xp;break;}
     case 'claimQuest':{const q=QUESTS[A.q|0];if(!q)return fail('אין משימה');const p=q.p(A,S);if(p[0]<p[1])return fail('המשימה לא הושלמה');give(A,S,q.rw);A.q=(A.q|0)+1;r.rt=q.rt;break;}
     case 'opps':A.opps=buildOpps(A,S,ctx.players,ctx.uid);break;
-    case 'duel':{
-      const o=A.opps&&A.opps[int(args.i,0,3)];if(!o)return fail('רענן את רשימת היריבים');
-      const free=evWindows(now,0).some(w=>w.e.id==='royale');if(!free&&A.tickets<1)return fail('אין כרטיסים');
-      if(!free)A.tickets--;const sim=simDuel(fighter(S),o),win=sim.win===0;let gain=0;
-      if(win){gain=clamp(Math.round(24-(A.rating-o.rt)/25),8,40);A.rating+=gain;A.coins+=8;passAdd(A,15);A.daily.wins++;A.wins=(A.wins||0)+1;evAdd(A,now,'w',1);}
-      else{A.rating=Math.max(0,A.rating-12);A.coins+=2;}
-      A.opps=null;r.duel={ev:sim.ev,win:sim.win,ma:sim.ma,mb:sim.mb,opp:o,gain:gain};break;}
+    case 'duel':return fail('אין יותר קרב אוטומטי. הקרב בזירה ידני');
+    case 'duelStart':{
+      if(A.pd&&now-A.pd.t>600000){duelSettle(A,now,false,A.pd.o.rt);A.pd=null;} // walked away from a duel: it counts as lost
+      if(!A.pd){const o=A.opps&&A.opps[int(args.i,0,3)];if(!o)return fail('רענן את רשימת היריבים');
+        const free=evWindows(now,0).some(w=>w.e.id==='royale');if(!free&&A.tickets<1)return fail('אין כרטיסים');
+        if(!free)A.tickets--;A.opps=null;A.pd={o:o,D:duelNew(fighter(S),o),t:now};}
+      r.pd=A.pd;break;}
+    case 'duelAct':{
+      const pd=A.pd;if(!pd)return fail('אין קרב פעיל');const a=String(args.a),D=pd.D;
+      if(!duelCan(D.f[0],a))return fail('הפעולה הזו לא זמינה עכשיו');
+      r.round=duelRound(D,a,duelAI(D,1));r.D=D;
+      if(D.over){r.win=D.win===0;r.gain=duelSettle(A,now,r.win,pd.o.rt);A.pd=null;}break;}
     case 'answer':{
       const w=evWindows(now,0).find(x=>x.e.id==='quiz');if(!w)return fail('החידון לא פעיל עכשיו');
       const rec=evRec(A,w.key);if(rec.t)return fail('כבר ענית על השאלה');
@@ -602,4 +661,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
