@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126203326';
-const {setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261126205323';
+const {TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
@@ -1014,7 +1014,8 @@ function startDuel(pd,net){
   const D=liveFrom(pd.live,net?net.cls[0]:S.cls,net?net.cls[1]:pd.o.c),me=net?net.side:0;
   SC.duel={opp:pd.o,D:D,me:me,net:net||null,v:[{anim:0,face:1,mv:false,hitT:0},{anim:0,face:-1,mv:false,hitT:0}],end:0,win:null,gain:0,sent:false,ai:{t:.6,threat:0},holdAtk:false,go:1.2,posT:0,tgt:null,last:[0,0]};
   if(net&&net.spec){SC.duel.spec=net.spec;SC.duel.go=0;SC.duel.tg=[null,null];}
-  if(pd.tower){SC.duel.tower=pd.tower;SC.duel.slam=null;SC.duel.slamT=4.5;D.f[1].pots=0;D.f[1].at.atk=1.5;}
+  if(pd.trial){SC.duel.trial=pd.trial;SC.duel.t0=SC.t;}
+  if(pd.tower){SC.duel.tower=pd.tower;SC.duel.slam=null;SC.duel.slamT=pd.trial===1?2.5:4.5;D.f[1].pots=0;D.f[1].at.atk=1.5;}
   SC.mode='duel';SC.fx=[];SC.nums=[];SC.drops=[];SC.hero.dir=0;SC.hero.dz=0;closeModal();renderDuelBar();
 }
 function renderDuelBar(){
@@ -1072,7 +1073,7 @@ function towerAI(d,dt){ // a floor guardian: walks you down, swings, and marks t
     return;}
   if(dist>58){me.x+=dir*(mad?96:72)*dt;v.mv=true;}me.x=clamp(me.x,20,LIVE_W-20);v.face=dir;
   {const dz=en.z-me.z;if(Math.abs(dz)>.08){me.z=clamp(me.z+Math.sign(dz)*(mad?.5:.36)*dt,0,1);v.mv=true;}}
-  if((d.slamT-=dt)<=0&&dist<150){d.slamT=mad?3.6:5.5;d.slam={t:mad?.85:1.1,x:en.x,z:en.z};snd('growl');return;}
+  if((d.slamT-=dt)<=0&&dist<150){d.slamT=(mad?3.6:5.5)*(d.trial===1?.6:1);d.slam={t:mad?.85:1.1,x:en.x,z:en.z};snd('growl');return;}
   if(dist<=76&&Math.abs(en.z-me.z)<=LIVE_LANE){const o=liveAct(D,1,'atk',Math.random);if(o)dShow(d,o);}
 }
 function updateDuel(dt){
@@ -1095,7 +1096,7 @@ function updateDuel(dt){
 }
 async function endDuel(win){ // a fight that ran here: report it; the server checks that it could have happened
   const d=SC.duel;if(!d||d.sent)return;d.sent=true;d.end=9;d.holdAtk=false;d.local=win;renderDuelBar();
-  const r=await send(d.tower?'towerEnd':'duelEnd',{win:win});if(SC.duel!==d)return;if(d.tower&&r&&r.ok){d.rt=r.rt;if(r.perfect)perfectFound();}
+  const r=await send(d.trial?'trialEnd':d.tower?'towerEnd':'duelEnd',{win:win});if(SC.duel!==d)return;if(d.tower&&r&&r.ok){d.rt=r.rt;d.tier=r.tier;d.el=r.el;if(r.perfect)perfectFound();}
   showResult(d,r&&r.ok?!!r.win:win,r&&r.ok?r.gain|0:0,!!(r&&r.denied));
 }
 function showResult(d,win,gain,denied){
@@ -1105,6 +1106,7 @@ function showResult(d,win,gain,denied){
 function finishDuel(){
   const d=SC.duel,win=d.win;
   if(d.spec){toast(d.winner?d.winner+' ניצח':'הקרב נגמר');SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];renderDuelBar();return;}
+  if(d.trial){toast(d.denied?'השרת לא אישר את הניצחון':d.win?'אתגר היום הושלם ב-'+(d.el|0)+' שניות · מדליית '+TRIAL_MEDAL[d.tier|0]+(d.rt?' · קיבלת '+d.rt:' · כבר יש לך מדליה כזו או טובה ממנה'):'שומר היום ניצח. נסה שוב',d.win?5:0);SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];SC.hero.dir=0;SC.hero.dz=0;renderDuelBar();touch();return;}
   if(d.tower){toast(d.denied?'השרת לא אישר את הניצחון':d.win?'קומה '+d.tower+' נכבשה. קיבלת '+(d.rt||''):'השומר של קומה '+d.tower+' ניצח. נסה שוב',d.win?4:0);if(d.win)announce('כבשת את קומה '+d.tower+' במגדל הנצח',true);SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];SC.hero.dir=0;SC.hero.dz=0;renderDuelBar();touch();return;}
   toast(d.denied?'השרת לא אישר את הניצחון':d.why==='left'&&win?'היריב עזב. ניצחת':win?'ניצחון. הדירוג עלה ב-'+d.gain+', קיבלת 8 מטבעות עונה':'הפסד. הדירוג ירד ב-12');
   SC.mode='farm';SC.duel=null;SC.fx=[];SC.nums=[];SC.hero.dir=0;SC.hero.dz=0;renderDuelBar();if(d.net)send('sync',{});touch();
@@ -1129,7 +1131,7 @@ function drawDuel(dt){
     if(a.stun>D.t)for(let q=0;q<3;q++){const an=SC.t*6+q*2.1;label('✦',ax+Math.cos(an)*16,ya-128*s2+Math.sin(an)*5,'#ffd75e',12);}}
   const side=(x,a,c,nm)=>{hpBar(x-60,26,120,a.hp,c,nm);label('שיקויים '+a.pots+(a.sh>D.t?' · מגן':'')+(a.stun>D.t?' · המום':''),x,48,'#c9c2ea',10.5);};
   side(W*(me?.74:.26),f[me],'#6fe39a',d.spec?d.spec.n:S.name);side(W*(me?.26:.74),f[1-me],'#ff5c7a',d.opp.n);
-  label(d.go>0?'היכון...':mmss(Math.max(0,DUEL_LIVE.time-D.t)),W/2,32,d.go>0?'#ffd75e':'#fff',d.go>0?18:13);if(d.net)label(d.spec?'צופה בקרב חי':'קרב חי מול שחקן',W/2,48,'#7df9ff',10.5);if(d.tower)label('מגדל הנצח · קומה '+d.tower,W/2,64,'#ffd75e',11);
+  label(d.go>0?'היכון...':mmss(Math.max(0,DUEL_LIVE.time-D.t)),W/2,32,d.go>0?'#ffd75e':'#fff',d.go>0?18:13);if(d.net)label(d.spec?'צופה בקרב חי':'קרב חי מול שחקן',W/2,48,'#7df9ff',10.5);if(d.trial){const el=Math.floor(SC.t-d.t0);label('אתגר היום · '+el+' שניות · '+(el<=TRIAL_T[0]?'זהב':el<=TRIAL_T[1]?'כסף':'ארד'),W/2,64,el<=TRIAL_T[0]?'#ffd75e':el<=TRIAL_T[1]?'#dfe6f5':'#d99a6c',11.5);}else if(d.tower)label('מגדל הנצח · קומה '+d.tower,W/2,64,'#ffd75e',11);
   if(d.go<=0&&!d.sent&&!d.spec){const far=Math.abs(f[1].x-f[0].x)>LIVE_RNG[f[me].cls]+14;if(far||!lined)label(!lined?'עמוד מולו כדי לפגוע':'התקרב כדי לתקוף',dX(f[me].x),dy(f[me])-150*sc*dsc(f[me]),'#ffd75e',11);}
   const hx0=SC.hero.x;SC.hero.x=dX(f[me].x);drawFx(dt);SC.hero.x=hx0;
 }
@@ -1407,7 +1409,7 @@ function renderParty(){
 }
 function renderArena(){
   const arenaOpps=A.opps||[];
-  let h=renderTower()+renderFriends()+(ONLINE&&liveDuels.length?'<h2>קרבות חיים עכשיו</h2>'+liveDuels.map(x=>'<div class="card opp"><div class="z"><b>'+esc(String(x.a))+' נגד '+esc(String(x.b))+'</b><small>דו-קרב חי</small></div><button class="btn sm pri" data-act="watch" data-id="'+(x.id|0)+'"'+(SC.mode==='farm'?'':' disabled')+'>צפה</button></div>').join(''):'')+renderTop()+renderGuild()+renderParty()+'<h2>זירה</h2><div class="card"><div class="grid2"><div class="kv"><span>דירוג</span><b class="num" style="color:var(--gold)">'+A.rating+'</b></div><div class="kv"><span>כרטיסים היום</span><b class="num">'+A.tickets+'</b></div></div>'+
+  let h=renderTrial()+renderTower()+renderFriends()+(ONLINE&&liveDuels.length?'<h2>קרבות חיים עכשיו</h2>'+liveDuels.map(x=>'<div class="card opp"><div class="z"><b>'+esc(String(x.a))+' נגד '+esc(String(x.b))+'</b><small>דו-קרב חי</small></div><button class="btn sm pri" data-act="watch" data-id="'+(x.id|0)+'"'+(SC.mode==='farm'?'':' disabled')+'>צפה</button></div>').join(''):'')+renderTop()+renderGuild()+renderParty()+'<h2>זירה</h2><div class="card"><div class="grid2"><div class="kv"><span>דירוג</span><b class="num" style="color:var(--gold)">'+A.rating+'</b></div><div class="kv"><span>כרטיסים היום</span><b class="num">'+A.tickets+'</b></div></div>'+
     '<p class="hint" style="margin-top:6px">קרב חי, שום דבר לא קורה לבד: זזים עם החיצים, תוקפים, ומפעילים שלושה כישורים, מגן, צעד חמיקה ושלושה שיקויים. מכת המהמם עוצרת את היריב לרגע, המגן בולם 60% מהנזק, ובזמן חמיקה אי אפשר לפגוע בך. כשהיריב לא מחובר, המשחק מפעיל את הדמות שלו עם הציוד האמיתי שלו. במקלדת: רווח לתקיפה, 1 עד 4 לכישורים, Q לחמיקה, E לשיקוי. '+(ONLINE?'הדמות שלך שמורה בשרת ומופיעה לשחקנים אחרים.':'מצב מקומי: יוצגו רק דמויות אימון.')+'</p>'+(A.pd?'<button class="btn pri glow" data-act="fight" data-i="0">חזור לקרב שהתחלת</button>':'')+'</div><h2>יריבים</h2>';
   arenaOpps.forEach((o,i)=>{h+='<div class="card opp"><div class="z"><b>'+esc(o.n)+'</b>'+(o.bot?'<span class="tag">דמות אימון</span>':'')+
     '<small>'+CLS[o.c].n+' · רמה '+L(o.l)+' · ריסטים '+L(o.r)+' · כוח '+L(fmt(o.p))+'</small></div><button class="btn sm pri" data-act="fight" data-i="'+i+'"'+(A.tickets>0&&SC.mode==='farm'?'':' disabled')+'>הילחם</button></div>';});
@@ -1681,6 +1683,7 @@ document.addEventListener('click',async e=>{
     else if(a==='challenge'){closeModal();const k=b.dataset.k;if(ws&&ws.readyState===1){netSend({t:'challenge',k:k});toast('ההזמנה נשלחה. מחכים לתשובה');r={ok:true};}else{r=await act('duelStart',{k:k});if(r.ok)startDuel(r.pd);else toast(r.msg==='net'?'אין חיבור לשרת':r.msg);}}
     else if(a==='friend'||a==='block'){const on=b.dataset.on==='1';closeModal();r=await act(a,{k:b.dataset.k,n:b.dataset.n,on:on});if(r.ok){toast(a==='friend'?(on?b.dataset.n+' נוסף לחברים':'הוסר מהחברים'):(on?b.dataset.n+' נחסם. לא תראה הודעות ממנו':'החסימה הוסרה'));askWho();}else toast(r.msg);}
     else if(a==='report'){const why=($('repWhy')||{}).value||'';closeModal();r=await act('report',{k:b.dataset.k,n:b.dataset.n,why:why});toast(r.ok?'הדיווח נשלח. תודה':r.msg);r={ok:true};}
+    else if(a==='trial'){r=await act('trialStart',{});if(r.ok)startDuel(r.pd);else toast(r.msg==='net'?'אין חיבור לשרת':r.msg);}
     else if(a==='tower'){r=await act('towerStart',{});if(r.ok)startDuel(r.pd);else toast(r.msg==='net'?'אין חיבור לשרת':r.msg);}
     else if(a==='pvpYes'||a==='pvpNo'){closeModal();netSend({t:'answer',id:+b.dataset.id,ok:a==='pvpYes'});r={ok:true};}
     else if(a==='pinvite'){closeModal();try{const j=await rpc('say',{m:b.dataset.n+', בוא לפארטי שלי. הקוד: '+party.code,g:false});toast(j&&j.result&&j.result.ok?'ההזמנה נשלחה בצ\'אט':'ההזמנה לא נשלחה');beatT=99;}catch(e){}r={ok:true};}
@@ -1719,6 +1722,13 @@ function showPeer(p){
     '<div class="grid2" style="margin-top:6px"><button class="btn" data-act="wTo" data-k="'+esc(p.k)+'" data-n="'+esc(s.n)+'">הודעה פרטית</button><button class="btn" data-act="friend" data-on="'+(isFriend(p.k)?0:1)+'" data-k="'+esc(p.k)+'" data-n="'+esc(s.n)+'">'+(isFriend(p.k)?'הסר מהחברים':'הוסף לחברים')+'</button>'+
     '<button class="btn sm" data-act="block" data-on="'+(isBlocked(p.k)?0:1)+'" data-k="'+esc(p.k)+'" data-n="'+esc(s.n)+'">'+(isBlocked(p.k)?'בטל חסימה':'חסום')+'</button><button class="btn sm" data-act="reportAsk" data-k="'+esc(p.k)+'" data-n="'+esc(s.n)+'">דווח</button></div>'+
     '<div class="acts"><button class="btn" data-act="closeModal">סגור</button></div>');
+}
+function renderTrial(){
+  const m=dayNum()%3,left=TRIAL_TRIES-(A.daily.tr|0),best=A.daily.trB,rw=t=>{const r=TRIAL_RW[t];return [r.gems?L(r.gems)+' אבני נשמה':'',r.coins?L(r.coins)+' מטבעות עונה':'',r.boxes?'תיבת אוצר':''].filter(Boolean).join(' · ');};
+  return '<h2>אתגר היום</h2><div class="card" style="display:block"><div class="kv"><b style="color:var(--gold)">שומר היום: '+TRIAL_MOD[m]+'</b><span>'+(best==null?'עוד לא הושלם היום':'ההישג שלך היום: '+TRIAL_MEDAL[best])+'</span></div>'+
+    '<div class="kv"><span>זהב · עד '+L(TRIAL_T[0])+' שניות</span><b>'+rw(0)+'</b></div><div class="kv"><span>כסף · עד '+L(TRIAL_T[1])+' שניות</span><b>'+rw(1)+'</b></div><div class="kv"><span>ארד · ניצחון</span><b>'+rw(2)+'</b></div>'+
+    '<p class="hint">השומר נבנה לפי הכוח של הדמות שלך, אז המדליה תלויה באיך שנלחמת ולא בציוד. השעון רץ מהרגע שנכנסת. מדליה טובה יותר משלמת את ההפרש. '+L(TRIAL_TRIES)+' ניסיונות ביום, ושומר אחר בכל יום.</p>'+
+    '<button class="btn pri'+(left>0&&best!==0?' glow':'')+'" style="width:100%" data-act="trial"'+(left>0&&SC.mode==='farm'?'':' disabled')+'>'+(left>0?'התחל · נותרו '+L(left)+' ניסיונות':'נגמרו הניסיונות להיום')+'</button></div>';
 }
 function renderTower(){
   const tw=A.tower||{best:0},f=(tw.best|0)+1,b=towerBoss(f),left=TOWER_TRIES-(A.daily.tw|0),rw=towerReward(f),c=calc(S,auras),secs=b.hp/Math.max(1,c.dps);

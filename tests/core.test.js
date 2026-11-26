@@ -392,3 +392,20 @@ test('a game master bonus is clamped, ends on time, and multiplies what events g
   assert.equal(G.evMods(t).xp,base.xp*3);assert.equal(G.evMods(t+60001).xp,G.evMods(t+60001).xp);assert.equal(G.boostNow(t+60001),null,'over when its time is up');
   G.setBoost({xp:2,drop:2,until:t+1000});assert.equal(G.evMods(t).drop,base.drop*2);G.setBoost(null);assert.equal(G.evMods(t).xp,base.xp);
 });
+
+test('what others see of a player carries the count of perfect ancient pieces',()=>{
+  G.setEnv(()=>.5,()=>1.8e12);const A=G.newAccount();G.apply(A,'create',{name:'Pf',cls:'blade'},{});const s=A.chars[0];assert.equal(G.fighter(s).pf,0);
+  s.eq.h=G.makeItem(s,'h',1,4,0);s.eq.h.pf=1;s.eq.a=G.makeItem(s,'a',1,4,0);s.eq.a.pf=1;assert.equal(G.fighter(s).pf,2);assert.equal(G.cleanPlayer('x',G.fighter(s)).pf,2);assert.equal(G.cleanPlayer('x',{pf:999}).pf,10);
+  G.setEnv(Math.random,Date.now);
+});
+
+test("the day's trial: sized to the character, timed by the server, a better medal pays the difference",()=>{
+  let t=Date.UTC(2026,10,26,12,20);G.setEnv(()=>.5,()=>t);const A=G.newAccount();G.apply(A,'create',{name:'Tri',cls:'blade'},{});const c=G.calc(A.chars[0]);
+  const s=G.apply(A,'trialStart',{},{});assert.ok(s.ok&&s.pd.trial>=1&&s.pd.trial<=3);assert.ok(Math.abs(s.pd.live.pool[1]/c.dps-(s.pd.trial===2?30:22))<.5,'the guardian is a fixed number of seconds of my own damage');
+  assert.ok(!G.apply(A,'towerEnd',{win:true},{}).ok,'a trial cannot be closed as a tower floor');assert.ok(!G.apply(A,'duelEnd',{win:true},{}).ok);
+  const fast=G.apply(A,'trialEnd',{win:true},{});assert.ok(fast.denied&&A.daily.trB==null,'an instant win is refused');
+  G.apply(A,'trialStart',{},{});t+=60000;const g0=A.gems,c0=A.coins,w=G.apply(A,'trialEnd',{win:true},{});assert.equal(w.tier,2);assert.equal(A.gems,g0+2);assert.equal(A.coins,c0+4);
+  G.apply(A,'trialStart',{},{});t+=25000;const b0=A.boxes,w2=G.apply(A,'trialEnd',{win:true},{});assert.equal(w2.tier,0);assert.equal(A.gems,g0+6);assert.equal(A.coins,c0+15);assert.equal(A.boxes,b0+1);
+  assert.ok(!G.apply(A,'trialStart',{},{}).ok,'three tries a day');t+=86400000;const n=G.apply(A,'trialStart',{},{});assert.ok(n.ok&&A.daily.trB==null,'a new day, a new trial');
+  G.setEnv(Math.random,Date.now);
+});

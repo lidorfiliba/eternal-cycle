@@ -67,6 +67,16 @@ async def run(pg,online):
         if i==9: await pg.screenshot(path='/tmp/tower.png')
         if i==12: await pg.evaluate("()=>{if(EC.SC.duel){EC.SC.duel.D.f[1].hp=.01;EC.A.pd.t-=200000}}")
     out['towerEnd']=await pg.evaluate("()=>[EC.SC.mode,EC.A.tower&&EC.A.tower.best,EC.A.daily.tw]")
+    await pg.click('[data-tab=arena]');await pg.wait_for_timeout(400)
+    out['trialBtn']=await pg.evaluate("()=>{const b=document.querySelector('[data-act=trial]');if(b)b.click();return !!b&&!b.disabled}");await pg.wait_for_timeout(1200)
+    out['trial']=await pg.evaluate("()=>[EC.SC.mode,EC.SC.duel&&EC.SC.duel.trial]")
+    for i in range(16):
+        if await pg.evaluate("()=>EC.SC.mode")!='duel': break
+        await pg.evaluate("()=>{const d=EC.SC.duel;if(!d||d.sent)return;const me=d.D.f[0],en=d.D.f[1];EC.SC.hero.dir=Math.abs(en.x-me.x)>60?(en.x>me.x?1:-1):0;for(const k of ['s3','s1','s0','atk'])EC.duelAct(k);}")
+        await pg.wait_for_timeout(400)
+        if i==6: await pg.screenshot(path='/tmp/trial.png')
+        if i==8: await pg.evaluate("()=>{if(EC.SC.duel){EC.SC.duel.D.f[1].hp=.01;EC.A.pd.t-=20000}}")
+    out['trialEnd']=await pg.evaluate("()=>[EC.SC.mode,EC.A.daily.trB,EC.A.daily.tr]")
     await pg.click('[data-tab=pass]');await pg.wait_for_timeout(1300)
     out['events']=await pg.evaluate("()=>[document.querySelectorAll('#panel .card').length,document.getElementById('evChip').textContent]")
     out['errors']=errs

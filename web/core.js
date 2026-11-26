@@ -81,7 +81,7 @@ const POOL={w:['dmg','crit','cdmg','aspd','xp','gold','drop'],a:['hp','def','xp'
   r:['dmg','crit','cdmg','aspd','xp'],q:['hp','def','xp','gold','drop'],n:['crit','cdmg','aspd','drop','gold','xp']};
 const SLOTS=['w','h','a','p','l','b','g','r','q','n'],DROPS=['w','h','a','p','l','b'],ARM={h:.35,a:.6,p:.4,l:.3,b:.35};
 // Jewelry: a ring of might (damage), a ring of life (health) and a necklace (some of both). Not part of any set.
-const JEW=['r','q','n'],JEWV={r:[1,0],q:[0,1],n:[.55,.55]},jewBase=t=>1.5+.8*t;
+const JEW=['r','q','n'],JEWV={r:[1,0],q:[0,1],n:[.55,.55]},jewBase=t=>1+.6*t;
 const SLOTN={w:'נשק',h:'קסדה',a:'שריון',p:'מכנסיים',l:'כפפות',b:'מגפיים',g:'כנפיים',r:'טבעת עוצמה',q:'טבעת חיים',n:'שרשרת'};
 const SETN=['שומרי היער','חופרי האבק','ילדי הערפל','זעם החולות','לב הכפור','גחלת נצחית','צל המגדל','כתר הנצח','בני התהום','נסיכי הקרח','אוצר ההיכל','לב המעגל','שומרי הזמן','יוצרי העולם'];
 const SETB=[[2,'hp',10],[3,'dmg',12],[4,'cdmg',25],[5,'aspd',8],[6,'dmg',25],[6,'xp',20]];
@@ -276,7 +276,7 @@ function gainItem(s,it,rep){
   if(s.autoEq&&canWear(s,it)&&(!cur||itemScore(it)>itemScore(cur))){s.eq[it.s]=it;if(rep)rep.equipped=(rep.equipped||0)+1;if(cur)stash(s,cur,rep);return 'eq';}
   return stash(s,it,rep)?'bag':'sold';
 }
-const JEW_RATE=.0009;
+const JEW_RATE=.0003;
 function jewelDrop(s,zi,rep,tab,exc){const it=makeItem(s,JEW[Math.floor(_rnd()*JEW.length)],tierOf(zi),rollRar(tab),zi);if(_rnd()<(exc||0))makeExcellent(it);const where=gainItem(s,it,rep);if(rep&&where!=='left'&&where!=='sold')(rep.notable=rep.notable||[]).push(it);return it;}
 function rollLoot(s,zi,kills,c,rep){
   const z=ZONES[zi];
@@ -356,6 +356,7 @@ const ELITE_RATE=.004,ELITE_HP=9,ELITE_LIFE=180000;
 // The Tower of Eternity: one boss a floor, each stronger than the last, with no top. Fought by hand in the arena,
 // with the arena's moves. A floor is the same for everyone; only the first time through each floor pays.
 const TOWER_TRIES=6;
+const TRIAL_TRIES=3,TRIAL_T=[30,45],TRIAL_RW=[{gems:6,coins:15,boxes:1},{gems:4,coins:8},{gems:2,coins:4}],TRIAL_MOD=['זועם','משוריין','מהיר'],TRIAL_MEDAL=['זהב','כסף','ארד'];
 const towerBoss=f=>({hp:Math.round(9000*Math.pow(1.2,f-1)),atk:Math.round(60*Math.pow(1.13,f-1))});
 function towerReward(f){const rw={gems:2+Math.floor(f/4),gold:800*f};if(f%3===0)rw.coins=6+Math.floor(f/3);if(f%5===0)rw.sboxes=1;if(f%10===0)rw.feathers=1+Math.floor(f/20);return rw;}
 const towerText=r=>[r.gems?r.gems+' אבני נשמה':'',r.gold?r.gold+' זהב':'',r.coins?r.coins+' מטבעות עונה':'',r.sboxes?'תיבת עונה':'',r.feathers?r.feathers+' נוצות נצח':''].filter(Boolean).join(', ');
@@ -385,7 +386,7 @@ function sideAdd(A,k,zi,n,now,r){const q=A.sq;if(!q||q.done||n<=0)return;if(now>
 const EGGS={moon:{rw:{gems:7},t:'הירח קרץ לך. 7 אבני נשמה'},dawn:{rw:{coins:15},t:'מי שקם בארבע בבוקר מקבל 15 מטבעות עונה'},circle:{rw:{gold:7777},t:'אמרת את מילת המעגל. 7,777 זהב'},
   lucky:{rw:{sboxes:1},t:'7,777 חיסולים בדיוק ביד. תיבת עונה'},still:{rw:{gems:5},t:'עמדת בשקט בכפר והקשבת. 5 אבני נשמה'}};
 function fighter(s){const c=calc(s);const g=it=>it?[it.t,it.r,it.p,it.season?1:0,it.ex?(isFull(it)?2:1):0]:null;let mn=99,sum=0;for(const k in ARM){const p=s.eq[k]?s.eq[k].p|0:0;sum+=p;if(p<mn)mn=p;}
-  return {n:s.name,c:s.cls,l:s.lvl,r:s.resets,p:c.power,d:Math.round(c.dmg),a:Math.round(c.aspd*100)/100,h:Math.round(c.hp),f:Math.round(c.def),cr:Math.round(c.crit*100)/100,cd:Math.round(c.cdmg*100)/100,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g),rt:s.rating,sp:[mn===99?0:mn,Math.round(sum/5)]};} // sp: lowest and average armor upgrade, for the glow others see
+  return {n:s.name,c:s.cls,l:s.lvl,r:s.resets,p:c.power,d:Math.round(c.dmg),a:Math.round(c.aspd*100)/100,h:Math.round(c.hp),f:Math.round(c.def),cr:Math.round(c.crit*100)/100,cd:Math.round(c.cdmg*100)/100,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g),rt:s.rating,sp:[mn===99?0:mn,Math.round(sum/5)],pf:SLOTS.reduce((n,k)=>n+(s.eq[k]&&s.eq[k].pf?1:0),0)};} // sp: lowest and average armor upgrade, for the glow others see
 function simDuel(A,B){
   const f=[{hp:A.h*5,n:0,t:.2,o:A},{hp:B.h*5,n:0,t:.35,o:B}],ev=[];let guard=0;
   while(f[0].hp>0&&f[1].hp>0&&guard++<600){
@@ -460,7 +461,7 @@ function brAct(B,i,k,rnd){
   B.f.forEach((e,q)=>{if(q===i||!e.alive)return;const d=Math.abs(e.x-me.x);if(d<=rng&&Math.abs(e.z-me.z)<=LIVE_LANE&&d<bd){bd=d;j=q;}});if(j<0)return null;
   const e=B.f[j];let mult;if(k==='atk'){me.at.atk=t+me.T;me.chain=(me.chain+1)%4;mult=me.T/1.5*(me.chain===0?1.5:.84)*1.5;}else{const sk=K.sk[k==='s0'?0:k==='s1'?1:3];me.at[k]=t+sk.cd;mult=sk.m;}
   o.to=j;me.face=e.x>=me.x?1:-1;if(e.inv>t){o.miss=true;return o;}
-  o.crit=rnd()<me.cr;let dm=clamp(me.d*300/(300+e.def)/e.pool,.012,.22)*mult*(o.crit?1.5:1)*(.9+rnd()*.2);if(e.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}
+  o.crit=rnd()<me.cr;let dm=clamp(me.d*300/(300+e.def)/e.pool,.022,.25)*mult*(o.crit?1.5:1)*(.9+rnd()*.2);if(e.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}
   e.hp-=dm;o.dm=dm;if(k==='s1'&&!o.guard){e.stun=t+K.sk[1].stun;o.stun=true;}if(e.hp<=0){brKill(B,j,i);o.dead=true;}return o;
 }
 // One step of the server's clock: the ring burns whoever stands outside it, and the server's own fighters move and act.
@@ -481,7 +482,7 @@ function brStep(B,dt,rnd){
 // Places, winner first: whoever still stands (most health first), then the fallen from last to first.
 function brRank(B){const a=B.f.map((f,i)=>i).filter(i=>B.f[i].alive).sort((x,y)=>B.f[y].hp-B.f[x].hp);return a.concat(B.out.slice().reverse());}
 function brBots(ps,n,rnd){const avg=k=>ps.reduce((a,p)=>a+p[k],0)/ps.length,cl=Object.keys(CLS),out=[];
-  for(let i=0;i<n;i++){const m=.7+rnd()*.35;out.push({id:'bot'+i,bot:true,n:BOTN[i%BOTN.length],c:cl[Math.floor(rnd()*cl.length)],l:Math.round(avg('l')),r:0,p:Math.round(avg('p')*m),d:avg('d')*m,a:avg('a'),h:avg('h')*m,f:avg('f')*m,cr:avg('cr'),cd:avg('cd'),w:null,ar:null,g:null,rt:1000,sp:[0,0]});}return out;}
+  for(let i=0;i<n;i++){const m=.6+rnd()*.35;out.push({id:'bot'+i,bot:true,n:BOTN[i%BOTN.length],c:cl[Math.floor(rnd()*cl.length)],l:Math.round(avg('l')),r:0,p:Math.round(avg('p')*m),d:avg('d')*m,a:avg('a'),h:avg('h')*m,f:avg('f')*m,cr:avg('cr'),cd:avg('cd'),w:null,ar:null,g:null,rt:1000,sp:[0,0]});}return out;}
 // The prize, by place. An ancient chest opens on the spot: a sure ancient set piece when at least two players fought
 // (legendary or ancient when the winner was alone with the server's fighters), plus a jewel.
 function brReward(A,place,humans){
@@ -665,7 +666,7 @@ function cleanPlayer(id,o){
   o=o||{};
   return {id:String(id),n:String(o.n||'אלמוני').slice(0,14),c:CLS[o.c]?o.c:'blade',l:numOr(o.l,1,1,CAP)|0,r:numOr(o.r,0,0,99999)|0,p:numOr(o.p,1,1,1e9)|0,
     d:numOr(o.d,10,1,1e8),a:numOr(o.a,1,.3,3.2),h:numOr(o.h,100,1,1e9),f:numOr(o.f,0,0,1e7),cr:numOr(o.cr,.05,0,.6),cd:numOr(o.cd,2,1,10),
-    w:gearOr(o.w),ar:gearOr(o.ar),g:gearOr(o.g),rt:numOr(o.rt,1000,0,99999)|0,sp:Array.isArray(o.sp)?[numOr(o.sp[0],0,0,15)|0,numOr(o.sp[1],0,0,15)|0]:[0,0]};
+    w:gearOr(o.w),ar:gearOr(o.ar),g:gearOr(o.g),rt:numOr(o.rt,1000,0,99999)|0,sp:Array.isArray(o.sp)?[numOr(o.sp[0],0,0,15)|0,numOr(o.sp[1],0,0,15)|0]:[0,0],pf:numOr(o.pf,0,0,10)|0};
 }
 function cleanItem(o){
   if(!o||SLOTS.indexOf(o.s)<0)return null;
@@ -869,8 +870,21 @@ function apply(A,kind,args,ctx){
       // the same screen and moves as a duel: how much of the boss one and a half seconds of my attacking removes, and of me his
       const L={b:[clamp(c.dps*1.5/b.hp,.004,.6),clamp(b.atk*1.5*300/(300+c.def)/(c.hp*1.6),.01,.9)],cr:[clamp(c.crit,0,.75),0],T:[clamp(1/Math.max(.3,c.aspd),.3,1.2),1.5],pool:[c.hp*1.6,b.hp]};
       A.pd={tower:f,t:now,live:L,o:{n:'שומר קומה '+f,c:'blade',l:f,r:0,p:b.hp,bossZ:(f*5)%BASEZ}};r.pd=A.pd;r.left=TOWER_TRIES-A.daily.tw;break;}
+    // The day's trial: one guardian sized to the character's own strength, so the medal is about how well the fight
+    // was played and not about gear. The server times the fight itself; a better medal pays only the difference.
+    case 'trialStart':{
+      if((A.daily.tr|0)>=TRIAL_TRIES)return fail('נגמרו הניסיונות לאתגר היום');const c=calc(S),m=dayNum()%3,hp=Math.max(50,c.dps*(m===1?30:22));A.daily.tr=(A.daily.tr|0)+1;
+      const L={b:[clamp(c.dps*1.5/hp,.004,.6),m===1?.05:.075],cr:[clamp(c.crit,0,.75),0],T:[clamp(1/Math.max(.3,c.aspd),.3,1.2),m===2?1:1.5],pool:[c.hp*1.6,hp]};
+      A.pd={tower:1,trial:m+1,t:now,live:L,o:{n:'שומר היום',c:'blade',l:S.lvl,r:0,p:Math.round(hp),bossZ:(dayNum()*7)%BASEZ}};r.pd=A.pd;r.left=TRIAL_TRIES-A.daily.tr;break;}
+    case 'trialEnd':{
+      const pd=A.pd;if(!pd||!pd.trial)return fail('אין קרב פעיל');const el=(now-pd.t)/1000;let win=!!args.win;
+      if(win&&el<1/(pd.live.b[0]*DUEL_LIVE.maxRate)*.8){win=false;r.denied=true;}
+      A.pd=null;r.win=win;r.el=Math.round(el);
+      if(win){const tier=el<=TRIAL_T[0]?0:el<=TRIAL_T[1]?1:2,best=A.daily.trB;r.tier=tier;A.trials=(A.trials||0)+1;
+        if(best==null||tier<best){const rw=TRIAL_RW[tier],old=best==null?{}:TRIAL_RW[best],d={};for(const k in rw){const v=rw[k]-(old[k]||0);if(v>0)d[k]=v;}give(A,S,d);A.daily.trB=tier;r.rt=[d.gems?d.gems+' אבני נשמה':'',d.coins?d.coins+' מטבעות עונה':'',d.boxes?'תיבת אוצר':''].filter(Boolean).join(', ');}}
+      break;}
     case 'towerEnd':{
-      const pd=A.pd;if(!pd||!pd.tower)return fail('אין קרב פעיל');const el=(now-pd.t)/1000,f=pd.tower;let win=!!args.win;
+      const pd=A.pd;if(!pd||!pd.tower||pd.trial)return fail('אין קרב פעיל');const el=(now-pd.t)/1000,f=pd.tower;let win=!!args.win;
       if(win&&el<1/(pd.live.b[0]*DUEL_LIVE.maxRate)*.8){win=false;r.denied=true;}
       A.pd=null;r.win=win;r.f=f;if(win){A.daily.tw=Math.max(0,(A.daily.tw|0)-1);A.tower.best=Math.max(A.tower.best|0,f);const rw=towerReward(f);give(A,S,rw);r.rt=towerText(rw);if(f>=PERFECT_FLOOR){const it=perfectDrop(S,clamp(A.open|0,0,ZONES.length-1),null,PERFECT_TOWER);if(it){r.perfect=1;r.notable=[it];}}}break;}
     case 'duelEnd':{
@@ -900,4 +914,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
