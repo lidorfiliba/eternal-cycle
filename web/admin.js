@@ -48,7 +48,7 @@
     }catch(e){signForm('אין חיבור לשרת');}
   }
   function render(d,note){
-    let h='<p class="dim">מחובר כ-<b dir="auto">'+esc(ses&&ses.user||'')+'</b> · <button data-a="sOut" data-u="">יציאה</button></p>'+(note?'<div class="card"><b>'+note+'</b></div>':'');
+    let h='<p class="dim">מחובר כ-<b dir="auto">'+esc(ses&&ses.user||'')+'</b> · <button data-a="sOut" data-u="">יציאה</button> · <button data-a="sNew" data-u="">קודי חירום חדשים</button></p>'+(note?'<div class="card"><b>'+note+'</b></div>':'');
     h+='<div class="card"><h2>אירועים וכלי משחק</h2><p class="dim">פועל מיד על כל המחוברים, ונרשם ביומן.</p>'+
       '<p><b>הודעה לכולם</b><br><input id="gmSay" maxlength="120" placeholder="טקסט ההודעה" style="width:70%"> <button data-a="gm" data-u="say">שלח</button></p>'+
       '<p><b>בונוס לכולם</b><br>ניסיון × <input id="gmXp" value="1.5" size="3"> שלל × <input id="gmDrop" value="1" size="3"> למשך <input id="gmMin" value="30" size="3"> דקות <button data-a="gm" data-u="boost">הפעל</button> <button data-a="gm" data-u="boost0">בטל בונוס</button></p>'+
@@ -93,6 +93,7 @@
   }
   out.addEventListener('click',async e=>{
     const b=e.target.closest('button[data-a]');if(!b)return;
+    if(b.dataset.a==='sNew'){const c=prompt('הקלד את 6 הספרות שמופיעות עכשיו באפליקציית האימות. הקודים הישנים יפסיקו לעבוד.');if(!c)return;let r=null;try{r=await post('tfaCodes',{code:c.trim()},ses.token);}catch(err){}if(!r||!r.ok){await load(esc(r&&r.msg||'הפעולה נכשלה'));return;}sign={step:'codes',user:ses.user,pass:'',tok:ses.token,sec:null,codes:r.codes};return signForm();}
     if(b.dataset.a==='sOut'){keep(null);sign={step:'in',user:'',pass:'',tok:'',sec:null,codes:null};return signForm();}
     if(b.dataset.a[0]==='s'&&['sIn','sCode','sBack','sOn','sDone'].indexOf(b.dataset.a)>=0){b.disabled=true;await signDo(b.dataset.a);return;}
     if(b.dataset.a==='gm'){const k=b.dataset.u,n=id=>+($(id)?$(id).value:0)||0,m=k==='say'?{a:'say',m:$('gmSay').value}:k==='boost'?{a:'boost',xp:n('gmXp'),drop:n('gmDrop'),min:n('gmMin')}:k==='boost0'?{a:'boost',min:0}:k==='br'?{a:'br',sec:n('gmSec')}:k==='siege'?{a:'siege',min:n('gmSg')}:k==='siegeBots4'?{a:'siegeBots',min:n('gmSg'),n:4}:k==='siegeBots6'?{a:'siegeBots',min:n('gmSg'),n:6}:{a:k};

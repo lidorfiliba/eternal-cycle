@@ -42,6 +42,7 @@ export function makeServer(admin, secret, origin = '*', opts = {}) {
       if (kind === 'setsecret') return send(res, await auth.setSecret(uid, args.pass, args.q, args.a));
       if (kind === 'tfaStart') return send(res, await auth.tfaStart(uid, args.pass));
       if (kind === 'tfaOn') return send(res, await auth.tfaOn(uid, args.code, args.mgmt === true));
+      if (kind === 'tfaCodes') return send(res, await auth.tfaCodes(uid, args.code));
       if (kind === 'tfaOff') return send(res, await auth.tfaOff(uid, args.pass, args.code));
       if (kind === 'chpass') return send(res, await auth.chpass(uid, args.pass, args.next));
       if (kind === 'delacct') { const r = await auth.delacct(uid, args.pass); if (r && r.ok) await push.off(uid); return send(res, r); }

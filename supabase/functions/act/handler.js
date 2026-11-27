@@ -362,6 +362,14 @@ export function makeAuth(admin, secret, clock = Date.now) {
     const hs = []; for (const c of codes) hs.push(await sha(c)); await admin.from("users").update({ tfa_on: true, tfa_codes: hs }).eq("user_id", uid);
     return mgmt ? { ok: true, codes, token: await token(uid, true) } : { ok: true, codes };
   }
+  // New backup codes, for whoever lost the first ones: asked with a code from the phone, and the old ones stop working.
+  async function tfaCodes(uid, code) {
+    const t = (await admin.from("users").select("user_id," + TFA_COLS).eq("user_id", uid).maybeSingle()).data; if (!t || !t.tfa_on) return fail("האימות הדו-שלבי לא פעיל");
+    if (!/^\d{6}$/.test(String(code == null ? "" : code).replace(/\s/g, "")) || !await tfaCheck(t, code)) return fail("הקוד שגוי. הקלד את 6 הספרות שמופיעות עכשיו באפליקציה");
+    const codes = []; for (let i = 0; i < 8; i++) codes.push(b32(crypto.getRandomValues(new Uint8Array(7))).slice(0, 10));
+    const hs = []; for (const c of codes) hs.push(await sha(c)); await admin.from("users").update({ tfa_codes: hs }).eq("user_id", uid);
+    return { ok: true, codes };
+  }
   async function tfaOff(uid, pass, code) {
     const row = await userBy(uid); if (!await passOk(row, pass)) return fail("הסיסמה שגויה");
     const t = (await admin.from("users").select("user_id," + TFA_COLS).eq("user_id", uid).maybeSingle()).data; if (!t || !t.tfa_on) return fail("האימות הדו-שלבי לא פעיל");
@@ -486,5 +494,5 @@ export function makeAuth(admin, secret, clock = Date.now) {
     if (mgmt) return { ok: true, token: await token(row.user_id, !!row.tfa_on), user: u, strong: !!row.tfa_on };
     return { ok: true, token: await token(row.user_id), user: u };
   }
-  return { register, login, verify, session, forgot, recover, setSecret, chpass, delacct, adminReset, whoami, tfaStart, tfaOn, tfaOff };
+  return { register, login, verify, session, forgot, recover, setSecret, chpass, delacct, adminReset, whoami, tfaStart, tfaOn, tfaOff, tfaCodes };
 }

@@ -596,5 +596,7 @@ test('two-step sign-in, for whoever wants it: a time code or a backup code after
   const later=now()+60000;const l1=await auth.login('twostep','correct horse 1','3.3.3.3',code(st.secret,later+30000));assert.ok(!l1.ok,'a code from another minute is refused');
   assert.ok((await auth.login('twostep','correct horse 1','3.3.3.3',on.codes[0])).ok,'a backup code opens it');assert.equal((await auth.login('twostep','correct horse 1','3.3.3.3',on.codes[0])).ok,false,'once');
   const rc=await auth.recover('twostep','Herzl','brand new pass 2','3.3.3.3');assert.ok(!rc.ok&&rc.tfa,'the recovery question alone does not open it');assert.ok((await auth.recover('twostep','Herzl','brand new pass 2','3.3.3.3',on.codes[1])).ok);
+  // lost the backup codes: new ones are asked with the phone's code, and the old ones die
+  assert.equal((await auth.tfaCodes(uid,'000000')).ok,false);clock.add(120);const nc=await auth.tfaCodes(uid,code(st.secret,now()));assert.ok(nc.ok&&nc.codes.length===8&&nc.codes[0]!==on.codes[2],nc.msg);assert.equal((await auth.login('twostep','brand new pass 2','3.3.3.3',on.codes[3])).ok,false,'an old code no longer opens it');assert.ok((await auth.login('twostep','brand new pass 2','3.3.3.3',nc.codes[0])).ok);on.codes[2]=nc.codes[1];
   assert.equal((await auth.tfaOff(uid,'brand new pass 2','000000')).ok,false);assert.ok((await auth.tfaOff(uid,'brand new pass 2',on.codes[2])).ok);assert.ok((await auth.login('twostep','brand new pass 2','3.3.3.3')).ok,'and off again, the password is enough');
 });
