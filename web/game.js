@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261127125507';
+const BUILD='20261127130136';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -16,6 +16,8 @@ const savePrefs=()=>{try{localStorage.setItem(PKEY,JSON.stringify(prefs));}catch
 const KEYDEF={atk:' ',s0:'1',s1:'2',s2:'3',s3:'4',dash:'q',pot:'e',buf:'r',bash:'f',use:'g',k0:'1',k1:'2',k2:'3',k3:'4',k4:'5',k5:'6'};
 const KEYS_FIGHT=[['atk','תקיפה'],['s0','מיומנות ראשונה'],['s1','מיומנות מהממת'],['s3','מיומנות גדולה'],['s2','מגן'],['dash','צעד'],['pot','שיקוי'],['buf','באף לקבוצה'],['bash','הדיפה'],['use','לחיצה על מתג או כתר']];
 const KEYS_FARM=[0,1,2,3,4,5].map(i=>['k'+i,'מיומנות '+(i+1)]);
+// A key is known by where it sits on the keyboard, not by the letter the current language puts on it: E is E in Hebrew too.
+const evKey=e=>{const c=e.code||'';if(/^Key[A-Z]$/.test(c))return c[3].toLowerCase();if(/^Digit[0-9]$/.test(c))return c[5];if(/^Numpad[0-9]$/.test(c))return c[6];if(c==='Space')return ' ';return e.key||'';};
 const keyOf=a=>(prefs.keys&&prefs.keys[a])||KEYDEF[a],keyName=k=>k===' '?'רווח':k.length===1?k.toUpperCase():k;
 const keyAct=(list,k)=>{for(const x of list)if(keyOf(x[0])===k)return x[0];return '';};
 const keyTaken=k=>!!(keyAct(KEYS_FIGHT,k)||keyAct(KEYS_FARM,k));
@@ -32,7 +34,7 @@ function settingsHtml(){
     '<div class="grid2" style="margin-top:10px"><button class="btn" data-act="keysReset">חזרה לברירת המחדל</button><button class="btn pri" data-act="closeModal">סגור</button></div>';
 }
 function openSettings(){bindWait='';openModal(settingsHtml());}
-window.addEventListener('keydown',e=>{if(!bindWait)return;if(!$('modal').classList.contains('on')){bindWait='';return;}e.preventDefault();e.stopImmediatePropagation();const k=e.key.length===1?e.key.toLowerCase():e.key;
+window.addEventListener('keydown',e=>{if(!bindWait)return;if(!$('modal').classList.contains('on')){bindWait='';return;}e.preventDefault();e.stopImmediatePropagation();const k=evKey(e).length===1?evKey(e).toLowerCase():evKey(e);
   if(k!=='Escape'&&!/^(Shift|Control|Alt|Meta|Tab|Enter|Arrow.*)$/.test(k)){const list=bindWait[0]==='k'&&bindWait.length===2?KEYS_FARM:KEYS_FIGHT,old=keyOf(bindWait),other=keyAct(list,k);prefs.keys=prefs.keys||{};if(other&&other!==bindWait)prefs.keys[other]=old;prefs.keys[bindWait]=k;savePrefs();}
   bindWait='';$('modalBox').innerHTML=settingsHtml();},true);
 document.addEventListener('input',e=>{const t=e.target;if(!t||(t.id!=='szMv'&&t.id!=='szAt'))return;if(t.id==='szMv'){prefs.mvS=+t.value;$('szMvV').textContent=t.value+'%';}else{prefs.atS=+t.value;$('szAtV').textContent=t.value+'%';}savePrefs();applySizes();});
@@ -880,14 +882,14 @@ function holdBtn(id,d){const b=$(id);const on=e=>{e.preventDefault();initAudio()
   b.addEventListener('pointerdown',on);for(const ev of ['pointerup','pointercancel','pointerleave'])b.addEventListener(ev,off);b.addEventListener('contextmenu',e=>e.preventDefault());}
 holdBtn('mvL',-1);holdBtn('mvR',1);
 for(const [id,v] of [['mvU',-1],['mvD',1]]){const b=$(id),on=e=>{e.preventDefault();initAudio();SC.hero.dz=v;b.classList.add('hold');},off=()=>{if(SC.hero.dz===v)SC.hero.dz=0;b.classList.remove('hold');};b.addEventListener('pointerdown',on);for(const ev of ['pointerup','pointercancel','pointerleave'])b.addEventListener(ev,off);b.addEventListener('contextmenu',e=>e.preventDefault());}
-window.addEventListener('keydown',e=>{if(!SC.duel||e.target&&e.target.tagName==='INPUT')return;if(e.key==='ArrowUp'||(e.key==='w'&&!keyTaken('w'))){SC.hero.dz=-1;e.preventDefault();}else if(e.key==='ArrowDown'||(e.key==='s'&&!keyTaken('s'))){SC.hero.dz=1;e.preventDefault();}});
-window.addEventListener('keyup',e=>{if((e.key==='ArrowUp'||e.key==='w')&&SC.hero.dz<0||(e.key==='ArrowDown'||e.key==='s')&&SC.hero.dz>0)SC.hero.dz=0;});
+window.addEventListener('keydown',e=>{if(!SC.duel||e.target&&e.target.tagName==='INPUT')return;if(evKey(e)==='ArrowUp'||(evKey(e)==='w'&&!keyTaken('w'))){SC.hero.dz=-1;e.preventDefault();}else if(evKey(e)==='ArrowDown'||(evKey(e)==='s'&&!keyTaken('s'))){SC.hero.dz=1;e.preventDefault();}});
+window.addEventListener('keyup',e=>{if((evKey(e)==='ArrowUp'||evKey(e)==='w')&&SC.hero.dz<0||(evKey(e)==='ArrowDown'||evKey(e)==='s')&&SC.hero.dz>0)SC.hero.dz=0;});
 {const bar=$('duelBar');bar.addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||b.disabled||!SC.duel)return;e.preventDefault();initAudio();if(b.dataset.a==='atk')SC.duel.holdAtk=true;duelAct(b.dataset.a);});
   for(const ev of ['pointerup','pointercancel','pointerleave'])bar.addEventListener(ev,()=>{if(SC.duel)SC.duel.holdAtk=false;});bar.addEventListener('contextmenu',e=>e.preventDefault());
-  window.addEventListener('keydown',e=>{if(!SC.duel||e.target&&e.target.tagName==='INPUT')return;const k=keyAct(KEYS_FIGHT,e.key.toLowerCase());if(!k)return;e.preventDefault();if(k==='use'){const u=$('useBtn');if(u&&u.style.display!=='none')u.click();return;}if(k==='atk')SC.duel.holdAtk=true;duelAct(k);});
-  window.addEventListener('keyup',e=>{if(SC.duel&&e.key.toLowerCase()===keyOf('atk'))SC.duel.holdAtk=false;});}
-window.addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT')return;const k=e.key;if(k==='ArrowLeft'||(k==='a'&&!keyTaken('a')))SC.hero.dir=-1;else if(k==='ArrowRight'||(k==='d'&&!keyTaken('d')))SC.hero.dir=1;else if(S&&!demo&&!SC.duel){const fk=keyAct(KEYS_FARM,k.length===1?k.toLowerCase():k);if(fk)cast(+fk[1],false);}});
-window.addEventListener('keyup',e=>{const k=e.key;if((k==='ArrowLeft'||k==='a')&&SC.hero.dir<0||(k==='ArrowRight'||k==='d')&&SC.hero.dir>0)SC.hero.dir=0;});
+  window.addEventListener('keydown',e=>{if(!SC.duel||e.target&&e.target.tagName==='INPUT')return;const k=keyAct(KEYS_FIGHT,evKey(e).toLowerCase());if(!k)return;e.preventDefault();if(k==='use'){const u=$('useBtn');if(u&&u.style.display!=='none')u.click();return;}if(k==='atk')SC.duel.holdAtk=true;duelAct(k);});
+  window.addEventListener('keyup',e=>{if(SC.duel&&evKey(e).toLowerCase()===keyOf('atk'))SC.duel.holdAtk=false;});}
+window.addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT')return;const k=evKey(e);if(k==='ArrowLeft'||(k==='a'&&!keyTaken('a')))SC.hero.dir=-1;else if(k==='ArrowRight'||(k==='d'&&!keyTaken('d')))SC.hero.dir=1;else if(S&&!demo&&!SC.duel){const fk=keyAct(KEYS_FARM,k.length===1?k.toLowerCase():k);if(fk)cast(+fk[1],false);}});
+window.addEventListener('keyup',e=>{const k=evKey(e);if((k==='ArrowLeft'||k==='a')&&SC.hero.dir<0||(k==='ArrowRight'||k==='d')&&SC.hero.dir>0)SC.hero.dir=0;});
 window.addEventListener('blur',()=>{SC.hero.dir=0;});
 // The walking stick of the Last Circle: hold it and lean it the way you want to go.
 const joy={v:[0,0],id:null};
@@ -1018,9 +1020,9 @@ function brEnter(n,left){
   SC.mode='duel';SC.fx=[];SC.nums=[];SC.drops=[];SC.hero.dir=0;SC.hero.dz=0;closeModal();renderDuelBar();toast('הגעת לזירת המעגל האחרון. הקרב מתחיל כשההרשמה נסגרת',4);
 }
 function brBegin(m){
-  const d=SC.duel;if(!d||!d.br)return;const b=d.br,fs=Array.isArray(m.f)?m.f:[];d.me=m.me|0;b.phase='fight';b.looks=[];b.names=[];b.bot=[];b.tg=[];b.deadT=[];d.v=[];d.D.f=[];b.go=null;
+  const d=SC.duel;if(!d||!d.br)return;const b=d.br,fs=Array.isArray(m.f)?m.f:[];d.me=m.me|0;b.phase='fight';b.looks=[];b.hpv=[];b.names=[];b.bot=[];b.tg=[];b.deadT=[];d.v=[];d.D.f=[];b.go=null;
   b.g=[];b.tag=[];
-  fs.forEach((raw,i)=>{const p=G.cleanPlayer('f'+i,raw),xy=m.xy&&m.xy[i]||[0,0];b.g.push(raw.g|0);b.tag.push(String(raw.tag||''));b.looks.push(i===d.me?lookOf(S):p);b.names.push(p.n);b.bot.push(raw.bot?1:0);b.tg.push(null);b.deadT.push(0);
+  fs.forEach((raw,i)=>{const p=G.cleanPlayer('f'+i,raw),xy=m.xy&&m.xy[i]||[0,0];b.g.push(raw.g|0);b.tag.push(String(raw.tag||''));b.looks.push(i===d.me?lookOf(S):p);b.hpv.push(p.h);b.names.push(p.n);b.bot.push(raw.bot?1:0);b.tg.push(null);b.deadT.push(0);
     const f=brF(+xy[0],+xy[1]);f.cls=p.c;f.at={atk:0,s0:1,s1:3,s2:0,s3:8,dash:0,pot:0};d.D.f.push(f);d.v.push({anim:0,face:1,mv:false,hitT:0});});
   b.loot=(m.loot||[]).map(l=>({id:l[0],x:+l[1],y:+l[2],k:String(l[3])}));
   d.D.t=+m.T||-4;d.go=Math.max(.1,-d.D.t);b.cam=[d.D.f[d.me].x,d.D.f[d.me].y];snd('boss');renderDuelBar();
@@ -1066,7 +1068,7 @@ function brShow(d,o){
   else if(k==='s0')SC.fx.push({k:'rune',x:ax,y:g-2,r:56,life:.6,d:.6,c:cc});
   attackFx(a.cls,ax,g,va.face,[{x:vx,y:ge-10}],big,a.w?col:cc);
   if(o.miss){addNum(vx,ge-110,'חמק!','#9fe8ff',true);return;}
-  d.v[o.to].hitT=.18;if(o.by===d.me||o.to===d.me)snd(o.crit?'crit':big?'skill':'hit');addNum(vx,ge-92,Math.max(1,Math.round(o.dm*100))+'%',o.to===d.me?'#ff5c7a':o.crit?'#ffd75e':'#fff',o.crit||big);
+  d.v[o.to].hitT=.18;if(o.by===d.me||o.to===d.me)snd(o.crit?'crit':big?'skill':'hit');addNum(vx,ge-92,fmt(Math.max(1,Math.round(o.dm*(b.sg?(b.hpv&&b.hpv[o.to]||2000)*5:10000)))),o.to===d.me?'#ff5c7a':o.crit?'#ffd75e':'#fff',o.crit||big);
   if(o.stun)addNum(vx,ge-128,'הלם','#ffd75e',false);
   if(o.combo){snd('ult');SC.nums.push({x:vx,y:ge-150,txt:'קומבו!',c:'#ff5c7a',s:36,life:1.4});SC.fx.push({k:'star',x:vx,y:ge-40,r:70,rot:0,life:.5,d:.5,c:'#ff5c7a'});SC.fx.push({k:'ring',x:vx,y:ge-10,life:.5,c:'#ffd75e',r:90});snd('slam');burst(vx,ge-40,'#ffb23e',46);burst(vx,ge-40,'#fff',18);for(let q=0;q<3;q++)SC.fx.push({k:'ring',x:vx,y:ge-10,life:.45+q*.18,c:q===1?'#fff':'#ff5c7a',r:70+q*55});for(let q=-3;q<=3;q++)SC.fx.push({k:'pillar',x:vx+q*24,y:ge,life:.4+Math.abs(q)*.06,d:.6,c:q%2?'#ffd75e':'#ff5c7a'});SC.fx.push({k:'flash',x:vx,y:ge-40,r:150,life:.3,d:.3,c:'#fff'});if(!calm)SC.fx.push({k:'screen',life:.22,d:.22,c:'#ffb23e'});if(!calm)SC.shake=o.by===d.me||o.to===d.me?.7:.3;}
   else if(b.sg&&o.cb===2&&o.by===d.me)addNum(ax,g-150,'קומבו 2/3','#ffb23e',false);
@@ -1400,7 +1402,7 @@ function netMsg(m){
   else if(m.t==='gmRes'){toast(String(m.msg||''),4);}
   else if(m.t==='brNo'){brAsk=false;toast('ההרשמה למעגל האחרון סגורה כרגע');}
   else if(m.t==='brStart'){if(m.sg){if(!(d&&d.br)){if(SC.mode!=='farm')return;brEnter(0,0);}const b=SC.duel.br;b.sg=m.sg;b.lead=!!m.lead;b.test=!!m.test;b.gn={};for(const g of m.guilds||[])b.gn[g[0]]=String(g[1]);}brBegin(m);}
-  else if(m.t==='sgAdd'){if(d&&d.br&&d.br.sg&&m.f&&m.i===d.D.f.length){const b=d.br,p=G.cleanPlayer('f'+m.i,m.f),f=brF(+m.xy[0],+m.xy[1]);f.cls=p.c;f.pots=SG.pots;d.D.f.push(f);d.v.push({anim:0,face:1,mv:false,hitT:0});b.looks.push(p);b.names.push(p.n);b.bot.push(0);b.tg.push(null);b.deadT.push(0);b.g.push(m.f.g|0);b.tag.push(String(m.f.tag||''));addNum(W/2,H*.3,p.n+' הצטרף למצור','#c9c2ea',false);}}
+  else if(m.t==='sgAdd'){if(d&&d.br&&d.br.sg&&m.f&&m.i===d.D.f.length){const b=d.br,p=G.cleanPlayer('f'+m.i,m.f),f=brF(+m.xy[0],+m.xy[1]);f.cls=p.c;f.pots=SG.pots;(b.hpv=b.hpv||[])[m.i]=p.h;d.D.f.push(f);d.v.push({anim:0,face:1,mv:false,hitT:0});b.looks.push(p);b.names.push(p.n);b.bot.push(0);b.tg.push(null);b.deadT.push(0);b.g.push(m.f.g|0);b.tag.push(String(m.f.tag||''));addNum(W/2,H*.3,p.n+' הצטרף למצור','#c9c2ea',false);}}
   else if(m.t==='sgOpen'){const left=+m.left||0;sgLive=left>0?Date.now()+left:0;sgTest=!!m.test;if(left>0&&!m.quiet){snd('boss');announce((m.test?'מצור ידידות נפתח':'מצור הטירה התחיל')+'! מצטרפים מלשונית הגילדה',true);}panelDirty=true;}
   else if(m.t==='sgHint'){toast({held:'המתג תפוס. קודם צריך להפיל את מי שמחזיק בו',lead:'רק מנהל הגילדה יכול לקחת את הכתר',own:'הטירה כבר שלכם',sw:'צריך ששני חברי גילדה אחרים יחזיקו את שני המתגים',wound:'פצוע מקומבו: אי אפשר לשתות עוד רגע'}[m.no]||'אי אפשר כרגע',4);}
   else if(m.t==='sgNo'){toast(m.why==='guild'?'רק חברי גילדה יכולים להצטרף למצור':'אין מצור פתוח כרגע');}
@@ -2170,7 +2172,7 @@ async function say(){
   const r=j&&j.result;if(!r||!r.ok){toast(r&&r.msg||'ההודעה לא נשלחה');if(!el.value)el.value=m;return;}
   beatT=99;
 }
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='chatIn'){e.preventDefault();say();}});
+document.addEventListener('keydown',e=>{if(evKey(e)==='Enter'&&e.target&&e.target.id==='chatIn'){e.preventDefault();say();}});
 function renderChatBar(){
   const el=$('chatBar');if(!el)return;if(!ONLINE||demo||!S){el.style.display='none';return;}el.style.display='';
   const m=Date.now()-chatAt<180000?chatLog[chatLog.length-1]:null,t=(chatUnread?'('+chatUnread+') ':'')+(m?(m.g?'['+m.g+'] ':'')+m.n+': '+m.m:'צ\'אט · '+onlineN+' מחוברים עכשיו');
