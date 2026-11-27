@@ -716,3 +716,19 @@ test('the lands of the void: only many resets open them, they kill the unfinishe
   const wear=(t,z)=>{const B=G.newAccount();G.apply(B,'create',{name:'Setter',cls:'blade'},{});const c=B.chars[0];for(const sl of ['h','a','p','l','b','w']){const it=G.makeItem(c,sl,t,4,z);delete it.v;it.af=[];c.eq[sl]=it;}return c;};
   const cv=wear(G.VOID_TIER,V[0][1]),co=wear(G.VOID_TIER-1,G.BASEZ+10);assert.equal(Object.values(G.setCounts(cv))[0],6);assert.ok(G.calc(cv).cdmg-2>(G.calc(co).cdmg-2)*1.4,'its set bonus is the greatest');
 });
+
+test('wearing the strongest: judged by the whole character, so a set is kept when it is worth more and put together when it lies in the bag',()=>{
+  G.setEnv(()=>.5,()=>1.8e12);const mk=()=>{const A=G.newAccount();G.apply(A,'create',{name:'Dresser',cls:'blade'},{});const s=A.chars[0];s.lvl=400;for(const k in s.stats)s.stats[k]=3000;A.autoEq=false;return [A,s];};
+  const piece=(s,sl,t,r,p)=>{const it=G.makeItem(s,sl,t,r,2);delete it.v;it.af=[];it.p=p||0;return it;};
+  // a whole ancient set is worn; the bag holds one legendary piece whose own numbers are higher
+  {const [A,s]=mk();for(const sl of ['w','h','a','p','l','b'])s.eq[sl]=piece(s,sl,3,4,0);const lone=piece(s,'a',3,3,9);A.inv.push(lone);assert.ok(G.itemVals(lone).hp>G.itemVals(s.eq.a).hp,'alone it looks better');
+    const p0=G.calc(s).power;s.eq.a=lone;const broken=G.calc(s).power;s.eq.a=A.inv.pop()&&piece(s,'a',3,4,0);A.inv.push(lone);assert.ok(broken<p0,'but it breaks the set and the character is weaker');
+    const r=G.apply(A,'bestEq',{});assert.ok(r.ok);assert.equal(G.setCounts(s)['2'],6,'the set stays whole');assert.ok(G.calc(s).power>=p0);}
+  // legendary pieces are worn; the bag holds a whole ancient set whose pieces are each a little weaker alone
+  {const [A,s]=mk();for(const sl of ['w','h','a','p','l','b']){s.eq[sl]=piece(s,sl,3,3,7);A.inv.push(piece(s,sl,3,4,0));}const p0=G.calc(s).power;
+    const r=G.apply(A,'bestEq',{});assert.ok(r.ok&&r.gain>0,'he comes out stronger: '+r.gain);assert.ok(G.calc(s).power>p0);assert.equal(A.inv.length,6,'what was worn goes back to the bag');}
+  // nothing better in the bag: nothing changes
+  {const [A,s]=mk();s.eq.w=piece(s,'w',5,3,9);A.inv.push(piece(s,'w',2,1,0));const r=G.apply(A,'bestEq',{});assert.equal(r.n,0);assert.equal(r.gain,0);}
+  // the widest auto-sell settings never sell wings or jewelry
+  {const [A,s]=mk();A.autoSell=4;const before=A.inv.length;for(const k of ['autoSell'])void k;assert.equal(G.apply(A,'autoSell',{}).ok,true);assert.equal(A.autoSell,0,'five settings, then off again');}
+});

@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261127203811';
+const BUILD='20261127204404';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,wskinOn,CAPEN,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -281,7 +281,14 @@ function drawWings(x,y,g,t,k,flip,cls,bh,mv,anim){
   const gl=Math.max(glowAmt(g[2],g[1],t),hi?14+fam*2+gr:T>=4?6+T:3);ctx.shadowColor=pal[1];ctx.shadowBlur=LITE?0:gl;
   ctx.drawImage(src,-130,-185);ctx.restore();
   if(hi&&!calm&&Math.random()<.12+fam*.05)SC.parts.push({x:ax-f*(10+Math.random()*60)*k*.5,y:ay-Math.random()*60*k*.5,vx:-f*14,vy:-26,life:.8,c:Math.random()<.3?'#fff':pal[1],s:2+(gr>3?1:0)});
-  if(T>=6&&!calm&&Math.random()<.22)SC.parts.push({x:ax-f*(10+Math.random()*50)*k*.5,y:ay-Math.random()*50*k*.5,vx:0,vy:T===6?16:-18,life:.7,c:pal[1],s:2});
+  if(!calm&&!LITE&&Math.random()<(hi?.3:.2)+(wsk?.12:0)){const px=ax-f*(8+Math.random()*58)*k*.5,py=ay-Math.random()*56*k*.5,W1=wsk===1?7:wsk===2?3:T;
+    if(W1===1)SC.parts.push({x:px,y:py,vx:-f*10,vy:14,g:26,life:1.5,c:Math.random()<.5?'#b6ef86':'#5fbf5a',s:3,k:'f'});                     // leaves drift down
+    else if(W1===2)SC.parts.push({x:px,y:py,vx:(Math.random()-.5)*90,vy:(Math.random()-.5)*90,g:0,life:.35,c:'#e8fbff',s:3,k:'s'});          // storm sparks
+    else if(W1===3)SC.parts.push({x:px,y:py,vx:-f*8,vy:-34,g:-30,life:1,c:Math.random()<.4?'#fff1a8':'#ff7a2e',s:3,k:Math.random()<.45?'f':'d'}); // feathers of fire, and embers rising
+    else if(W1===4||W1===7)SC.parts.push({x:px,y:py,vx:0,vy:20,g:210,life:1.1,c:Math.random()<.3?'#fff8d2':'#ffd75e',s:3.2,k:'d'});            // gold dripping
+    else if(W1===5)SC.parts.push({x:px,y:py,vx:-f*6,vy:-12,g:-10,life:1.3,c:Math.random()<.5?'#d596ff':'#5a2aa8',s:3,k:'f'});                  // shreds of the abyss floating up
+    else if(W1===6)SC.parts.push({x:px,y:py,vx:(Math.random()-.5)*20,vy:18,g:14,life:1.6,c:'#effcff',s:3,k:'s'});                          // snow
+    else SC.parts.push({x:px,y:py,vx:-f*10,vy:10,g:30,life:1.3,c:'hsl('+((t*120+px)%360)+',95%,72%)',s:3,k:Math.random()<.5?'f':'d'});}      // every colour at once
 }
 // Armor shows on the character: the whole sprite sheet is recolored toward the armor tier's color (or the set color for ancient pieces).
 const TINT={};
@@ -710,7 +717,11 @@ function drawFx(dt){
   }
   ctx.shadowBlur=0;
   SC.parts=SC.parts.filter(p=>(p.life-=dt)>0);{const cap=SC.duel&&SC.duel.br&&SC.duel.D.f.length>3?110:260;if(SC.parts.length>cap)SC.parts.splice(0,SC.parts.length-cap);}
-  for(const p of SC.parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=160*dt;ctx.globalAlpha=clamp(p.life*2,0,1);ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,p.s,p.s);}
+  for(const p of SC.parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=(p.g==null?160:p.g)*dt;ctx.globalAlpha=clamp(p.life*2,0,1);ctx.fillStyle=p.c;
+    if(!p.k)ctx.fillRect(p.x,p.y,p.s,p.s);
+    else if(p.k==='d'){ctx.beginPath();ctx.moveTo(p.x,p.y-p.s*2.2);ctx.quadraticCurveTo(p.x+p.s*.9,p.y,p.x,p.y+p.s*.6);ctx.quadraticCurveTo(p.x-p.s*.9,p.y,p.x,p.y-p.s*2.2);ctx.fill();} // a drop
+    else if(p.k==='f'){p.x+=Math.sin(SC.t*4+p.s*7+p.y*.05)*22*dt;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(SC.t*2.5+p.y*.04);ctx.beginPath();ctx.ellipse(0,0,p.s*2.2,p.s*.75,0,0,7);ctx.fill();ctx.fillStyle='rgba(255,255,255,.7)';ctx.fillRect(-p.s*2,-.4,p.s*4,.8);ctx.restore();} // a feather
+    else if(p.k==='s'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(SC.t*3+p.x*.1);ctx.fillRect(-p.s,-p.s*.25,p.s*2,p.s*.5);ctx.fillRect(-p.s*.25,-p.s,p.s*.5,p.s*2);ctx.restore();}} // a spark, a flake
   // loot orbs fly to the hero
   const h=SC.hero;SC.drops=SC.drops.filter(d=>d.life>0);
   for(const d of SC.drops){d.life-=dt;d.age+=dt;if(d.age<.45+(d.lie||0)){if(d.age>.45){d.vx=0;}d.x+=d.vx*dt;d.y+=d.vy*dt;d.vy+=500*dt;if(d.y>gy()-6){d.y=gy()-6;d.vy=0;d.vx=0;}}
@@ -1703,7 +1714,7 @@ function renderGear(){
   const sc=setCounts(S);for(const z in sc)h+='<div class="card r4"><b style="color:var(--r4)">סט עתיק: '+setName(z)+' · '+L(sc[z]+'/6')+'</b>'+setLines(z,sc[z])+'</div>';
   h+='<div class="card" style="display:flex;flex-direction:column;gap:8px">'+tog('לבש אוטומטית ציוד חזק יותר',A.autoEq,'autoEq')+
     '<div><span style="font-size:13px">מה להרים מהרצפה</span><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:5px">'+[['0','רגיל'],['1','קסום'],['2','נדיר'],['3','אגדי'],['4','עתיק'],['set','חלקי סט'],['g','כנפיים'],['ex','אקסלנט']].map(x=>'<button class="btn sm pk'+(pickOf(A)[x[0]]?' on':'')+'" data-act="pickup" data-k="'+x[0]+'">'+(pickOf(A)[x[0]]?'\u2713 ':'\u2715 ')+x[1]+'</button>').join('')+'</div><p class="hint" style="margin-top:4px">ירוק עם \u2713: הדמות מרימה. אפור עם \u2715: נשאר על הרצפה. זהב, אבני נשמה, תיבות ושברים נאספים תמיד.</p></div>'+
-    '<div class="tog"><span>מכירה אוטומטית</span><button class="btn sm" data-act="autoSell">'+['כבויה','רגיל','רגיל וקסום'][A.autoSell]+'</button></div>'+
+    '<div class="tog"><span>מכירה אוטומטית</span><button class="btn sm" data-act="autoSell">'+['כבויה','רגיל','רגיל וקסום','עד נדיר','עד אגדי'][A.autoSell|0]+'</button></div>'+
     '<p class="hint">בכל תיבה יש סיכוי קטן לחיית מחמד: '+PETN.map((n,i)=>'<span style="color:'+RAR[i].c+'">'+n+' או '+PETN2[i]+' '+L((PET_BOX[i]*100)+'%')+' · '+L(PET_DAYS[i])+' ימים</span>').join(' · ')+'. בתיבת עונה הסיכוי כפול.</p>'+
     '<div class="tog"><span>תיבות אוצר: '+L(A.boxes)+'</span><button class="btn sm pri" data-act="openBox" data-k=""'+(A.boxes?'':' disabled')+'>פתח תיבה</button></div>'+
     '<div class="tog"><span>תיבות עונה: '+L(A.sboxes)+' · 15% לחלק סט עתיק</span><button class="btn sm pri" data-act="openBox" data-k="s"'+(A.sboxes?'':' disabled')+'>פתח תיבה</button></div>'+

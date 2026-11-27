@@ -167,6 +167,9 @@ function itemName(it,cls){
   if(it.s==='g')return (it.ex?(isFull(it)?'אקסלנט מלא · ':'אקסלנט · '):'')+(cls==='lord'?(it.season?'גלימת העונה':CAPEN[it.t-1]):(it.season?'כנפי העונה':WINGN[it.t-1]));
   return (it.pf?'עתיק מושלם · ':it.ex?(isFull(it)?'אקסלנט מלא · ':'אקסלנט · '):'')+(it.s==='w'?CLS[cls].wn:SLOTN[it.s])+(isSet(it)?' · '+setName(setKey(it)):' '+TIERN[it.t-1]);
 }
+// Whether wearing this piece instead of what is worn makes the character stronger as a whole: set bonuses, full-excellent
+// bonuses and every option counted, not the piece's own numbers alone.
+function wearsBetter(s,it){const cur=s.eq[it.s];if(!cur)return true;if(it.s==='y')return itemScore(it)>itemScore(cur);const p0=calc(s).power;s.eq[it.s]=it;const p1=calc(s).power;s.eq[it.s]=cur;return p1>p0;}
 function itemScore(it){
   if(it.s==='y')return 1000*(it.r+1);
   const v=itemVals(it);let b=it.s==='w'?v.atk:ARM[it.s]?v.hp+v.def*10:((v.wd||0)+(v.wh||0)*(JEWV[it.s]?1:0))*100;if(isSet(it))b*=1.15;
@@ -300,7 +303,7 @@ function picks(s,it){const p=pickOf(s);if(it.pf||it.s==='y')return true;if(it.ex
 const dropNote=(rep,it,cls,left)=>{if(rep){const l=rep.names=rep.names||[];if(l.length<8)l.push([itemName(it,cls),it.pf?6:it.ex?5:it.r,left?1:0]);}};
 function stash(s,it,rep){
   if(it.pf||it.s==='y'){s.inv.push(it);return true;} // never sold on the way in, even with a full bag
-  const weak=it.r<s.autoSell&&!it.ex;
+  const weak=it.r<s.autoSell&&!it.ex&&((s.autoSell|0)<3||(it.s!=='g'&&!JEWV[it.s])); // the two widest settings never sell wings or jewelry
   if(weak||s.inv.length>=BAG){const g=sellVal(it);s.gold+=g;if(rep){rep.sold=(rep.sold||0)+1;rep.gold=(rep.gold||0)+g;}return false;}
   s.inv.push(it);return true;
 }
@@ -308,7 +311,7 @@ function gainItem(s,it,rep){
   if(rep&&!picks(s,it)){if(petOn(s,s._now||_now())){const g=sellVal(it);s.gold+=g;rep.gold=(rep.gold||0)+g;rep.petGold=(rep.petGold||0)+g;rep.sold=(rep.sold||0)+1;return 'sold';} // the pet fetches it and sells it
     rep.left=(rep.left||0)+1;dropNote(rep,it,s.cls,true);return 'left';}
   dropNote(rep,it,s.cls,false);const cur=s.eq[it.s];
-  if(s.autoEq&&canWear(s,it)&&(!cur||itemScore(it)>itemScore(cur))){s.eq[it.s]=it;if(rep)rep.equipped=(rep.equipped||0)+1;if(cur)stash(s,cur,rep);return 'eq';}
+  if(s.autoEq&&canWear(s,it)&&(!cur||wearsBetter(s,it))){s.eq[it.s]=it;if(rep)rep.equipped=(rep.equipped||0)+1;if(cur)stash(s,cur,rep);return 'eq';}
   return stash(s,it,rep)?'bag':'sold';
 }
 const JEW_RATE=.0003,RESET_RAR=[60.6,25,9,3.3,2.1],CITY_RAR=[59.9,25,9,3.3,2.8]; // the city: ancient pieces a third more often than in reset maps, no more
@@ -1100,7 +1103,7 @@ function apply(A,kind,args,ctx){
       const spent=S.stats.str+S.stats.agi+S.stats.vit+S.stats.ene-60;if(spent<=0)return fail('אין נקודות להחזיר');if(A.cred<RESPEC_COST)return fail('צריך '+RESPEC_COST+' אותות ריסט');
       A.cred-=RESPEC_COST;S.stats={str:15,agi:15,vit:15,ene:15};S.pts+=spent;r.pts=spent;if(S.autoPts)autoAlloc(S);break;}
     case 'autoEq':A.autoEq=!A.autoEq;break;
-    case 'autoSell':A.autoSell=((A.autoSell|0)+1)%3;break;
+    case 'autoSell':A.autoSell=((A.autoSell|0)+1)%5;break; // off, common, and magic, and rare, and legendary: never ancient, excellent, wings or pets
     case 'setAuto':S.auto=!!args.on;break;
     case 'reset':{if(!canReset(S))return fail('צריך רמה 400');r.gain=resetGain(S);doReset(S);S.evIn=null;for(const w of evWindows(now,0))if(w.e.tiered)evRec(A,w.key).no=1;{const kg=keepGate(now);if(kg)evRec(A,kg.key).no=1;}A.bossAt=null;A.allow=0;r.resets=S.resets;break;}
     case 'equip':{const f=findIt(A,S,int(args.id,0,1e12));if(!f||f.i==null)return fail('הפריט לא בתיק');if(!canWear(S,f.it))return fail('חסר לך: '+lacks(S,f.it));A.inv.splice(f.i,1);const old=S.eq[f.it.s];S.eq[f.it.s]=f.it;if(old)A.inv.push(old);break;}
@@ -1118,9 +1121,16 @@ function apply(A,kind,args,ctx){
       S.evIn=w.key;S.evZ=evZoneFor(S.lvl);S.zone=-1;S.floor=0;A.bossAt=null;A.allow=Math.min(A.allow||0,3);r.z=S.evZ;r.tier=rec.tr;r.end=w.end;r.start=keepStart(w);break;}
     case 'evLeave':{const kk=S.evIn;S.evIn=null;if(kk&&A.ev&&A.ev[kk])A.ev[kk].out=1;break;} // he chose to leave: no way back into this one
     case 'bestEq':{ // wear the strongest piece in the bag for every slot; what was worn goes back to the bag
-      const p0=calc(S).power;let n=0;
-      for(const sl of SLOTS){let bi=-1,bs=S.eq[sl]?itemScore(S.eq[sl]):0;A.inv.forEach((it,i)=>{if(it.s===sl&&canWear(S,it)){const sc=itemScore(it);if(sc>bs){bs=sc;bi=i;}}});
-        if(bi>=0){const it=A.inv[bi],old=S.eq[sl];if(old)A.inv[bi]=old;else A.inv.splice(bi,1);S.eq[sl]=it;n++;}}
+      // Judged by the whole character's strength, so a set is never broken for a piece that only looks better alone:
+      // first every whole set that can be put together is tried, then single pieces, each kept only if strength rose.
+      const p0=calc(S).power;let n=0;const put=(it)=>{const i=A.inv.indexOf(it),old=S.eq[it.s];if(i<0)return;if(old)A.inv[i]=old;else A.inv.splice(i,1);S.eq[it.s]=it;n++;};
+      {const keys={};for(const it of A.inv.concat(DROPS.map(k=>S.eq[k]).filter(Boolean)))if(isSet(it)&&canWear(S,it))keys[setKey(it)]=1;
+        for(const key in keys){const before=DROPS.map(k=>S.eq[k]),inv0=A.inv.slice(),n0=n,pw=calc(S).power;
+          for(const sl of DROPS){if(S.eq[sl]&&isSet(S.eq[sl])&&setKey(S.eq[sl])===key)continue;let b=null;for(const it of A.inv)if(it.s===sl&&isSet(it)&&setKey(it)===key&&canWear(S,it)&&(!b||itemScore(it)>itemScore(b)))b=it;if(b)put(b);}
+          if(!(calc(S).power>pw)){DROPS.forEach((k,i)=>{S.eq[k]=before[i]||null;});A.inv=inv0;n=n0;}}} // no gain: put everything back as it was
+      for(let pass=0;pass<3;pass++){let ch=false;for(const sl of SLOTS){let best=null,bp=calc(S).power;const cur=S.eq[sl];
+          for(const it of A.inv){if(it.s!==sl||!canWear(S,it))continue;if(sl==='y'){if(!cur||itemScore(it)>itemScore(best||cur))best=it;continue;}S.eq[sl]=it;const pw=calc(S).power;S.eq[sl]=cur;if(pw>bp){bp=pw;best=it;}}
+          if(best){put(best);ch=true;}}if(!ch)break;}
       r.n=n;r.gain=calc(S).power-p0;break;}
     case 'sellRar':{const q=int(args.r,0,4),ex=args.ex===1;let g=0,n=0;A.inv=A.inv.filter(it=>{if(it.s!=='g'&&it.s!=='y'&&(ex?it.ex&&!isFull(it):it.r===q&&!it.ex)){g+=sellVal(it);n++;return false;}return true;});if(!n)return fail('אין פריטים כאלה בתיק');A.gold+=g;r.gold=g;r.n=n;break;}
     case 'sellJunk':{let g=0;A.inv=A.inv.filter(it=>{if(it.r<=1&&it.s!=='g'&&it.s!=='y'){g+=sellVal(it);return false;}return true;});A.gold+=g;r.gold=g;break;}
