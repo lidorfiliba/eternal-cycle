@@ -573,7 +573,7 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:25,swT:3,resp:10,respIn:40,crownKeep:0,crownPen:1,pots:60,potMax:250,potCd:.25,heal:.06,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
+const SG={W:2500,Y0:-1195,Y1:3000,TIME:59*60,crownT:20,swT:3,resp:4,respIn:4,respSafe:3,camp2:[0,2850],crownKeep:0,crownPen:1,pots:60,potMax:250,potCd:.25,heal:.06,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.012,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   // a wide castle: room to fight in the yard and in the throne room without everyone standing on everyone
@@ -586,13 +586,13 @@ const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:25,swT:3,resp:10,respIn:40,c
   hall:[-920,-1002,920,82]};
 const sgIn=(r,x,y,m)=>x>r[0]-m&&x<r[2]+m&&y>r[1]-m&&y<r[3]+m;
 const sgShield=B=>SG.stat.some(i=>B.sg.gate[i]>0);
-function sgBlocked(B,x,y,g){if(g!==undefined&&g!==B.sg.holder&&sgIn(SG.shield,x,y,SG.rad)&&sgShield(B))return true;if(Math.abs(x)>SG.W/2-10||y<SG.Y0+10||y>SG.Y1-10)return true;for(const w of SG.walls)if(sgIn(w,x,y,SG.rad))return true;for(let i=0;i<SG.gates.length;i++)if(B.sg.gate[i]>0&&sgIn(SG.gates[i],x,y,SG.rad))return true;return false;}
+function sgBlocked(B,x,y,g){if(g!==undefined&&g!==B.sg.holder&&sgIn(SG.shield,x,y,SG.rad)&&sgShield(B))return true;if(Math.abs(x)>SG.W/2-10||y<SG.Y0+10||y>SG.Y1-10)return true;for(const w of SG.walls)if(sgIn(w,x,y,SG.rad))return true;for(let i=0;i<SG.gates.length;i++)if(B.sg.gate[i]>0&&sgIn(SG.gates[i],x,y,SG.rad)&&!(g!==undefined&&g===B.sg.holder&&g!==0&&SG.stat.indexOf(i)<0))return true;return false;}
 // Walk toward a point in short steps, sliding along whatever is in the way. Used by the browser and by the server alike.
 function sgMove(B,f,nx,ny){let dx=nx-f.x,dy=ny-f.y;const d=Math.hypot(dx,dy);if(d<.01)return;const n=Math.ceil(d/8);dx/=n;dy/=n;
   const g=f.g===undefined?-1:f.g;for(let i=0;i<n;i++){if(!sgBlocked(B,f.x+dx,f.y+dy,g)){f.x+=dx;f.y+=dy;}else if(!sgBlocked(B,f.x+dx,f.y,g)){f.x+=dx;}else if(!sgBlocked(B,f.x,f.y+dy,g)){f.y+=dy;}else break;}}
 // No blow passes through a wall or a standing gate.
 function sgSees(B,a,e){const n=Math.ceil(brDist(a,e)/10);const shd=sgShield(B);for(let i=1;i<n;i++){const x=a.x+(e.x-a.x)*i/n,y=a.y+(e.y-a.y)*i/n;if(shd&&sgIn(SG.shield,x,y,0))return false;for(const w of SG.walls)if(sgIn(w,x,y,0))return false;for(let q=0;q<SG.gates.length;q++)if(B.sg.gate[q]>0&&sgIn(SG.gates[q],x,y,0))return false;}return true;}
-const sgSpawn=(B,f,rnd)=>{const inside=f.g===B.sg.holder,p=f.post||(inside?SG.yard:SG.camp);f.x=p[0]+(f.post?0:(rnd()-.5)*160);f.y=p[1]+(f.post?0:(rnd()-.5)*60);f.hp=1;f.alive=true;f.resp=0;f.stun=0;f.sh=0;f.inv=0;f.wound=0;f.cb=0;f.bf={b:0,s:0,h:0};};
+const sgSpawn=(B,f,rnd,back)=>{const inside=f.g===B.sg.holder&&f.g!==0,p=back?(inside?SG.camp2:SG.camp):f.post||(inside?SG.yard:SG.camp),fix=!back&&f.post;f.x=p[0]+(fix?0:(rnd()-.5)*160);f.y=p[1]+(fix?0:(rnd()-.5)*60);f.hp=1;f.alive=true;f.resp=0;f.stun=0;f.sh=0;f.inv=back?B.t+SG.respSafe:0;f.wound=0;f.cb=0;f.bf={b:0,s:0,h:0};};
 function sgFighter(p,g,tag,rnd){return {id:p.id,n:p.n,c:CLS[p.c]?p.c:'blade',bot:!!p.bot,g:g,tag:String(tag||'').slice(0,4),x:0,y:0,hp:1,d:p.d,T:clamp(1/Math.max(.3,p.a),.3,1.2),pool:Math.max(1,p.h*5),def:p.f,cr:p.cr,cdm:clamp(Number(p.cd)||1.5,1.2,6),cb:0,cbT:-9,cbTo:-1,cacc:0,wound:0,pushT:0,pushI:.8,bf:{b:0,s:0,h:0},
   at:{atk:0,s0:0,s1:0,s2:0,s3:8,dash:0,pot:0,use:0,buf:0,bash:0},lead:!!p.lead,stun:0,sh:0,inv:0,alive:true,resp:0,kills:0,pots:SG.pots,bought:0,shopT:0,chain:0,face:1,think:rnd()*.5,post:null};}
 function sgNew(rnd,avg){
@@ -716,7 +716,7 @@ const sgNear=(f,p,r)=>Math.abs(f.x-p[0])<r&&Math.abs(f.y-p[1])<r;
 function sgStep(B,dt,rnd){
   const ev=[];if(B.over)return ev;B.t+=dt;if(B.t<0)return ev;const t=B.t,S=B.sg;
   for(const q of SG.stat)if(S.gate[q]>0){const g=SG.gates[q],c=[(g[0]+g[2])/2,(g[1]+g[3])/2];for(const f of B.f)if(f.alive&&f.g===S.holder&&S.holder!==0&&f.hp<1&&!(f.wound>t)&&sgNear(f,c,SG.statR))f.hp=Math.min(1,f.hp+SG.statHeal*dt);}
-  B.f.forEach((f,i)=>{if(!f.alive){if(f.resp&&t>=f.resp&&!(f.g===0&&S.holder!==0)){sgSpawn(B,f,rnd);ev.push({k:'up',to:i});}return;}
+  B.f.forEach((f,i)=>{if(!f.alive){if(f.resp&&t>=f.resp&&!(f.g===0&&S.holder!==0)){sgSpawn(B,f,rnd,true);ev.push({k:'up',to:i});}return;}
     for(const sh of SG.shops)if(!f.bot&&f.pots<SG.potMax&&sgNear(f,sh,SG.shopR)){if((f.shopT+=dt)>=.4){f.shopT=0;f.pots++;f.bought++;ev.push({k:'buy',by:i});}}});
   // Switches: a player who stands on one presses it; a bar loads; when it is full the switch is his for exactly as long
   // as he stays on it alive. So one player holds one switch and nothing else.

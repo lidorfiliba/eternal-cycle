@@ -617,7 +617,8 @@ test('the practice siege: the server\'s own players walk the road, break the gat
   assert.ok(broke>10&&broke<120,'the gate falls, and not at once: '+broke);assert.ok(sw>broke,'then a switch');assert.ok(taken>sw+G.SG.crownT-1&&B.sg.holder===1,'then the crown, after its half minute: '+taken);
   // against defenders it is a fight, and a fallen leader keeps half of his time on the crown
   const X=G.sgNew(rnd,{}),a=G.sgAdd(X,P('l','blade'),1,'A',rnd,true);X.t=5;X.sg.crown=[1,20,a];G.sgDown(X,a,-1);assert.equal(X.f[a].cacc,0,'a leader who falls loses all his time on the crown, as in the old sieges');
-  assert.ok(G.SG.respIn>G.SG.resp,'a defender waits longer to return than an attacker');
+  assert.ok(G.SG.resp<=5&&G.SG.camp2[1]>G.SG.camp[1]+500,'the fallen are back in a moment, far away; the castle\'s own from farther still');
+  {const Y=G.sgNew(rnd,{}),dq=G.sgAdd(Y,P('dd','blade'),4,'D',rnd),f=Y.f[dq];Y.sg.holder=4;Y.t=5;f.bot=false;G.sgDown(Y,dq,-1);for(let n=0;n<40&&!f.alive;n++)G.sgStep(Y,.2,rnd);assert.ok(f.alive&&f.y>G.SG.camp[1]+500,'a fallen defender returns at his far camp: '+f.y);f.inv=0;f.x=0;f.y=G.SG.gates[3][3]+60;f.x=(G.SG.gates[3][0]+G.SG.gates[3][2])/2;G.sgMove(Y,f,f.x,G.SG.gates[3][1]-80);assert.ok(f.y<G.SG.gates[3][1]-40,'and walks through his own standing gate: '+f.y);}
 });
 test('many on one: a crowd\'s blows weaken, a stun is not chained without end, and potions keep pace',()=>{
   const rnd=()=>.5,P=(id)=>({id,n:id,c:'blade',d:400,a:1.5,h:2700,f:70,cr:0,cd:2});
