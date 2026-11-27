@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261126235232';
-const {TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261127075619';
+const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
@@ -410,12 +410,20 @@ function drawMon(m,zi,t,flip,sc){
 let wbForce=false; // for checks only: show the boss without waiting for its hour
 const wbOn=()=>{if(wbForce){if(!world)world={hp:.6,max:1,n:1,mine:0,key:''};return SC.zi>=0&&SC.mode==='farm';}const ww=worldWin();return !!(ww&&world&&world.key===ww.key&&!world.dead&&world.hp>0&&SC.zi>=0&&SC.mode==='farm'&&!SC.ev);};
 const WB={t:5,zone:null,hurt:0};
+// A dark copy of a sprite sheet: the shape and a hint of its detail, for something huge and far away.
+function shadeSheet(key,col,amt){
+  const im=IMG[key];if(!im||!im.complete||!im.naturalWidth)return null;const id='sh'+key+col+amt;if(TINT[id])return TINT[id];
+  const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;const x=c.getContext('2d');
+  x.drawImage(im,0,0);x.globalCompositeOperation='source-atop';x.globalAlpha=amt;x.fillStyle=col;x.fillRect(0,0,c.width,c.height);return TINT[id]=c;
+}
+// The world boss stands far behind the map, between the far hills and the near ones, taller than the screen's sky:
+// part of the scenery, never beside the player.
+function wbX(){return W*.5+Math.sin(SC.t*.25)*W*.05;}
 function drawWorldBoss(dt){
-  if(!wbOn()){WB.zone=null;WB.t=5;return;}const t=SC.t,sc=clamp(H/300,.8,1.45),key=ZONES[BASEZ-1].spr,sm=SPR[key],k=gy()*.95/sm.bh,x=W*.62+Math.sin(t*.35)*W*.1,y=gy()+14*sc,low=world.hp<world.max*.3;
-  ctx.save();WB.hurt=Math.max(0,WB.hurt-dt*3);
-  {const R=sm.bh*k*.7,gr=ctx.createRadialGradient(x,y-sm.bh*k*.55,10,x,y-sm.bh*k*.55,R);gr.addColorStop(0,low?'rgba(255,60,90,.5)':'rgba(190,90,255,.42)');gr.addColorStop(1,'transparent');ctx.globalCompositeOperation='lighter';ctx.fillStyle=gr;ctx.beginPath();ctx.arc(x,y-sm.bh*k*.55,R,0,7);ctx.fill();}
-  ctx.restore();
-  const wind=WB.zone?1-clamp(WB.zone.t/1.5,0,1):0;spr(key,wind>0?'atk':'idle',wind>0?Math.floor(wind*frames(key,'atk')):Math.floor(t*5)%frames(key,'idle'),x,y+Math.sin(t*1.3)*6,k,false,WB.hurt>.3?'#fff':low?'#ff3b5c':'#b46bff',WB.hurt>.3?24:16,.5+.12*Math.sin(t*2)+WB.hurt*.25,tintedSheet(key,low?'#b0203a':'#5a2a9a',.8));
+  if(!wbOn()){WB.zone=null;WB.t=5;return;}const t=SC.t,g0=gy(),key=ZONES[BASEZ-1].spr,sm=SPR[key];if(!sm)return;const k=g0*1.45/sm.bh,x=wbX(),y=g0+sm.bh*k*.22+Math.sin(t*.8)*5,low=world.hp<world.max*.3;
+  WB.hurt=Math.max(0,WB.hurt-dt*3);
+  ctx.save();{const cy=g0*.42,R=g0*.75,gr=ctx.createRadialGradient(x,cy,10,x,cy,R);gr.addColorStop(0,low?'rgba(255,60,90,'+(.22+WB.hurt*.15)+')':'rgba(170,90,255,'+(.2+WB.hurt*.15)+')');gr.addColorStop(1,'transparent');ctx.fillStyle=gr;ctx.fillRect(0,0,W,g0);}ctx.restore();
+  const wind=WB.zone?1-clamp(WB.zone.t/1.5,0,1):0;spr(key,wind>0?'atk':'idle',wind>0?Math.floor(wind*frames(key,'atk')):Math.floor(t*3)%frames(key,'idle'),x,y,k,false,null,0,.9,shadeSheet(key,low?'#5a0c1c':'#2c1466',WB.hurt>.3?.3:.55));
 }
 function worldBossStrike(dt,g0){ // in map coordinates: mark the ground, then strike it
   if(!wbOn())return;const h=SC.hero,low=world.hp<world.max*.3;
@@ -435,7 +443,7 @@ function drawBg(zi,t){
       let y=Math.sin(u)*.5+Math.sin(u*2.3+1)*.3+Math.sin(u*5.1)*.2;
       if(z.kind==='brute'||z.kind==='town')y=Math.round(y*3)/3;
       ctx.lineTo(x,base-(.5+y*.5)*amp);}
-    ctx.lineTo(W+8,g0);ctx.fill();}
+    ctx.lineTo(W+8,g0);ctx.fill();if(!layer&&SC.mode==='farm'&&zi>=0){ctx.globalAlpha=1;drawWorldBoss(SC.dt||0);}}
   ctx.globalAlpha=1;
   const gg=ctx.createLinearGradient(0,g0,0,H);gg.addColorStop(0,z.sil);gg.addColorStop(1,'#050409');ctx.fillStyle=gg;ctx.fillRect(0,g0-1,W,H-g0+1);
   if(SC.fl>0&&zi>=0){ctx.fillStyle='rgba(0,0,0,'+(.16*SC.fl)+')';ctx.fillRect(0,0,W,H);}
@@ -600,7 +608,7 @@ function spawnBoss(){
 // A champion: one monster of the pack that is far stronger and carries a sure rare drop. The server decides when.
 function syncElite(){
   if(!A||SC.mode!=='farm'||SC.ev)return;const e=A.elite,want=!!(e&&e.z===SC.zi&&(e.f|0)===SC.fl&&SC.zi>=0),cur=SC.mons.find(m=>m.elite);
-  if(want&&!cur&&!pend.elite){const h=SC.hero,m=newMon(clamp(h.x+(h.x<mapW()/2?1:-1)*(260+Math.random()*120),160,mapW()-160),SC.zi);m.elite=true;m.hp=m.max=zs(SC.zi,SC.fl).hp*ELITE_HP;m.ag=true;SC.mons.push(m);snd('growl');announce('אלוף הופיע במפה. הבס אותו לפני שייעלם',true);}
+  if(want&&!cur&&!pend.elite){const h=SC.hero,m=newMon(clamp(h.x+(h.x<mapW()/2?1:-1)*(260+Math.random()*120),160,mapW()-160),SC.zi);m.elite=true;m.hp=m.max=zs(SC.zi,SC.fl).hp*ELITE_HP;m.ag=true;SC.mons.push(m);snd('growl');announce('מפלצת אלופה הופיעה במפה הזו, זוהרת בזהב. הבס אותה לשלל מיוחד',true);}
   else if(!want&&cur&&cur.die<=0){SC.mons=SC.mons.filter(m=>m!==cur);if(SC.hero.tgt===cur)SC.hero.tgt=null;}
 }
 function dropOrbs(m,rep){
@@ -609,7 +617,7 @@ function dropOrbs(m,rep){
   add('#f2c14e',3);if(rep.gems)add('#5fd4ff',4);if(rep.boxes)add('#ff6b3d',5);
   { // what fell lies on the ground for a moment with its name, then the character picks up what it was told to
     let row=0;const lay=(txt,c,left)=>{if(SC.drops.length>70)return;SC.drops.push({x:m.x+(Math.random()-.5)*90,y:m.y-24,vx:(Math.random()-.5)*120,vy:-170-Math.random()*60,c:c,s:left?3:4.5,age:0,life:left?4.5:5,lie:left?4:1.5+row*.12,txt:txt,left:left,row:row%3});row++;};
-    if(rep.gold>0)lay(fmt(rep.gold)+' זהב','#f2c14e',false);if(rep.gems>0)lay(rep.gems+' אבני נשמה','#5fd4ff',false);if(rep.shards>0)lay(rep.shards+' שברי ארגמן','#ff5c7a',false);if(rep.feather)lay('נוצת נצח','#ffd75e',false);
+    if(rep.gold>0)lay(fmt(rep.gold)+' זהב','#f2c14e',false);if(rep.gems>0)lay(rep.gems+' אבני נשמה','#5fd4ff',false);if(rep.shards>0)lay(rep.shards+' שברי ארגמן','#ff5c7a',false);if(rep.anc>0)lay(rep.anc+' נקודות עתיקות','#ffd75e',true);if(rep.feather)lay('נוצת נצח','#ffd75e',false);
     if(rep.names)for(const n of rep.names)lay(n[0],n[1]>=6?'#ffd75e':n[1]>=5?'#7dffb0':RAR[n[1]].c,!!n[2]);}
   if(rep.notable)for(const it of rep.notable){add(RAR[it.r].c,5.5);SC.fx.push({k:'beam',x:m.x,y:m.y,life:1.2,c:RAR[it.r].c});toast((it.ex?'':RAR[it.r].n+': ')+itemName(it,S.cls),it.ex?4:it.r);}
   if(rep.jewel)toast('אבן שלמות נפלה מהבוס',4);
@@ -649,7 +657,7 @@ function afterTick(r,m,l0){
   statsDirty=true;syncBoss();syncElite();
 }
 function onKill(m,zi){
-  if(wbOn()){WB.hurt=1;const bx=SC.cam+W*.62+Math.sin(SC.t*.35)*W*.1;SC.fx.push({k:'line',x1:m.x,y1:m.y-30,x2:bx,y2:gy()-170,life:.3,c:'#f0d0ff',w:3});SC.fx.push({k:'flash',x:bx,y:gy()-170,r:36,life:.25,d:.25,c:'#c56bff'});}
+  if(wbOn()){WB.hurt=1;const bx=SC.cam+wbX(),by=gy()*.42;SC.fx.push({k:'line',x1:m.x,y1:m.y-30,x2:bx,y2:by,life:.3,c:'#f0d0ff',w:2});SC.fx.push({k:'flash',x:bx,y:by,r:44,life:.25,d:.25,c:'#c56bff'});}
   const z=ZONES[zi];
   if(demo){burst(m.x,m.y-24,z.c,10);if(m.boss)SC.boss=null;return;}
   if(m.elite){snd('bossdie');burst(m.x,m.y-36,'#ffd75e',30);addNum(m.x,m.y-120,'האלוף הובס!','#ffd75e',true);m.gone=true;if(ONLINE){pend.elite=true;flushTick();}else{const l0=S.lvl;afterTick(localTick({z:zi,kills:0,elite:true}),m,l0);}return;}
@@ -1344,7 +1352,7 @@ function frame(dt){
   ctx.setTransform(DPR*ZM,0,0,DPR*ZM,0,0);
   ctx.save();if(SC.shake>0){SC.shake-=dt;ctx.translate((Math.random()-.5)*7,(Math.random()-.5)*5);}
   const cam=SC.cam;if(SC.mode==='duel')SC.cam=0;
-  drawBg(SC.zi,SC.t);if(SC.mode==='farm')drawWorldBoss(dt);
+  drawBg(SC.zi,SC.t);
   if(SC.ev&&SC.mode==='farm'){const gr=ctx.createLinearGradient(0,0,0,H);gr.addColorStop(0,'rgba(150,10,40,.42)');gr.addColorStop(1,'rgba(60,0,20,.25)');ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);}
   if(SC.mode==='farm')drawWorld();
   else drawDuel(dt);
@@ -1486,6 +1494,7 @@ function shopList(name,list,have,curName){
 }
 function renderShop(){
   let h=renderCredits()+renderMarket()+'<h2>חנות אותות ריסט</h2><p class="hint">אותות מקבלים רק מריסט. יש לך '+L(A.cred)+'.'+((A.areset|0)>0?' ריסטים אוטומטיים שנותרו: '+L(A.areset|0)+'.':'')+'</p>'+shopList('reset',RESET_SHOP,A.cred,'אותות');
+  {const cas=!!(guild.mine&&guild.mine.castle);h+='<h2>חנות העיר העתיקה</h2><p class="hint">נקודות עתיקות נופלות רק ממפלצות בעיר העתיקה, כשמשחקים שם בעצמך, ועד '+CITY_WEEK+' בשבוע. יש לך '+L(A.anc|0)+'. השבוע אספת '+L((A.week&&A.week.anc)|0)+' מתוך '+CITY_WEEK+'.'+(cas?'':' החנות פתוחה רק לגילדה שמחזיקה בטירה.')+'</p>'+shopList('city',CITY_SHOP,cas?A.anc|0:-1,'נקודות');}
   h+='<h2>חנות זהב</h2>'+(A.boost>Date.now()?'<p class="hint">מגילת ניסיון פעילה עוד '+fmtT((A.boost-Date.now())/1000)+'.</p>':'')+shopList('gold',GOLD_SHOP,A.gold,'זהב');
   h+='<h2>חנות העונה</h2><p class="hint">מטבעות עונה מקבלים מהפס, מריסטים ומהזירה.</p>'+shopList('season',SEASON_SHOP,A.coins,'מטבעות');
   return h;
@@ -1497,15 +1506,17 @@ function renderEvents(){
   let h='';{const bo=boostNow(Date.now());if(bo)h+='<div class="card zone cur" style="display:block"><div class="kv"><b style="color:var(--gold)">בונוס לכולם פעיל</b><b class="num" style="color:var(--good)">'+L(mmss((bo.until-Date.now())/1000))+'</b></div><p class="hint">ניסיון ×'+L(bo.xp)+' · שלל ×'+L(bo.drop)+'. הופעל על ידי מנהל המשחק.</p></div>';}
   h+='<h2>אירועים</h2><p class="hint">האירועים רצים לפי השעון, בשעון ישראל. בונוסים ומשימות נספרים רק כשמשחקים בפועל.</p>';
   for(const e of EVENTS){
-    const w=wins.find(x=>x.e.id===e.id),rec=w&&ev[w.key]||{},live=w&&w.live;
+    const w=wins.find(x=>x.e.id===e.id),rec=w&&ev[w.key]||{},on=w&&w.live;
+    // an event that is over for this player (the world boss fell, the prize was taken) no longer reads as running
+    const fin=!!(on&&((e.world&&world&&world.key===w.key&&world.dead)||(e.obj&&rec.c))),live=on&&!fin;
     let tierLine='',tn='';
     if(e.tiered){const t=rec.tr||evTier(S.lvl),nx=evTier(S.lvl)+1;
       if(!t)tierLine='<p class="hint" style="color:var(--bad)">הכניסה מרמה '+L(TIER_MIN[0])+'. חסרות לך '+L(TIER_MIN[0]-S.lvl)+' רמות.</p>';
       else{const rg=tierRange(t),rw=tierReward(t);tn=' '+t;
         tierLine='<div class="tiers">'+TIER_MIN.map((m,i)=>'<i class="'+(i+1===t?'on':i+1<t?'past':'')+'">'+(i+1)+'</i>').join('')+'</div><p class="hint"><b style="color:var(--gold)">דרגה '+L(t)+'</b> · רמות '+L(rg[0]+'-'+rg[1])+'</p>'+
           (nx<=7&&!rec.tr?'<p class="hint" style="color:#8fd3ff">עוד '+L(TIER_MIN[nx-1]-S.lvl)+' רמות לדרגה '+L(nx)+'. תגיע לפני שהשער נפתח.</p>':'');}}
-    h+='<div class="card'+(live?' zone cur':'')+'" style="display:block"><div class="kv"><b'+(live?' style="color:var(--gold)"':'')+'>'+e.n+tn+'</b><b class="num" style="color:var(--'+(live?'good':'dim')+')">'+(live?'פעיל · '+L(mmss((w.end-now)/1000)):'בעוד '+fmtT(evNext(e,now)))+'</b></div>'+
-      '<p class="hint">'+e.d+' · '+e.when+(e.rt&&!e.tiered?' · פרס: '+e.rt:'')+'</p>'+tierLine+(e.tiered?keepCard(e,w,rec,live):'')+(e.world?worldCard(w,live):'')+(e.br?brCard(live):'');
+    h+='<div class="card'+(live?' zone cur':'')+'" style="display:block"><div class="kv"><b'+(live?' style="color:var(--gold)"':'')+'>'+e.n+tn+'</b><b class="num" style="color:var(--'+(live?'good':'dim')+')">'+(live?'פעיל · '+L(mmss((w.end-now)/1000)):fin?'הסתיים · הבא בעוד '+fmtT(evNext(e,now)):'בעוד '+fmtT(evNext(e,now)))+'</b></div>'+
+      '<p class="hint">'+e.d+' · '+e.when+(e.rt&&!e.tiered?' · פרס: '+e.rt:'')+'</p>'+tierLine+(e.tiered?keepCard(e,w,rec,live):'')+(e.world?worldCard(w,on):'')+(e.br?brCard(live):'');
     if(w&&e.obj){
       const have=Math.min(rec[e.obj[0]]||0,e.obj[1]),done=have>=e.obj[1];
       if(e.id==='quiz'&&live&&!rec.t){const q=quizFor(w.key);h+='<p style="margin:8px 0 6px;font-weight:700">'+q.q+'</p><div class="grid2">'+q.o.map((o,i)=>'<button class="btn sm" data-act="answer" data-i="'+i+'">'+L(o)+'</button>').join('')+'</div>';}

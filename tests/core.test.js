@@ -496,6 +496,14 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
     fresh();G.sgAct(B,a,'atk',rnd);B.t+=.5;assert.ok(!G.sgAct(B,a,'s1',rnd).combo,'the wrong order is no combo');
     fresh();G.sgAct(B,a,'atk',rnd);B.t+=.5;G.sgAct(B,a,'s0',rnd);B.t+=.5;fa.at.atk=0;G.sgAct(B,a,'atk',rnd);B.t+=.5;fe.x=fa.x+20;assert.ok(!G.sgAct(B,a,'s1',rnd).combo,'a blow in the middle breaks it');
     fresh();fe.sh=B.t+9;const y0=fe.x;G.sgAct(B,a,'atk',rnd);B.t+=.5;const g2=G.sgAct(B,a,'s0',rnd);assert.ok(g2.guard&&!g2.px&&fe.x===y0,'a shield stands firm');fe.sh=0;}
+  { // pushes do not pile up, and neither do combo bursts
+    const X=G.sgNew(rnd,{}),q1=G.sgAdd(X,P('p1',1),5,'',rnd),q2=G.sgAdd(X,P('p2',1),5,'',rnd),qe=G.sgAdd(X,P('pe',1),6,'',rnd),f1=X.f[q1],f2=X.f[q2],fe=X.f[qe];X.t=50;
+    f1.x=0;f1.y=1900;f2.x=0;f2.y=1900;fe.x=20;fe.y=1900;fe.pool=1e9;f1.at.s0=0;f2.at.s0=0;
+    G.sgAct(X,q1,'s0',rnd);const x1=fe.x;assert.ok(x1>20);const o2=G.sgAct(X,q2,'s0',rnd);assert.ok(!o2.px&&fe.x===x1,'a second push right after the first does nothing');
+    X.t+=G.SG.pushI+.1;f2.at.s0=0;assert.ok(G.sgAct(X,q2,'s0',rnd).px,'a moment later it does');
+    assert.ok(G.SG.push+G.SG.pushC<=G.SG.zone,'one whole combo does not throw a player standing in the middle off a switch');assert.ok(G.SG.push*2+G.SG.pushC>G.SG.zone,'but he must walk back before the next');
+    const cmb=q=>{const f=X.f[q];f.at={atk:0,s0:0,s1:0,s2:0,s3:0,dash:0,pot:0,use:0,buf:0};f.x=fe.x-20;f.y=fe.y;fe.stun=0;G.sgAct(X,q,'atk',rnd);X.t+=.5;f.x=fe.x-20;G.sgAct(X,q,'s0',rnd);X.t+=.5;f.x=fe.x-20;fe.stun=0;return G.sgAct(X,q,'s1',rnd);};
+    X.t+=20;fe.hp=1;const c1=cmb(q1),c2=cmb(q2);assert.ok(c1.combo&&c2.combo&&c2.again&&c1.dm>c2.dm+.2,'a second combo on a wounded enemy is a plain blow: '+c1.dm+' '+c2.dm);}
   { // party buffs are cast on those who stand near, and run out
     const X=G.sgNew(rnd,{}),q1=G.sgAdd(X,P('b1',1,'blade'),5,'',rnd),q2=G.sgAdd(X,P('s1',1,'storm'),5,'',rnd),q3=G.sgAdd(X,P('h1',1,'hunter'),5,'',rnd),q4=G.sgAdd(X,P('far',1,'blade'),5,'',rnd);X.t=1;X.f.forEach(f=>{f.x=0;f.y=1900;});X.f[q4].x=600;
     assert.equal(G.sgBuff(X.f[q1],X.t).n,0);const o=G.sgAct(X,q1,'buf',rnd);assert.equal(o.n,3,'the three who stand near');assert.equal(G.sgAct(X,q1,'buf',rnd),null,'it has a cooldown');G.sgAct(X,q2,'buf',rnd);G.sgAct(X,q3,'buf',rnd);
@@ -542,3 +550,18 @@ test('the ancient city: only the guild that holds the castle may enter; ancient 
   assert.equal(G.apply(A,'tick',{z:zi,f:0,kills:1,dt:5},{}).ok,false,'and out when the castle is lost');
   assert.equal(G.tierOf(zi),G.CITY_TIER);assert.ok(G.CITY_RAR[4]>G.RESET_RAR[4]&&G.CITY_RAR[4]<G.RESET_RAR[4]*1.5,'a little more, not much more');assert.ok(G.CITY_PERFECT>1&&G.CITY_PERFECT<=1.3);
 });
+test('ancient points: only from the city, capped by the week, spent only in the city shop while the castle is held',()=>{
+  G.setEnv(Math.random,()=>1.8e12);const zi=G.ZONES.findIndex(z=>z.castle);
+  const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'x'},{});const S=A.chars[A.cur];S.lvl=380;S.stats.str=40000;S.stats.vit=40000;
+  G.apply(A,'tick',{z:0,f:0,kills:40,dt:30},{});assert.equal(A.anc|0,0,'nothing outside the city');
+  assert.equal(G.apply(A,'travel',{z:zi,f:0},{castle:true}).ok,true);
+  let now=1.8e12;for(let i=0;i<4000&&(A.anc|0)<G.CITY_WEEK;i++){now+=60e3;G.setEnv(Math.random,()=>now);A.inv.length=0;G.apply(A,'tick',{z:zi,f:0,kills:100,dt:60},{castle:true});assert.ok((A.week.anc|0)<=G.CITY_WEEK,'never more than the weekly cap');}
+  assert.ok(A.kills>30000,'it took many kills: '+A.kills);assert.ok(A.anc>=G.CITY_WEEK);A.anc=G.CITY_WEEK;A.week.anc=G.CITY_WEEK;now=1.8e12+3e5;
+  {const wk=A.week.key;for(let i=0;i<300;i++){now+=60e3;G.setEnv(Math.random,()=>now);A.inv.length=0;G.apply(A,'tick',{z:zi,f:0,kills:100,dt:60},{castle:true});if(A.week.key!==wk)break;assert.equal(A.anc,G.CITY_WEEK,'no more this week');}}
+  assert.equal(G.apply(A,'buy',{shop:'city',k:'cpet2'},{}).ok,false,'the shop is shut without the castle');
+  A.inv.length=0;const r=G.apply(A,'buy',{shop:'city',k:'cpet2'},{castle:true});assert.ok(r.ok&&A.anc===G.CITY_WEEK-15&&A.inv.some(x=>x.s==='y'&&x.r===2));
+  assert.equal(G.apply(A,'buy',{shop:'city',k:'cwep'},{castle:true}).ok,false,'one win does not buy the weapon');
+  A.anc=300;const w=G.apply(A,'buy',{shop:'city',k:'cwep'},{castle:true});assert.ok(w.ok&&A.anc===0&&w.item.s==='w'&&w.item.r===4&&w.item.ex&&w.item.t===G.CITY_TIER&&!w.item.pf);
+  assert.ok(G.CITY_SHOP.every(o=>o.cost>=8)&&Math.max(...G.CITY_SHOP.map(o=>o.cost))>=G.CITY_WEEK*12);
+});
+
