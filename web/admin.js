@@ -1,9 +1,14 @@
-// Admin screen. Every call is checked on the server against the is_admin flag of the signed-in account.
+// Management screen. It has its own sign-in: user name, password and a code from an authenticator app. It never
+// borrows the game's session, and its own lasts a day and ends when the tab is closed. Every call is checked on the
+// server against the is_admin flag of the account and against a session that passed the second step.
 (function(){
   const CFG=window.EC_CONFIG||{},$=id=>document.getElementById(id),out=$('out');
   const esc=t=>String(t==null?'':t).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const when=t=>t?new Date(t).toLocaleString('he-IL',{dateStyle:'short',timeStyle:'short'}):'';
-  let ses=null;try{ses=JSON.parse(localStorage.getItem('eternal-cycle-session')||'null');}catch(e){}
+  const KEY='eternal-cycle-admin';let ses=null;try{ses=JSON.parse(sessionStorage.getItem(KEY)||'null');}catch(e){}
+  const keep=v=>{ses=v;try{if(v)sessionStorage.setItem(KEY,JSON.stringify(v));else sessionStorage.removeItem(KEY);}catch(e){}};
+  const post=async(kind,args,tok)=>{const h={'Content-Type':'application/json',apikey:CFG.anon};if(tok)h['x-ec-token']=tok;return (await fetch((CFG.api||CFG.url+'/functions/v1/act'),{method:'POST',headers:h,body:JSON.stringify({kind:kind,args:args||{}})})).json();};
+  let sign={step:'in',user:'',pass:'',tok:'',sec:null,codes:null};
   async function call(kind,args){
     const r=await fetch((CFG.api||CFG.url+'/functions/v1/act'),{method:'POST',headers:{'Content-Type':'application/json',apikey:CFG.anon,'x-ec-token':ses.token},body:JSON.stringify({kind:kind,args:args||{}})});
     return r.json();
@@ -18,8 +23,37 @@
     const who=(x.u?'<b>'+esc(x.u)+'</b>':'<span class="dim">המשחק</span>')+(d.c?' ('+esc(d.c)+' · רמה '+(d.l|0)+' · ריסטים '+(d.rs|0)+')':'');
     const more=[d.a?flat(d.a):'',d.r?flat(d.r):'',Array.isArray(d.n)?d.n.join(', '):'',d.items?JSON.stringify(d.items):'',x.kind!=='log'?flat(d):''].filter(Boolean).join(' | ');
     return '<div class="row"><span>'+who+' · <b>'+esc(act)+'</b>'+(more?'<br><small dir="auto">'+esc(more)+'</small>':'')+'</span><span class="dim">'+when(x.at)+'</span></div>';}
+  // ----- signing in -----
+  function signForm(msg){
+    const bad=msg?'<p style="color:#ff8a9c">'+esc(msg)+'</p>':'';let h='<div class="card">';
+    if(sign.step==='in')h+='<h2>כניסה למסך הניהול</h2><p class="dim">כניסה נפרדת מהמשחק: שם משתמש, סיסמה, ואז קוד מאפליקציית האימות בטלפון.</p><p><input id="sUser" placeholder="שם משתמש" autocomplete="username" autocapitalize="none" value="'+esc(sign.user)+'"></p><p><input id="sPass" type="password" placeholder="סיסמה" autocomplete="current-password"></p>'+bad+'<p><button data-a="sIn" data-u="">המשך</button></p>';
+    else if(sign.step==='code')h+='<h2>קוד אימות</h2><p>פתח את אפליקציית האימות בטלפון והקלד את 6 הספרות שמופיעות ליד "EternalCycle".</p><p><input id="sCode" inputmode="numeric" autocomplete="one-time-code" maxlength="16" placeholder="6 ספרות" dir="ltr"></p><p class="dim">אין לך את הטלפון? הקלד כאן אחד מקודי החירום שקיבלת בהפעלה.</p>'+bad+'<p><button data-a="sCode" data-u="">כניסה</button> <button data-a="sBack" data-u="">חזרה</button></p>';
+    else if(sign.step==='setup')h+='<h2>הגדרה חד-פעמית: אימות בטלפון</h2><p>מסך הניהול נפתח רק עם קוד מהטלפון, כדי שסיסמה שדלפה לא תספיק לאף אחד. עושים את זה פעם אחת:</p><p><b>1.</b> התקן בטלפון אפליקציית אימות, למשל Google Authenticator.</p><p><b>2.</b> באפליקציה בחר "הוספת חשבון" ואז "הזנת מפתח", והקלד את המפתח הזה:</p><p dir="ltr" style="font-family:monospace;font-size:17px;word-break:break-all;user-select:all;text-align:center">'+esc(sign.sec.secret)+'</p><p class="dim">אם אתה גולש עכשיו מהטלפון עצמו: <a href="'+esc(sign.sec.uri)+'">לחץ כאן וזה ייפתח באפליקציה</a>.</p><p><b>3.</b> האפליקציה תציג 6 ספרות שמתחלפות כל חצי דקה. הקלד אותן כאן:</p><p><input id="sCode" inputmode="numeric" maxlength="6" placeholder="6 ספרות" dir="ltr"></p>'+bad+'<p><button data-a="sOn" data-u="">סיימתי</button></p>';
+    else if(sign.step==='codes')h+='<h2>כמעט סיימנו: קודי חירום</h2><p>מעכשיו נכנסים לכאן עם סיסמה ועם 6 הספרות מהטלפון. זה הכול.</p><p><b>ומה אם הטלפון יאבד או יישבר?</b> בשביל זה יש 8 קודי חירום. כל אחד מהם מחליף פעם אחת את הספרות מהטלפון. לא צריך לזכור אותם ולא משתמשים בהם ביום-יום: רק שומרים אותם.</p><p dir="ltr" style="font-family:monospace;font-size:16px;line-height:1.9;text-align:center;user-select:all">'+sign.codes.map(esc).join('<br>')+'</p><p><b>מה לעשות עכשיו:</b> צלם את המסך הזה, או העתק את הקודים לפתק, ושמור במקום שאינו הטלפון. הם לא יוצגו שוב.</p><p class="dim">אם אבדו גם הטלפון וגם הקודים, מי שמתחזק את השרת יכול לאפס את האימות ישירות במסד הנתונים. החשבון לא אובד.</p><p><button data-a="sDone" data-u="">שמרתי, המשך למסך הניהול</button></p>';
+    out.innerHTML=h+'</div>';
+  }
+  async function signDo(a){
+    const v=id=>$(id)?($(id).value||'').trim():'';let j=null;
+    if(a==='sBack'){sign={step:'in',user:sign.user,pass:'',tok:'',sec:null,codes:null};return signForm();}
+    if(a==='sDone'){const t=sign.tok,u=sign.user;sign={step:'in',user:'',pass:'',tok:'',sec:null,codes:null};keep({token:t,user:u});return load();}
+    try{
+      if(a==='sIn'||a==='sCode'){if(a==='sIn'){sign.user=v('sUser');sign.pass=$('sPass')?$('sPass').value:'';}
+        if(!sign.user||!sign.pass)return signForm('הקלד שם משתמש וסיסמה');const code=a==='sCode'?v('sCode'):'';if(a==='sCode'&&code.length<6)return signForm('הקלד את הקוד');
+        j=await post('login',{user:sign.user,pass:sign.pass,code:code||undefined,mgmt:true});
+        if(!j)return signForm('אין חיבור לשרת');if(!j.ok){if(j.tfa){sign.step='code';return signForm(a==='sCode'?j.msg:'');}return signForm(j.msg||'הכניסה נכשלה');}
+        if(j.strong){const p=sign;sign={step:'in',user:'',pass:'',tok:'',sec:null,codes:null};keep({token:j.token,user:j.user});p.pass='';return load();}
+        const w=await post('whoami',{},j.token);if(!w||!w.ok||!w.admin){sign.pass='';return signForm('לחשבון הזה אין הרשאת ניהול');}
+        const st=await post('tfaStart',{pass:sign.pass},j.token);if(!st||!st.ok)return signForm(st&&st.msg||'ההגדרה לא התחילה');sign.tok=j.token;sign.sec=st;sign.step='setup';return signForm();}
+      if(a==='sOn'){j=await post('tfaOn',{code:v('sCode'),mgmt:true},sign.tok);if(!j||!j.ok)return signForm(j&&j.msg||'הקוד לא התקבל');sign.pass='';sign.tok=j.token;sign.codes=j.codes;sign.step='codes';return signForm();}
+    }catch(e){signForm('אין חיבור לשרת');}
+  }
   function render(d,note){
-    let h=note?'<div class="card"><b>'+note+'</b></div>':'';
+    let h='<p class="dim">מחובר כ-<b dir="auto">'+esc(ses&&ses.user||'')+'</b> · <button data-a="sOut" data-u="">יציאה</button></p>'+(note?'<div class="card"><b>'+note+'</b></div>':'');
+    h+='<div class="card"><h2>אירועים וכלי משחק</h2><p class="dim">פועל מיד על כל המחוברים, ונרשם ביומן.</p>'+
+      '<p><b>הודעה לכולם</b><br><input id="gmSay" maxlength="120" placeholder="טקסט ההודעה" style="width:70%"> <button data-a="gm" data-u="say">שלח</button></p>'+
+      '<p><b>בונוס לכולם</b><br>ניסיון × <input id="gmXp" value="1.5" size="3"> שלל × <input id="gmDrop" value="1" size="3"> למשך <input id="gmMin" value="30" size="3"> דקות <button data-a="gm" data-u="boost">הפעל</button> <button data-a="gm" data-u="boost0">בטל בונוס</button></p>'+
+      '<p><b>המעגל האחרון</b><br>הרשמה של <input id="gmSec" value="90" size="3"> שניות <button data-a="gm" data-u="br">פתח</button> <button data-a="gm" data-u="brStop">בטל הרשמה</button></p>'+
+      '<p><b>מצור</b><br>למשך <input id="gmSg" value="12" size="3"> דקות: <button data-a="gm" data-u="siege">מצור ידידות</button> <button data-a="gm" data-u="siegeBots4">אימון מול בוטים 4 מול 4</button> <button data-a="gm" data-u="siegeBots6">אימון 6 מול 6</button> <button data-a="gm" data-u="siegeStop">עצור מצור</button></p></div>';
     h+='<div class="card stats"><div><b>'+d.users+'</b>חשבונות</div><div><b>'+d.online+'</b>מחוברים עכשיו</div><div><b>'+d.day+'</b>פעילים ביממה</div></div>';
     if(shop){h+='<h2>תרומות וקרדיטים</h2><div class="card stats"><div><b>'+shop.paid_total+'</b>ש"ח אושרו</div><div><b>'+shop.paid_count+'</b>תרומות</div><div><b>'+shop.pending.length+'</b>ממתינות</div></div><div class="card">';
       if(!shop.pending.length)h+='<p class="dim">אין בקשות ממתינות.</p>';
@@ -50,14 +84,19 @@
     out.innerHTML=h+'</div>';
   }
   async function load(note){
-    if(!CFG.url||!ses||!ses.token){out.innerHTML='<p>צריך להיכנס למשחק קודם, עם חשבון מנהל.</p>';return;}
+    if(!ses||!ses.token)return signForm();
     let j=null;try{j=await call('aview',{});}catch(e){}
-    if(!j||!j.result||!j.result.ok){out.innerHTML='<p>'+(j&&j.result?'לחשבון הזה אין הרשאת ניהול.':'אין חיבור לשרת.')+'</p>';return;}
+    if(j&&(j.error==='auth'||(j.result&&j.result.need2fa))){keep(null);return signForm(j.error==='auth'?'פג תוקף הכניסה. היכנס שוב':'');}
+    if(!j||!j.result||!j.result.ok){out.innerHTML='<p>'+(j&&j.result?'לחשבון הזה אין הרשאת ניהול.':'אין חיבור לשרת.')+'</p><p><button data-a="sOut" data-u="">יציאה</button></p>';return;}
     try{const s=await call('aorders',{});if(s&&s.shop)shop=s.shop;if(s&&s.backups)backups=s.backups;}catch(e){}
     render(j.admin,note);
   }
   out.addEventListener('click',async e=>{
     const b=e.target.closest('button[data-a]');if(!b)return;
+    if(b.dataset.a==='sOut'){keep(null);sign={step:'in',user:'',pass:'',tok:'',sec:null,codes:null};return signForm();}
+    if(b.dataset.a[0]==='s'&&['sIn','sCode','sBack','sOn','sDone'].indexOf(b.dataset.a)>=0){b.disabled=true;await signDo(b.dataset.a);return;}
+    if(b.dataset.a==='gm'){const k=b.dataset.u,n=id=>+($(id)?$(id).value:0)||0,m=k==='say'?{a:'say',m:$('gmSay').value}:k==='boost'?{a:'boost',xp:n('gmXp'),drop:n('gmDrop'),min:n('gmMin')}:k==='boost0'?{a:'boost',min:0}:k==='br'?{a:'br',sec:n('gmSec')}:k==='siege'?{a:'siege',min:n('gmSg')}:k==='siegeBots4'?{a:'siegeBots',min:n('gmSg'),n:4}:k==='siegeBots6'?{a:'siegeBots',min:n('gmSg'),n:6}:{a:k};
+      if((k==='boost'||k==='say'||k==='siege')&&!confirm('לבצע עכשיו על כל המחוברים?'))return;b.disabled=true;let r=null;try{r=await call('agm',m);}catch(err){}await load(esc(r&&r.result&&r.result.msg||'הפעולה נכשלה'));return;}
     let u=b.dataset.u;if(u==='#'){u=($('who').value||'').trim();if(!u)return;}
     b.disabled=true;let j=null;
     try{

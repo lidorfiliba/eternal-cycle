@@ -127,7 +127,7 @@ test('daily login reward: once a day, the streak grows only when collected on co
 test('resets: stats are kept, maps do not change with resets, a stat fills at its maximum, party experience',()=>{
   const {A}=fresh(),s=A.chars[0];s.lvl=G.CAP;s.stats.str=900;s.pts=37;s.autoPts=false;
   assert.ok(G.apply(A,'reset',{}).ok);assert.equal(s.lvl,1);assert.equal(s.stats.str,900);assert.equal(s.pts,37);assert.equal(s.resets,1);
-  assert.deepEqual(G.zs(3,1),G.zs(3,1,9),'a map is the same for everyone');assert.ok(G.ZONES[24].hp>G.ZONES[8].hp*4,'reset maps are the hard content');assert.equal(G.ZONES.length,37);assert.deepEqual([0,3,23,24,31].map(G.tierOf),[1,2,8,9,12]);
+  assert.deepEqual(G.zs(3,1),G.zs(3,1,9),'a map is the same for everyone');assert.ok(G.ZONES[24].hp>G.ZONES[8].hp*4,'reset maps are the hard content');assert.equal(G.ZONES.length,40);assert.deepEqual([0,3,23,24,31].map(G.tierOf),[1,2,8,9,12]);
   const sx=ctx=>{const B=G.adopt(JSON.parse(JSON.stringify(A)));G.setEnv(()=>.5,()=>B.last+20000);G.apply(B,'travel',{z:0});const r=G.apply(B,'tick',{z:0,kills:0},ctx);return [r.shared||0,B.chars[0].lvl];};
   assert.deepEqual(sx({}),[0,1]);assert.ok(sx({shareXp:5000})[1]>5,'experience handed over by the server levels the character');assert.equal(sx({shareXp:5000})[0],5000);
   s.stats.str=G.STAT_MAX-10;s.pts=50;assert.ok(G.apply(A,'pt',{k:'str',n:'all'}).ok);assert.equal(s.stats.str,G.STAT_MAX);assert.equal(s.pts,40);
@@ -696,4 +696,16 @@ test('the arena offers a fair list: real players only near his strength, the res
   const r=G.apply(A,'opps',{},{uid:'me',players:[weak(1),weak(2),weak(3),weak(4),near(0),near(1),near(2)]});assert.ok(r.ok);assert.equal(A.opps.length,4);
   assert.ok(A.opps.every(o=>o.p>=me.p*.6),'nobody far below him is offered: '+A.opps.map(o=>o.p));assert.equal(A.opps.filter(o=>!o.bot).length,2,'two real players at most');assert.ok(A.opps.some(o=>o.bot&&o.p>me.p),'and one made rival stands above him');
   G.apply(A,'opps',{},{uid:'me',players:[weak(1),weak(2)]});assert.ok(A.opps.every(o=>o.bot),'with only beginners around, all four are his own measure');
+});
+
+test('the lands of the void: only many resets open them, they kill the unfinished, and only there the strongest gear drops, rarely',()=>{
+  let x=.5;G.setEnv(()=>x,()=>1.8e12);const V=G.ZONES.map((z,i)=>[z,i]).filter(q=>q[0].x);assert.equal(V.length,3);const far=G.ZONES.filter(z=>z.req&&!z.x).sort((a,b)=>b.hp-a.hp)[0];
+  for(const [z,i] of V){assert.ok(z.req>=60&&z.hp>far.hp*1.5&&z.atk>far.atk*1.5,'beyond the hardest map before it: '+z.n);assert.equal(G.tierOf(i),G.VOID_TIER);}
+  assert.ok(V[2][0].hp>V[0][0].hp*3&&V[2][0].atk>V[0][0].atk*3,'and each deeper than the last');assert.ok(G.ZONES.findIndex(z=>z.castle)>=0&&G.ZONES.findIndex(z=>z.castle)<V[0][1],'older maps keep their places');
+  const A=G.newAccount();G.apply(A,'create',{name:'Voider',cls:'blade'},{});const s=A.chars[0];s.lvl=400;s.resets=59;assert.equal(G.apply(A,'travel',{z:V[0][1]}).ok,false,'one reset short');s.resets=60;assert.ok(G.apply(A,'travel',{z:V[0][1]}).ok);assert.equal(G.apply(A,'travel',{z:V[2][1]}).ok,false);
+  const top=G.makeItem(s,'w',G.VOID_TIER,4,V[0][1]),old=G.makeItem(s,'w',G.VOID_TIER-1,4,0);assert.ok(G.itemVals(top).atk>G.itemVals(old).atk*1.2,'void gear stands well above the tier before it');assert.equal(G.TIERN.length,G.VOID_TIER);assert.ok(G.itemName(top,'blade').includes(G.SETN[G.VOID_TIER-1])||G.itemName(top,'blade').includes(G.SETN2[G.VOID_TIER-1]));
+  assert.ok(G.VOID_RAR[4]<=.25&&Math.abs(G.VOID_RAR.reduce((a,b)=>a+b,0)-100)<.01,'an ancient piece is a rare thing there');
+  // the set of the void gives half as much again as any other
+  const wear=(t,z)=>{const B=G.newAccount();G.apply(B,'create',{name:'Setter',cls:'blade'},{});const c=B.chars[0];for(const sl of ['h','a','p','l','b','w']){const it=G.makeItem(c,sl,t,4,z);delete it.v;it.af=[];c.eq[sl]=it;}return c;};
+  const cv=wear(G.VOID_TIER,V[0][1]),co=wear(G.VOID_TIER-1,G.BASEZ+10);assert.equal(Object.values(G.setCounts(cv))[0],6);assert.ok(G.calc(cv).cdmg-2>(G.calc(co).cdmg-2)*1.4,'its set bonus is the greatest');
 });

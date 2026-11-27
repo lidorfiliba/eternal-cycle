@@ -93,7 +93,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
   async function gmMsg(ws, m) {
     const uid = ws.uid, now = clock(); if (now - (ws.lastGm || 0) < 1000) return; ws.lastGm = now;
     if (!(await isGm(uid))) { console.warn('gm command refused for', uid, String(m.a).slice(0, 12)); return; }
-    const a = String(m.a), ok = (msg) => send(uid, { t: 'gmRes', ok: true, msg }), no = (msg) => send(uid, { t: 'gmRes', ok: false, msg });
+    const a = String(m.a), ok = (msg) => (ws.res ? ws.res({ ok: true, msg }) : send(uid, { t: 'gmRes', ok: true, msg })), no = (msg) => (ws.res ? ws.res({ ok: false, msg }) : send(uid, { t: 'gmRes', ok: false, msg }));
     console.log('gm', uid, a); admin.from('audit').insert({ user_id: uid, kind: 'log', detail: { k: 'gm', a: { a: a.slice(0, 12), min: m.min == null ? '' : String(m.min).slice(0, 6), sec: m.sec == null ? '' : String(m.sec).slice(0, 6) } } }).then(() => {}, () => {});
     if (a === 'br') {
       if (br) return no('כבר יש מעגל פתוח או קרב שרץ');
@@ -393,5 +393,6 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
       ws.on('error', () => {});
     });
   });
-  return { socks, duels, ownDump, ownLoad, takeKills, takeFlag, stale, rooms, sgNow: () => sg, sgOpen, brNow: () => br, brOpen: (ms) => (br = { key: 'manual', phase: 'sign', joined: new Map(), end: clock() + ms, idx: new Map() }), brBegin: () => { if (br && br.phase === 'sign') brStart(br); }, close: () => { clearInterval(roomClock); for (const d of duels.values()) clearInterval(d.timer); clearInterval(brClock); if (br && br.timer) clearInterval(br.timer); if (sg) clearInterval(sg.timer); wss.close(); } };
+  const gm = async (uid, m) => { let out = { ok: false, msg: 'הפעולה לא מוכרת' }; await gmMsg({ uid, lastGm: 0, res: (r) => { out = r; } }, m || {}); return out; }; // the same actions, asked from the management screen
+  return { gm, socks, duels, ownDump, ownLoad, takeKills, takeFlag, stale, rooms, sgNow: () => sg, sgOpen, brNow: () => br, brOpen: (ms) => (br = { key: 'manual', phase: 'sign', joined: new Map(), end: clock() + ms, idx: new Map() }), brBegin: () => { if (br && br.phase === 'sign') brStart(br); }, close: () => { clearInterval(roomClock); for (const d of duels.values()) clearInterval(d.timer); clearInterval(brClock); if (br && br.timer) clearInterval(br.timer); if (sg) clearInterval(sg.timer); wss.close(); } };
 }

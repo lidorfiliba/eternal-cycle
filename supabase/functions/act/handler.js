@@ -355,12 +355,12 @@ export function makeAuth(admin, secret, clock = Date.now) {
     const sec = b32(crypto.getRandomValues(new Uint8Array(20))); await admin.from("users").update({ tfa_secret: sec, tfa_on: false, tfa_codes: null, tfa_step: 0 }).eq("user_id", uid);
     return { ok: true, secret: sec, uri: "otpauth://totp/EternalCycle:" + encodeURIComponent(row.username) + "?secret=" + sec + "&issuer=EternalCycle" };
   }
-  async function tfaOn(uid, code) {
+  async function tfaOn(uid, code, mgmt) {
     const t = (await admin.from("users").select("user_id," + TFA_COLS).eq("user_id", uid).maybeSingle()).data; if (!t || !t.tfa_secret) return fail("התחל את ההפעלה מחדש"); if (t.tfa_on) return fail("האימות הדו-שלבי כבר פעיל");
     if (!/^\d{6}$/.test(String(code == null ? "" : code).replace(/\s/g, "")) || !await tfaCheck(t, code)) return fail("הקוד שגוי. בדוק שהשעון במכשיר מדויק ונסה את הקוד הבא");
     const codes = []; for (let i = 0; i < 8; i++) codes.push(b32(crypto.getRandomValues(new Uint8Array(7))).slice(0, 10));
     const hs = []; for (const c of codes) hs.push(await sha(c)); await admin.from("users").update({ tfa_on: true, tfa_codes: hs }).eq("user_id", uid);
-    return { ok: true, codes };
+    return mgmt ? { ok: true, codes, token: await token(uid, true) } : { ok: true, codes };
   }
   async function tfaOff(uid, pass, code) {
     const row = await userBy(uid); if (!await passOk(row, pass)) return fail("הסיסמה שגויה");
@@ -376,8 +376,8 @@ export function makeAuth(admin, secret, clock = Date.now) {
     return b64(new Uint8Array(await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: ITER }, k, 256)));
   }
   const same = (a, b) => { let d = a.length ^ b.length; for (let i = 0; i < Math.max(a.length, b.length); i++) d |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0); return d === 0; };
-  async function token(uid) {
-    const body = uid + "." + (clock() + TTL);
+  async function token(uid, strong) { // strong: this sign-in passed the second step. Such a session lasts a day, not three months.
+    const body = uid + "." + (clock() + (strong ? 24 * 3600 * 1000 : TTL)) + (strong ? ".2" : "");
     return b64(enc.encode(body)) + "." + b64(new Uint8Array(await crypto.subtle.sign("HMAC", await hmacKey(), enc.encode(body))));
   }
   // Returns the account id for a valid, unexpired token, otherwise null.
@@ -387,8 +387,8 @@ export function makeAuth(admin, secret, clock = Date.now) {
       const p = String(tok || "").split("."); if (p.length !== 2 || tok.length > 400) return null;
       const body = dec.decode(unb64(p[0]));
       if (!await crypto.subtle.verify("HMAC", await hmacKey(), unb64(p[1]), enc.encode(body))) return null;
-      const [uid, exp] = body.split("."); if (!(+exp > clock())) return null;
-      return /^[0-9a-f-]{36}$/.test(uid) ? { uid, iat: +exp - TTL } : null;
+      const [uid, exp, fl] = body.split("."), strong = fl === "2"; if (!(+exp > clock())) return null;
+      return /^[0-9a-f-]{36}$/.test(uid) ? { uid, iat: +exp - (strong ? 24 * 3600 * 1000 : TTL), strong } : null;
     } catch { return null; }
   }
   const normAns = (a) => String(a == null ? "" : a).normalize("NFKC").trim().toLowerCase().replace(/\s+/g, " ").slice(0, 60);
@@ -471,7 +471,7 @@ export function makeAuth(admin, secret, clock = Date.now) {
     if (ins.error) return fail("שם המשתמש תפוס");
     return { ok: true, token: await token(uid), user: u };
   }
-  async function login(user, pass, ip, code) {
+  async function login(user, pass, ip, code, mgmt) { // mgmt: the management screen asks for a session that passed the second step
     const u = norm(user).slice(0, 64), pw = String(pass == null ? "" : pass).slice(0, 72), addr = String(ip || "unknown").slice(0, 64);
     const blk = await admin.rpc("login_blocked", { p_user: u, p_ip: addr });
     if (blk.error || blk.data === true) return fail("יותר מדי ניסיונות. נסה שוב בעוד רבע שעה");
@@ -483,6 +483,7 @@ export function makeAuth(admin, secret, clock = Date.now) {
       if (code == null || String(code).trim() === "") return { ok: false, tfa: true, msg: "הקלד את הקוד מאפליקציית האימות" };
       if (!await tfaCheck(row, code)) { await admin.rpc("login_fail", { p_user: u, p_ip: addr }); return { ok: false, tfa: true, msg: "הקוד שגוי" }; }
     }
+    if (mgmt) return { ok: true, token: await token(row.user_id, !!row.tfa_on), user: u, strong: !!row.tfa_on };
     return { ok: true, token: await token(row.user_id), user: u };
   }
   return { register, login, verify, session, forgot, recover, setSecret, chpass, delacct, adminReset, whoami, tfaStart, tfaOn, tfaOff };

@@ -46,22 +46,29 @@ const ZRAW=[
  ['כור ההיתוך','שלד מותך',370,'skel','#ff5a1a','brute','#ff7a3a','#2a0a02','#b83a0a','#1a0601','#ffd0a0',30],
  ['לב הנצח','נחש הבריאה',395,'worm','#ffffff','drake','#fff8e0','#18102a','#7a5ac8','#0c0818','#ffffff',50],
  // The ancient city: open only to the guild that holds the castle.
- ['העיר העתיקה','שומר קדום',360,'skel','#ffd75e','brute','#ffe9a0','#1a1404','#a07a1a','#0e0a02','#fff4c8',0,1]
+ ['העיר העתיקה','שומר קדום',360,'skel','#ffd75e','brute','#ffe9a0','#1a1404','#a07a1a','#0e0a02','#fff4c8',0,1],
+ // The lands of the void, past the end of the road: only a finished character lives there for more than a breath. The
+ // best gear in the game drops here and nowhere else, and a whole set of it is the work of months. [.., resets, -, which]
+ ['שממת העצמות','אביר עצם',398,'skel','#f4f0e6','brute','#fffaf0','#e9e4d8','#8f8a80','#141210','#ffffff',60,0,1],
+ ['ים הדם השחור','עין התהום',399,'eye','#7a0a1a','ghost','#ff2a3a','#050002','#5a0010','#000000','#ff4a5a',75,0,2],
+ ['הריק שמעבר','נחש הריק',400,'worm','#1a1030','drake','#b79cff','#000000','#12082a','#000000','#d8c8ff',100,0,3]
 ];
 const BASEZ=24,REGION=3,CITY_TIER=12,CITY_PERFECT=1.25;let _castle=false,_gm=false; // whether the player's guild holds the castle: the server says so with each request
 // Reset maps are built for characters that kept their stats through resets: [life, damage] multipliers by the resets a map needs.
-const RESET_TOUGH={1:[4,4,3],2:[4.5,6,2.7],3:[5,8,2.4],4:[5.5,11,2.2],5:[6.5,14,2],7:[10.5,20,1.8],10:[15,28,1.75],15:[34,70,2.5],20:[42,95,2.1],30:[65,165,1.9],50:[130,400,1.7]}; // health and attack (the third number is no longer used): tougher than the main road; what they give is ancient set pieces, three times as often
+const RESET_TOUGH={60:[220,700],75:[400,1400],100:[800,3000],1:[4,4,3],2:[4.5,6,2.7],3:[5,8,2.4],4:[5.5,11,2.2],5:[6.5,14,2],7:[10.5,20,1.8],10:[15,28,1.75],15:[34,70,2.5],20:[42,95,2.1],30:[65,165,1.9],50:[130,400,1.7]}; // health and attack (the third number is no longer used): tougher than the main road; what they give is ancient set pieces, three times as often
 const SIGS=['xp','gold','hp','crit','aspd','cdmg','drop','dmg'],RSIGS=['xp','dmg','gold','cdmg','aspd','crit'];
 const ZONES=ZRAW.map((q,i)=>{
   const min=q[2],req=q[11]||0,base=i<BASEZ,j=i-BASEZ,z={n:q[0],m:q[1],min:min,spr:q[3],tint:q[4],kind:q[5],c:q[6],sky:[q[7],q[8]],sil:q[9],amb:q[10],fly:q[3].indexOf('eye')===0};
+  if(q[13])z.x=q[13];
   z.shared=1; // on every map the monsters are the server's, shared by everyone who stands on the floor (where the game has a live server)
   z.sig=base?SIGS[Math.floor(i/REGION)]:RSIGS[Math.floor(j/2)]||'drop';
   z.hp=Math.round(90+9*min+.018*min*min);z.atk=Math.round(13+.84*min);z.xp=Math.round(10*Math.pow(1+min/50,1.6));z.gold=Math.round(3+.19*min);
   if(base){const w=[0,0,1,0,2,0,3,4][Math.floor(i/REGION)];if(w)z.wing=w;}
-  else{const t=q[12]?RESET_TOUGH[10]:RESET_TOUGH[req]||[4,2.2];if(q[12])z.castle=1;else z.req=req;z.wing=q[12]?8:5+Math.floor(j/2);z.xp=Math.round(z.xp*1.7);z.gold=Math.round(48+(min-100)*.314);z.hp=Math.round(z.hp*1.55*t[0]);z.atk=Math.round(z.atk*1.4*t[1]);}
+  else{const t=q[12]?RESET_TOUGH[10]:RESET_TOUGH[req]||[4,2.2];if(q[12])z.castle=1;else z.req=req;z.wing=q[12]||q[13]?8:5+Math.floor(j/2);if(q[13])z.sig=['dmg','cdmg','aspd'][q[13]-1];z.xp=Math.round(z.xp*1.7);z.gold=Math.round(48+(min-100)*.314);z.hp=Math.round(z.hp*1.55*t[0]);z.atk=Math.round(z.atk*1.4*t[1]);if(q[13])z.gold*=2;}
   return z;});
 // Gear tier of what a map drops: the main road climbs one tier per region (1 to 8), reset maps hold tiers 9 to 12.
-const tierOf=zi=>zi<BASEZ?1+Math.floor(zi/REGION):ZONES[zi]&&ZONES[zi].castle?CITY_TIER:9+Math.floor((zi-BASEZ)/2);
+const VOID_TIER=15,VOID_STEP=3,VOID_SET=1.5,VOID_RAR=[71.3,21,6,1.5,.2]; // in the void an ancient piece is one drop in five hundred
+const tierOf=zi=>zi<BASEZ?1+Math.floor(zi/REGION):ZONES[zi]&&ZONES[zi].castle?CITY_TIER:ZONES[zi]&&ZONES[zi].x?VOID_TIER:9+Math.floor((zi-BASEZ)/2);
 const MHP=ZONES.map(z=>z.hp),MATK=ZONES.map(z=>z.atk),ZSPR=ZONES.map(z=>z.spr),ZMON=ZONES.map(z=>z.m);
 const CLS={
  blade:{n:'לוחם להב',main:'str',coef:1.5,combo:'סערת להבים',c:'#ff8a4d',wn:'להב',range:50,sk:['סערת להבים','שרשרת ברזל','זעם הקרב','מכת מחץ','חומת פלדה','אלף להבים'],al:{str:.6,agi:.15,vit:.25}},
@@ -73,7 +80,7 @@ const CLS={
 };
 const STATN={str:['כוח','נזק ללוחם להב'],agi:['זריזות','מהירות, קריטי, הגנה'],vit:['חיוניות','חיים והגנה. נזק לאדון מלחמה'],ene:['אנרגיה','נזק למכשפת סער']};
 const RAR=[{n:'רגיל',c:'#b9b4c7',m:1},{n:'קסום',c:'#5aa9ff',m:1.25},{n:'נדיר',c:'#c77dff',m:1.6},{n:'אגדי',c:'#ffb23e',m:2.1},{n:'עתיק',c:'#3df5c8',m:2.8}];
-const TIERN=['חניך','ברזל','כסף ירח','חול זועם','כפור','גחלת','צל','נצח','תהום','קרחון','זהב טהור','מעגל','אפר הזמן','בריאה'];
+const TIERN=['חניך','ברזל','כסף ירח','חול זועם','כפור','גחלת','צל','נצח','תהום','קרחון','זהב טהור','מעגל','אפר הזמן','בריאה','הריק'];
 // Fifty ranks of wings, each stronger than the one before. Monsters drop only the first eight; every rank above
 // is reached by evolving a +15 wing with season feathers (see wingEvolve), so the top of the ladder takes months.
 const WING_MAX=50,WING_FAM=['דרקון','צללים','כוכבים','סופה','עידן','אינסוף'],WING_GR=['','מחוזקות','נעלות','מלכותיות','קדומות','שמימיות','אלוהיות'];
@@ -98,10 +105,10 @@ const SLOTS=['w','h','a','p','l','b','g','r','q','n','y'],DROPS=['w','h','a','p'
 // Jewelry: a ring of might (damage), a ring of life (health) and a necklace (some of both). Not part of any set.
 const JEW=['r','q','n'],JEWV={r:[1,0],q:[0,1],n:[.55,.55]},jewBase=t=>1+.6*t;
 const SLOTN={w:'נשק',h:'קסדה',a:'שריון',p:'מכנסיים',l:'כפפות',b:'מגפיים',g:'כנפיים',r:'טבעת עוצמה',q:'טבעת חיים',n:'שרשרת',y:'חיית מחמד'};
-const SETN=['שומרי היער','חופרי האבק','ילדי הערפל','זעם החולות','לב הכפור','גחלת נצחית','צל המגדל','כתר הנצח','בני התהום','נסיכי הקרח','אוצר ההיכל','לב המעגל','שומרי הזמן','יוצרי העולם'];
+const SETN=['שומרי היער','חופרי האבק','ילדי הערפל','זעם החולות','לב הכפור','גחלת נצחית','צל המגדל','כתר הנצח','בני התהום','נסיכי הקרח','אוצר ההיכל','לב המעגל','שומרי הזמן','יוצרי העולם','נושאי הריק'];
 const SETB=[[2,'hp',10],[3,'dmg',12],[4,'cdmg',25],[5,'aspd',8],[6,'dmg',25],[6,'xp',20]];
 // Every gear tier has two ancient sets: the first hits harder, the second (v:1) holds the line and finds more.
-const SETN2=['ציידי הלילה','אבירי האבן','קוראי הסערה','נוודי השמש','שומרי הקרחון','בני הלהבה','לוחשי הצל','מלכי הנצח','שליטי המעמקים','אדוני הסופה','שומרי האוצר','חותמי המעגל','נוסעי הזמן','אבות הבריאה'];
+const SETN2=['ציידי הלילה','אבירי האבן','קוראי הסערה','נוודי השמש','שומרי הקרחון','בני הלהבה','לוחשי הצל','מלכי הנצח','שליטי המעמקים','אדוני הסופה','שומרי האוצר','חותמי המעגל','נוסעי הזמן','אבות הבריאה','אדוני הסוף'];
 const SETB2=[[2,'def',12],[3,'hp',15],[4,'crit',5],[5,'drop',10],[6,'hp',30],[6,'gold',25]];
 const setKey=it=>(it.t-1)+(it.v?'b':''),setName=k=>(String(k).slice(-1)==='b'?SETN2:SETN)[parseInt(k)],setTable=k=>String(k).slice(-1)==='b'?SETB2:SETB;
 const rslot=()=>DROPS[Math.floor(_rnd()*DROPS.length)];
@@ -148,9 +155,9 @@ function ensureDay(s){
 }
 function itemVals(it){
   if(it.s==='y')return {};
-  const m=RAR[it.r].m*(1+0.08*it.p)*(it.pf?PERFECT_M:1);
-  if(it.s==='w')return {atk:Math.round((20+25*it.t)*m)};
-  if(ARM[it.s])return {hp:Math.round((80+110*it.t)*m*ARM[it.s]),def:Math.round((8+9*it.t)*m*ARM[it.s])};
+  const m=RAR[it.r].m*(1+0.08*it.p)*(it.pf?PERFECT_M:1),t=it.t>=VOID_TIER?it.t+VOID_STEP:it.t; // gear of the void stands well above everything before it
+  if(it.s==='w')return {atk:Math.round((20+25*t)*m)};
+  if(ARM[it.s])return {hp:Math.round((80+110*t)*m*ARM[it.s]),def:Math.round((8+9*t)*m*ARM[it.s])};
   if(JEWV[it.s]){const j=jewBase(it.t)*(1+0.06*it.p)*(1+0.1*it.r)*(it.pf?PERFECT_M:1),o={};if(JEWV[it.s][0])o.wd=Math.round(j*JEWV[it.s][0]*10)/10;if(JEWV[it.s][1])o.wh=Math.round(j*JEWV[it.s][1]*10)/10;return o;}
   const w=wingBase(it.t)*(1+0.06*it.p)*(1+0.1*it.r);
   return {wd:Math.round(w*10)/10,wh:Math.round(w*5)/10};
@@ -177,7 +184,7 @@ function calc(s,au){
   let atk=0,ahp=0,adef=0,wd=0,wh=0;
   for(const k of SLOTS){const it=s.eq[k];if(!it||k==='y'&&it.until&&it.until<=(s._now||_now()))continue;const v=itemVals(it);
     atk+=v.atk||0;ahp+=v.hp||0;adef+=v.def||0;wd+=v.wd||0;wh+=v.wh||0;for(const f of it.af)a[f[0]]+=f[1];}
-  const sc=setCounts(s);for(const z in sc)for(const b of setTable(z))if(sc[z]>=b[0])a[b[1]]+=b[2];
+  const sc=setCounts(s);for(const z in sc)for(const b of setTable(z))if(sc[z]>=b[0])a[b[1]]+=b[2]*(parseInt(z)===VOID_TIER-1?VOID_SET:1); // and its sets give half as much again
   {const n=exCount(s);for(const b of EXB)if(n>=b[0])a[b[1]]+=b[2];}
   const main=st[c.main];
   const base=10+main*c.coef+(st.str+st.agi+st.ene-(c.main==='vit'?0:main))*0.15+atk;
@@ -313,7 +320,7 @@ function rollLoot(s,zi,kills,c,rep){
   const nb=pois(kills*.0012);s.boxes+=nb;rep.boxes=(rep.boxes||0)+nb;
   const ni=Math.min(80,pois(kills*.03*c.dropM));
   const exc=z.req||z.castle?.03:.012;
-  for(let i=0;i<ni;i++){const it=makeItem(s,rslot(),tierOf(zi),rollRar(z.castle?CITY_RAR:z.req?RESET_RAR:[62,25,9,3.3,.7]),zi);if(_rnd()<exc)makeExcellent(it);
+  for(let i=0;i<ni;i++){const it=makeItem(s,rslot(),tierOf(zi),rollRar(z.castle?CITY_RAR:z.x?VOID_RAR:z.req?RESET_RAR:[62,25,9,3.3,.7]),zi);if(_rnd()<exc)makeExcellent(it);
     const where=gainItem(s,it,rep);if(where!=='left')rep.items=(rep.items||0)+1;if((it.r>=2||it.ex)&&where!=='sold'&&where!=='left'){(rep.notable=rep.notable||[]).push(it);}}
   if(z.wing){const nw=Math.min(4,pois(kills*.0006*c.dropM));
     for(let i=0;i<nw;i++){const it=makeItem(s,'g',z.wing,rollRar([62,28,8,1.7,.3]),zi);if(_rnd()<exc*2)makeExcellent(it);gainItem(s,it,rep);(rep.notable=rep.notable||[]).push(it);}}
@@ -1231,4 +1238,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {CAPEN,WSKIN,wskinOn,bankCap,PET_PERM,nameBad,NAME_MIN,PETN2,petName,sgCamp,areaOf,sgShield,sgBot,sgRoute,sgNear,LIVE_SURV,CLEAN_DAY,livePlausible,CITY_SHOP,CITY_WEEK,CITY_RATE,CITY_TIER,CITY_RAR,CITY_PERFECT,BANK,sgBuff,sgSees,EXB,exCount,SIEGE_MIN,RESET_RAR,keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {VOID_STEP,VOID_SET,VOID_TIER,VOID_RAR,CAPEN,WSKIN,wskinOn,bankCap,PET_PERM,nameBad,NAME_MIN,PETN2,petName,sgCamp,areaOf,sgShield,sgBot,sgRoute,sgNear,LIVE_SURV,CLEAN_DAY,livePlausible,CITY_SHOP,CITY_WEEK,CITY_RATE,CITY_TIER,CITY_RAR,CITY_PERFECT,BANK,sgBuff,sgSees,EXB,exCount,SIEGE_MIN,RESET_RAR,keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

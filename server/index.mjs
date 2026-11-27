@@ -13,6 +13,7 @@ const crypto = globalThis.crypto || webcrypto;
 const rnd = () => { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; };
 
 const LOGGED = new Set(['mlist', 'mbuy', 'mcancel', 'gcreate', 'gjoin', 'gleave', 'gkick', 'pcreate', 'pjoin', 'pleave', 'onew', 'aact', 'aset', 'abackup', 'arestore', 'aodecide', 'agrant']);
+const MGMT = new Set(['aview', 'aact', 'abackup', 'agrant', 'alog', 'aodecide', 'aorders', 'arestore', 'aset', 'aresetpw', 'agm']);
 export function makeServer(admin, secret, origin = '*', opts = {}) {
   const handle = makeHandler(admin, G, rnd), auth = makeAuth(admin, secret), push = makePush(admin, secret, G, rnd, opts.push);
   const cors = { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info, x-ec-token', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Max-Age': '86400' };
@@ -30,14 +31,17 @@ export function makeServer(admin, secret, origin = '*', opts = {}) {
       if (kind === 'register') return send(res, await auth.register(args.user, args.pass, ip, args.q, args.a));
       if (kind === 'forgot') return send(res, await auth.forgot(args.user));
       if (kind === 'recover') return send(res, await auth.recover(args.user, args.a, args.pass, ip, args.code));
-      if (kind === 'login') { const r = await auth.login(args.user, args.pass, ip, args.code); admin.from('audit').insert({ user_id: null, kind: 'log', detail: { k: r && r.token ? 'login' : 'loginFail', a: { user: String(args.user || '').slice(0, 40) } } }).then(() => {}, () => {}); return send(res, r); }
+      if (kind === 'login') { const r = await auth.login(args.user, args.pass, ip, args.code, args.mgmt === true); admin.from('audit').insert({ user_id: null, kind: 'log', detail: { k: r && r.token ? 'login' : 'loginFail', a: { user: String(args.user || '').slice(0, 40) } } }).then(() => {}, () => {}); return send(res, r); }
       const ses = await auth.session(String(req.headers['x-ec-token'] || ''));
       if (!ses) return send(res, { error: 'auth' }, 401);
       const uid = ses.uid;
+      // The management screen: only a session that passed the second step, signed in on that screen, may use it.
+      if (MGMT.has(kind) && !ses.strong) return send(res, { result: { ok: false, need2fa: true, msg: 'למסך הניהול נכנסים עם שם משתמש, סיסמה וקוד אימות' } });
+      if (kind === 'agm') { const q = await auth.whoami(uid); if (!q || !q.admin) return send(res, { result: { ok: false, msg: 'אין הרשאה' } }); return send(res, { result: await server.live.gm(uid, args) }); }
       if (kind === 'whoami') return send(res, await auth.whoami(uid));
       if (kind === 'setsecret') return send(res, await auth.setSecret(uid, args.pass, args.q, args.a));
       if (kind === 'tfaStart') return send(res, await auth.tfaStart(uid, args.pass));
-      if (kind === 'tfaOn') return send(res, await auth.tfaOn(uid, args.code));
+      if (kind === 'tfaOn') return send(res, await auth.tfaOn(uid, args.code, args.mgmt === true));
       if (kind === 'tfaOff') return send(res, await auth.tfaOff(uid, args.pass, args.code));
       if (kind === 'chpass') return send(res, await auth.chpass(uid, args.pass, args.next));
       if (kind === 'delacct') { const r = await auth.delacct(uid, args.pass); if (r && r.ok) await push.off(uid); return send(res, r); }
