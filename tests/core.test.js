@@ -643,3 +643,13 @@ test('the credits shop sells what is found nowhere else: a pet that stays, a new
   const p0=A.prem;assert.ok(G.apply(A,'buy',{shop:'prem',k:'rename',name:'Newname'}).ok);assert.equal(s.name,'Newname');assert.ok(A.prem<p0);
   for(let i=0;i<3;i++)assert.ok(G.apply(A,'buy',{shop:'prem',k:'bankx'}).ok);assert.equal(G.bankCap(A),G.BANK+120);assert.equal(G.apply(A,'buy',{shop:'prem',k:'bankx'}).ok,false,'three and no more');
 });
+
+test('a duel between players is the same fight: one beat, potions by the press, the combo in its order',()=>{
+  const rnd=()=>.5,P=id=>({id,n:id,c:'blade',d:400,a:1.5,h:2700,f:70,cr:0,cd:2});G.setEnv(rnd,()=>1.8e12);
+  const D=G.liveNew(P('a'),P('b'),true);assert.ok(D.pvp);D.t=5;D.f[1].x=D.f[0].x+30;D.f[1].z=D.f[0].z;
+  const a1=G.liveAct(D,0,'atk',rnd);assert.ok(a1&&a1.cb===1);assert.equal(G.liveAct(D,0,'s0',rnd),null,'one beat between blows');
+  D.t+=G.SG.skT+.02;const a2=G.liveAct(D,0,'s0',rnd);assert.equal(a2.cb,2);D.t+=G.SG.skT+.02;const a3=G.liveAct(D,0,'s1',rnd);assert.ok(a3.combo&&a3.stun&&a3.dm>a2.dm*3,'the combo bursts: '+a3.dm+' '+a2.dm);
+  D.f[1].stun=0;assert.equal(G.liveAct(D,1,'pot',rnd),null,'no potion for a moment after it');D.t+=G.SG.wound+.01;const h=D.f[1].hp;assert.ok(G.liveAct(D,1,'pot',rnd)&&D.f[1].hp>h);D.t+=G.SG.potCd+.01;assert.ok(G.liveAct(D,1,'pot',rnd),'and again at once');
+  D.t+=1;const lone=G.liveAct(D,0,'s1',rnd);assert.ok(lone&&!lone.stun,'the skill alone does not stun');
+  const O=G.liveNew(P('a'),P('b'));assert.ok(!O.pvp&&O.f[0].pots===G.DUEL_LIVE.pots,'fights against the game itself are as they were');
+});

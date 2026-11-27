@@ -27,7 +27,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
   }
   const snap = async (uid) => { const r = (await admin.from('arena').select('user_id,snap').eq('user_id', uid).maybeSingle()).data; return r ? G.cleanPlayer(uid, r.snap) : null; };
   const pub = (p) => { const q = Object.assign({}, p); delete q.id; return q; };
-  const state = (D) => D.f.map((f) => ({ hp: f.hp, at: f.at, stun: f.stun, sh: f.sh, inv: f.inv, pots: f.pots }));
+  const state = (D) => D.f.map((f) => ({ hp: f.hp, at: f.at, stun: f.stun, sh: f.sh, inv: f.inv, pots: f.pots, wound: f.wound || 0 }));
 
   async function finish(d, win, why) {
     if (d.done) return; d.done = true; clearInterval(d.timer); duels.delete(d.id);
@@ -46,9 +46,9 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     // the challenger pays the arena ticket, as in any arena fight
     const paid = await mutate(a, (A) => { if (!(A.tickets > 0)) return false; A.tickets--; });
     if (paid !== true) return send(a, { t: 'noticket' });
-    const D = G.liveNew(pa, pb), d = { id: nid++, u: [a, b], p: [pa, pb], D, t0: clock(), done: false, watch: new Set() };
+    const D = G.liveNew(pa, pb, true), d = { id: nid++, u: [a, b], p: [pa, pb], D, t0: clock(), done: false, watch: new Set() };
     duels.set(d.id, d); inDuel.set(a, d); inDuel.set(b, d);
-    const L = { b: D.b, cr: D.cr, T: D.T, pool: D.pool };
+    const L = { b: D.b, cr: D.cr, T: D.T, pool: D.pool, pvp: 1 };
     for (let i = 0; i < 2; i++) send(d.u[i], { t: 'start', id: d.id, side: i, opp: pub(d.p[1 - i]), L, cls: [pa.c, pb.c] });
     d.timer = setInterval(() => { d.D.t = (clock() - d.t0) / 1000 - 1.2; if (G.liveOver(d.D)) finish(d, d.D.win, 'time'); }, tickMs); d.timer.unref();
   }

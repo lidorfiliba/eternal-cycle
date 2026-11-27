@@ -451,7 +451,7 @@ function simDuel(A,B){
    against an absent player (the server picks his actions) and one between two players who are both present. */
 // The live duel: what each move does, in units of a fighter's `base` (the share of the enemy's health one
 // second and a half of ordinary attacking removes). The device runs the fight; the server knows these numbers too.
-const DUEL_LIVE={time:75,pots:3,heal:.3,sk:[{m:.9,cd:5},{m:1.6,cd:9,stun:.8},{cd:14,dur:3,cut:.6},{m:2.8,cd:22}],dash:{cd:4,inv:.45,d:150},potCd:5,maxRate:(1.5/1.5)+.9/5+1.6/9+2.8/22};
+const DUEL_LIVE={time:75,pots:3,heal:.3,sk:[{m:.9,cd:5},{m:1.6,cd:9,stun:.8},{cd:14,dur:3,cut:.6},{m:2.8,cd:22}],dash:{cd:4,inv:.45,d:150},potCd:5,pvpPots:40,pvpM:.46,maxRate:(1.5/1.5)+.9/5+1.6/9+2.8/22};
 // One set of rules for the live duel, used by the browser (against a fighter the game plays) and by the server
 // (between two players who are both connected, where the server alone decides what a move did).
 // Positions are in arena units: LIVE_W across, depth z from 0 to 1. Times are seconds on the duel's own clock D.t.
@@ -459,16 +459,25 @@ const LIVE_W=400,LIVE_RNG={blade:62,storm:185,hunter:235},LIVE_LANE=.3;
 const LIVE_SURV=20,CLEAN_DAY=10;
 function livePlausible(L,el){const minT=1/(Math.max(1e-6,L.b[0])*DUEL_LIVE.maxRate);return el>=minT*.8&&L.b[1]*minT<=LIVE_SURV;}
 function liveFrom(L,ca,cb){
-  const mk=(i,cls)=>({x:i?LIVE_W*.76:LIVE_W*.24,z:.5,hp:1,cls:CLS[cls]?cls:'blade',at:{atk:.4,s0:1,s1:2,s2:0,s3:6,dash:0,pot:0},stun:0,sh:0,inv:0,pots:DUEL_LIVE.pots,chain:0});
-  return {f:[mk(0,ca),mk(1,cb)],b:L.b.slice(0,2),cr:L.cr.slice(0,2),T:L.T.slice(0,2),pool:L.pool.slice(0,2),t:0,over:0,win:-1};
+  const pv=!!L.pvp,mk=(i,cls)=>({x:i?LIVE_W*.76:LIVE_W*.24,z:.5,hp:1,cls:CLS[cls]?cls:'blade',at:{atk:.4,s0:pv?.4:1,s1:pv?.4:2,s2:0,s3:6,dash:0,pot:0},stun:0,stunI:0,wound:0,cb:0,cbT:-9,sh:0,inv:0,pots:pv?DUEL_LIVE.pvpPots:DUEL_LIVE.pots,chain:0});
+  return {pvp:pv,f:[mk(0,ca),mk(1,cb)],b:L.b.slice(0,2),cr:L.cr.slice(0,2),T:L.T.slice(0,2),pool:L.pool.slice(0,2),t:0,over:0,win:-1};
 }
-function liveNew(A,B){const D=duelNew(A,B),T=x=>clamp(1/Math.max(.3,x.a),.3,1.2);return liveFrom({b:[D.f[0].base,D.f[1].base],cr:[D.f[0].cr,D.f[1].cr],T:[T(A),T(B)],pool:[A.h*5,B.h*5]},A.c,B.c);}
+function liveNew(A,B,pvp){const D=duelNew(A,B),T=x=>clamp(1/Math.max(.3,x.a),.3,1.2);return liveFrom({pvp:!!pvp,b:[D.f[0].base,D.f[1].base],cr:[D.f[0].cr,D.f[1].cr],T:[T(A),T(B)],pool:[A.h*5,B.h*5]},A.c,B.c);}
 // One move by side i. Returns what happened, or null if the move was not possible right now.
 function liveAct(D,i,k,rnd){
   if(D.over)return null;const me=D.f[i],en=D.f[1-i],t=D.t,K=DUEL_LIVE,dist=Math.abs(en.x-me.x),rng=LIVE_RNG[me.cls],lane=Math.abs(en.z-me.z)<=LIVE_LANE;
   if(me.stun>t||!(k in me.at)||me.at[k]>t)return null;
   const o={by:i,k:k,dm:0,crit:false,miss:null,stun:false,fin:false,heal:0};
   const hit=mult=>{if(!lane){o.miss='lane';return;}if(en.inv>t){o.miss='inv';return;}o.crit=rnd()<D.cr[i];let dm=D.b[i]*mult*(o.crit?1.5:1)*(.9+rnd()*.2);if(en.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}en.hp-=dm;o.dm=dm;};
+  // A duel between two players is the same fight as the siege and the circle: one short beat between blows, potions by
+  // the press, and the combo in its order bursts, stuns and stops potions for a moment.
+  if(D.pvp&&(k==='atk'||k==='s0'||k==='s1')){
+    if(dist>rng+(k==='atk'?14:k==='s0'?40:20))return null;const n=t+SG.skT;for(const q of ['atk','s0','s1'])if(me.at[q]<n)me.at[q]=n;
+    if(k==='atk'){me.chain=(me.chain+1)%4;o.fin=me.chain===0;hit(K.pvpM*(o.fin?1.3:.9));}else hit(K.pvpM*SG.skM[k]);
+    const ok=t-me.cbT<=SG.cbMax;if(o.miss)me.cb=0;else if(k==='atk')me.cb=1;else if(k==='s0'&&me.cb===1&&ok)me.cb=2;else if(k==='s1'&&me.cb===2&&ok){me.cb=0;o.combo=true;}else me.cb=0;me.cbT=t;o.cb=me.cb;
+    if(o.combo){if(en.wound>t)o.again=true;else{const ex=D.b[i]*K.pvpM*SG.comboFlat/SG.hit*(o.guard?1-K.sk[2].cut:1);en.hp-=ex;o.dm+=ex;if(!o.guard){en.wound=t+SG.wound;if(!(en.stunI>t)){en.stun=t+K.sk[1].stun;en.stunI=t+K.sk[1].stun+SG.stunGap;o.stun=true;}}}}
+    o.hp=[D.f[0].hp,D.f[1].hp];liveOver(D);return o;}
+  if(D.pvp&&k==='pot'){if(me.pots<1||me.wound>t)return null;me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+SG.heal);o.heal=SG.heal;o.hp=[D.f[0].hp,D.f[1].hp];return o;}
   if(k==='atk'){if(dist>rng+14)return null;const T=D.T[i];me.at.atk=t+T;me.chain=(me.chain+1)%4;o.fin=me.chain===0;hit(T/1.5*(o.fin?1.5:.84));}
   else if(k==='s0'){if(dist>rng+40)return null;me.at.s0=t+K.sk[0].cd;hit(K.sk[0].m);}
   else if(k==='s1'){if(dist>rng+20)return null;me.at.s1=t+K.sk[1].cd;hit(K.sk[1].m);if(!o.miss&&!o.guard){en.stun=t+K.sk[1].stun;o.stun=true;}}
