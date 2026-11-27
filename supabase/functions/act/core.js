@@ -552,13 +552,14 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:1500,Y0:-500,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:10,respIn:35,crownKeep:0,crownPen:1,pots:5,potMax:60,potCd:2.5,heal:.25,stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.3,hitMin:.02,hitMax:.06,critMax:1.6,comboM:1.5,comboFlat:.28,wound:1.8,cbMin:.3,cbMax:1.1,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s0:2.5,s1:4,s3:12},leap:230,bashCd:7,bashM:.3,bashPush:34,
+const SG={W:2100,Y0:-879,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:10,respIn:35,crownKeep:0,crownPen:1,pots:5,potMax:60,potCd:2.5,heal:.25,stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.3,hitMin:.02,hitMax:.06,critMax:1.6,comboM:1.5,comboFlat:.28,wound:1.8,cbMin:.3,cbMax:1.1,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s0:2.5,s1:4,s3:12},leap:230,bashCd:7,bashM:.3,bashPush:34,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.012,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
-  walls:[[-462,-432,462,-408],[-462,108,-50,132],[50,108,462,132],[-462,-432,-438,-200],[-462,-110,-438,132],[438,-432,462,-200],[438,-110,462,132],
-    [-438,-225,-70,-205],[70,-225,438,-205],[-750,690,-80,714],[80,690,750,714],[-750,1290,-430,1314],[-290,1290,290,1314],[430,1290,750,1314]],
-  gates:[[-50,108,50,132],[-462,-200,-438,-110],[438,-200,462,-110]],sw:[[-380,-316],[380,-316]],crown:[0,-345],zone:58,
-  shops:[[-520,1960],[330,-40]],shopR:70,camp:[0,1960],yard:[0,-140],posts:[[-380,-316],[380,-316],[-40,60],[40,60],[0,-330]]};
+  // a wide castle: room to fight in the yard and in the throne room without everyone standing on everyone
+  walls:[[-739,-770,739,-732],[-739,94,-80,132],[80,94,739,132],[-739,-770,-701,-399],[-739,-255,-701,132],[701,-770,739,-399],[701,-255,739,132],[-701,-439,-112,-407],[112,-439,701,-407],[-1050,690,-80,714],[80,690,1050,714],[-1050,1290,-430,1314],[-290,1290,290,1314],[430,1290,1050,1314]],
+  gates:[[-80,94,80,132],[-739,-399,-701,-255],[701,-399,739,-255]],sw:[[-608,-585],[608,-585]],crown:[0,-631],zone:58,
+  shops:[[-520,1960],[528,-143]],shopR:70,camp:[0,1960],yard:[0,-303],posts:[[-608,-585],[608,-585],[-64,17],[64,17],[0,-607]],
+  hall:[-701,-732,701,94]};
 const sgIn=(r,x,y,m)=>x>r[0]-m&&x<r[2]+m&&y>r[1]-m&&y<r[3]+m;
 function sgBlocked(B,x,y){if(Math.abs(x)>SG.W/2-10||y<SG.Y0+10||y>SG.Y1-10)return true;for(const w of SG.walls)if(sgIn(w,x,y,SG.rad))return true;for(let i=0;i<SG.gates.length;i++)if(B.sg.gate[i]>0&&sgIn(SG.gates[i],x,y,SG.rad))return true;return false;}
 // Walk toward a point in short steps, sliding along whatever is in the way. Used by the browser and by the server alike.
@@ -583,7 +584,7 @@ function sgBuff(f,t){const b=f.bf.b>t,s=f.bf.s>t,h=f.bf.h>t;return {dmg:h?SG.buf
 // ---- Players of the server's own, for a practice siege. They do what a player does and nothing more: walk the road,
 // break a gate, press a switch and stay on it, take the crown if they lead, drink, shield, buff those near them, shove an
 // enemy off a switch, leap, and try the combo. How often the combo comes out right is their skill (f.sk).
-const SG_BAR=[[1302,360],[702,0],[120,0],[-215,0]]; // each wall across the way, south to north: its y, and the x of the way through
+const SG_BAR=[[1302,360],[702,0],[113,0],[-423,0]]; // each wall across the way, south to north: its y, and the x of the way through
 function sgRoute(f,dest){
   const gx=b=>b[1]*(f.side||1);
   if(dest[1]<f.y){for(const b of SG_BAR)if(b[0]<f.y+26&&b[0]>dest[1])return f.y>b[0]+26&&Math.abs(f.x-gx(b))>20?[gx(b),b[0]+46]:[gx(b),b[0]-46];}
@@ -597,8 +598,8 @@ function sgBot(B,i,dt,rnd,ev){
   // where he belongs: attackers on their switch or the crown, defenders beside them
   let dest,spot=false;
   if(q>=0){dest=mine?[SG.sw[q][0]*.86,SG.sw[q][1]+20]:SG.sw[q];spot=!mine&&sgNear(f,SG.sw[q],SG.zone-8);}
-  else if(role==='lead'){dest=mine?[0,-300]:(ready||S.crown[2]===i?SG.crown:[0,-285]);spot=!mine&&ready&&sgNear(f,SG.crown,SG.zone-8);}
-  else dest=[(i%3-1)*70,mine?-262:-290];
+  else if(role==='lead'){dest=mine?[0,-559]:(ready||S.crown[2]===i?SG.crown:[0,-535]);spot=!mine&&ready&&sgNear(f,SG.crown,SG.zone-8);}
+  else dest=[(i%3-1)*110,mine?-498:-543];
   // walking: the one on his spot stays in its middle; the others meet an enemy who comes near, or go on their way
   const chase=e&&!spot&&bd<(q>=0||role==='lead'?(mine?200:90):280);let tx,ty,stop;
   if(chase){tx=e.x;ty=e.y;stop=rng*.8;}else{const p=sgRoute(f,dest);tx=p[0];ty=p[1];stop=spot?10:6;}

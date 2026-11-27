@@ -469,7 +469,7 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
     const big=G.sgAct(X,st,'s0',rnd).dm;X.f[st].x=-600;X.f[w].x=0;const small=G.sgAct(X,w,'s0',rnd).dm;assert.ok(big>small*1.2&&big<small*4,'strength counts, but the gap is pressed together: strong '+big+' weak '+small);}
   fe.x=fa.x;fe.y=fa.y-90;B.t+=2;assert.ok(G.sgAct(B,a,'atk',rnd).gate===0,'an enemy behind the gate is out of reach: the blow lands on the gate');
   fe.x=600;fe.y=1900;let n=0;while(B.sg.gate[0]>0&&n++<300){B.t+=1.3;G.sgAct(B,a,'atk',rnd);}assert.ok(B.sg.gate[0]<=0&&n>10,'the blows fall on the gate until it breaks: '+n);
-  G.sgMove(B,fa,0,0);assert.ok(Math.abs(fa.y)<2,'and then the way is open');G.sgMove(B,fa,-600,-300);assert.ok(fa.x>-440,'the wall still stands: '+fa.x);
+  G.sgMove(B,fa,0,0);assert.ok(Math.abs(fa.y)<2,'and then the way is open');G.sgMove(B,fa,-1000,-300);assert.ok(fa.x>-702,'the wall still stands: '+fa.x);
   // switches are pressed, load, and are held only while their taker stands on them
   const L=G.sgAdd(B,P('lead'),7,'AA',rnd,true),fl=B.f[L];fl.x=600;fl.y=1900;
   fa.x=G.SG.sw[0][0];fa.y=G.SG.sw[0][1];fb.x=G.SG.sw[1][0];fb.y=G.SG.sw[1][1];let ev=[];for(let i=0;i<30;i++)ev=ev.concat(G.sgStep(B,.2,rnd));assert.deepEqual(B.sg.sw,[0,0],'standing there is not enough: the switch must be pressed');
@@ -510,7 +510,7 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
     const bf=G.sgBuff(X.f[q2],X.t);assert.equal(bf.n,7);assert.ok(bf.dmg>1&&bf.def<.8&&bf.spd<1,'life, defense and power, and all three together speed');assert.equal(G.sgBuff(X.f[q4],X.t).n,0,'not the one far away');
     X.t+=G.SG.buf.dur+1;assert.equal(G.sgBuff(X.f[q2],X.t).n,0,'they run out');}
   { // the throne room: the switches and the crown stand behind an inner wall with one way in
-    const X=G.sgNew(rnd,{}),q=G.sgAdd(X,P('w'),5,'',rnd),f=X.f[q];f.x=250;f.y=-100;G.sgMove(X,f,250,-320);assert.ok(f.y>-205,'the inner wall stops him: '+f.y);f.x=0;f.y=-100;G.sgMove(X,f,0,-300);assert.ok(f.y<-290,'the door in its middle lets him through');}
+    const X=G.sgNew(rnd,{}),q=G.sgAdd(X,P('w'),5,'',rnd),f=X.f[q];f.x=400;f.y=-250;G.sgMove(X,f,400,-560);assert.ok(f.y>-407,'the inner wall stops him: '+f.y);f.x=0;f.y=-250;G.sgMove(X,f,0,-560);assert.ok(f.y<-550,'the door in its middle lets him through');}
   fe.pool=25000;fe.hp=.0001;B.t+=30;fa.at.s3=0;fe.x=fa.x+20;fe.y=fa.y;const k=G.sgAct(B,a,'s3',rnd);assert.ok(k.dead&&!fe.alive&&fe.resp>B.t);
   for(let i=0;i<60;i++)G.sgStep(B,.2,rnd);assert.ok(fe.alive&&fe.hp===1&&fe.y>1700,'the fallen return at their far camp');
   fe.pots=0;fe.x=G.SG.shops[0][0];fe.y=G.SG.shops[0][1];for(let i=0;i<100;i++)G.sgStep(B,.2,rnd);assert.ok(fe.pots>=30&&fe.bought===fe.pots,'a great many potions can be carried: '+fe.pots);
