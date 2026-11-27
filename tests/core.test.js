@@ -606,3 +606,12 @@ test('cheats: a win no numbers allow is refused, clean kills pay a few times a d
   assert.ok(glass<tank*.5,'all damage and no life: the map kills him, and he kills less: '+glass+' vs '+tank);assert.ok(hard<=glass);
   assert.ok(G.CLEAN_DAY<=10);
 });
+test('the practice siege: the server\'s own players walk the road, break the gate, press the switches and their leader takes the crown',()=>{
+  let s=7;const rnd=()=>{s=(s*16807)%2147483647;return s/2147483647;},P=(id,c)=>({id,n:id,c,d:5000,a:1.6,h:30000,f:800,cr:.2,cd:2,bot:true});
+  const B=G.sgNew(rnd,{});B.sg.time=600;['lead','sw0','sw1','fight'].forEach((role,k)=>{const i=G.sgAdd(B,P('a'+k,['blade','storm','hunter'][k%3]),1,'A',rnd,k===0);Object.assign(B.f[i],{role,sk:.7,side:k%2?1:-1,pots:20});});
+  B.t=0;let broke=0,sw=0,taken=0;for(let n=0;n<1500&&!taken;n++)for(const o of G.sgStep(B,.2,rnd)){if(o.broke)broke=B.t;if(o.k==='sw')sw=B.t;if(o.k==='taken')taken=B.t;}
+  assert.ok(broke>10&&broke<120,'the gate falls, and not at once: '+broke);assert.ok(sw>broke,'then a switch');assert.ok(taken>sw+G.SG.crownT-1&&B.sg.holder===1,'then the crown, after its half minute: '+taken);
+  // against defenders it is a fight, and a fallen leader keeps half of his time on the crown
+  const X=G.sgNew(rnd,{}),a=G.sgAdd(X,P('l','blade'),1,'A',rnd,true);X.t=5;X.sg.crown=[1,20,a];G.sgDown(X,a,-1);assert.equal(X.f[a].cacc,20*G.SG.crownKeep);
+  assert.ok(G.SG.respIn>G.SG.resp,'a defender waits longer to return than an attacker');
+});
