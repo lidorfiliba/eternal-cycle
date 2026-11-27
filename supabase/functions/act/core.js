@@ -573,7 +573,7 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:4,respIn:25,respSafe:3,fwd:[[0,1150],[0,550],[0,330]],back:[0,-60],crownKeep:0,crownPen:1,pots:60,potMax:250,potCd:.25,heal:.06,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
+const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:4,respIn:25,respSafe:3,fwd:[[0,1150],[0,550],[0,330]],lsHit:.02,lsBack:60,back:[0,-60],crownKeep:0,crownPen:1,pots:60,potMax:250,potCd:.25,heal:.06,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.012,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   // a wide castle: room to fight in the yard and in the throne room without everyone standing on everyone
@@ -594,12 +594,14 @@ function sgMove(B,f,nx,ny){let dx=nx-f.x,dy=ny-f.y;const d=Math.hypot(dx,dy);if(
 function sgSees(B,a,e){const n=Math.ceil(brDist(a,e)/10);const shd=sgShield(B);for(let i=1;i<n;i++){const x=a.x+(e.x-a.x)*i/n,y=a.y+(e.y-a.y)*i/n;if(shd&&sgIn(SG.shield,x,y,0))return false;for(const w of SG.walls)if(sgIn(w,x,y,0))return false;for(let q=0;q<SG.gates.length;q++)if(B.sg.gate[q]>0&&sgIn(SG.gates[q],x,y,0))return false;}return true;}
 // Where the fallen return, as in the old sieges: the castle's own inside their walls; the attackers at their camp, which
 // moves up behind every line of walls they have broken.
-const sgCamp=B=>{const g=B.sg.gate,dn=q=>!(g[q]>0);return dn(0)||dn(1)||dn(2)?(dn(5)||dn(6))&&(dn(3)||dn(4))?SG.fwd[2]:SG.camp:(dn(5)||dn(6))&&(dn(3)||dn(4))?SG.fwd[1]:dn(3)||dn(4)?SG.fwd[0]:SG.camp;};
+// The forward camp stands on a life stone, as theirs did: the castle's own can break it, and until it grows back the
+// attackers return at the far camp again. A newly broken wall raises it anew, further up.
+const sgCamp=B=>{if(B.sg.lsDown>B.t)return SG.camp;const g=B.sg.gate,dn=q=>!(g[q]>0);return dn(0)||dn(1)||dn(2)?(dn(5)||dn(6))&&(dn(3)||dn(4))?SG.fwd[2]:SG.camp:(dn(5)||dn(6))&&(dn(3)||dn(4))?SG.fwd[1]:dn(3)||dn(4)?SG.fwd[0]:SG.camp;};
 const sgSpawn=(B,f,rnd,back)=>{const inside=f.g===B.sg.holder&&f.g!==0,p=back?(inside?SG.back:sgCamp(B)):f.post||(inside?SG.yard:SG.camp),fix=!back&&f.post;f.x=p[0]+(fix?0:(rnd()-.5)*160);f.y=p[1]+(fix?0:(rnd()-.5)*60);f.hp=1;f.alive=true;f.resp=0;f.stun=0;f.sh=0;f.inv=back?B.t+SG.respSafe:0;f.wound=0;f.cb=0;f.bf={b:0,s:0,h:0};};
 function sgFighter(p,g,tag,rnd){return {id:p.id,n:p.n,c:CLS[p.c]?p.c:'blade',bot:!!p.bot,g:g,tag:String(tag||'').slice(0,4),x:0,y:0,hp:1,d:p.d,T:clamp(1/Math.max(.3,p.a),.3,1.2),pool:Math.max(1,p.h*5),def:p.f,cr:p.cr,cdm:clamp(Number(p.cd)||1.5,1.2,6),cb:0,cbT:-9,cbTo:-1,cacc:0,wound:0,pushT:0,pushI:.8,bf:{b:0,s:0,h:0},
   at:{atk:0,s0:0,s1:0,s2:0,s3:8,dash:0,pot:0,use:0,buf:0,bash:0},lead:!!p.lead,stun:0,sh:0,inv:0,alive:true,resp:0,kills:0,pots:SG.pots,bought:0,shopT:0,chain:0,face:1,think:rnd()*.5,post:null};}
 function sgNew(rnd,avg){
-  return {t:-3,over:0,f:[],sg:{holder:0,gate:SG.gates.map(()=>SG.gateHp),sw:[0,0],swBy:[-1,-1],swp:[[0,0,-1],[0,0,-1]],crown:[0,0,-1],caps:0}}; // no guards: the castle is a guild's, or nobody's
+  return {t:-3,over:0,f:[],sg:{holder:0,gate:SG.gates.map(()=>SG.gateHp),sw:[0,0],swBy:[-1,-1],swp:[[0,0,-1],[0,0,-1]],crown:[0,0,-1],caps:0,lsHp:1,lsDown:0}}; // no guards: the castle is a guild's, or nobody's
 }
 function sgAdd(B,p,g,tag,rnd,lead){const f=sgFighter(Object.assign({},p,{lead:!!lead}),g,tag,rnd);sgSpawn(B,f,rnd);B.f.push(f);return B.f.length-1;}
 function sgDown(B,j,by,ev){const e=B.f[j];if(!e.alive)return; // whatever he held falls on the next step, and with it any hold on the crown
@@ -684,8 +686,9 @@ function sgAct(B,i,k,rnd,want){
     else{mult=SG.skM[k];}
     if(k==='atk'||k==='s0'||k==='s1'){const n=t+SG.skT*au.spd;for(const q of ['atk','s0','s1'])if(me.at[q]<n)me.at[q]=n;}};
   if(j<0){ // nobody in reach: a gate, if one stands near and the castle is not mine
-    if(me.g===B.sg.holder)return null;let gi=-1;SG.gates.forEach((g,q)=>{if(B.sg.gate[q]<=0)return;const cx=(g[0]+g[2])/2,cy=(g[1]+g[3])/2,d=Math.hypot(cx-me.x,cy-me.y);if(d<=rng+50&&d<bd){bd=d;gi=q;}});if(gi<0)return null;
-    cool();B.sg.gate[gi]=Math.max(0,B.sg.gate[gi]-SG.gateHit*mult);o.gate=gi;o.dm=SG.gateHit*mult;if(B.sg.gate[gi]<=0){o.broke=true;if(SG.stat.indexOf(gi)>=0&&!sgShield(B))o.open=true;}return o;}
+    if(me.g===B.sg.holder){const S=B.sg,c=me.g!==0&&!(S.lsDown>t)?sgCamp(B):SG.camp;if(c===SG.camp||Math.hypot(c[0]-me.x,c[1]-me.y)>rng+50)return null;cool();S.lsHp=Math.max(0,(S.lsHp==null?1:S.lsHp)-SG.lsHit*mult);o.ls=1;o.dm=SG.lsHit*mult;if(S.lsHp<=0){S.lsDown=t+SG.lsBack;S.lsHp=1;o.broke=true;}return o;}
+    let gi=-1;SG.gates.forEach((g,q)=>{if(B.sg.gate[q]<=0)return;const cx=(g[0]+g[2])/2,cy=(g[1]+g[3])/2,d=Math.hypot(cx-me.x,cy-me.y);if(d<=rng+50&&d<bd){bd=d;gi=q;}});if(gi<0)return null;
+    cool();B.sg.gate[gi]=Math.max(0,B.sg.gate[gi]-SG.gateHit*mult);o.gate=gi;o.dm=SG.gateHit*mult;if(B.sg.gate[gi]<=0){o.broke=true;if(SG.stat.indexOf(gi)>=0){if(!sgShield(B))o.open=true;}else{B.sg.lsHp=1;B.sg.lsDown=0;}}return o;}
   const e=B.f[j];cool();o.to=j;if(Math.abs(e.x-me.x)>4)me.face=e.x>=me.x?1:-1;
   if(k==='s3'){const d=brDist(e,me);if(d>44){sgMove(B,me,e.x-(e.x-me.x)/d*26,e.y-(e.y-me.y)/d*26);me.pushT=t+SG.pushT;o.jx=[Math.round(me.x),Math.round(me.y)];}}
   if(e.inv>t){o.miss=true;me.cb=0;return o;}
@@ -730,7 +733,7 @@ function sgStep(B,dt,rnd){
   { // The crown: only the guild's leader, and only while two others of his guild hold the two switches.
     const c=S.crown;if(c[2]>=0){const f=B.f[c[2]],ok=f&&f.alive&&f.stun<=t&&sgNear(f,SG.crown,SG.zone)&&f.g!==S.holder&&S.swBy[0]>=0&&S.swBy[1]>=0&&S.sw[0]===f.g&&S.sw[1]===f.g;
       if(!ok){if(f&&f.alive)f.cacc=Math.max(0,c[1]-SG.crownPen);S.crown=[0,0,-1];ev.push({k:'cstop',keep:f&&f.alive?Math.floor(Math.max(0,c[1]-SG.crownPen)):0});}
-      else{c[1]+=dt;if(c[1]>=SG.crownT){const g=f.g;S.holder=g;S.caps++;S.crown=[0,0,-1];for(const x of B.f)x.cacc=0;S.sw=[0,0];S.swBy=[-1,-1];S.swp=[[0,0,-1],[0,0,-1]];S.gate=SG.gates.map(()=>SG.gateHp);ev.push({k:'taken',g:g,by:c[2]});
+      else{c[1]+=dt;if(c[1]>=SG.crownT){const g=f.g;S.holder=g;S.caps++;S.crown=[0,0,-1];for(const x of B.f)x.cacc=0;S.sw=[0,0];S.swBy=[-1,-1];S.swp=[[0,0,-1],[0,0,-1]];S.gate=SG.gates.map(()=>SG.gateHp);S.lsHp=1;S.lsDown=0;ev.push({k:'taken',g:g,by:c[2]});
         B.f.forEach((x,q)=>{if(x.alive&&x.g!==g){x.post=null;sgSpawn(B,x,rnd);ev.push({k:'out',to:q});}});}}}}
   // the server's own players, where a practice siege has them
   B.f.forEach((f,i)=>{if(f.alive&&f.bot)sgBot(B,i,dt,rnd,ev);});

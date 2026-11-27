@@ -621,7 +621,10 @@ test('the practice siege: the server\'s own players walk the road, break the gat
   {const Y=G.sgNew(rnd,{}),dq=G.sgAdd(Y,P('dd','blade'),4,'D',rnd),aq=G.sgAdd(Y,P('aa','blade'),6,'A',rnd),f=Y.f[dq],a=Y.f[aq];f.bot=false;a.bot=false;Y.sg.holder=4;Y.t=5;
     assert.deepEqual(G.sgCamp(Y),G.SG.camp);Y.sg.gate[3]=0;assert.deepEqual(G.sgCamp(Y),G.SG.fwd[0],'the camp moves up behind a broken wall');Y.sg.gate[5]=0;Y.sg.gate[0]=0;assert.deepEqual(G.sgCamp(Y),G.SG.fwd[2]);
     G.sgDown(Y,aq,-1);G.sgDown(Y,dq,-1);for(let n=0;n<30&&!a.alive;n++)G.sgStep(Y,.2,rnd);assert.ok(a.alive&&!f.alive&&Math.abs(a.y-G.SG.fwd[2][1])<60&&a.inv>Y.t,'the attacker returns first, at the forward camp, safe for a breath');
-    for(let n=0;n<200&&!f.alive;n++)G.sgStep(Y,.2,rnd);assert.ok(f.alive&&f.y<G.SG.hall[3]&&f.y>G.SG.hall[1],'the defender returns inside his walls: '+f.y);}
+    for(let n=0;n<200&&!f.alive;n++)G.sgStep(Y,.2,rnd);assert.ok(f.alive&&f.y<G.SG.hall[3]&&f.y>G.SG.hall[1],'the defender returns inside his walls: '+f.y);
+    // the life stone: the castle's own break it, and the attackers are thrown back to the far camp until it grows again
+    a.x=900;a.y=1900;f.inv=0;f.x=G.SG.fwd[2][0]+20;f.y=G.SG.fwd[2][1];Y.t+=5;let hits=0,o=null;do{Y.t+=G.SG.skT+.02;o=G.sgAct(Y,dq,'s0',rnd);hits++;}while(o&&o.ls&&!o.broke&&hits<400);assert.ok(o&&o.broke&&hits>20,'it takes a while: '+hits);assert.deepEqual(G.sgCamp(Y),G.SG.camp);
+    assert.equal(G.sgAct(Y,aq,'s0',rnd),null,'an attacker cannot strike it');Y.t+=G.SG.lsBack+1;assert.deepEqual(G.sgCamp(Y),G.SG.fwd[2],'and it grows back');}
 });
 test('many on one: a crowd\'s blows weaken, a stun is not chained without end, and potions keep pace',()=>{
   const rnd=()=>.5,P=(id)=>({id,n:id,c:'blade',d:400,a:1.5,h:2700,f:70,cr:0,cd:2});
