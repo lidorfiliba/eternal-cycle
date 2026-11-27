@@ -304,7 +304,10 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
       if (kind === "tick" && r.kills > 0 && r.partyN > 0 && r.base > 0) await admin.rpc("party_share_add", { p_user: uid, p_zone: Math.floor(Number(args.z)), p_xp: Math.round(r.base * G.PARTY_SHARE), p_lvl: A.chars[A.cur].lvl });
       if (kind === "tick" && r.world && r.world.dmg > 0) { const ch = A.chars[A.cur]; const wh = await admin.rpc("world_hit", { p_user: uid, p_key: r.world.key, p_name: ch ? ch.name : "", p_dmg: r.world.dmg, p_base: G.WORLD_BASE }); if (!wh.error) out.world = wh.data; }
       if (kind === "tick" && r.kills > 0) await admin.rpc("guild_tick", { p_user: uid, p_kills: r.kills, p_siege: G.siegeInfo(now).on, p_key: G.siegeInfo(now).key });
-      if (kind === "tick" && r.claimed > r.kills + 5) {
+      // A trimmed kill report is suspicious only when the number came from the browser and no honest browser could have
+      // sent it: the game never reports more than about 25 kills at once. A count the server made itself (the shared
+      // monsters) is never suspicious, however far it is above the pace the character is allowed.
+      if (kind === "tick" && !args.sv && r.claimed > 30 && r.claimed > r.kills * 2) {
         const detail = { claimed: r.claimed, allowed: r.kills, z: args.z };
         // A claim far beyond anything the real client can send counts toward an automatic suspension.
         if (r.claimed >= r.kills * 3 && r.claimed - r.kills >= 50) { const st = await admin.rpc("cheat_strike", { p_user: uid, p_detail: detail }); if (st.data === true) out.banned = true; }

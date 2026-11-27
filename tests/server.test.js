@@ -61,6 +61,8 @@ test('forged ticks are clamped, logged, and parallel requests cannot double-coun
   await handle(U(1),'travel',{z:0});clock.add(10);
   const r=await handle(U(1),'tick',{z:0,kills:900});assert.ok(r.result.ok);assert.ok(r.result.kills<=21);
   assert.equal((await db.query("select count(*)::int c from audit where kind in ('clamp','blatant')")).rows[0].c,1);
+  clock.add(3);await handle(U(1),'tick',{z:0,kills:25});assert.equal((await db.query("select count(*)::int c from audit where kind in ('clamp','blatant')")).rows[0].c,1,'a report of the size the game itself sends is trimmed without suspicion');
+  clock.add(3);const sv=await handle(U(1),'tick',{z:0,kills:500,sv:1});assert.ok(!sv.banned);assert.equal((await db.query("select count(*)::int c from audit where kind in ('clamp','blatant')")).rows[0].c,1,'a count the server made itself is never suspicious');
   clock.add(10);const before=(await row(U(1))).state.kills;
   const rs=await Promise.all([1,2,3,4].map(()=>handle(U(1),'tick',{z:0,kills:900})));
   const after=(await row(U(1))).state.kills;assert.ok(after-before<=21,'four parallel claims for one 10s window gave '+(after-before));

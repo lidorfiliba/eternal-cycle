@@ -43,7 +43,8 @@ export function makeServer(admin, secret, origin = '*', opts = {}) {
       if (kind === 'pushoff') return send(res, await push.off(uid));
       if (kind === 'aresetpw') return send(res, await auth.adminReset(uid, args.user));
       // on a map whose monsters are the server's, the kills counted are the ones the server credited, whatever the browser says
-      if (kind === 'tick' && args && !args.ev) { const z = Math.floor(Number(args.z)); if (G.ZONES[z] && G.ZONES[z].shared) args = Object.assign({}, args, { kills: server.live.takeKills(uid, z, Math.max(0, Math.floor(Number(args.f)) || 0)) }); }
+      if (args.sv != null) { args = Object.assign({}, args); delete args.sv; } // only the server may say that a count is its own
+      if (kind === 'tick' && args && !args.ev) { const z = Math.floor(Number(args.z)); if (G.ZONES[z] && G.ZONES[z].shared) args = Object.assign({}, args, { kills: server.live.takeKills(uid, z, Math.max(0, Math.floor(Number(args.f)) || 0)), sv: 1 }); }
       const out = await handle(uid, kind, args, { ip, iat: ses.iat });
       if (out && out.state) server.live.stale(uid); // his saved strength may have changed: the shared monsters will read it again
       // the game's log also keeps what does not pass through the rules module: the market, guilds, parties and what the admin does
