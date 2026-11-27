@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261127193705';
+const BUILD='20261127194211';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,wskinOn,CAPEN,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -1542,7 +1542,7 @@ function netMsg(m){
   else if(m.t==='whisper'){const f=m.from||{},k=String(f.k||''),n=String(f.n||'').slice(0,14);if(isBlocked(k,n))return;chatLog.push({c:'p',n:n,g:'',m:String(m.m||'').slice(0,160),me:false,k:k});chatAt=Date.now();if(!(tab==='chat'&&chatCh==='p'))chatUnread++;snd('click');toast('הודעה פרטית מ-'+n);if(!whisperTo)whisperTo={k:k,n:n};const l=$('chatList');if(l&&chatCh==='p'){l.innerHTML=chatRows();l.scrollTop=l.scrollHeight;}renderChatBar();}
   else if(m.t==='whispered'){chatLog.push({c:'p',n:S.name,g:'',m:String(m.m||''),me:true,k:String(m.k||''),to:whisperTo&&whisperTo.k===m.k?whisperTo.n:''});const l=$('chatList');if(l&&chatCh==='p'){l.innerHTML=chatRows();l.scrollTop=l.scrollHeight;}}
   else if(m.t==='brLobby'){if(d&&d.br){if(d.br.phase==='lobby'){d.br.n=m.n|0;d.br.until=Date.now()+(+m.left||0);}}else if(SC.mode==='farm'&&brAsk){brAsk=false;brEnter(m.n|0,+m.left||0);}if(tab==='pass')panelDirty=true;}
-  else if(m.t==='brOpen'){const left=+m.left||0;brLive=left>0?Date.now()+left:0;if(left>0&&!m.quiet){snd('boss');announce('המעגל האחרון נפתח! השתגר לזירה תוך '+Math.round(left/1000)+' שניות',true);}if(tab==='pass')panelDirty=true;}
+  else if(m.t==='brOpen'){const left=+m.left||0;brLive=left>0?Date.now()+left:0;if(left>0&&!m.quiet){snd('boss');announce('המעגל האחרון נפתח! לחץ כאן כדי להשתגר לזירה, תוך '+Math.round(left/1000)+' שניות',true,'last');}if(tab==='pass')panelDirty=true;}
   else if(m.t==='brCancel'){if(d&&d.br){d.br.res=null;brExit('ההרשמה למעגל האחרון בוטלה');}}
   else if(m.t==='boost'){const left=+m.left||0;setBoost(left>0?{xp:m.xp,drop:m.drop,until:Date.now()+left}:null);const b=boostNow(Date.now());if(!m.quiet)announce(b?'בונוס לכולם: ניסיון ×'+b.xp+', שלל ×'+b.drop+' למשך '+Math.round(left/60000)+' דקות':'הבונוס לכולם הסתיים',true);if(tab==='pass')panelDirty=true;}
   else if(m.t==='gmSay'){snd('boss');announce('הודעת מנהל: '+String(m.m||'').slice(0,120),true);toast('הודעת מנהל: '+String(m.m||'').slice(0,120),6);}
@@ -1738,7 +1738,7 @@ function renderEvents(){
       else{const rg=tierRange(t),rw=tierReward(t);tn=' '+t;
         tierLine='<div class="tiers">'+TIER_MIN.map((m,i)=>'<i class="'+(i+1===t?'on':i+1<t?'past':'')+'">'+(i+1)+'</i>').join('')+'</div><p class="hint"><b style="color:var(--gold)">דרגה '+L(t)+'</b> · רמות '+L(rg[0]+'-'+rg[1])+'</p>'+
           (nx<=7&&!rec.tr?'<p class="hint" style="color:#8fd3ff">עוד '+L(TIER_MIN[nx-1]-S.lvl)+' רמות לדרגה '+L(nx)+'. תגיע לפני שהשער נפתח.</p>':'');}}
-    h+='<div class="card'+(live?' zone cur':'')+'" style="display:block"><div class="kv"><b'+(live?' style="color:var(--gold)"':'')+'>'+e.n+tn+'</b><b class="num" style="color:var(--'+(live?'good':'dim')+')">'+(live?'פעיל · '+L(mmss((w.end-now)/1000)):fin?'הסתיים · הבא בעוד '+fmtT(evNext(e,now)):'בעוד '+fmtT(evNext(e,now)))+'</b></div>'+
+    h+='<div id="ev_'+e.id+'" class="card'+(live?' zone cur':'')+'" style="display:block"><div class="kv"><b'+(live?' style="color:var(--gold)"':'')+'>'+e.n+tn+'</b><b class="num" style="color:var(--'+(live?'good':'dim')+')">'+(live?'פעיל · '+L(mmss((w.end-now)/1000)):fin?'הסתיים · הבא בעוד '+fmtT(evNext(e,now)):'בעוד '+fmtT(evNext(e,now)))+'</b></div>'+
       '<p class="hint">'+e.d+' · '+e.when+(e.rt&&!e.tiered?' · פרס: '+e.rt:'')+'</p>'+tierLine+(e.tiered?keepCard(e,w,rec,live):'')+(e.world?worldCard(w,on):'')+(e.br?brCard(live):'');
     if(w&&e.obj){
       const have=Math.min(rec[e.obj[0]]||0,e.obj[1]),done=have>=e.obj[1];
@@ -2425,26 +2425,29 @@ function loadMe(){
 /* ---------- event announcements in the middle of the screen ---------- */
 // From five minutes before an event, once a minute, and once more when it opens.
 const annPrev={},annMark={},annLive={},annQ=[];let annT=0,annShow=0,annAge=99,annGap=0,annRemind=200;
-function announce(txt,live){annQ.push({t:txt,live:!!live});if(annQ.length>4)annQ.shift();}
+// An announcement about an event can be pressed: it opens the events list at that event, or sends you straight into the circle while it takes fighters.
+function announce(txt,live,ev){annQ.push({t:txt,live:!!live,ev:ev||''});if(annQ.length>4)annQ.shift();}
+function annGo(){const el=$('annc'),ev=el&&el.dataset.ev;if(!ev||!el.classList.contains('on'))return;if(SC.duel)return;if(ev==='last'&&brSign()){if(!brJoin())toast('אין חיבור חי לשרת');return;}openTab('pass');renderPanel();setTimeout(()=>{const c=document.getElementById('ev_'+ev);if(c)c.scrollIntoView({block:'center',behavior:'smooth'});},60);}
+{const el=document.getElementById('annc');if(el)el.addEventListener('click',annGo);}
 function updateAnnounce(dt){
   const el=$('annc');if(!el)return;
   // A message starts a little below the middle, drifts up for most of a minute and fades. A newer one may replace it after a few seconds.
   if(annShow>0){annShow-=dt;annAge+=dt;if(annShow<=0||(annQ.length&&annAge>6)){el.classList.remove('on');annShow=0;annGap=.7;}}
-  else if((annGap-=dt)<=0&&annQ.length&&S&&!demo){const a=annQ.shift();el.textContent=a.t;el.classList.toggle('live',a.live);
+  else if((annGap-=dt)<=0&&annQ.length&&S&&!demo){const a=annQ.shift();el.textContent=a.t;el.dataset.ev=a.ev||'';el.classList.toggle('go',!!a.ev);el.classList.toggle('live',a.live);
     el.style.transition='none';el.style.transform='translateY(0)';void el.offsetWidth;el.style.transition='opacity .7s, transform 52s linear';el.style.transform='translateY(-'+Math.round(H*.26)+'px)';
     el.classList.add('on');annShow=50;annAge=0;snd(a.live?'boss':'ok');}
   if(!S||demo||(annT+=dt)<1)return;annT=0;
   const now=Date.now(),list=EVENTS.map(e=>{const t=e.tiered?evTier(S.lvl):0;return {id:e.id,n:e.n+(t?' '+t:''),s:evNext(e,now),d:e.d,t:t,tiered:e.tiered};}),sg=siegeInfo(now);
   list.push({id:'siege',n:'מצור הטירה',s:sg.on?1e9:sg.next*60-new Date(now).getSeconds(),d:'קרב חי על הטירה. מצטרפים מלשונית הגילדה'});
   for(const e of list){const prev=annPrev[e.id];annPrev[e.id]=e.s;
-    if(prev!=null&&prev<=90&&e.s>prev+120){annMark[e.id]=0;announce(e.tiered?e.n+' נפתחה! '+(A.keys>0?'לחץ על שגר למצודה':'צריך מפתח כדי להיכנס'):e.n+' התחיל! '+String(e.d).split('.')[0],true);continue;}
-    if(e.s<=300&&e.s>5){const m=Math.ceil(e.s/60);if(annMark[e.id]!==m&&prev!=null){annMark[e.id]=m;announce(e.n+' מתחיל בעוד '+(m===1?'דקה':m+' דקות'));
+    if(prev!=null&&prev<=90&&e.s>prev+120){annMark[e.id]=0;announce(e.tiered?e.n+' נפתחה! '+(A.keys>0?'לחץ על שגר למצודה':'צריך מפתח כדי להיכנס'):e.n+' התחיל! '+String(e.d).split('.')[0],true,e.id);continue;}
+    if(e.s<=300&&e.s>5){const m=Math.ceil(e.s/60);if(annMark[e.id]!==m&&prev!=null){annMark[e.id]=m;announce(e.n+' מתחיל בעוד '+(m===1?'דקה':m+' דקות'),false,e.id);
       if(e.tiered&&m===4&&e.t&&!(A.keys>0))announce('אין לך מפתח למצודה. '+((A.shards||0)>=KEY_SHARDS?'צור אחד באירועים':'חסרים '+(KEY_SHARDS-(A.shards||0))+' שברי ארגמן'));
       if(e.tiered&&(m===5||m===2)){if(!e.t)announce('הכניסה ל'+e.n+' מרמה '+TIER_MIN[0]+'. חסרות לך '+(TIER_MIN[0]-S.lvl)+' רמות');else if(e.t<7)announce('עוד '+(TIER_MIN[e.t]-S.lvl)+' רמות לדרגה '+(e.t+1)+'. תספיק?');}}}}
   // While an event runs: how much is left, the moment its goal is reached, and what was missed when it closes.
   const ev=A.ev||{},wins=evWindows(now,1);
   for(const w of wins){const e=w.e;if(!e.obj)continue;const rec=ev[w.key]||{},have=Math.min(rec[e.obj[0]]||0,e.obj[1])+(e.obj[0]==='k'&&w.live?0:0),done=have>=e.obj[1],st=annLive[w.key]||(annLive[w.key]={});
-    if(done&&!rec.c&&!st.done){st.done=1;announce('השלמת את '+e.n+'! הפרס מחכה באירועים',true);}
+    if(done&&!rec.c&&!st.done){st.done=1;announce('השלמת את '+e.n+'! הפרס מחכה באירועים',true,e.id);}
     if(w.live&&!done){const left=Math.ceil((w.end-now)/60000);if(left<=2&&st.left!==left&&e.id!=='quiz'){st.left=left;announce((left<=1?'דקה אחרונה: ':'נשארו 2 דקות: ')+e.n+' · '+have+'/'+e.obj[1]);}
       if(e.id==='quiz'&&!rec.t&&!st.q){st.q=1;announce('חידון המעגל פתוח. ענה בלשונית אירועים',true);}}
     if(!w.live&&!done&&!st.miss&&(have>0||e.id==='storm')){st.miss=1;announce('פספסת את '+e.n+'. הבא בעוד '+Math.ceil(evNext(e,now)/60)+' דקות');}}

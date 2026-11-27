@@ -689,3 +689,11 @@ test('the warlord: strength from endurance, less harm and more life than the bla
   const R=G.brNew([{id:'p',n:'p',c:'lord'},{id:'q',n:'q',c:'blade'}],rnd);R.t=5;R.f[0].x=0;R.f[0].y=0;R.f[1].x=60;R.f[1].y=0;assert.ok(G.brAct(R,0,'atk',rnd));
   assert.equal(G.cleanPlayer('x',{c:'nosuch'}).c,'blade','an unknown class is never trusted');
 });
+
+test('the arena offers a fair list: real players only near his strength, the rest made at his own measure',()=>{
+  G.setEnv(()=>.5,()=>1.8e12);const A=G.newAccount();G.apply(A,'create',{name:'Strong',cls:'blade'},{});const s=A.chars[0];s.lvl=400;s.resets=25;s.pts=5000;G.autoAlloc(s);const me=G.fighter(s);
+  const weak=n=>({id:'w'+n,n:'weak'+n,c:'blade',l:5,r:0,p:Math.round(me.p*.02),d:10,a:1,h:100,f:1,cr:.05,cd:2}),near=n=>({id:'n'+n,n:'near'+n,c:'storm',l:400,r:24,p:Math.round(me.p*(.9+n*.1)),d:me.d,a:me.a,h:me.h,f:me.f,cr:me.cr,cd:me.cd});
+  const r=G.apply(A,'opps',{},{uid:'me',players:[weak(1),weak(2),weak(3),weak(4),near(0),near(1),near(2)]});assert.ok(r.ok);assert.equal(A.opps.length,4);
+  assert.ok(A.opps.every(o=>o.p>=me.p*.6),'nobody far below him is offered: '+A.opps.map(o=>o.p));assert.equal(A.opps.filter(o=>!o.bot).length,2,'two real players at most');assert.ok(A.opps.some(o=>o.bot&&o.p>me.p),'and one made rival stands above him');
+  G.apply(A,'opps',{},{uid:'me',players:[weak(1),weak(2)]});assert.ok(A.opps.every(o=>o.bot),'with only beginners around, all four are his own measure');
+});

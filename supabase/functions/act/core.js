@@ -981,10 +981,12 @@ function maxKps(S,zi,au,keep){const c=calc(S,au),z=zs(zi,keep?0:afkFloor(S,zi));
 const BOTN=['שומר השער','נודד האפר','בת הסער','צל ראשון','להב שקט','עין הנץ'];
 function buildOpps(A,S,players,selfId){
   const me=fighter(S),out=[];
-  const real=(players||[]).filter(p=>p.id!==selfId).sort((a,b)=>Math.abs(a.p-me.p)-Math.abs(b.p-me.p)).slice(0,4);
+  // A fair list: real players only when they are near his strength, never more than two of them, and the rest are
+  // rivals the game makes at his own measure, one a little weaker, one his equal, one above him.
+  const real=(players||[]).filter(p=>p.id!==selfId&&p.p>=me.p*.6&&p.p<=me.p*1.7).sort((a,b)=>Math.abs(a.p-me.p)-Math.abs(b.p-me.p)).slice(0,2);
   for(const p of real){const q=Object.assign({},p);delete q.id;out.push(q);}
-  const fs=[.75,.95,1.1,1.3];let i=0;
-  while(out.length<4){const f=fs[i%4]*(0.95+_rnd()*.1),cl=Object.keys(CLS)[Math.floor(_rnd()*3)];
+  const fs=[1,1.15,.85,1.3],K=Object.keys(CLS);let i=0;
+  while(out.length<4){const f=fs[i%4]*(0.95+_rnd()*.1),cl=K[Math.floor(_rnd()*K.length)];
     out.push({bot:true,n:BOTN[(i+A.kills)%BOTN.length],c:cl,l:S.lvl,r:S.resets,p:Math.round(me.p*f),d:me.d*Math.sqrt(f),a:me.a,h:me.h*Math.sqrt(f),f:me.f,cr:me.cr,cd:me.cd,
       w:me.w||[1,0,0,0],ar:me.ar||[1,0,0,0],g:me.g,rt:Math.round(A.rating+(f-1)*300)});i++;}
   return out;
