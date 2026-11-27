@@ -46,7 +46,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
   }
   async function saveArena(uid, A) {
     const S = A.chars[A.cur]; if (!S) return;
-    const f = G.fighter(S); f.r = G.totalResets(A);
+    const f = G.fighter(S); // the ranking counts the character's own resets
     const t = new Date(clock()).toISOString();
     await admin.from("arena").upsert({ user_id: uid, snap: f, resets: f.r, power: f.p, zone: S.zone, floor: S.zone < 0 ? 0 : S.floor | 0, seen_at: t, updated_at: t });
   }

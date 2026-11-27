@@ -25,7 +25,7 @@ export function makeServer(admin, secret, origin = '*', opts = {}) {
       let text = ''; for await (const chunk of req) { text += chunk; if (text.length > 4000) return send(res, { error: 'too_large' }, 413); }
       let body; try { body = JSON.parse(text); } catch { return send(res, { error: 'bad_json' }, 400); }
       const kind = String(body && body.kind || '').slice(0, 20);
-      const args = body && body.args && typeof body.args === 'object' && !Array.isArray(body.args) ? body.args : {};
+      let args = body && body.args && typeof body.args === 'object' && !Array.isArray(body.args) ? body.args : {};
       const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
       if (kind === 'register') return send(res, await auth.register(args.user, args.pass, ip, args.q, args.a));
       if (kind === 'forgot') return send(res, await auth.forgot(args.user));
@@ -42,6 +42,8 @@ export function makeServer(admin, secret, origin = '*', opts = {}) {
       if (kind === 'pushon') return send(res, await push.on(uid, args.sub, args.lang));
       if (kind === 'pushoff') return send(res, await push.off(uid));
       if (kind === 'aresetpw') return send(res, await auth.adminReset(uid, args.user));
+      // on a map whose monsters are the server's, the kills counted are the ones the server credited, whatever the browser says
+      if (kind === 'tick' && args && !args.ev) { const z = Math.floor(Number(args.z)); if (G.ZONES[z] && G.ZONES[z].shared) args = Object.assign({}, args, { kills: server.live.takeKills(uid, z, Math.max(0, Math.floor(Number(args.f)) || 0)) }); }
       const out = await handle(uid, kind, args, { ip, iat: ses.iat });
       // the game's log also keeps what does not pass through the rules module: the market, guilds, parties and what the admin does
       if (LOGGED.has(kind) && out && out.result && out.result.ok && !(kind === 'agrant' && !(args && args.go === true))) { const a = {}; for (const k of ['id', 'code', 'name', 'k', 'price', 'to', 'action', 'target', 'hours', 'user', 'what', 'n', 'day', 'key']) if (args && args[k] != null && typeof args[k] !== 'object') a[k] = String(args[k]).slice(0, 40); admin.from('audit').insert({ user_id: uid, kind: 'log', detail: { k: kind, a } }).then(() => {}, () => {}); }
@@ -50,6 +52,8 @@ export function makeServer(admin, secret, origin = '*', opts = {}) {
     } catch (e) { console.error(e); return send(res, { error: 'server' }, 500); }
   });
   server.live = attachLive(server, { admin, auth, G, rnd, push });
+  // the game's log keeps a month
+  const logClean = () => { try { const q = admin.from('audit').delete(); if (q && q.eq) q.eq('kind', 'log').lt('at', new Date(Date.now() - 30 * 864e5).toISOString()).then(() => {}, () => {}); } catch (_e) { /* cleaning the log never stops the game */ } }; const logClock = setInterval(logClean, 6 * 3600e3); logClock.unref(); setTimeout(logClean, 60e3).unref(); server.on('close', () => clearInterval(logClock));
   server.push = push; const pushClock = setInterval(() => { push.tick().catch((e) => console.error(e)); }, 60000); pushClock.unref(); server.on('close', () => clearInterval(pushClock));
   return server;
 }

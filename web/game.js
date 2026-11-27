@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261127103902';
+const BUILD='20261127111555';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -123,7 +123,7 @@ const NPCS=[]; // the village is a lobby now: the tabs are reached from anywhere
 const SC={t:0,cam:0,mons:[],boss:null,hero:{x:110,face:1,dir:0,hp:1,atkT:0,anim:0,dead:0,mAtk:1,tgt:null,tx:null,goal:null,manual:0,buff:0,shield:0,cds:[0,0,0,0,0,0],autoSk:0,mv:false},fx:[],parts:[],nums:[],drops:[],shake:0,mode:'farm',duel:null,zi:-1,fl:0};
 const amb=[];for(let i=0;i<26;i++)amb.push({x:Math.random(),y:Math.random(),s:.5+Math.random()*1.5,v:.02+Math.random()*.05});
 const mapW=()=>SC.zi<0?TW:MW, gy=()=>Math.min(H*.8,H-112);
-function lookOf(s){const g=it=>it?[it.t,it.r,it.p,it.season?1:0,it.ex?(isFull(it)?2:1):0]:null,o={c:s.cls,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g),sp:armorPlus(s),r:A&&A.chars&&A.chars.includes(s)?totalResets(A):s.resets|0};
+function lookOf(s){const g=it=>it?[it.t,it.r,it.p,it.season?1:0,it.ex?(isFull(it)?2:1):0]:null,o={c:s.cls,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g),sp:armorPlus(s),r:s.resets|0};
   const sc=setCounts(s);let bz=-1,bn=0,bk='';for(const z in sc)if(sc[z]>bn){bn=sc[z];bz=parseInt(z);bk=z;}if(bn>=4)o.set=[bn,(String(bk).slice(-1)==='b'?TCOL2:TCOL)[clamp(bz,0,TCOL.length-1)],String(bk).slice(-1)==='b'?1:0];{const p=petOn(s,Date.now());if(p)o.pet=p.r+1;}let pf=0;for(const k in s.eq)if(s.eq[k]&&s.eq[k].pf)pf++;if(pf)o.pf=pf;return o;}
 function glowAmt(p,r,t){let g=p>=13?24:p>=11?16+5*Math.sin(t*6):p>=9?12:p>=7?7:0;if(r>=3)g=Math.max(g,6);return g;}
 function gearColor(g,t,fallback){if(!g)return fallback;if(g[2]>=15)return 'hsl('+((t*90)%360)+',95%,68%)';return RAR[g[1]].c;}
@@ -634,6 +634,7 @@ function enterZone(z,side,f,ev){
   h.x=side==='R'?mapW()-110:110;h.face=side==='R'?-1:1;
   if(h.climb&&h.climb.ph==='wait'){h.climb.ph='in';h.climb.t=.45;h.x=side==='R'?mapW()-50:50;}else h.climb=null;
   if(z>=0){const n=ev?22:8,gap=ev?52:140;for(let i=0;i<n;i++)SC.mons.push(newMon((ev?240:300)+i*gap+Math.random()*(ev?30:50),z));}
+  {const was=SC.sh;SC.sh=!!(ONLINE&&!demo&&!ev&&z>=0&&ZONES[z].shared);SC.shAcc=0;if(SC.sh){SC.mons.forEach((m,i)=>{m.sid=i;});netSend({t:'sj',z:z,f:SC.fl});}else if(was)netSend({t:'sl'});}
   h.up=0;h.lift=0;if(hasDeck(z))for(const i of [2,3,4]){const m=SC.mons[i];m.up=1;m.home=clamp(m.home,DECK.x0+50,DECK.x1-50);m.x=m.home;}
   if(z<0&&ONLINE&&!demo)loadMarket();
   if(z<0||z!==S.zone){auras=[];partyN=0;}statsDirty=true;panelDirty=true;syncBoss();peers=[];beatT=99;
@@ -717,7 +718,23 @@ async function travelTo(z,side,f){
 }
 let killBudget=20,killRate=1,killRateT=0; // the same allowance the server keeps for me
 let hitOut=[0,0],hitT=0; // my hardest hit since I last told the others on my map, so they see my numbers too
+// On a map whose monsters are the server's, a blow is only asked for: the server works out the damage and tells
+// everyone on the floor, me included. Nothing is counted here.
+let myKey='';
+function shCredit(c){SC.shAcc=(SC.shAcc||0)+c;while(SC.shAcc>=1-1e-9){SC.shAcc-=1;if(killBudget<1)continue;killBudget-=1;pend.kills++;const l0=S.lvl;addXp(S,zs(SC.zi,SC.fl).xp*C.xpM);afterXp(S.lvl-l0);if(pend.kills>=25)flushTick();}}
+function shMsg(m){
+  if(!SC.sh||SC.mode!=='farm')return;const find=i=>SC.mons.find(q=>q.sid===i);
+  if(m.t==='ss'){if(m.z!==SC.zi||m.f!==SC.fl)return;const n=m.hp.length;for(let i=SC.mons.filter(x=>x.sid!=null).length;i<n;i++){const mm=newMon(300+((i*97)%1120)+70,SC.zi);mm.sid=i;SC.mons.push(mm);}
+    SC.mons.forEach(x=>{if(x.sid==null)return;const h=m.hp[x.sid];if(h==null)return;if(h<=0){if(x.die<=0&&x.resp<=0){x.resp=1e9;x.dead=true;}}else{x.hp=x.max*h;if(x.resp>0)x.resp=.01;}});return;}
+  const x=find(m.i);if(!x)return;
+  if(m.t==='sr'){if(x.resp>0)x.resp=.01;else if(x.die<=0){x.hp=x.max;x.dead=false;}return;}
+  const mine=m.k===myKey;addNum(x.x,x.y-60,fmt(m.d),m.cr?'#ffd75e':mine?'#fff':'#9fd0ff',!!m.cr);x.hit=1;x.ag=true;if(mine)snd(m.cr?'crit':'hit');
+  if(m.t==='sh'){x.hp=x.max*m.h;return;}
+  x.hp=0;if(x.die<=0&&x.resp<=0){x.die=.45;x.dead=true;burst(x.x,x.y-24,ZONES[SC.zi].c,10);if(mine)snd('kill');SC.drops.push({x:x.x,y:x.y-24,vx:(Math.random()-.5)*160,vy:-200,c:'#f2c14e',s:3,age:0,life:4});}
+  if(m.c>0)shCredit(+m.c);
+}
 function strike(m,mult,col,big){
+  if(SC.sh&&m.sid!=null){if(ws&&ws.readyState===1){netSend({t:'sh',i:m.sid,m:Math.round(mult*(m.weak>0?1.5:1)*100)/100});m.ag=true;}else if(!(SC.shWarn>SC.t-6)){SC.shWarn=SC.t;toast('אין חיבור חי לשרת. במפה הזו החיסולים נספרים רק דרך השרת',4);}return;}
   const crit=Math.random()<C.crit,d=Math.round(C.dmg*(crit?C.cdmg:1)*mult*(m.weak>0?1.5:1)*(.9+Math.random()*.2));
   if(d>hitOut[0])hitOut=[d,crit?1:0];
   snd(crit?'crit':'hit');m.hp-=d;m.hit=1;m.ag=true;addNum(m.x,m.y-(m.boss?130:60),fmt(d),crit?'#ffd75e':big?col:'#fff',crit||big);
@@ -794,7 +811,7 @@ function updateWorld(dt){
   h.buff=Math.max(0,h.buff-dt);h.manual=Math.max(0,h.manual-dt);h.autoSk=Math.max(0,h.autoSk-dt);h.anim=Math.max(0,h.anim-dt*4);h.skA=Math.max(0,(h.skA||0)-dt);h.atkT-=dt;h.mv=false;
   // monsters
   for(const m of SC.mons){
-    if(m.die>0){m.die-=dt;if(m.die<=0){if(m.boss||m.elite)m.gone=true;else m.resp=SC.ev?.9:3.5;}continue;}
+    if(m.die>0){m.die-=dt;if(m.die<=0){if(m.boss||m.elite)m.gone=true;else m.resp=m.sid!=null&&SC.sh?1e9:SC.ev?.9:3.5;}continue;}
     if(m.resp>0){m.resp-=dt;if(m.resp<=0){m.hp=m.max;m.x=m.home;m.dead=false;m.stun=0;m.pull=null;m.ag=false;}continue;}
     m.hit=Math.max(0,m.hit-dt*4);m.atkA=Math.max(0,(m.atkA||0)-dt);m.mv=false;
     if(m.pull!=null){m.x+=(m.pull-m.x)*Math.min(1,dt*9);if(Math.abs(m.pull-m.x)<3)m.pull=null;}
@@ -1353,6 +1370,8 @@ function netOpen(){
   sock.onerror=()=>{};
 }
 function netMsg(m){
+  if(m.t==='hi'){myKey=String(m.k||'');if(SC.sh)netSend({t:'sj',z:SC.zi,f:SC.fl});return;}
+  if(m.t==='ss'||m.t==='sh'||m.t==='sd'||m.t==='sr'){shMsg(m);return;}
   const d=SC.duel;
   if(m.t==='invite'){if(SC.mode!=='farm'||!S){netSend({t:'answer',id:m.id,ok:false});return;}snd('boss');const f=m.from||{};
     openModal('<h3 style="color:var(--gold)">'+esc(String(f.n||''))+' מאתגר אותך לדו-קרב חי</h3><p class="hint">'+(CLS[f.c]?CLS[f.c].n:'')+' · רמה '+L(f.l|0)+' · ריסטים '+L(f.r|0)+' · כוח '+L(fmt(f.p|0))+'</p><p class="hint">קרב בזמן אמת בין שניכם. המנצח עולה בדירוג. ההזמנה פגה תוך 20 שניות.</p><div class="acts"><button class="btn" data-act="pvpNo" data-id="'+(m.id|0)+'">סרב</button><button class="btn pri glow" data-act="pvpYes" data-id="'+(m.id|0)+'">קבל</button></div>');}
@@ -2069,8 +2088,8 @@ function renderTop(){
     rows.sort(topBy==='power'?(a,b)=>b.p-a.p:(a,b)=>b.r-a.r||b.l-a.l);rows=rows.slice(0,20);}
   h+='<div class="seg"><button class="btn sm'+(topBy==='resets'?' pri':'')+'" data-act="topBy" data-k="resets">לפי ריסטים</button><button class="btn sm'+(topBy==='power'?' pri':'')+'" data-act="topBy" data-k="power">לפי כוח</button><span class="hint">20 הראשונים</span></div><div class="card top">';
   rows.forEach((r,i)=>{const tl=titleOf(r.r|0);
-    h+='<div class="trow'+(r.me?' me':'')+(i<3?' m'+(i+1):'')+'"><i>'+(i+1)+'</i><div><b style="color:'+(tl?tl[2]:'var(--ink)')+'">'+esc(r.n)+'</b><small>'+(CLS[r.c]?CLS[r.c].n+' · ':'')+'רמה '+L(r.l)+(tl?' · '+tl[1]:'')+'</small></div><span class="num">'+(topBy==='power'?L(fmt(r.p))+'<small>כוח</small>':L(r.r)+'<small>ריסטים בחשבון</small>')+'</span></div>';});
-  if(!rows.some(r=>r.me))h+='<div class="trow me"><i>-</i><div><b>'+esc(S.name)+'</b><small>עוד לא בעשרים הראשונים</small></div><span class="num">'+(topBy==='power'?L(fmt(C.power))+'<small>כוח</small>':L(totalResets(A))+'<small>ריסטים בחשבון</small>')+'</span></div>';
+    h+='<div class="trow'+(r.me?' me':'')+(i<3?' m'+(i+1):'')+'"><i>'+(i+1)+'</i><div><b style="color:'+(tl?tl[2]:'var(--ink)')+'">'+esc(r.n)+'</b><small>'+(CLS[r.c]?CLS[r.c].n+' · ':'')+'רמה '+L(r.l)+(tl?' · '+tl[1]:'')+'</small></div><span class="num">'+(topBy==='power'?L(fmt(r.p))+'<small>כוח</small>':L(r.r)+'<small>ריסטים</small>')+'</span></div>';});
+  if(!rows.some(r=>r.me))h+='<div class="trow me"><i>-</i><div><b>'+esc(S.name)+'</b><small>עוד לא בעשרים הראשונים</small></div><span class="num">'+(topBy==='power'?L(fmt(C.power))+'<small>כוח</small>':L(S.resets|0)+'<small>ריסטים</small>')+'</span></div>';
   return h+'</div>';
 }
 /* ---------- other players, chat, guilds ---------- */

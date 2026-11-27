@@ -428,6 +428,19 @@ test('friends, blocking, reports and private messages',async()=>{
       c.send({t:'pInv',k:e.key});await e.wait('pAsk');await c.wait('pRes');e.send({t:'pAns',ok:true});assert.equal((await e.wait('pRes')).joined,1);assert.equal((await c.wait('pRes')).acc,1);
       assert.equal((await db.query('select count(*)::int n from party_members')).rows[0].n,2);
       e.send({t:'pAns',ok:true});await new Promise(r=>setTimeout(r,200));assert.equal((await db.query('select count(*)::int n from party_members')).rows[0].n,2,'an answer with no question does nothing');}
+  
+    { // shared monsters: the server holds them, works out each blow from the player's own strength, and credits the kill
+      const G2=await import('../web/core.js'),z=G2.ZONES.findIndex(q=>q.shared);assert.ok(z>=0);
+      if(!a.ws||a.ws.readyState!==1)await open(a);if(!b.ws||b.ws.readyState!==1)await open(b);a.q.length=0;b.q.length=0;
+      a.send({t:'sj',z:z,f:0});const s1=await a.wait('ss');assert.equal(s1.hp.length,8);assert.ok(s1.hp.every(h=>h===1));
+      b.send({t:'sj',z:z,f:0});const s2=await b.wait('ss');assert.equal(s2.hp.length,10,'more players, more monsters');await a.wait('ss');
+      a.send({t:'sh',i:3,m:999});const h1=await b.wait('sh');await a.wait('sh');assert.equal(h1.i,3);assert.ok(h1.d>0&&h1.h<1&&h1.h>.5,'a new character does not fell a reset-map monster with one claimed blow: '+h1.h);
+      const room=srv.live.rooms.get(z+':0');room.mons[3].hp=1;b.send({t:'sh',i:3,m:1});const d1=await a.wait('sd'),d2=await b.wait('sd');assert.ok(d1.c>0&&d2.c>0&&Math.abs(d1.c+d2.c-1)<.01,'the kill is shared by the damage each did: '+d1.c+' '+d2.c);
+      b.send({t:'sh',i:3,m:1});await new Promise(r=>setTimeout(r,150));assert.ok(!b.q.some(m=>m.t==='sh'&&m.i===3),'a dead monster takes no blows');
+      room.mons[5].hp=1;await new Promise(r=>setTimeout(r,400));a.send({t:'sh',i:5,m:1});const d3=await a.wait('sd');assert.equal(d3.c,1);
+      assert.equal(srv.live.takeKills(a.uid,z,1),0,'credits belong to their floor');assert.equal(srv.live.takeKills(a.uid,z,0),1,'whole kills are counted');assert.equal(srv.live.takeKills(a.uid,z,0),0,'once');
+      const r1=await a.wait('sr');assert.equal(r1.i,3,'and the monster returns');
+      const tk=await post({kind:'tick',args:{z:z,f:0,kills:500,dt:5}},a.tok);assert.ok(tk.result&&!tk.error,'the kill report of that map goes through the server\'s own count: '+JSON.stringify(tk).slice(0,80));}
   }finally{for(const u of [a,b])if(u.ws)u.ws.close();srv.live.close();srv.close();}
 });
 

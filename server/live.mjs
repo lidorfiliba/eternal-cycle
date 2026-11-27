@@ -217,6 +217,38 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     if (m.t === 'sgAct') { const o = G.sgAct(B, i, String(m.k), rnd); if (!o) return; if (o.no) return send(uid, { t: 'sgHint', no: o.no }); const out = sgState(B); out.ev = [o]; out.s = out.s.map((q, k) => (k === i || k === o.to ? q : null)); sgAll(out); return send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t }); }
   }
 
+  // ---- Shared monsters (a pilot on one map). The server holds the monsters of each floor of that map: their health,
+  // who hurt them, when they return. A player only says "I strike this one"; the damage is worked out here from his
+  // own saved strength, at no more than his own pace, and everyone on the floor sees every blow. A kill is credited
+  // to those who hurt the monster, each by his share, and the kill report of that map counts these credits and
+  // nothing the browser says. More players on the floor, more monsters.
+  const rooms = new Map(), credit = new Map();
+  const roomSize = (key) => { let n = 0; for (const o of socks.values()) if (o.sroom === key) n++; return n; };
+  const roomSend = (key, m) => { const s = JSON.stringify(m); for (const o of socks.values()) if (o.sroom === key && o.readyState === 1) o.send(s); };
+  const roomView = (r) => ({ t: 'ss', z: r.z, f: r.f, hp: r.mons.map((x) => (x.alive ? Math.max(.001, r3(x.hp / r.max)) : 0)) });
+  const roomFit = (r, key) => { const want = Math.min(24, 8 + 2 * Math.max(0, roomSize(key) - 1)); while (r.mons.length < want) r.mons.push({ hp: r.max, alive: true, at: 0, dm: new Map() }); };
+  async function sharedMsg(ws, m) {
+    const uid = ws.uid, now = clock();
+    if (m.t === 'sl') { ws.sroom = null; return; }
+    if (m.t === 'sj') {
+      const z = Math.floor(Number(m.z)), f = Math.max(0, Math.min(G.FLOORS - 1, Math.floor(Number(m.f)) || 0)), Z = G.ZONES[z]; if (!Z || !Z.shared) { ws.sroom = null; return; }
+      const key = z + ':' + f; ws.sroom = key; let r = rooms.get(key); if (!r) { r = { z, f, max: G.zs(z, f).hp, mons: [] }; rooms.set(key, r); } roomFit(r, key);
+      const p = await snap(uid); ws.sp = p ? { d: p.d, a: p.a, cr: p.cr, cd: p.cd } : null; ws.spAt = now; ws.sb = 6; ws.sbT = now; return roomSend(key, roomView(r));
+    }
+    const key = ws.sroom, r = key && rooms.get(key), p = ws.sp; if (!r || !p) return; const i = Math.floor(Number(m.i)), mon = r.mons[i]; if (!mon || !mon.alive) return;
+    if (now - (ws.spAt || 0) > 30000) { ws.spAt = now; snap(uid).then((q) => { if (q) ws.sp = { d: q.d, a: q.a, cr: q.cr, cd: q.cd }; }).catch(() => {}); } // new gear shows within half a minute
+    // his own pace: so many blows' worth a second, a short burst allowed; whatever he asks beyond it is cut down to it
+    ws.sb = Math.min(12, (ws.sb || 0) + (now - (ws.sbT || now)) / 1000 * Math.max(.3, p.a) * 2.8); ws.sbT = now; if (ws.sb < .2) return;
+    let mult = Math.max(.2, Math.min(6, Number(m.m) || 1)); if (mult > ws.sb) mult = ws.sb; ws.sb -= mult;
+    const crit = rnd() < p.cr, d = Math.max(1, Math.round(p.d * (crit ? p.cd : 1) * mult * (.9 + rnd() * .2)));
+    mon.hp -= d; mon.dm.set(uid, (mon.dm.get(uid) || 0) + d);
+    if (mon.hp > 0) return roomSend(key, { t: 'sh', i, d, k: ws.key, cr: crit ? 1 : 0, h: r3(mon.hp / r.max) });
+    mon.alive = false; mon.at = now + 2500; let tot = 0; for (const v of mon.dm.values()) tot += v; const told = new Set();
+    for (const [u, v] of mon.dm) { const c = credit.get(u) || { key, n: 0 }; if (c.key !== key) { c.key = key; c.n = 0; } c.n += v / tot; credit.set(u, c); told.add(u); const o = socks.get(u); if (o && o.sroom === key) send(u, { t: 'sd', i, d, k: ws.key, cr: crit ? 1 : 0, c: r3(v / tot) }); }
+    mon.dm = new Map(); const s = JSON.stringify({ t: 'sd', i, d, k: ws.key, cr: crit ? 1 : 0 }); for (const [u, o] of socks) if (o.sroom === key && !told.has(u) && o.readyState === 1) o.send(s);
+  }
+  const roomClock = setInterval(() => { const now = clock(); for (const [key, r] of rooms) { if (!roomSize(key)) { rooms.delete(key); continue; } r.mons.forEach((x, i) => { if (!x.alive && now >= x.at) { x.alive = true; x.hp = r.max; roomSend(key, { t: 'sr', i }); } }); } if (credit.size > 5000) credit.clear(); }, 400); roomClock.unref();
+  const takeKills = (uid, z, f) => { const c = credit.get(uid); if (!c || c.key !== z + ':' + f) return 0; const n = Math.floor(c.n + 1e-9); c.n -= n; return n; };
   // Party invitations: by clicking a player or typing a name. The invited player is asked, and joins only on a yes.
   // The party itself lives in the database as before; this only carries the question and the answer.
   const pInv = new Map(); // invited uid -> { from, code, at }
@@ -244,6 +276,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     const uid = ws.uid, d = inDuel.get(uid), side = d ? d.u.indexOf(uid) : -1;
     if (m.t === 'gm') return gmMsg(ws, m);
     if (m.t === 'pInv' || m.t === 'pAns') return partyMsg(ws, m);
+    if (m.t === 'sj' || m.t === 'sl' || m.t === 'sh') return sharedMsg(ws, m);
     if (typeof m.t === 'string' && m.t.slice(0, 2) === 'sg') return sgMsg(ws, m);
     if (typeof m.t === 'string' && m.t.slice(0, 2) === 'br') return brMsg(ws, m);
     if (m.t === 'challenge') {
@@ -323,7 +356,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
           if (!ws.uid) { // the first message must carry the session token
             if (m.t !== 'hello') return ws.close(); const ses = await auth.session(String(m.token || '')); if (!ses) return ws.close();
             clearTimeout(hello); ws.uid = ses.uid; ws.key = peerKey(ses.uid); const old = socks.get(ses.uid); if (old && old !== ws) old.close();
-            socks.set(ses.uid, ws); keys.set(ws.key, ses.uid); ws.send(JSON.stringify({ t: 'hi' })); if (push) push.back(ses.uid).catch(() => {});
+            socks.set(ses.uid, ws); keys.set(ws.key, ses.uid); ws.send(JSON.stringify({ t: 'hi', k: ws.key })); if (push) push.back(ses.uid).catch(() => {});
             if (sg && !sg.done) ws.send(JSON.stringify({ t: 'sgOpen', left: Math.max(0, ((sg.B.sg.time || G.SG.TIME) - sg.B.t) * 1000), test: sg.test ? 1 : 0, quiet: 1 }));
             if (br && br.phase === 'sign') ws.send(JSON.stringify({ t: 'brOpen', left: Math.max(0, br.end - clock()), quiet: 1 }));
             { const b = G.boostNow(clock()); if (b) ws.send(JSON.stringify({ t: 'boost', xp: b.xp, drop: b.drop, left: b.until - clock(), quiet: 1 })); }
@@ -340,5 +373,5 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
       ws.on('error', () => {});
     });
   });
-  return { socks, duels, sgNow: () => sg, sgOpen, brNow: () => br, brOpen: (ms) => (br = { key: 'manual', phase: 'sign', joined: new Map(), end: clock() + ms, idx: new Map() }), brBegin: () => { if (br && br.phase === 'sign') brStart(br); }, close: () => { for (const d of duels.values()) clearInterval(d.timer); clearInterval(brClock); if (br && br.timer) clearInterval(br.timer); if (sg) clearInterval(sg.timer); wss.close(); } };
+  return { socks, duels, takeKills, rooms, sgNow: () => sg, sgOpen, brNow: () => br, brOpen: (ms) => (br = { key: 'manual', phase: 'sign', joined: new Map(), end: clock() + ms, idx: new Map() }), brBegin: () => { if (br && br.phase === 'sign') brStart(br); }, close: () => { clearInterval(roomClock); for (const d of duels.values()) clearInterval(d.timer); clearInterval(brClock); if (br && br.timer) clearInterval(br.timer); if (sg) clearInterval(sg.timer); wss.close(); } };
 }
