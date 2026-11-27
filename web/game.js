@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261127124324';
+const BUILD='20261127125507';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -1102,7 +1102,7 @@ function updateBr(dt){
     if(ub.textContent!==t)ub.textContent=t;ub.style.display=t?'':'none';}
   // the view follows me, or the middle of the circle once I am out
   const fx=me.alive||b.phase==='lobby'?me.x:0,fy=me.alive||b.phase==='lobby'?me.y:0;b.cam[0]+=(fx-b.cam[0])*Math.min(1,dt*7);b.cam[1]+=(fy-b.cam[1])*Math.min(1,dt*7);
-  if((d.bt=(d.bt||0)+dt)>(b.sg?.08:.25)){d.bt=0;renderDuelBar();if(tab==='pass'&&b.phase==='lobby')panelDirty=true;}
+  if((d.bt=(d.bt||0)+dt)>(b.sg?.08:DESK?.1:.25)){d.bt=0;renderDuelBar();if(tab==='pass'&&b.phase==='lobby')panelDirty=true;}
 }
 function drawSg(dt){
   const d=SC.duel,b=d.br,D=d.D,k=BRS(),sc=clamp(H/300,.8,1.45)*.74,me=D.f[d.me],S2=b.sg,myG=b.g[d.me],R=(r)=>{const p0=bP(r[0],r[1]),p1=bP(r[2],r[3]);return [p0[0],p0[1],p1[0]-p0[0],p1[1]-p0[1]];},gc=g=>g===myG?'#6fe39a':g>0?'#ff5c7a':'#d9c48a';
@@ -1227,11 +1227,14 @@ function startDuel(pd,net){
   if(pd.tower){SC.duel.tower=pd.tower;SC.duel.slam=null;SC.duel.slamT=pd.trial===1?2.5:4.5;D.f[1].pots=0;D.f[1].at.atk=1.5;}
   SC.mode='duel';SC.fx=[];SC.nums=[];SC.drops=[];SC.hero.dir=0;SC.hero.dz=0;closeModal();renderDuelBar();
 }
+const DESK=!!(window.matchMedia&&window.matchMedia('(hover:hover) and (pointer:fine)').matches);
 function renderDuelBar(){
-  const d=SC.duel,bar=$('duelBar');$('specBtn').style.display=d&&d.spec?'':'none';if(!d||d.spec){bar.style.display='none';return;}bar.style.display='grid';const me=d.D.f[d.me],off=d.sent||d.go>0;
+  const d=SC.duel,bar=$('duelBar'),hpb=$('duelHp');$('specBtn').style.display=d&&d.spec?'':'none';if(!d||d.spec){bar.style.display='none';hpb.style.display='none';return;}bar.style.display='grid';const me=d.D.f[d.me],off=d.sent||d.go>0;
+  const desk=DESK&&$('stage').clientWidth>=640;bar.classList.toggle('desk',desk);hpb.style.display=desk?'':'none';if(desk){const v=clamp(me.hp,0,1);hpb.firstChild.style.width=(v*100)+'%';hpb.lastChild.textContent=Math.round(v*100)+'%';}
   const sgOn=!!(d.br&&d.br.sg),cg=sgOn&&d.cbN?d.D.t-d.cbAt:-1,cbK=cg>=SG.cbMin&&cg<=SG.cbMax?(d.cbN===1?'s0':'s1'):'';
   bar.querySelectorAll('button').forEach((b,i)=>{const k=DBTN[i];if(k==='buf'||k==='bash'){b.style.display=sgOn?'':'none';if(!sgOn)return;}const cd=k==='atk'?0:Math.max(0,(me.at[k]||0)-d.D.t),nm=k==='atk'?'תקיפה':k==='dash'?'צעד':k==='bash'?'הדיפה':k==='buf'?BUFN[S.cls][0]:k==='pot'?'שיקוי ×'+me.pots:CLS[S.cls].sk[k==='s0'?0:k==='s1'?3:k==='s2'?4:5],
-    t=nm+'<small>'+(cd>0?Math.ceil(cd)+' שנ׳':k==='pot'&&!me.pots?'נגמר':k==='pot'&&me.wound>d.D.t?'פצוע':k==='buf'?BUFN[S.cls][1]:k==='bash'?'מזיז יריב':k===cbK?'קומבו עכשיו':sgOn&&k==='atk'?'קומבו 1':sgOn&&k==='s0'?'קומבו 2':sgOn&&k==='s1'?'קומבו 3':k==='s3'&&d.br?'זינוק':k==='s2'?'מגן':k==='s3'?'מכה סופית':k==='s1'?'מהמם':k==='dash'?'חמיקה':'&nbsp;')+'</small>';
+    t=(desk?'<kbd>'+keyName(keyOf(k))+'</kbd>':'')+nm+'<small>'+(cd>0?Math.ceil(cd)+' שנ׳':k==='pot'&&!me.pots?'נגמר':k==='pot'&&me.wound>d.D.t?'פצוע':k==='buf'?BUFN[S.cls][1]:k==='bash'?'מזיז יריב':k===cbK?'קומבו עכשיו':sgOn&&k==='atk'?'קומבו 1':sgOn&&k==='s0'?'קומבו 2':sgOn&&k==='s1'?'קומבו 3':k==='s3'&&d.br?'זינוק':k==='s2'?'מגן':k==='s3'?'מכה סופית':k==='s1'?'מהמם':k==='dash'?'חמיקה':'&nbsp;')+'</small>';
+    if(desk){const mx=d.cdMax||(d.cdMax={});if(cd>(mx[k]||0))mx[k]=cd;if(cd<=0)mx[k]=0;const pc=cd>0&&mx[k]?Math.round(cd/mx[k]*100)+'%':'0%';if(b.dataset.cd!==pc){b.dataset.cd=pc;b.style.setProperty('--cd',pc);}}
     if(b.dataset.h!==t){b.dataset.h=t;b.innerHTML=t;}const dis=off||cd>0||(k==='pot'&&!me.pots);if(b.disabled!==dis)b.disabled=dis;b.classList.toggle('rdy',!dis&&(cbK?k===cbK:k==='s3'&&!sgOn));});
 }
 function dShow(d,o){ // play what a move did; o comes from liveAct, here or on the server
@@ -1307,7 +1310,7 @@ function updateDuel(dt){
     if((d.posT-=dt)<=0&&(Math.abs(me.x-d.last[0])>.5||Math.abs(me.z-d.last[1])>.01)){d.posT=.05;d.last=[me.x,me.z];netSend({t:'pos',x:Math.round(me.x*10)/10,z:Math.round(me.z*100)/100});}
     const op=D.f[1-d.me],vo=d.v[1-d.me];vo.mv=false;if(d.tgt){const ex=d.tgt[0]-op.x,ez=d.tgt[1]-op.z;if(Math.abs(ex)>1||Math.abs(ez)>.02){op.x+=ex*Math.min(1,dt*20);op.z+=ez*Math.min(1,dt*20);vo.mv=true;if(Math.abs(ex)>2)vo.face=ex>0?1:-1;}}
   }else{if(d.tower)towerAI(d,dt);else duelAI(d,dt);if(liveOver(D))endDuel(d.tower?D.f[1].hp<=0:D.win===0);}
-  if((d.bt=(d.bt||0)+dt)>.25){d.bt=0;renderDuelBar();}
+  if((d.bt=(d.bt||0)+dt)>(DESK?.1:.25)){d.bt=0;renderDuelBar();}
 }
 async function endDuel(win){ // a fight that ran here: report it; the server checks that it could have happened
   const d=SC.duel;if(!d||d.sent)return;d.sent=true;d.end=9;d.holdAtk=false;d.local=win;renderDuelBar();
