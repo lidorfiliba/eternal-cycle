@@ -974,11 +974,15 @@ function apply(A,kind,args,ctx){
     case 'sell':{const f=findIt(A,S,int(args.id,0,1e12));if(!f||f.i==null)return fail('הפריט לא בתיק');A.inv.splice(f.i,1);A.gold+=sellVal(f.it);break;}
     case 'craftKey':{if((A.shards||0)<KEY_SHARDS)return fail('צריך '+KEY_SHARDS+' שברי ארגמן. יש לך '+(A.shards||0));if(A.gold<KEY_GOLD)return fail('צריך '+KEY_GOLD+' זהב');
       A.shards-=KEY_SHARDS;A.gold-=KEY_GOLD;A.keys=(A.keys||0)+1;r.keys=A.keys;break;}
-    case 'evEnter':{const w=keepGate(now);if(!w||w.e.id!==String(args.id))return fail(evWindows(now,0).some(x=>x.e.tiered)?'הכניסה נסגרה. נכנסים רק ב-'+KEEP_GATE+' הדקות שלפני הפתיחה. חכה למצודה הבאה':'השער סגור. הוא נפתח '+KEEP_GATE+' דקות לפני כל שעה עגולה');
+    case 'evEnter':{let w=keepGate(now);
+      // Thrown out by a lost connection or a server restart, not by his own choice: he may walk back in while the keep runs.
+      if(!w){const lw=evWindows(now,0).find(x=>x.e.tiered&&x.live&&x.e.id===String(args.id)),lr=lw&&(A.ev||{})[lw.key];if(lr&&lr.in&&!lr.out&&!lr.no)w=lw;}
+      if(!w||w.e.id!==String(args.id))return fail(evWindows(now,0).some(x=>x.e.tiered)?'הכניסה נסגרה. נכנסים רק ב-'+KEEP_GATE+' הדקות שלפני הפתיחה. חכה למצודה הבאה':'השער סגור. הוא נפתח '+KEEP_GATE+' דקות לפני כל שעה עגולה');
       const t=evTier(S.lvl);if(!t)return fail('הכניסה מרמה '+TIER_MIN[0]);const rec=evRec(A,w.key);if(rec.no)return fail('אחרי ריסט נכנסים רק למצודה הבאה');
       if(!rec.in){if(!(A.keys>0))return fail('אין לך מפתח מצודה. יוצרים אותו בלשונית אירועים');A.keys--;rec.in=1;rec.tr=t;} // going back in during the same opening is free
+      else if(now<keepStart(w)){rec.tr=t;rec.out=0;} // came back before the gate shut, perhaps stronger: the keep of the new level
       S.evIn=w.key;S.evZ=evZoneFor(S.lvl);S.zone=-1;S.floor=0;A.bossAt=null;A.allow=Math.min(A.allow||0,3);r.z=S.evZ;r.tier=rec.tr;r.end=w.end;r.start=keepStart(w);break;}
-    case 'evLeave':{S.evIn=null;break;}
+    case 'evLeave':{const kk=S.evIn;S.evIn=null;if(kk&&A.ev&&A.ev[kk])A.ev[kk].out=1;break;} // he chose to leave: no way back into this one
     case 'bestEq':{ // wear the strongest piece in the bag for every slot; what was worn goes back to the bag
       const p0=calc(S).power;let n=0;
       for(const sl of SLOTS){let bi=-1,bs=S.eq[sl]?itemScore(S.eq[sl]):0;A.inv.forEach((it,i)=>{if(it.s===sl&&canWear(S,it)){const sc=itemScore(it);if(sc>bs){bs=sc;bi=i;}}});

@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261127080038';
+const BUILD='20261127080929';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -608,7 +608,7 @@ function spawnBoss(){
 // A champion: one monster of the pack that is far stronger and carries a sure rare drop. The server decides when.
 function syncElite(){
   if(!A||SC.mode!=='farm'||SC.ev)return;const e=A.elite,want=!!(e&&e.z===SC.zi&&(e.f|0)===SC.fl&&SC.zi>=0),cur=SC.mons.find(m=>m.elite);
-  if(want&&!cur&&!pend.elite){const h=SC.hero,m=newMon(clamp(h.x+(h.x<mapW()/2?1:-1)*(260+Math.random()*120),160,mapW()-160),SC.zi);m.elite=true;m.hp=m.max=zs(SC.zi,SC.fl).hp*ELITE_HP;m.ag=true;SC.mons.push(m);snd('growl');announce('מפלצת אלופה הופיעה במפה הזו, זוהרת בזהב. הבס אותה לשלל מיוחד',true);}
+  if(want&&!cur&&!pend.elite){const h=SC.hero,m=newMon(clamp(h.x+(h.x<mapW()/2?1:-1)*(150+Math.random()*60),160,mapW()-160),SC.zi);m.elite=true;for(let q=-1;q<=1;q++)SC.fx.push({k:'pillar',x:m.x+q*26,y:m.y,life:.9,d:.9,c:'#ffd75e'});SC.fx.push({k:'ring',x:m.x,y:m.y-20,life:.8,c:'#ffd75e',r:120});m.hp=m.max=zs(SC.zi,SC.fl).hp*ELITE_HP;m.ag=true;SC.mons.push(m);snd('growl');announce('מפלצת אלופה הופיעה במפה הזו, זוהרת בזהב. הבס אותה לשלל מיוחד',true);}
   else if(!want&&cur&&cur.die<=0){SC.mons=SC.mons.filter(m=>m!==cur);if(SC.hero.tgt===cur)SC.hero.tgt=null;}
 }
 function dropOrbs(m,rep){
@@ -1954,16 +1954,21 @@ async function enterKeep(){
   if(!r.ok){toast(r.msg==='net'?'אין חיבור לשרת':r.msg);if(!(A.keys>0))openTab('pass');return;}
   snd('portal');enterZone(r.z,'L',0,true);SC.evEnd=r.end;SC.evTier=r.tier;SC.evStart=r.start||0;SC.evWait=Date.now()<SC.evStart;if(SC.evWait)SC.mons=[];announce(SC.evWait?'אתה בתוך מצודת הארגמן '+r.tier+'. הנחיל יוצא כשהספירה נגמרת':'נכנסת למצודת הארגמן '+r.tier,true);saveLocal();
 }
+// A player who was inside a running keep and lost it without choosing to (a dropped connection, a server restart, a reload) is put back in.
+const keepBackWin=()=>{if(!A||!S)return null;const w=evWindows(Date.now(),0).find(x=>x.e.tiered&&x.live),rec=w&&(A.ev||{})[w.key];return rec&&rec.in&&!rec.out&&!rec.no?w:null;};
+let keepQuit='';
+function keepBack(){const w=ONLINE&&!demo&&!SC.ev&&SC.mode==='farm'&&keepBackWin();if(w&&w.key!==keepQuit)enterKeep();}
+setInterval(keepBack,4000);
 async function leaveKeep(told){
-  if(!SC.ev)return;SC.ev=false;if(!told){await flushTick();await send('evLeave',{});}
+  if(!SC.ev)return;SC.ev=false;if(!told){keepQuit=S.evIn||keepQuit;await flushTick();await send('evLeave',{});}
   enterZone(-1,'L',0);if(S.zone!==-1&&!ONLINE)S.zone=-1;toast(told?'השער נסגר. חזרת לכפר':'יצאת מהמצודה');saveLocal();
 }
 function keepCard(e,w,rec,live){
-  const sh=A.shards||0,keys=A.keys||0,open=!!keepWin();
+  const sh=A.shards||0,keys=A.keys||0,back=!!keepBackWin(),open=!!keepWin()||back;
   let h='<div class="kv" style="margin-top:6px"><span>מפתחות מצודה</span><b class="num" style="color:var(--gold)">'+L(keys)+'</b></div><div class="kv"><span>שברי ארגמן</span><b class="num">'+L(sh+'/'+KEY_SHARDS)+'</b></div>'+
-    '<p class="hint"><b>איך נכנסים:</b> שברי ארגמן נופלים ממפלצות בכל מפה. מ-'+L(KEY_SHARDS)+' שברים ו-'+L(fmt(KEY_GOLD))+' זהב יוצרים מפתח. השער נפתח חמש דקות לפני כל שעה עגולה, והמפתח משגר אותך פנימה לחכות. בפנים מחכה נחיל אדיר של מפלצות חלשות עם ניסיון רגיל, כך שעולים רמות מהר בזכות הכמות. <b>הכניסה פתוחה רק ב-'+L(KEEP_GATE)+' הדקות שלפני הפתיחה, והפרס הוא הכמות עצמה.</b> מי שפספס, יצא, התנתק או עשה ריסט באמצע מחכה למצודה הבאה.</p>'+
+    '<p class="hint"><b>איך נכנסים:</b> שברי ארגמן נופלים ממפלצות בכל מפה. מ-'+L(KEY_SHARDS)+' שברים ו-'+L(fmt(KEY_GOLD))+' זהב יוצרים מפתח. השער נפתח חמש דקות לפני כל שעה עגולה, והמפתח משגר אותך פנימה לחכות. בפנים מחכה נחיל אדיר של מפלצות חלשות עם ניסיון רגיל, כך שעולים רמות מהר בזכות הכמות. <b>הכניסה פתוחה רק ב-'+L(KEEP_GATE)+' הדקות שלפני הפתיחה, והפרס הוא הכמות עצמה.</b> מי שפספס, יצא בעצמו או עשה ריסט באמצע מחכה למצודה הבאה.</p>'+
     '<div class="grid2"><button class="btn sm'+(sh>=KEY_SHARDS&&A.gold>=KEY_GOLD?' pri':'')+'" data-act="craftKey"'+(sh>=KEY_SHARDS&&A.gold>=KEY_GOLD?'':' disabled')+'>צור מפתח</button>'+
-    '<button class="btn sm'+(open&&!SC.ev&&(keys>0||rec.in)?' pri glow':'')+'" data-act="keepGo"'+(open&&!SC.ev&&(keys>0||rec.in)?'':' disabled')+'>'+(SC.ev?'אתה בפנים':open?'שגר למצודה':live?'הכניסה נסגרה':'השער סגור')+'</button></div>';
+    '<button class="btn sm'+(open&&!SC.ev&&(keys>0||rec.in)?' pri glow':'')+'" data-act="keepGo"'+(open&&!SC.ev&&(keys>0||rec.in)?'':' disabled')+'>'+(SC.ev?'אתה בפנים':back?'חזור למצודה':open?'שגר למצודה':live?'הכניסה נסגרה':'השער סגור')+'</button></div>';
   return h;
 }
 /* ---------- paid credits ---------- */

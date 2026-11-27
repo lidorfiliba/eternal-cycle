@@ -565,3 +565,13 @@ test('ancient points: only from the city, capped by the week, spent only in the 
   assert.ok(G.CITY_SHOP.every(o=>o.cost>=8)&&Math.max(...G.CITY_SHOP.map(o=>o.cost))>=G.CITY_WEEK*12);
 });
 
+test('the keep: who comes back stronger before the gate shuts enters the keep of his new level',()=>{
+  let now=Date.UTC(2026,10,27,9,56,30);G.setEnv(Math.random,()=>now);const w=G.keepGate(now);assert.ok(w,'the gate is open five minutes before the hour');
+  const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'x'},{});const S=A.chars[A.cur];A.keys=1;S.lvl=G.TIER_MIN[2];
+  const a=G.apply(A,'evEnter',{id:w.e.id},{});assert.ok(a.ok,a.msg);assert.equal(a.tier,3);G.apply(A,'evLeave',{},{});
+  S.lvl=G.TIER_MIN[3];now+=60e3;const b=G.apply(A,'evEnter',{id:w.e.id},{});assert.ok(b.ok,b.msg);assert.equal(b.tier,4,'the higher keep');assert.equal(A.keys,0,'and no second key');
+  now=Date.UTC(2026,10,27,10,3,0);S.evIn=null; // dropped by the server, not by choice
+  const c=G.apply(A,'evEnter',{id:w.e.id},{});assert.ok(c.ok,'he walks back in while it runs: '+c.msg);
+  G.apply(A,'evLeave',{},{});assert.equal(G.apply(A,'evEnter',{id:w.e.id},{}).ok,false,'but not after leaving by choice');
+  const B2=G.newAccount();G.apply(B2,'create',{cls:'blade',name:'y'},{});B2.keys=1;B2.chars[0].lvl=300;assert.equal(G.apply(B2,'evEnter',{id:w.e.id},{}).ok,false,'and nobody new gets in after the start');
+});
