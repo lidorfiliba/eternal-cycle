@@ -466,7 +466,7 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
   fe.x=fa.x+30;fe.y=fa.y;fb.x=fa.x-30;fb.y=fa.y;const h=G.sgAct(B,a,'atk',rnd);assert.equal(h.to,e,'a guildmate is never hit, an enemy is');
   { // real strength: ten times the damage is ten times the blow
     const X=G.sgNew(rnd,{}),w=G.sgAdd(X,P('w',1),1,'',rnd),st=G.sgAdd(X,P('st',10),2,'',rnd),v=G.sgAdd(X,P('v',1),3,'',rnd);X.t=5;for(const i of [w,st,v]){X.f[i].x=0;X.f[i].y=1900;}X.f[v].x=30;X.f[w].x=-600;
-    const big=G.sgAct(X,st,'s0',rnd).dm;X.f[st].x=-600;X.f[w].x=0;const small=G.sgAct(X,w,'s0',rnd).dm;assert.ok(big>small*1.2&&big<small*4,'strength counts, but the gap is pressed together: strong '+big+' weak '+small);}
+    const big=G.sgAct(X,st,'s0',rnd).dm;X.f[st].x=-600;X.f[w].x=0;const small=G.sgAct(X,w,'s0',rnd).dm;assert.ok(big>small*3,'strength decides between the unequal: strong '+big+' weak '+small);}
   fe.x=fa.x;fe.y=fa.y-90;B.t+=2;assert.ok(G.sgAct(B,a,'atk',rnd).gate===0,'an enemy behind the gate is out of reach: the blow lands on the gate');
   fe.x=600;fe.y=1900;let n=0;while(B.sg.gate[0]>0&&n++<300){B.t+=1.3;G.sgAct(B,a,'atk',rnd);}assert.ok(B.sg.gate[0]<=0&&n>10,'the blows fall on the gate until it breaks: '+n);
   G.sgMove(B,fa,0,0);assert.ok(Math.abs(fa.y)<2,'and then the way is open');G.sgMove(B,fa,-1000,-300);assert.ok(fa.x>-702,'the wall still stands: '+fa.x);
@@ -490,7 +490,7 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
     const fresh=()=>{fe.alive=true;fe.hp=1;fe.x=fa.x+20;fe.y=fa.y;fe.pool=1e9;fe.stun=0;fe.sh=0;fe.wound=0;B.t+=40;fa.at={atk:0,s0:0,s1:0,s2:0,s3:0,dash:0,pot:0,use:0,buf:0};};
     fresh();const h1=G.sgAct(B,a,'atk',rnd);B.t+=.5;const x0=fe.x,h2=G.sgAct(B,a,'s0',rnd);assert.ok(h2.px&&fe.x>x0+15&&fe.x<x0+40,'the quick skill throws the enemy back a little: '+(fe.x-x0));B.t+=.5;fe.stun=0;const h3=G.sgAct(B,a,'s1',rnd);assert.ok(!h1.combo&&h2.cb===2&&h3.combo&&h3.stun,'blow, quick skill, stunning skill: combo');
     assert.ok(fe.wound>B.t&&G.sgAct(B,e,'pot',rnd)===null,'stunned');fe.stun=0;fe.pots=5;assert.equal(G.sgAct(B,e,'pot',rnd).no,'wound','and no potion for a moment after a combo');
-    fresh();const base=G.sgAct(B,a,'s1',rnd);assert.ok(!base.combo&&h3.dm>base.dm+.12,'the last blow of a combo takes a good part of anyone: '+h3.dm+' vs '+base.dm);
+    fresh();const base=G.sgAct(B,a,'s1',rnd);assert.ok(!base.combo&&h3.dm>base.dm*3,'the last blow of a combo takes a good part of anyone: '+h3.dm+' vs '+base.dm);
     fresh();G.sgAct(B,a,'atk',rnd);B.t+=5;assert.equal(G.sgAct(B,a,'s0',rnd).cb,0,'too slow breaks it');
     fresh();G.sgAct(B,a,'atk',rnd);B.t+=.42;assert.equal(G.sgAct(B,a,'s0',rnd).cb,0,'too fast breaks it: pressing everything at once gives nothing');B.t+=.42;assert.ok(!G.sgAct(B,a,'s1',rnd).combo);
     fresh();G.sgAct(B,a,'atk',rnd);B.t+=.5;assert.ok(!G.sgAct(B,a,'s1',rnd).combo,'the wrong order is no combo');

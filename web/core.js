@@ -552,7 +552,7 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:2100,Y0:-879,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:10,respIn:35,crownKeep:0,crownPen:1,pots:30,potMax:150,potCd:.5,heal:.1,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.3,hitMin:.02,hitMax:.06,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:.5,cbMax:.9,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:34,
+const SG={W:2100,Y0:-879,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:10,respIn:35,crownKeep:0,crownPen:1,pots:30,potMax:150,potCd:.5,heal:.1,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:.5,cbMax:.9,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:34,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.012,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   // a wide castle: room to fight in the yard and in the throne room without everyone standing on everyone
@@ -649,8 +649,8 @@ function sgAct(B,i,k,rnd){
   const e=B.f[j];cool();o.to=j;if(Math.abs(e.x-me.x)>4)me.face=e.x>=me.x?1:-1;
   if(k==='s3'){const d=brDist(e,me);if(d>44){sgMove(B,me,e.x-(e.x-me.x)/d*26,e.y-(e.y-me.y)/d*26);me.pushT=t+SG.pushT;o.jx=[Math.round(me.x),Math.round(me.y)];}}
   if(e.inv>t){o.miss=true;me.cb=0;return o;}
-  // Each character's own numbers decide, but as in the old sieges the gap is pressed together: the strongest hits a
-  // few times harder than the weakest, not hundreds of times. What is left over is decided by play.
+  // Each character's own numbers decide, as in the old sieges: a beginner barely scratches a finished character and
+  // falls to him in a few blows. Between equals nothing is decided by numbers: potions and combos decide.
   const raw=(x,y)=>x.d*300/(300+y.def)/y.pool,rel=Math.sqrt(raw(me,e)/Math.max(1e-9,raw(e,me)));
   o.crit=rnd()<me.cr;const base=clamp(SG.hit*Math.pow(rel,SG.gam),SG.hitMin,SG.hitMax);let dm=base*mult*au.dmg*sgBuff(e,t).def*(o.crit?Math.min(SG.critMax,1+(me.cdm-1)*.5):1)*(.9+rnd()*.2);
   // A combo, as the old games had it: one fixed order on one enemy, a plain blow, then the quick skill, then the
@@ -661,7 +661,7 @@ function sgAct(B,i,k,rnd){
     me.cbT=t;me.cbTo=j;o.cb=me.cb;}
   if(e.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}
   // one burst at a time: an enemy still wounded by a combo takes the next one as a plain strong blow, so three players cannot erase one in a breath
-  if(o.combo){if(e.wound>t)o.again=true;else{dm=dm*SG.comboM+SG.comboFlat*Math.pow(base/SG.hit,.35)*(o.guard?1-K.sk[2].cut:1);if(!o.guard)e.wound=t+SG.wound;}}
+  if(o.combo){if(e.wound>t)o.again=true;else{dm=dm*SG.comboM+SG.comboFlat*base/SG.hit*(o.guard?1-K.sk[2].cut:1);if(!o.guard)e.wound=t+SG.wound;}}
   // Many on one: each more attacker who struck the same enemy in the last two seconds makes every blow on him weaker.
   // A crowd still wins, but not in a breath, and the one in the middle has time to drink and to be helped.
   {const hb=e.hb||(e.hb={});let n=0;for(const k in hb){if(t-hb[k]>SG.gangT)delete hb[k];else if(+k!==i)n++;}hb[i]=t;if(n>0){dm*=SG.gang[Math.min(n,SG.gang.length)-1];o.gang=n+1;}}
