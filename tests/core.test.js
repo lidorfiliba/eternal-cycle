@@ -492,7 +492,7 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
     assert.ok(fe.wound>B.t&&G.sgAct(B,e,'pot',rnd)===null,'stunned');fe.stun=0;fe.pots=5;assert.equal(G.sgAct(B,e,'pot',rnd).no,'wound','and no potion for a moment after a combo');
     fresh();const base=G.sgAct(B,a,'s1',rnd);assert.ok(!base.combo&&h3.dm>base.dm*3,'the last blow of a combo takes a good part of anyone: '+h3.dm+' vs '+base.dm);
     fresh();G.sgAct(B,a,'atk',rnd);B.t+=5;assert.equal(G.sgAct(B,a,'s0',rnd).cb,0,'too slow breaks it');
-    fresh();G.sgAct(B,a,'atk',rnd);B.t+=.42;assert.equal(G.sgAct(B,a,'s0',rnd).cb,0,'too fast breaks it: pressing everything at once gives nothing');B.t+=.42;assert.ok(!G.sgAct(B,a,'s1',rnd).combo);
+    fresh();G.sgAct(B,a,'atk',rnd);B.t+=.05;assert.equal(G.sgAct(B,a,'s0',rnd),null,'between blows there is one short beat');B.t+=.37;assert.equal(G.sgAct(B,a,'s0',rnd).cb,2);B.t+=.42;assert.ok(G.sgAct(B,a,'s1',rnd).combo,'the order decides, and the fastest hand that keeps it wins');
     fresh();G.sgAct(B,a,'atk',rnd);B.t+=.5;assert.ok(!G.sgAct(B,a,'s1',rnd).combo,'the wrong order is no combo');
     fresh();G.sgAct(B,a,'atk',rnd);B.t+=.5;G.sgAct(B,a,'s0',rnd);B.t+=.5;fa.at.atk=0;G.sgAct(B,a,'atk',rnd);B.t+=.5;fe.x=fa.x+20;assert.ok(!G.sgAct(B,a,'s1',rnd).combo,'a blow in the middle breaks it');
     fresh();fe.sh=B.t+9;const y0=fe.x;G.sgAct(B,a,'atk',rnd);B.t+=.5;const g2=G.sgAct(B,a,'s0',rnd);assert.ok(g2.guard&&!g2.px&&fe.x===y0,'a shield stands firm');fe.sh=0;}
@@ -584,7 +584,12 @@ test('moves that move: the leap carries the attacker onto a far enemy, the shove
   assert.ok(g.dm>0,'but not all the harm: he must still refill his health');
   { // the last circle: the same leap, and the quick skill throws back
     const B=G.brNew([{id:'p',n:'p',c:'blade'},{id:'q',n:'q',c:'storm'}],rnd);B.t=5;const p=B.f[0],q=B.f[1];p.x=0;p.y=0;q.x=170;q.y=0;p.at.s3=0;p.at.s0=0;
-    const l=G.brAct(B,0,'s3',rnd);assert.ok(l&&l.jx&&Math.abs(p.x-q.x)<40);const qx=q.x,s=G.brAct(B,0,'s0',rnd);assert.ok(s.px&&q.x>qx+20,'thrown back');}
+    const l=G.brAct(B,0,'s3',rnd);assert.ok(l&&l.jx&&Math.abs(p.x-q.x)<40);B.t+=1;G.brAct(B,0,'atk',rnd);B.t+=.45;const s=G.brAct(B,0,'s0',rnd);assert.ok(!s.px&&s.cb===2);B.t+=.45;const qx=q.x,c3=G.brAct(B,0,'s1',rnd);assert.ok(c3.combo&&c3.px&&q.x>qx+20&&c3.stun&&q.wound>B.t,'the circle fights as the siege does: the combo bursts, stuns and throws back');
+    q.pots=5;q.stun=0;assert.equal(G.brAct(B,1,'pot',rnd).no,'wound');q.wound=0;const h0=q.hp;assert.ok(G.brAct(B,1,'pot',rnd).heal===G.SG.heal&&q.hp>h0);B.t+=G.SG.potCd+.01;assert.ok(G.brAct(B,1,'pot',rnd),'a potion by the press');}
+  { // one skill of each class strikes several, and the enemy he chose comes first
+    const B=G.brNew([{id:'p',n:'p',c:'blade'},{id:'q',n:'q',c:'storm'},{id:'r',n:'r',c:'hunter'},{id:'z',n:'z',c:'hunter'}],rnd);B.t=5;const f=B.f;f[0].x=0;f[0].y=0;f[1].x=40;f[1].y=0;f[2].x=-60;f[2].y=0;f[3].x=600;f[3].y=0;
+    const near=G.brAct(B,0,'atk',rnd);assert.equal(near.to,1);B.t+=1;const ch=G.brAct(B,0,'atk',rnd,2);assert.equal(ch.to,2,'the chosen enemy is struck, not the nearest');B.t+=1;assert.equal(G.brAct(B,0,'atk',rnd,3).to,1,'one out of reach cannot be chosen');
+    B.t+=1;const sw=G.brAct(B,0,'s0',rnd);assert.ok(sw.more&&sw.more.length===1&&sw.more[0][0]===2&&sw.more[0][1]<sw.dm,'the blade sweeps the others around him, for less: '+JSON.stringify(sw.more));B.t+=1;assert.ok(!G.brAct(B,0,'s1',rnd).more,'his other skill strikes one');}
 });
 test('the game master walks anywhere; nobody else does',()=>{
   G.setEnv(Math.random,()=>1.8e12);const zi=G.ZONES.findIndex(z=>z.castle),far=G.ZONES.length-2;
