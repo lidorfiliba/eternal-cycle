@@ -549,8 +549,8 @@ const SG={W:1500,Y0:-500,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:10,guardResp:15
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   walls:[[-462,-432,462,-408],[-462,108,-50,132],[50,108,462,132],[-462,-432,-438,-200],[-462,-110,-438,132],[438,-432,462,-200],[438,-110,462,132],
     [-438,-225,-70,-205],[70,-225,438,-205],[-750,690,-80,714],[80,690,750,714],[-750,1290,-430,1314],[-290,1290,290,1314],[430,1290,750,1314]],
-  gates:[[-50,108,50,132],[-462,-200,-438,-110],[438,-200,462,-110]],sw:[[-250,-320],[250,-320]],crown:[0,-345],zone:50,
-  shops:[[-520,1960],[330,-40]],shopR:70,camp:[0,1960],yard:[0,-140],posts:[[-250,-320],[250,-320],[-40,60],[40,60],[0,-330]]};
+  gates:[[-50,108,50,132],[-462,-200,-438,-110],[438,-200,462,-110]],sw:[[-380,-316],[380,-316]],crown:[0,-345],zone:58,
+  shops:[[-520,1960],[330,-40]],shopR:70,camp:[0,1960],yard:[0,-140],posts:[[-380,-316],[380,-316],[-40,60],[40,60],[0,-330]]};
 const sgIn=(r,x,y,m)=>x>r[0]-m&&x<r[2]+m&&y>r[1]-m&&y<r[3]+m;
 function sgBlocked(B,x,y){if(Math.abs(x)>SG.W/2-10||y<SG.Y0+10||y>SG.Y1-10)return true;for(const w of SG.walls)if(sgIn(w,x,y,SG.rad))return true;for(let i=0;i<SG.gates.length;i++)if(B.sg.gate[i]>0&&sgIn(SG.gates[i],x,y,SG.rad))return true;return false;}
 // Walk toward a point in short steps, sliding along whatever is in the way. Used by the browser and by the server alike.
