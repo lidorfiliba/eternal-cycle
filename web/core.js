@@ -552,21 +552,25 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:2100,Y0:-879,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:10,respIn:35,crownKeep:0,crownPen:1,pots:30,potMax:150,potCd:.5,heal:.1,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:.5,cbMax:.9,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:34,
+const SG={W:2100,Y0:-879,Y1:2150,TIME:59*60,crownT:25,swT:3,resp:10,respIn:50,crownKeep:0,crownPen:1,pots:60,potMax:250,potCd:.25,heal:.06,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:.5,cbMax:.9,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.012,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   // a wide castle: room to fight in the yard and in the throne room without everyone standing on everyone
-  walls:[[-739,-770,739,-732],[-739,94,-80,132],[80,94,739,132],[-739,-770,-701,-399],[-739,-255,-701,132],[701,-770,739,-399],[701,-255,739,132],[-701,-439,-112,-407],[112,-439,701,-407],[-1050,690,-80,714],[80,690,1050,714],[-1050,1290,-430,1314],[-290,1290,290,1314],[430,1290,1050,1314]],
-  gates:[[-80,94,80,132],[-739,-399,-701,-255],[701,-399,739,-255]],sw:[[-608,-585],[608,-585]],crown:[0,-631],zone:58,
+  walls:[[-739,-770,739,-732],[-739,94,-80,132],[80,94,739,132],[-739,-770,-701,-399],[-739,-255,-701,132],[701,-770,739,-399],[701,-255,739,132],[-701,-439,-112,-407],[112,-439,701,-407],[-1050,690,-370,714],[-230,690,230,714],[370,690,1050,714],[-1050,1290,-430,1314],[-290,1290,290,1314],[430,1290,1050,1314]],
+  gates:[[-80,94,80,132],[-739,-399,-701,-255],[701,-399,739,-255],[-430,1290,-290,1314],[290,1290,430,1314],[-370,690,-230,714],[230,690,370,714],
+    [-470,-330,-420,-290],[420,-330,470,-290],[-300,-80,-250,-40],[250,-80,300,-40]],
+  // the last four are no gates but the guardian stones in the yard: while one stands, a shield bars the throne room to all but the castle's own
+  stat:[7,8,9,10],shield:[-112,-439,112,-407],statR:170,statHeal:.03,sw:[[-608,-585],[608,-585]],crown:[0,-631],zone:58,
   shops:[[-520,1960],[528,-143]],shopR:70,camp:[0,1960],yard:[0,-303],posts:[[-608,-585],[608,-585],[-64,17],[64,17],[0,-607]],
   hall:[-701,-732,701,94]};
 const sgIn=(r,x,y,m)=>x>r[0]-m&&x<r[2]+m&&y>r[1]-m&&y<r[3]+m;
-function sgBlocked(B,x,y){if(Math.abs(x)>SG.W/2-10||y<SG.Y0+10||y>SG.Y1-10)return true;for(const w of SG.walls)if(sgIn(w,x,y,SG.rad))return true;for(let i=0;i<SG.gates.length;i++)if(B.sg.gate[i]>0&&sgIn(SG.gates[i],x,y,SG.rad))return true;return false;}
+const sgShield=B=>SG.stat.some(i=>B.sg.gate[i]>0);
+function sgBlocked(B,x,y,g){if(g!==undefined&&g!==B.sg.holder&&sgIn(SG.shield,x,y,SG.rad)&&sgShield(B))return true;if(Math.abs(x)>SG.W/2-10||y<SG.Y0+10||y>SG.Y1-10)return true;for(const w of SG.walls)if(sgIn(w,x,y,SG.rad))return true;for(let i=0;i<SG.gates.length;i++)if(B.sg.gate[i]>0&&sgIn(SG.gates[i],x,y,SG.rad))return true;return false;}
 // Walk toward a point in short steps, sliding along whatever is in the way. Used by the browser and by the server alike.
 function sgMove(B,f,nx,ny){let dx=nx-f.x,dy=ny-f.y;const d=Math.hypot(dx,dy);if(d<.01)return;const n=Math.ceil(d/8);dx/=n;dy/=n;
-  for(let i=0;i<n;i++){if(!sgBlocked(B,f.x+dx,f.y+dy)){f.x+=dx;f.y+=dy;}else if(!sgBlocked(B,f.x+dx,f.y)){f.x+=dx;}else if(!sgBlocked(B,f.x,f.y+dy)){f.y+=dy;}else break;}}
+  const g=f.g===undefined?-1:f.g;for(let i=0;i<n;i++){if(!sgBlocked(B,f.x+dx,f.y+dy,g)){f.x+=dx;f.y+=dy;}else if(!sgBlocked(B,f.x+dx,f.y,g)){f.x+=dx;}else if(!sgBlocked(B,f.x,f.y+dy,g)){f.y+=dy;}else break;}}
 // No blow passes through a wall or a standing gate.
-function sgSees(B,a,e){const n=Math.ceil(brDist(a,e)/10);for(let i=1;i<n;i++){const x=a.x+(e.x-a.x)*i/n,y=a.y+(e.y-a.y)*i/n;for(const w of SG.walls)if(sgIn(w,x,y,0))return false;for(let q=0;q<SG.gates.length;q++)if(B.sg.gate[q]>0&&sgIn(SG.gates[q],x,y,0))return false;}return true;}
+function sgSees(B,a,e){const n=Math.ceil(brDist(a,e)/10);const shd=sgShield(B);for(let i=1;i<n;i++){const x=a.x+(e.x-a.x)*i/n,y=a.y+(e.y-a.y)*i/n;if(shd&&sgIn(SG.shield,x,y,0))return false;for(const w of SG.walls)if(sgIn(w,x,y,0))return false;for(let q=0;q<SG.gates.length;q++)if(B.sg.gate[q]>0&&sgIn(SG.gates[q],x,y,0))return false;}return true;}
 const sgSpawn=(B,f,rnd)=>{const inside=f.g===B.sg.holder,p=f.post||(inside?SG.yard:SG.camp);f.x=p[0]+(f.post?0:(rnd()-.5)*160);f.y=p[1]+(f.post?0:(rnd()-.5)*60);f.hp=1;f.alive=true;f.resp=0;f.stun=0;f.sh=0;f.inv=0;f.wound=0;f.cb=0;f.bf={b:0,s:0,h:0};};
 function sgFighter(p,g,tag,rnd){return {id:p.id,n:p.n,c:CLS[p.c]?p.c:'blade',bot:!!p.bot,g:g,tag:String(tag||'').slice(0,4),x:0,y:0,hp:1,d:p.d,T:clamp(1/Math.max(.3,p.a),.3,1.2),pool:Math.max(1,p.h*5),def:p.f,cr:p.cr,cdm:clamp(Number(p.cd)||1.5,1.2,6),cb:0,cbT:-9,cbTo:-1,cacc:0,wound:0,pushT:0,pushI:.8,bf:{b:0,s:0,h:0},
   at:{atk:0,s0:0,s1:0,s2:0,s3:8,dash:0,pot:0,use:0,buf:0,bash:0},lead:!!p.lead,stun:0,sh:0,inv:0,alive:true,resp:0,kills:0,pots:SG.pots,bought:0,shopT:0,chain:0,face:1,think:rnd()*.5,post:null};}
@@ -584,7 +588,7 @@ function sgBuff(f,t){const b=f.bf.b>t,s=f.bf.s>t,h=f.bf.h>t;return {dmg:h?SG.buf
 // ---- Players of the server's own, for a practice siege. They do what a player does and nothing more: walk the road,
 // break a gate, press a switch and stay on it, take the crown if they lead, drink, shield, buff those near them, shove an
 // enemy off a switch, leap, and try the combo. How often the combo comes out right is their skill (f.sk).
-const SG_BAR=[[1302,360],[702,0],[113,0],[-423,0]]; // each wall across the way, south to north: its y, and the x of the way through
+const SG_BAR=[[1302,360],[702,300],[113,0],[-423,0]]; // each wall across the way, south to north: its y, and the x of the way through
 function sgRoute(f,dest){
   const gx=b=>b[1]*(f.side||1);
   if(dest[1]<f.y){for(const b of SG_BAR)if(b[0]<f.y+26&&b[0]>dest[1])return f.y>b[0]+26&&Math.abs(f.x-gx(b))>20?[gx(b),b[0]+46]:[gx(b),b[0]-46];}
@@ -600,6 +604,7 @@ function sgBot(B,i,dt,rnd,ev){
   if(q>=0){dest=mine?[SG.sw[q][0]*.86,SG.sw[q][1]+20]:SG.sw[q];spot=!mine&&sgNear(f,SG.sw[q],SG.zone-8);}
   else if(role==='lead'){dest=mine?[0,-559]:(ready||S.crown[2]===i?SG.crown:[0,-535]);spot=!mine&&ready&&sgNear(f,SG.crown,SG.zone-8);}
   else dest=[(i%3-1)*110,mine?-498:-543];
+  if(!mine&&f.y<SG.hall[3]+40&&sgShield(B)){let bs=-1,bq=1e9;for(const q of SG.stat){if(S.gate[q]<=0)continue;const g=SG.gates[q],d=Math.hypot((g[0]+g[2])/2-f.x,(g[1]+g[3])/2-f.y);if(d<bq){bq=d;bs=q;}}if(bs>=0){const g=SG.gates[bs];dest=[(g[0]+g[2])/2,(g[1]+g[3])/2];spot=false;}}
   // walking: the one on his spot stays in its middle; the others meet an enemy who comes near, or go on their way
   const chase=e&&!spot&&bd<(q>=0||role==='lead'?(mine?200:90):280);let tx,ty,stop;
   if(chase){tx=e.x;ty=e.y;stop=rng*.8;}else{const p=sgRoute(f,dest);tx=p[0];ty=p[1];stop=spot?10:6;}
@@ -645,7 +650,7 @@ function sgAct(B,i,k,rnd){
     if(k==='atk'||k==='s0'||k==='s1'){const n=t+SG.skT*au.spd;for(const q of ['atk','s0','s1'])if(me.at[q]<n)me.at[q]=n;}};
   if(j<0){ // nobody in reach: a gate, if one stands near and the castle is not mine
     if(me.g===B.sg.holder)return null;let gi=-1;SG.gates.forEach((g,q)=>{if(B.sg.gate[q]<=0)return;const cx=(g[0]+g[2])/2,cy=(g[1]+g[3])/2,d=Math.hypot(cx-me.x,cy-me.y);if(d<=rng+50&&d<bd){bd=d;gi=q;}});if(gi<0)return null;
-    cool();B.sg.gate[gi]=Math.max(0,B.sg.gate[gi]-SG.gateHit*mult);o.gate=gi;o.dm=SG.gateHit*mult;if(B.sg.gate[gi]<=0)o.broke=true;return o;}
+    cool();B.sg.gate[gi]=Math.max(0,B.sg.gate[gi]-SG.gateHit*mult);o.gate=gi;o.dm=SG.gateHit*mult;if(B.sg.gate[gi]<=0){o.broke=true;if(SG.stat.indexOf(gi)>=0&&!sgShield(B))o.open=true;}return o;}
   const e=B.f[j];cool();o.to=j;if(Math.abs(e.x-me.x)>4)me.face=e.x>=me.x?1:-1;
   if(k==='s3'){const d=brDist(e,me);if(d>44){sgMove(B,me,e.x-(e.x-me.x)/d*26,e.y-(e.y-me.y)/d*26);me.pushT=t+SG.pushT;o.jx=[Math.round(me.x),Math.round(me.y)];}}
   if(e.inv>t){o.miss=true;me.cb=0;return o;}
@@ -669,12 +674,13 @@ function sgAct(B,i,k,rnd){
   e.hp-=dm;o.dm=dm;if(o.combo&&!o.guard&&!(e.stunI>t)){e.stun=t+K.sk[1].stun;e.stunI=t+K.sk[1].stun+SG.stunGap;o.stun=true;}
   // blows that move: the quick skill and the combo throw the enemy back a little, unless he stands behind his shield
   // The shove is the move for it: little harm, a long throw, and it does not wait for the last push to wear off.
-  if((k==='s0'||k==='bash'||o.combo)&&!o.guard&&(o.combo||k==='bash'||!(e.pushI>t))){e.pushI=t+SG.pushI;const dx=e.x-me.x,dy=e.y-me.y,d=Math.hypot(dx,dy)||1,ps=k==='bash'?SG.bashPush:o.combo?SG.pushC:SG.push;sgMove(B,e,e.x+dx/d*ps,e.y+dy/d*ps);e.pushT=t+SG.pushT;o.px=[Math.round(e.x),Math.round(e.y)];}
+  if((k==='bash'||o.combo)&&!o.guard){e.pushI=t+SG.pushI;const dx=e.x-me.x,dy=e.y-me.y,d=Math.hypot(dx,dy)||1,ps=k==='bash'?SG.bashPush:o.combo?SG.pushC:SG.push;sgMove(B,e,e.x+dx/d*ps,e.y+dy/d*ps);e.pushT=t+SG.pushT;o.px=[Math.round(e.x),Math.round(e.y)];}
 if(e.hp<=0){sgDown(B,j,i);o.dead=true;}return o;
 }
 const sgNear=(f,p,r)=>Math.abs(f.x-p[0])<r&&Math.abs(f.y-p[1])<r;
 function sgStep(B,dt,rnd){
   const ev=[];if(B.over)return ev;B.t+=dt;if(B.t<0)return ev;const t=B.t,S=B.sg;
+  for(const q of SG.stat)if(S.gate[q]>0){const g=SG.gates[q],c=[(g[0]+g[2])/2,(g[1]+g[3])/2];for(const f of B.f)if(f.alive&&f.g===S.holder&&S.holder!==0&&f.hp<1&&!(f.wound>t)&&sgNear(f,c,SG.statR))f.hp=Math.min(1,f.hp+SG.statHeal*dt);}
   B.f.forEach((f,i)=>{if(!f.alive){if(f.resp&&t>=f.resp&&!(f.g===0&&S.holder!==0)){sgSpawn(B,f,rnd);ev.push({k:'up',to:i});}return;}
     for(const sh of SG.shops)if(!f.bot&&f.pots<SG.potMax&&sgNear(f,sh,SG.shopR)){if((f.shopT+=dt)>=.4){f.shopT=0;f.pots++;f.bought++;ev.push({k:'buy',by:i});}}});
   // Switches: a player who stands on one presses it; a bar loads; when it is full the switch is his for exactly as long
@@ -1053,7 +1059,7 @@ function apply(A,kind,args,ctx){
       for(const sl of SLOTS){let bi=-1,bs=S.eq[sl]?itemScore(S.eq[sl]):0;A.inv.forEach((it,i)=>{if(it.s===sl&&canWear(S,it)){const sc=itemScore(it);if(sc>bs){bs=sc;bi=i;}}});
         if(bi>=0){const it=A.inv[bi],old=S.eq[sl];if(old)A.inv[bi]=old;else A.inv.splice(bi,1);S.eq[sl]=it;n++;}}
       r.n=n;r.gain=calc(S).power-p0;break;}
-    case 'sellRar':{const q=int(args.r,0,4);let g=0,n=0;A.inv=A.inv.filter(it=>{if(it.r===q&&it.s!=='g'&&it.s!=='y'&&!it.ex){g+=sellVal(it);n++;return false;}return true;});if(!n)return fail('אין פריטים כאלה בתיק');A.gold+=g;r.gold=g;r.n=n;break;}
+    case 'sellRar':{const q=int(args.r,0,4),ex=args.ex===1;let g=0,n=0;A.inv=A.inv.filter(it=>{if(it.s!=='g'&&it.s!=='y'&&(ex?it.ex&&!isFull(it):it.r===q&&!it.ex)){g+=sellVal(it);n++;return false;}return true;});if(!n)return fail('אין פריטים כאלה בתיק');A.gold+=g;r.gold=g;r.n=n;break;}
     case 'sellJunk':{let g=0;A.inv=A.inv.filter(it=>{if(it.r<=1&&it.s!=='g'&&it.s!=='y'){g+=sellVal(it);return false;}return true;});A.gold+=g;r.gold=g;break;}
     case 'wingEvolve':{const f=findIt(A,S,int(args.id,0,1e12));if(!f||f.it.s!=='g')return fail('הפריט לא נמצא');const it=f.it;
       if(it.t>=WING_MAX)return fail('אלו הכנפיים הגבוהות ביותר');if(it.p<15)return fail('רק כנפיים +15 מתפתחות');
@@ -1164,4 +1170,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {sgBot,sgRoute,sgNear,LIVE_SURV,CLEAN_DAY,livePlausible,CITY_SHOP,CITY_WEEK,CITY_RATE,CITY_TIER,CITY_RAR,CITY_PERFECT,BANK,sgBuff,sgSees,EXB,exCount,SIEGE_MIN,RESET_RAR,keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {sgShield,sgBot,sgRoute,sgNear,LIVE_SURV,CLEAN_DAY,livePlausible,CITY_SHOP,CITY_WEEK,CITY_RATE,CITY_TIER,CITY_RAR,CITY_PERFECT,BANK,sgBuff,sgSees,EXB,exCount,SIEGE_MIN,RESET_RAR,keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

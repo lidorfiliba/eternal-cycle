@@ -488,7 +488,7 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
   assert.deepEqual(B.sg.gate,G.SG.gates.map(()=>G.SG.gateHp),'the gates are whole again');assert.deepEqual(B.sg.sw,[0,0]);
   { // a combo: one order, one rhythm, one enemy
     const fresh=()=>{fe.alive=true;fe.hp=1;fe.x=fa.x+20;fe.y=fa.y;fe.pool=1e9;fe.stun=0;fe.sh=0;fe.wound=0;B.t+=40;fa.at={atk:0,s0:0,s1:0,s2:0,s3:0,dash:0,pot:0,use:0,buf:0};};
-    fresh();const h1=G.sgAct(B,a,'atk',rnd);B.t+=.5;const x0=fe.x,h2=G.sgAct(B,a,'s0',rnd);assert.ok(h2.px&&fe.x>x0+15&&fe.x<x0+40,'the quick skill throws the enemy back a little: '+(fe.x-x0));B.t+=.5;fe.stun=0;const h3=G.sgAct(B,a,'s1',rnd);assert.ok(!h1.combo&&h2.cb===2&&h3.combo&&h3.stun,'blow, quick skill, stunning skill: combo');
+    fresh();const h1=G.sgAct(B,a,'atk',rnd);B.t+=.5;const x0=fe.x,h2=G.sgAct(B,a,'s0',rnd);assert.ok(!h2.px&&fe.x===x0,'a plain skill moves nobody: only the shove and the combo do');B.t+=.5;fe.stun=0;const h3=G.sgAct(B,a,'s1',rnd);assert.ok(!h1.combo&&h2.cb===2&&h3.combo&&h3.stun,'blow, quick skill, stunning skill: combo');
     assert.ok(fe.wound>B.t&&G.sgAct(B,e,'pot',rnd)===null,'stunned');fe.stun=0;fe.pots=5;assert.equal(G.sgAct(B,e,'pot',rnd).no,'wound','and no potion for a moment after a combo');
     fresh();const base=G.sgAct(B,a,'s1',rnd);assert.ok(!base.combo&&h3.dm>base.dm*3,'the last blow of a combo takes a good part of anyone: '+h3.dm+' vs '+base.dm);
     fresh();G.sgAct(B,a,'atk',rnd);B.t+=5;assert.equal(G.sgAct(B,a,'s0',rnd).cb,0,'too slow breaks it');
@@ -499,18 +499,17 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
   { // pushes do not pile up, and neither do combo bursts
     const X=G.sgNew(rnd,{}),q1=G.sgAdd(X,P('p1',1),5,'',rnd),q2=G.sgAdd(X,P('p2',1),5,'',rnd),qe=G.sgAdd(X,P('pe',1),6,'',rnd),f1=X.f[q1],f2=X.f[q2],fe=X.f[qe];X.t=50;
     f1.x=0;f1.y=1900;f2.x=0;f2.y=1900;fe.x=20;fe.y=1900;fe.pool=1e9;f1.at.s0=0;f2.at.s0=0;
-    G.sgAct(X,q1,'s0',rnd);const x1=fe.x;assert.ok(x1>20);const o2=G.sgAct(X,q2,'s0',rnd);assert.ok(!o2.px&&fe.x===x1,'a second push right after the first does nothing');
-    X.t+=G.SG.pushI+.1;f2.at.s0=0;assert.ok(G.sgAct(X,q2,'s0',rnd).px,'a moment later it does');
-    assert.ok(G.SG.push+G.SG.pushC<=G.SG.zone,'one whole combo does not throw a player standing in the middle off a switch');assert.ok(G.SG.push*2+G.SG.pushC>G.SG.zone,'but he must walk back before the next');
+    f1.at.bash=0;const o1=G.sgAct(X,q1,'bash',rnd),x1=fe.x;assert.ok(o1.px&&x1>20+G.SG.zone-10,'the shove throws an enemy off a switch: '+x1);fe.x=20;const o2=G.sgAct(X,q2,'s0',rnd);assert.ok(!o2.px&&fe.x===20,'a plain skill moves nobody');
+    assert.ok(G.SG.pushC<=G.SG.zone,'one whole combo does not throw a player standing in the middle off a switch');
     const cmb=q=>{const f=X.f[q];f.at={atk:0,s0:0,s1:0,s2:0,s3:0,dash:0,pot:0,use:0,buf:0};f.x=fe.x-20;f.y=fe.y;fe.stun=0;G.sgAct(X,q,'atk',rnd);X.t+=.5;f.x=fe.x-20;G.sgAct(X,q,'s0',rnd);X.t+=.5;f.x=fe.x-20;fe.stun=0;return G.sgAct(X,q,'s1',rnd);};
-    X.t+=20;fe.hp=1;const c1=cmb(q1);fe.wound=X.t+9;const c2=cmb(q2);assert.ok(c1.combo&&c2.combo&&c2.again&&c1.dm>c2.dm+.06,'a second combo on a wounded enemy is a plain blow: '+c1.dm+' '+c2.dm);}
+    X.t+=20;fe.hp=1;const c1=cmb(q1);fe.wound=X.t+9;const c2=cmb(q2);assert.ok(c1.combo&&c2.combo&&c2.again&&c1.dm>c2.dm*3,'a second combo on a wounded enemy is a plain blow: '+c1.dm+' '+c2.dm);}
   { // party buffs are cast on those who stand near, and run out
     const X=G.sgNew(rnd,{}),q1=G.sgAdd(X,P('b1',1,'blade'),5,'',rnd),q2=G.sgAdd(X,P('s1',1,'storm'),5,'',rnd),q3=G.sgAdd(X,P('h1',1,'hunter'),5,'',rnd),q4=G.sgAdd(X,P('far',1,'blade'),5,'',rnd);X.t=1;X.f.forEach(f=>{f.x=0;f.y=1900;});X.f[q4].x=600;
     assert.equal(G.sgBuff(X.f[q1],X.t).n,0);const o=G.sgAct(X,q1,'buf',rnd);assert.equal(o.n,3,'the three who stand near');assert.equal(G.sgAct(X,q1,'buf',rnd),null,'it has a cooldown');G.sgAct(X,q2,'buf',rnd);G.sgAct(X,q3,'buf',rnd);
     const bf=G.sgBuff(X.f[q2],X.t);assert.equal(bf.n,7);assert.ok(bf.dmg>1&&bf.def<.8&&bf.spd<1,'life, defense and power, and all three together speed');assert.equal(G.sgBuff(X.f[q4],X.t).n,0,'not the one far away');
     X.t+=G.SG.buf.dur+1;assert.equal(G.sgBuff(X.f[q2],X.t).n,0,'they run out');}
   { // the throne room: the switches and the crown stand behind an inner wall with one way in
-    const X=G.sgNew(rnd,{}),q=G.sgAdd(X,P('w'),5,'',rnd),f=X.f[q];f.x=400;f.y=-250;G.sgMove(X,f,400,-560);assert.ok(f.y>-407,'the inner wall stops him: '+f.y);f.x=0;f.y=-250;G.sgMove(X,f,0,-560);assert.ok(f.y<-550,'the door in its middle lets him through');}
+    const X=G.sgNew(rnd,{}),q=G.sgAdd(X,P('w'),5,'',rnd),f=X.f[q];f.x=400;f.y=-250;G.sgMove(X,f,400,-560);assert.ok(f.y>-407,'the inner wall stops him: '+f.y);f.x=0;f.y=-250;G.sgMove(X,f,0,-560);assert.ok(f.y>-407&&G.sgShield(X),'while a guardian stone stands a shield bars the door to outsiders: '+f.y);X.sg.holder=5;G.sgMove(X,f,0,-560);assert.ok(f.y<-550,'but not to the castle\'s own');X.sg.holder=0;f.y=-250;for(const q of G.SG.stat)X.sg.gate[q]=0;G.sgMove(X,f,0,-560);assert.ok(f.y<-550,'the door in its middle lets him through');}
   fe.pool=25000;fe.hp=.0001;B.t+=30;fa.at.s3=0;fe.x=fa.x+20;fe.y=fa.y;const k=G.sgAct(B,a,'s3',rnd);assert.ok(k.dead&&!fe.alive&&fe.resp>B.t);
   for(let i=0;i<60;i++)G.sgStep(B,.2,rnd);assert.ok(fe.alive&&fe.hp===1&&fe.y>1700,'the fallen return at their far camp');
   fe.pots=0;fe.x=G.SG.shops[0][0];fe.y=G.SG.shops[0][1];for(let i=0;i<100;i++)G.sgStep(B,.2,rnd);assert.ok(fe.pots>=30&&fe.bought===fe.pots,'a great many potions can be carried: '+fe.pots);
