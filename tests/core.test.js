@@ -490,9 +490,9 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
     const fresh=()=>{fe.alive=true;fe.hp=1;fe.x=fa.x+20;fe.y=fa.y;fe.pool=1e9;fe.stun=0;fe.sh=0;fe.wound=0;B.t+=40;fa.at={atk:0,s0:0,s1:0,s2:0,s3:0,dash:0,pot:0,use:0,buf:0};};
     fresh();const h1=G.sgAct(B,a,'atk',rnd);B.t+=.5;const x0=fe.x,h2=G.sgAct(B,a,'s0',rnd);assert.ok(h2.px&&fe.x>x0+15&&fe.x<x0+40,'the quick skill throws the enemy back a little: '+(fe.x-x0));B.t+=.5;fe.stun=0;const h3=G.sgAct(B,a,'s1',rnd);assert.ok(!h1.combo&&h2.cb===2&&h3.combo&&h3.stun,'blow, quick skill, stunning skill: combo');
     assert.ok(fe.wound>B.t&&G.sgAct(B,e,'pot',rnd)===null,'stunned');fe.stun=0;fe.pots=5;assert.equal(G.sgAct(B,e,'pot',rnd).no,'wound','and no potion for a moment after a combo');
-    fresh();const base=G.sgAct(B,a,'s1',rnd);assert.ok(!base.combo&&h3.dm>base.dm+.2,'the last blow of a combo takes a good part of anyone: '+h3.dm+' vs '+base.dm);
+    fresh();const base=G.sgAct(B,a,'s1',rnd);assert.ok(!base.combo&&h3.dm>base.dm+.12,'the last blow of a combo takes a good part of anyone: '+h3.dm+' vs '+base.dm);
     fresh();G.sgAct(B,a,'atk',rnd);B.t+=5;assert.equal(G.sgAct(B,a,'s0',rnd).cb,0,'too slow breaks it');
-    fresh();G.sgAct(B,a,'atk',rnd);B.t+=.05;assert.equal(G.sgAct(B,a,'s0',rnd).cb,0,'too fast breaks it: pressing everything at once gives nothing');B.t+=.05;assert.ok(!G.sgAct(B,a,'s1',rnd).combo);
+    fresh();G.sgAct(B,a,'atk',rnd);B.t+=.42;assert.equal(G.sgAct(B,a,'s0',rnd).cb,0,'too fast breaks it: pressing everything at once gives nothing');B.t+=.42;assert.ok(!G.sgAct(B,a,'s1',rnd).combo);
     fresh();G.sgAct(B,a,'atk',rnd);B.t+=.5;assert.ok(!G.sgAct(B,a,'s1',rnd).combo,'the wrong order is no combo');
     fresh();G.sgAct(B,a,'atk',rnd);B.t+=.5;G.sgAct(B,a,'s0',rnd);B.t+=.5;fa.at.atk=0;G.sgAct(B,a,'atk',rnd);B.t+=.5;fe.x=fa.x+20;assert.ok(!G.sgAct(B,a,'s1',rnd).combo,'a blow in the middle breaks it');
     fresh();fe.sh=B.t+9;const y0=fe.x;G.sgAct(B,a,'atk',rnd);B.t+=.5;const g2=G.sgAct(B,a,'s0',rnd);assert.ok(g2.guard&&!g2.px&&fe.x===y0,'a shield stands firm');fe.sh=0;}
@@ -503,7 +503,7 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
     X.t+=G.SG.pushI+.1;f2.at.s0=0;assert.ok(G.sgAct(X,q2,'s0',rnd).px,'a moment later it does');
     assert.ok(G.SG.push+G.SG.pushC<=G.SG.zone,'one whole combo does not throw a player standing in the middle off a switch');assert.ok(G.SG.push*2+G.SG.pushC>G.SG.zone,'but he must walk back before the next');
     const cmb=q=>{const f=X.f[q];f.at={atk:0,s0:0,s1:0,s2:0,s3:0,dash:0,pot:0,use:0,buf:0};f.x=fe.x-20;f.y=fe.y;fe.stun=0;G.sgAct(X,q,'atk',rnd);X.t+=.5;f.x=fe.x-20;G.sgAct(X,q,'s0',rnd);X.t+=.5;f.x=fe.x-20;fe.stun=0;return G.sgAct(X,q,'s1',rnd);};
-    X.t+=20;fe.hp=1;const c1=cmb(q1),c2=cmb(q2);assert.ok(c1.combo&&c2.combo&&c2.again&&c1.dm>c2.dm+.2,'a second combo on a wounded enemy is a plain blow: '+c1.dm+' '+c2.dm);}
+    X.t+=20;fe.hp=1;const c1=cmb(q1);fe.wound=X.t+9;const c2=cmb(q2);assert.ok(c1.combo&&c2.combo&&c2.again&&c1.dm>c2.dm+.06,'a second combo on a wounded enemy is a plain blow: '+c1.dm+' '+c2.dm);}
   { // party buffs are cast on those who stand near, and run out
     const X=G.sgNew(rnd,{}),q1=G.sgAdd(X,P('b1',1,'blade'),5,'',rnd),q2=G.sgAdd(X,P('s1',1,'storm'),5,'',rnd),q3=G.sgAdd(X,P('h1',1,'hunter'),5,'',rnd),q4=G.sgAdd(X,P('far',1,'blade'),5,'',rnd);X.t=1;X.f.forEach(f=>{f.x=0;f.y=1900;});X.f[q4].x=600;
     assert.equal(G.sgBuff(X.f[q1],X.t).n,0);const o=G.sgAct(X,q1,'buf',rnd);assert.equal(o.n,3,'the three who stand near');assert.equal(G.sgAct(X,q1,'buf',rnd),null,'it has a cooldown');G.sgAct(X,q2,'buf',rnd);G.sgAct(X,q3,'buf',rnd);
@@ -609,7 +609,7 @@ test('cheats: a win no numbers allow is refused, clean kills pay a few times a d
 test('the practice siege: the server\'s own players walk the road, break the gate, press the switches and their leader takes the crown',()=>{
   let s=7;const rnd=()=>{s=(s*16807)%2147483647;return s/2147483647;},P=(id,c)=>({id,n:id,c,d:5000,a:1.6,h:30000,f:800,cr:.2,cd:2,bot:true});
   const B=G.sgNew(rnd,{});B.sg.time=600;['lead','sw0','sw1','fight'].forEach((role,k)=>{const i=G.sgAdd(B,P('a'+k,['blade','storm','hunter'][k%3]),1,'A',rnd,k===0);Object.assign(B.f[i],{role,sk:.7,side:k%2?1:-1,pots:20});});
-  B.t=0;let broke=0,sw=0,taken=0;for(let n=0;n<1500&&!taken;n++)for(const o of G.sgStep(B,.2,rnd)){if(o.broke)broke=B.t;if(o.k==='sw')sw=B.t;if(o.k==='taken')taken=B.t;}
+  B.t=0;let broke=0,sw=0,taken=0;for(let n=0;n<1500&&!taken;n++)for(const o of G.sgStep(B,.2,rnd)){if(o.broke&&!broke)broke=B.t;if(o.k==='sw')sw=B.t;if(o.k==='taken')taken=B.t;}
   assert.ok(broke>10&&broke<120,'the gate falls, and not at once: '+broke);assert.ok(sw>broke,'then a switch');assert.ok(taken>sw+G.SG.crownT-1&&B.sg.holder===1,'then the crown, after its half minute: '+taken);
   // against defenders it is a fight, and a fallen leader keeps half of his time on the crown
   const X=G.sgNew(rnd,{}),a=G.sgAdd(X,P('l','blade'),1,'A',rnd,true);X.t=5;X.sg.crown=[1,20,a];G.sgDown(X,a,-1);assert.equal(X.f[a].cacc,0,'a leader who falls loses all his time on the crown, as in the old sieges');
@@ -622,6 +622,9 @@ test('many on one: a crowd\'s blows weaken, a stun is not chained without end, a
   const h1=G.sgAct(X,a,'atk',rnd),h2=G.sgAct(X,b,'atk',rnd),h3=G.sgAct(X,c,'atk',rnd);assert.ok(!h1.gang&&h2.gang===2&&h3.gang===3);
   assert.ok(Math.abs(h2.dm/h1.dm-G.SG.gang[0])<.02&&Math.abs(h3.dm/h1.dm-G.SG.gang[1])<.02,'the second and third hit for less: '+h2.dm/h1.dm+' '+h3.dm/h1.dm);
   X.t+=G.SG.gangT+.5;X.f[b].at.atk=0;const h4=G.sgAct(X,b,'atk',rnd);assert.ok(!h4.gang,'alone again, a full blow');
-  X.t+=20;X.f[a].at.s1=0;X.f[b].at.s1=0;const s1=G.sgAct(X,a,'s1',rnd);assert.ok(s1.stun);X.t+=1;const s2=G.sgAct(X,b,'s1',rnd);assert.ok(!s2.stun,'a second stun right after the first does not land');
-  assert.ok(G.SG.heal/G.SG.potCd>=.1,'a potion gives back a tenth of life a second');assert.ok(G.SG.wound<G.SG.potCd);
+  X.t+=20;const combo=q=>{G.sgAct(X,q,'atk',rnd);X.t+=.6;G.sgAct(X,q,'s0',rnd);fe.x=20;X.t+=.6;const o=G.sgAct(X,q,'s1',rnd);fe.x=20;return o;};
+  const lone=G.sgAct(X,c,'s1',rnd);assert.ok(!lone.stun,'a skill alone does not stun: only the combo does');X.t+=5;
+  const s1=combo(a);assert.ok(s1.combo&&s1.stun);fe.stun=0;const s2=combo(b);assert.ok(s2.combo&&!s2.stun,'a second stun right after the first does not land');
+  X.t+=1;const t0=X.t;assert.ok(G.sgAct(X,a,'s0',rnd)&&!G.sgAct(X,a,'s1',rnd),'the fighting skills share one short beat');X.t=t0+G.SG.skT+.05;assert.ok(G.sgAct(X,a,'s1',rnd),'and wait for nothing more');
+  assert.ok(G.SG.heal/G.SG.potCd>=.1,'a potion gives back a tenth of life a second');
 });

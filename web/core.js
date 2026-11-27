@@ -552,7 +552,7 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:2100,Y0:-879,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:10,respIn:35,crownKeep:0,crownPen:1,pots:5,potMax:60,potCd:2.5,heal:.25,stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.3,hitMin:.02,hitMax:.06,critMax:1.6,comboM:1.5,comboFlat:.28,wound:1.8,cbMin:.3,cbMax:1.1,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s0:2.5,s1:4,s3:12},leap:230,bashCd:7,bashM:.3,bashPush:34,
+const SG={W:2100,Y0:-879,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:10,respIn:35,crownKeep:0,crownPen:1,pots:30,potMax:150,potCd:.5,heal:.1,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.3,hitMin:.02,hitMax:.06,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:.5,cbMax:.9,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:34,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.012,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   // a wide castle: room to fight in the yard and in the throne room without everyone standing on everyone
@@ -569,7 +569,7 @@ function sgMove(B,f,nx,ny){let dx=nx-f.x,dy=ny-f.y;const d=Math.hypot(dx,dy);if(
 function sgSees(B,a,e){const n=Math.ceil(brDist(a,e)/10);for(let i=1;i<n;i++){const x=a.x+(e.x-a.x)*i/n,y=a.y+(e.y-a.y)*i/n;for(const w of SG.walls)if(sgIn(w,x,y,0))return false;for(let q=0;q<SG.gates.length;q++)if(B.sg.gate[q]>0&&sgIn(SG.gates[q],x,y,0))return false;}return true;}
 const sgSpawn=(B,f,rnd)=>{const inside=f.g===B.sg.holder,p=f.post||(inside?SG.yard:SG.camp);f.x=p[0]+(f.post?0:(rnd()-.5)*160);f.y=p[1]+(f.post?0:(rnd()-.5)*60);f.hp=1;f.alive=true;f.resp=0;f.stun=0;f.sh=0;f.inv=0;f.wound=0;f.cb=0;f.bf={b:0,s:0,h:0};};
 function sgFighter(p,g,tag,rnd){return {id:p.id,n:p.n,c:CLS[p.c]?p.c:'blade',bot:!!p.bot,g:g,tag:String(tag||'').slice(0,4),x:0,y:0,hp:1,d:p.d,T:clamp(1/Math.max(.3,p.a),.3,1.2),pool:Math.max(1,p.h*5),def:p.f,cr:p.cr,cdm:clamp(Number(p.cd)||1.5,1.2,6),cb:0,cbT:-9,cbTo:-1,cacc:0,wound:0,pushT:0,pushI:.8,bf:{b:0,s:0,h:0},
-  at:{atk:0,s0:1,s1:3,s2:0,s3:8,dash:0,pot:0,use:0,buf:0,bash:0},lead:!!p.lead,stun:0,sh:0,inv:0,alive:true,resp:0,kills:0,pots:SG.pots,bought:0,shopT:0,chain:0,face:1,think:rnd()*.5,post:null};}
+  at:{atk:0,s0:0,s1:0,s2:0,s3:8,dash:0,pot:0,use:0,buf:0,bash:0},lead:!!p.lead,stun:0,sh:0,inv:0,alive:true,resp:0,kills:0,pots:SG.pots,bought:0,shopT:0,chain:0,face:1,think:rnd()*.5,post:null};}
 function sgNew(rnd,avg){
   return {t:-3,over:0,f:[],sg:{holder:0,gate:SG.gates.map(()=>SG.gateHp),sw:[0,0],swBy:[-1,-1],swp:[[0,0,-1],[0,0,-1]],crown:[0,0,-1],caps:0}}; // no guards: the castle is a guild's, or nobody's
 }
@@ -619,8 +619,8 @@ function sgBot(B,i,dt,rnd,ev){
   // an enemy who stands on a switch or on the crown is shoved off it
   if(can('bash')&&bd<=rng+30&&(sgNear(e,SG.sw[0],SG.zone)||sgNear(e,SG.sw[1],SG.zone)||sgNear(e,SG.crown,SG.zone))&&!(e.sh>t)&&act('bash'))return;
   // the combo: a blow, then the quick skill, then the stunning one, each in its time; the less skilled just strike
-  if(f.cs>0){if(t<f.cn)return;const o=act(f.cs===1?'s0':'s1');if(o&&o.cb===2){f.cs=2;f.cn=t+.4+rnd()*.15;}else f.cs=0;return;}
-  if(can('atk')&&f.at.s0<=t+.5&&f.at.s1<=t+1.1&&rnd()<(f.sk||.5)){const o=act('atk');if(o&&o.to>=0&&!o.miss){f.cs=1;f.cn=t+.4+rnd()*.15;}return;}
+  if(f.cs>0){if(t<f.cn)return;const o=act(f.cs===1?'s0':'s1');if(o&&o.cb===2){f.cs=2;f.cn=t+SG.cbMin+.05+rnd()*.2;}else f.cs=0;return;}
+  if(can('atk')&&f.at.s0<=t+.5&&f.at.s1<=t+1.1&&rnd()<(f.sk||.5)){const o=act('atk');if(o&&o.to>=0&&!o.miss){f.cs=1;f.cn=t+SG.cbMin+.05+rnd()*.2;}return;}
   if(can('s3')&&rnd()<.5&&act('s3'))return;
   if(rnd()>(f.sk||.5))for(const k of ['s1','s0'])if(can(k)&&act(k))return;
   if(can('atk'))act('atk');
@@ -639,7 +639,10 @@ function sgAct(B,i,k,rnd){
   // the great skill is a leap: it reaches far, and carries the attacker onto his enemy
   const rng=k==='s3'?Math.max(SG.leap,LIVE_RNG[me.c]+60):LIVE_RNG[me.c]+(k==='atk'?14:k==='bash'?30:k==='s0'?40:20),au=sgBuff(me,t);let j=-1,bd=1e9;
   B.f.forEach((e,q)=>{if(q===i||!e.alive||e.g===me.g)return;const d=brDist(e,me);if(d<=rng&&d<bd&&sgSees(B,me,e)){bd=d;j=q;}});
-  let mult;const cool=()=>{if(k==='atk'){me.at.atk=t+me.T*au.spd;me.chain=(me.chain+1)%4;mult=me.T/1.5*(me.chain===0?1.5:.84)*1.5;}else if(k==='bash'){me.at.bash=t+SG.bashCd;mult=SG.bashM;}else{const sk=K.sk[k==='s0'?0:k==='s1'?1:3];me.at[k]=t+(SG.cd[k]||sk.cd);mult=sk.m;}};
+  let mult;const cool=()=>{if(k==='atk'){me.at.atk=t+me.T*au.spd;me.chain=(me.chain+1)%4;mult=me.T/1.5*(me.chain===0?1.5:.84)*1.5;}else if(k==='bash'){me.at.bash=t+SG.bashCd;mult=SG.bashM;}else if(k==='s3'){me.at.s3=t+SG.cd.s3;mult=K.sk[3].m;}
+    // As in the old games the fighting skills wait for nothing but the hand: one beat between blows, shared by all of them
+    else{mult=SG.skM[k];}
+    if(k==='atk'||k==='s0'||k==='s1'){const n=t+SG.skT*au.spd;for(const q of ['atk','s0','s1'])if(me.at[q]<n)me.at[q]=n;}};
   if(j<0){ // nobody in reach: a gate, if one stands near and the castle is not mine
     if(me.g===B.sg.holder)return null;let gi=-1;SG.gates.forEach((g,q)=>{if(B.sg.gate[q]<=0)return;const cx=(g[0]+g[2])/2,cy=(g[1]+g[3])/2,d=Math.hypot(cx-me.x,cy-me.y);if(d<=rng+50&&d<bd){bd=d;gi=q;}});if(gi<0)return null;
     cool();B.sg.gate[gi]=Math.max(0,B.sg.gate[gi]-SG.gateHit*mult);o.gate=gi;o.dm=SG.gateHit*mult;if(B.sg.gate[gi]<=0)o.broke=true;return o;}
@@ -649,7 +652,7 @@ function sgAct(B,i,k,rnd){
   // Each character's own numbers decide, but as in the old sieges the gap is pressed together: the strongest hits a
   // few times harder than the weakest, not hundreds of times. What is left over is decided by play.
   const raw=(x,y)=>x.d*300/(300+y.def)/y.pool,rel=Math.sqrt(raw(me,e)/Math.max(1e-9,raw(e,me)));
-  o.crit=rnd()<me.cr;let dm=clamp(SG.hit*Math.pow(rel,SG.gam),SG.hitMin,SG.hitMax)*mult*au.dmg*sgBuff(e,t).def*(o.crit?Math.min(SG.critMax,1+(me.cdm-1)*.5):1)*(.9+rnd()*.2);
+  o.crit=rnd()<me.cr;const base=clamp(SG.hit*Math.pow(rel,SG.gam),SG.hitMin,SG.hitMax);let dm=base*mult*au.dmg*sgBuff(e,t).def*(o.crit?Math.min(SG.critMax,1+(me.cdm-1)*.5):1)*(.9+rnd()*.2);
   // A combo, as the old games had it: one fixed order on one enemy, a plain blow, then the quick skill, then the
   // stunning one, each neither too soon after the last nor too late. Anything else in between breaks it, so pressing
   // everything at once gives nothing. The last blow bursts, stuns, throws back and stops potions for a moment.
@@ -658,12 +661,12 @@ function sgAct(B,i,k,rnd){
     me.cbT=t;me.cbTo=j;o.cb=me.cb;}
   if(e.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}
   // one burst at a time: an enemy still wounded by a combo takes the next one as a plain strong blow, so three players cannot erase one in a breath
-  if(o.combo){if(e.wound>t)o.again=true;else{dm=dm*SG.comboM+SG.comboFlat*(o.guard?1-K.sk[2].cut:1);if(!o.guard)e.wound=t+SG.wound;}}
+  if(o.combo){if(e.wound>t)o.again=true;else{dm=dm*SG.comboM+SG.comboFlat*Math.pow(base/SG.hit,.35)*(o.guard?1-K.sk[2].cut:1);if(!o.guard)e.wound=t+SG.wound;}}
   // Many on one: each more attacker who struck the same enemy in the last two seconds makes every blow on him weaker.
   // A crowd still wins, but not in a breath, and the one in the middle has time to drink and to be helped.
   {const hb=e.hb||(e.hb={});let n=0;for(const k in hb){if(t-hb[k]>SG.gangT)delete hb[k];else if(+k!==i)n++;}hb[i]=t;if(n>0){dm*=SG.gang[Math.min(n,SG.gang.length)-1];o.gang=n+1;}}
   // and nobody is kept stunned without end: after a stun wears off, a moment passes before the next can land
-  e.hp-=dm;o.dm=dm;if((k==='s1'||o.combo)&&!o.guard&&!(e.stunI>t)){e.stun=t+K.sk[1].stun;e.stunI=t+K.sk[1].stun+SG.stunGap;o.stun=true;}
+  e.hp-=dm;o.dm=dm;if(o.combo&&!o.guard&&!(e.stunI>t)){e.stun=t+K.sk[1].stun;e.stunI=t+K.sk[1].stun+SG.stunGap;o.stun=true;}
   // blows that move: the quick skill and the combo throw the enemy back a little, unless he stands behind his shield
   // The shove is the move for it: little harm, a long throw, and it does not wait for the last push to wear off.
   if((k==='s0'||k==='bash'||o.combo)&&!o.guard&&(o.combo||k==='bash'||!(e.pushI>t))){e.pushI=t+SG.pushI;const dx=e.x-me.x,dy=e.y-me.y,d=Math.hypot(dx,dy)||1,ps=k==='bash'?SG.bashPush:o.combo?SG.pushC:SG.push;sgMove(B,e,e.x+dx/d*ps,e.y+dy/d*ps);e.pushT=t+SG.pushT;o.px=[Math.round(e.x),Math.round(e.y)];}
