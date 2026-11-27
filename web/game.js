@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261127130136';
+const BUILD='20261127131653';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -207,9 +207,9 @@ function wingShape(c,T,pal,t,far){
 const WCACHE={};
 function drawWings(x,y,g,t,k,flip,cls,bh,mv,anim){
   if(LITE){t=0;mv=false;anim=0;}
-  const R=clamp(g[0]|0,1,WING_MAX),hi=R>8,fam=hi?Math.floor((R-9)/7):0,gr=hi?(R-9)%7:0,T=hi?[3,5,6,2,7,8][fam]:R,c=wctx,at=WING_AT[cls]||WING_AT.blade,f=flip?-1:1;let pal=g[3]?WPAL.s:WPAL[T];
-  if(hi&&!g[3]){const h=([8,268,205,172,44,318][fam]+gr*7)%360;pal=['hsl('+h+',88%,'+(34+gr*3)+'%)','hsl('+((h+26)%360)+',100%,'+(72+gr*3)+'%)'];if(fam===5){const hh=(t*90+gr*40)%360;pal=['hsl('+hh+',92%,56%)','hsl('+((hh+150)%360)+',100%,84%)'];}}
-  k*=hi?1.06+fam*.035+gr*.012:1;
+  const R=clamp(g[0]|0,1,WING_MAX),hi=R>8,fam=hi?Math.floor((R-9)/7):0,gr=hi?(R-9)%7:0,T=hi?[2,3,4,5,6,7,8][([1,3,4,0,5,6][fam]+gr)%7]:R,c=wctx,at=WING_AT[cls]||WING_AT.blade,f=flip?-1:1;let pal=g[3]?WPAL.s:WPAL[T];
+  if(hi&&!g[3]){const h=([8,268,205,172,44,318][fam]+gr*19)%360;pal=['hsl('+h+',88%,'+(34+gr*3)+'%)','hsl('+((h+26)%360)+',100%,'+(72+gr*3)+'%)'];if(fam===5){const hh=(t*90+gr*40)%360;pal=['hsl('+hh+',92%,56%)','hsl('+((hh+150)%360)+',100%,84%)'];}}
+  k*=hi?1.06+fam*.035+gr*.022:1;
   if(T===8&&!g[3]&&!hi){const h=(t*70)%360;pal=['hsl('+h+',90%,55%)','hsl('+((h+120)%360)+',95%,80%)'];}
   const wkey=LITE?(g[0]|0)+'|'+cls+'|'+(g[3]?1:0)+'|'+bh:'';let src=wcv;if(wkey&&WCACHE[wkey])src=WCACHE[wkey];else{
   const flap=Math.sin(t*(mv?7:2.6))*(mv?1.5:1),lean=(mv?.22:0)-(anim>0?anim*.35:0),OX=130,OY=185; // beat faster on the run, trail back, open on a strike
@@ -217,8 +217,9 @@ function drawWings(x,y,g,t,k,flip,cls,bh,mv,anim){
   c.save();c.translate(OX-14,OY-4);c.rotate(-.42+flap*.11+lean*.7);c.scale(.74,.74);c.globalAlpha=.72;wingShape(c,T,pal,t+.4,true);c.restore(); // far wing, behind and higher
   if(hi){ // the high ranks grow more wings: a lower pair from the third grade, a small crest pair from the sixth, and a jewel at the root
     const T2=[4,5,6,2,7,8][(fam+2)%6],p2=[pal[1],'#ffffff'];
-    if(gr>=2||fam>=2){c.save();c.translate(OX-4,OY+6);c.rotate(.95+flap*.2+lean*.5);c.scale(.5+gr*.02,.5+gr*.02);c.globalAlpha=.9;wingShape(c,fam>=3?T2:T,pal,t+.8,false);c.restore();}
-    if(gr>=5||fam>=4){c.save();c.translate(OX-2,OY-6);c.rotate(-.75+flap*.08);c.scale(.42,.42);c.globalAlpha=.95;wingShape(c,T2,p2,t+1.3,false);c.restore();}
+    if(gr>=1||fam>=2){c.save();c.translate(OX-4,OY+6);c.rotate(.95+flap*.2+lean*.5);c.scale(.5+gr*.02,.5+gr*.02);c.globalAlpha=.9;wingShape(c,fam>=3?T2:T,pal,t+.8,false);c.restore();}
+    if(gr>=3||fam>=4){c.save();c.translate(OX-2,OY-6);c.rotate(-.75+flap*.08);c.scale(.42+gr*.015,.42+gr*.015);c.globalAlpha=.95;wingShape(c,T2,p2,t+1.3,false);c.restore();}
+    if(gr>=5){c.save();c.translate(OX-8,OY+12);c.rotate(1.45+flap*.24);c.scale(.36,.36);c.globalAlpha=.85;wingShape(c,T2,p2,t+1.7,false);c.restore();}
   }
   c.save();c.translate(OX,OY);c.rotate(flap*.14+lean);c.globalAlpha=1;wingShape(c,T,pal,t,false);c.restore();
   if(hi){const jr=5+fam*.6;c.save();c.translate(OX-3,OY-2);const jg=c.createRadialGradient(-1.5,-1.5,0,0,0,jr);jg.addColorStop(0,'#ffffff');jg.addColorStop(.45,pal[1]);jg.addColorStop(1,pal[0]);c.fillStyle=jg;c.beginPath();c.moveTo(0,-jr);c.lineTo(jr*.8,0);c.lineTo(0,jr);c.lineTo(-jr*.8,0);c.closePath();c.fill();c.strokeStyle='#fff8d2';c.lineWidth=1.2;c.stroke();c.restore();}
@@ -855,7 +856,6 @@ function updateWorld(dt){
   if(zi>=0&&!h.tgt&&h.manual<=0&&h.tx==null){
     const mel=S.cls==='blade',lv=m=>(m.up?1:0)!==(h.up?1:0);
     if(S.auto){let best=null,bd=1e9;for(const m of live){const d=Math.abs(m.x-h.x)*(m.boss?.5:1)+(mel&&lv(m)?240:0);if(d<bd){bd=d;best=m;}}h.tgt=best;}
-    else{for(const m of live)if(Math.abs(m.x-h.x)<=range+(m.boss?40:0)&&!(mel&&lv(m))){h.tgt=m;break;}}
   }
   if(h.tgt&&h.tx==null){const m=h.tgt,dx=m.x-h.x,r=range+(m.boss?40:0),mu=m.up?1:0,hu=h.up?1:0;h.face=dx>=0?1:-1;
     if(S.cls==='blade'&&mu!==hu){ // a blade goes to the nearest ladder to climb, or to the nearest edge to drop
