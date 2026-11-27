@@ -227,6 +227,10 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
   const roomSend = (key, m) => { const s = JSON.stringify(m); for (const o of socks.values()) if (o.sroom === key && o.readyState === 1) o.send(s); };
   const roomView = (r) => ({ t: 'ss', z: r.z, f: r.f, ev: r.ev ? 1 : 0, hp: r.mons.map((x) => (x.alive ? Math.max(.001, r3(x.hp / r.max)) : 0)) });
   const roomFit = (r, key) => { const n = Math.max(0, roomSize(key) - 1), want = r.ev ? Math.min(40, 22 + 4 * n) : Math.min(24, 8 + 2 * n); while (r.mons.length < want) r.mons.push({ hp: r.max, alive: true, at: 0, dm: new Map() }); };
+  // A player's own boss keeps its wounds through a dropped connection, and through a restart of the server: it is his, not the socket's.
+  const ownMons = new Map(), OWN_KEEP = 2 * 3600e3;
+  const ownDump = () => { const out = [], now = clock(); for (const [u, pm] of ownMons) for (const k in pm) { const m = pm[k]; if (m.alive && m.hp < m.top && now - m.at < OWN_KEEP) out.push([u, k, Math.round(m.hp), Math.round(m.top)]); } return out.slice(0, 2000); };
+  const ownLoad = (rows) => { const now = clock(); for (const r of Array.isArray(rows) ? rows : []) { if (!Array.isArray(r) || !(r[2] > 0) || !(r[3] >= r[2])) continue; let pm = ownMons.get(r[0]); if (!pm) ownMons.set(r[0], pm = {}); pm[String(r[1])] = { hp: +r[2], top: +r[3], alive: true, at: now }; } };
   async function sharedMsg(ws, m) {
     const uid = ws.uid, now = clock();
     if (m.t === 'sl') { ws.sroom = null; return; }
@@ -243,7 +247,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     const key = ws.sroom, r = key && rooms.get(key), p = ws.sp; if (!r || !p) return; const i = Math.floor(Number(m.i));
     // The boss of a map and its champion are each player's own, but their health is kept here too: -1 the boss, -2 the champion.
     const own = !r.ev && (i === -1 || i === -2), pk = own ? key + (i === -1 ? 'b' : 'e') : '';
-    let mon; if (own) { const pm = ws.pm || (ws.pm = {}); mon = pm[pk]; if (!mon || !mon.alive) mon = pm[pk] = { hp: r.max * (i === -1 ? 30 : G.ELITE_HP), top: r.max * (i === -1 ? 30 : G.ELITE_HP), alive: true }; } else mon = r.mons[i];
+    let mon; if (own) { let pm = ownMons.get(uid); if (!pm) ownMons.set(uid, pm = {}); mon = pm[pk]; if (!mon || !mon.alive || now - mon.at > OWN_KEEP) mon = pm[pk] = { hp: r.max * (i === -1 ? 30 : G.ELITE_HP), top: r.max * (i === -1 ? 30 : G.ELITE_HP), alive: true }; mon.at = now; } else mon = r.mons[i];
     if (!mon || !mon.alive) return;
     // his own pace: so many blows' worth a second, a short burst allowed; whatever he asks beyond it is cut down to it
     ws.sb = Math.min(12, (ws.sb || 0) + (now - (ws.sbT || now)) / 1000 * Math.max(.3, p.a) * (r.ev ? 12 : 2.8)); ws.sbT = now; if (ws.sb < .2) return;
@@ -388,5 +392,5 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
       ws.on('error', () => {});
     });
   });
-  return { socks, duels, takeKills, takeFlag, stale, rooms, sgNow: () => sg, sgOpen, brNow: () => br, brOpen: (ms) => (br = { key: 'manual', phase: 'sign', joined: new Map(), end: clock() + ms, idx: new Map() }), brBegin: () => { if (br && br.phase === 'sign') brStart(br); }, close: () => { clearInterval(roomClock); for (const d of duels.values()) clearInterval(d.timer); clearInterval(brClock); if (br && br.timer) clearInterval(br.timer); if (sg) clearInterval(sg.timer); wss.close(); } };
+  return { socks, duels, ownDump, ownLoad, takeKills, takeFlag, stale, rooms, sgNow: () => sg, sgOpen, brNow: () => br, brOpen: (ms) => (br = { key: 'manual', phase: 'sign', joined: new Map(), end: clock() + ms, idx: new Map() }), brBegin: () => { if (br && br.phase === 'sign') brStart(br); }, close: () => { clearInterval(roomClock); for (const d of duels.values()) clearInterval(d.timer); clearInterval(brClock); if (br && br.timer) clearInterval(br.timer); if (sg) clearInterval(sg.timer); wss.close(); } };
 }

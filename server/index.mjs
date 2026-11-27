@@ -55,6 +55,9 @@ export function makeServer(admin, secret, origin = '*', opts = {}) {
     } catch (e) { console.error(e); return send(res, { error: 'server' }, 500); }
   });
   server.live = attachLive(server, { admin, auth, G, rnd, push });
+  // wounds of the players' own bosses, written down by the server that stopped a moment ago
+  server.bossSave = async () => { const rows = server.live.ownDump(); if (rows.length) await admin.from('audit').insert({ user_id: null, kind: 'bosshp', detail: { rows } }); return rows.length; };
+  (async () => { try { const q = admin.from('audit').select('id,detail'); if (!q || !q.eq) return; const { data } = await q.eq('kind', 'bosshp').gt('at', new Date(Date.now() - 2 * 3600e3).toISOString()); for (const r of data || []) server.live.ownLoad(r.detail && r.detail.rows); const d = admin.from('audit').delete(); if (d && d.eq) await d.eq('kind', 'bosshp'); } catch (_e) { /* a boss at full health is the worst that happens */ } })();
   // the game's log keeps a month
   const logClean = () => { try { const q = admin.from('audit').delete(); if (q && q.eq) q.eq('kind', 'log').lt('at', new Date(Date.now() - 30 * 864e5).toISOString()).then(() => {}, () => {}); } catch (_e) { /* cleaning the log never stops the game */ } }; const logClock = setInterval(logClean, 6 * 3600e3); logClock.unref(); setTimeout(logClean, 60e3).unref(); server.on('close', () => clearInterval(logClock));
   server.push = push; const pushClock = setInterval(() => { push.tick().catch((e) => console.error(e)); }, 60000); pushClock.unref(); server.on('close', () => clearInterval(pushClock));
@@ -68,6 +71,7 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop()
     http.createServer((req, res) => { res.writeHead(req.method === 'GET' ? 200 : 503, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }); res.end(JSON.stringify({ ok: false, need: 'SUPABASE_SERVICE_ROLE_KEY' })); }).listen(port);
   } else {
     const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-    makeServer(admin, key, process.env.ALLOWED_ORIGIN || '*').listen(port, () => console.log('eternal-cycle server on ' + port));
+    const srv = makeServer(admin, key, process.env.ALLOWED_ORIGIN || '*'); srv.listen(port, () => console.log('eternal-cycle server on ' + port));
+    let stopping = false; process.on('SIGTERM', () => { if (stopping) return; stopping = true; const out = setTimeout(() => process.exit(0), 4000); srv.bossSave().catch((e) => console.error(e)).then(() => { clearTimeout(out); process.exit(0); }); });
   }
 }

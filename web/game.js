@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261127144651';
+const BUILD='20261127145219';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -443,7 +443,7 @@ function drawHero(x,y,sc,look,t,anim,flip,dead,mv,fury){
     ctx.save();ctx.translate(x,y);ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.4+.15*Math.sin(t*5);ctx.scale(1,.3);ctx.fillStyle=gr;ctx.beginPath();ctx.arc(0,0,50,0,7);ctx.fill();ctx.restore();}
   ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(x,y+1,20*sc,5*sc,0,0,7);ctx.fill();
   if(look.set&&!dead&&!LITE)drawSetAura(x,y,sc,look.set,t);
-  if(!dead&&!look.spr&&look.pet&&!LITE){const pr=clamp((look.pet-1)%10,0,4),pk=pr+(look.pet>10?5:0),px=x+(flip?-1:1)*(pk===1||pk===6||pk===3||pk===4?30:40)*sc,pc=RAR[pr].c;ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.35+.15*Math.sin(t*4);ctx.fillStyle=pc;ctx.beginPath();ctx.ellipse(px,y+1,12*sc,4*sc,0,0,7);ctx.fill();ctx.restore();drawBeast(px,y,sc,pk,t+2.3,!flip,mv);}
+  if(!dead&&!look.spr&&look.pet&&!LITE){const pr=clamp((look.pet-1)%10,0,4),pk=pr+(look.pet>10?5:0),px=x+(flip?-1:1)*(pk===1||pk===6||pk===3||pk===4?30:40)*sc,pc=RAR[pr].c;ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.35+.15*Math.sin(t*4);ctx.fillStyle=pc;ctx.beginPath();ctx.ellipse(px,y+1,12*sc,4*sc,0,0,7);ctx.fill();ctx.restore();drawBeast(px,y,sc,pk,t+2.3,flip,mv);}
   if(!dead&&!look.spr&&!LITE&&petTier(look.r|0))drawPet(x-(flip?-1:1)*38*sc,y-m.bh*k*.92,sc,petTier(look.r|0),t+(look.c==='storm'?1:0),flip);
   let an='idle',fi=Math.floor(t*8);
   if(dead){an='die';fi=Math.min(frames(key,'die')-1,Math.floor((dead===true?9:dead)*8));}
@@ -2159,7 +2159,7 @@ function mergePeers(list){
 function updatePeers(dt){
   for(const p of peers){if(p.v&&p.vT>0){p.vT-=dt;p.tx=clamp(p.tx+p.v*dt,30,mapW()-30);} // keep walking the way he was walking until the next report
     const d=p.tx-p.x;p.mv=Math.abs(d)>4||(!!p.v&&p.vT>0);
-    if(Math.abs(d)>.5){p.x+=Math.sign(d)*Math.min(Math.abs(d),Math.max(260,Math.abs(p.v||0)*1.25,Math.abs(d)*7)*dt);p.dir=d<0?-1:1;}
+    if(Math.abs(d)>.5){p.x+=Math.sign(d)*Math.min(Math.abs(d),Math.max(260,Math.abs(p.v||0)*1.25,Math.abs(d)*7)*dt);p.dir=p.v?(p.v<0?-1:1):Math.abs(d)>70?(d<0?-1:1):p.f;}
     p.an=Math.max(0,p.an-dt*4);if(p.a&&!p.mv&&SC.zi>=0&&(p.sw-=dt)<=0){p.sw=.8+Math.random()*.6;p.an=1;}}
 }
 function bubble(x,y,txt){ // what someone just said, over their head
