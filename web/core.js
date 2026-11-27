@@ -452,6 +452,8 @@ const DUEL_LIVE={time:75,pots:3,heal:.3,sk:[{m:.9,cd:5},{m:1.6,cd:9,stun:.8},{cd
 // (between two players who are both connected, where the server alone decides what a move did).
 // Positions are in arena units: LIVE_W across, depth z from 0 to 1. Times are seconds on the duel's own clock D.t.
 const LIVE_W=400,LIVE_RNG={blade:62,storm:185,hunter:235},LIVE_LANE=.3;
+const LIVE_SURV=20,CLEAN_DAY=10;
+function livePlausible(L,el){const minT=1/(Math.max(1e-6,L.b[0])*DUEL_LIVE.maxRate);return el>=minT*.8&&L.b[1]*minT<=LIVE_SURV;}
 function liveFrom(L,ca,cb){
   const mk=(i,cls)=>({x:i?LIVE_W*.76:LIVE_W*.24,z:.5,hp:1,cls:CLS[cls]?cls:'blade',at:{atk:.4,s0:1,s1:2,s2:0,s3:6,dash:0,pot:0},stun:0,sh:0,inv:0,pots:DUEL_LIVE.pots,chain:0});
   return {f:[mk(0,ca),mk(1,cb)],b:L.b.slice(0,2),cr:L.cr.slice(0,2),T:L.T.slice(0,2),pool:L.pool.slice(0,2),t:0,over:0,win:-1};
@@ -864,7 +866,11 @@ function adopt(o){
 }
 function findIt(A,S,id){for(const k of SLOTS)if(S.eq[k]&&S.eq[k].id===id)return {it:S.eq[k],eq:k};const i=A.inv.findIndex(x=>x.id===id);return i>=0?{it:A.inv[i],i:i}:null;}
 // Highest kill rate a legitimate client can reach in a zone, skills and buffs included.
-function maxKps(S,zi,au,keep){const c=calc(S,au),z=zs(zi,keep?0:afkFloor(S,zi));return keep?Math.min(12,1/Math.max(.08,z.hp*KEEP_HP/(c.dps*2.8)+.06)):Math.min(2.1,1/Math.max(.35,z.hp/(c.dps*2.8)+.3));}
+// How many kills a second the server will believe. It follows from the character's damage against the monsters'
+// health, and from whether the character can stand there at all: where two monsters would kill it in under three
+// seconds, it spends most of its time dead, and the allowance falls with it.
+function maxKps(S,zi,au,keep){const c=calc(S,au),z=zs(zi,keep?0:afkFloor(S,zi));if(keep)return Math.min(12,1/Math.max(.08,z.hp*KEEP_HP/(c.dps*2.8)+.06));
+  const ttl=c.hp/Math.max(1e-6,z.atk*300/(300+c.def)*2),sv=clamp(ttl/3,.25,1);return Math.min(2.1,1/Math.max(.35,z.hp/(c.dps*2.8)+.3))*sv;}
 const BOTN=['שומר השער','נודד האפר','בת הסער','צל ראשון','להב שקט','עין הנץ'];
 function buildOpps(A,S,players,selfId){
   const me=fighter(S),out=[];
@@ -959,7 +965,7 @@ function apply(A,kind,args,ctx){
           if(_rnd()<.05){A.feathers=(A.feathers||0)+1;rep.feather=1;}
           A.bossAt=null;rep.levels=(rep.levels||0)+addXp(S,zd.xp*40*c.xpM*pb);rollLoot(S,z,1,c,rep);
           perfectDrop(S,z,rep,PERFECT_BOSS*(ZONES[z]&&ZONES[z].castle?CITY_PERFECT:1));
-          if(args.clean){A.gems+=1;rep.gems=(rep.gems||0)+1;rep.clean=1;A.cleans=(A.cleans||0)+1;} // none of its marked moves landed: only the client can know, so the bonus is small
+          if(args.clean&&(A.daily.cl|0)<CLEAN_DAY){A.daily.cl=(A.daily.cl|0)+1;A.gems+=1;rep.gems=(rep.gems||0)+1;rep.clean=1;A.cleans=(A.cleans||0)+1;} // none of its marked moves landed: only the client can know, so the bonus is small
           const it=makeItem(S,rslot(),tierOf(z),rollRar([0,0,70,25,5]),z);gainItem(S,it,rep);(rep.notable=rep.notable||[]).push(it);
           const g=2+Math.floor(_rnd()*3);A.gems+=g;rep.gems=(rep.gems||0)+g;if(_rnd()<.3){A.boxes++;rep.boxes=(rep.boxes||0)+1;}
           if(z===BASEZ-1)A.boss7=1;if(A.open===z&&z<BASEZ-1){A.open=z+1;rep.opened=z+1;}rep.boss=true;evAdd(A,now,'b',1);bump(A,'boss',1);sideAdd(A,'boss',z,1,now,r);
@@ -1068,22 +1074,25 @@ function apply(A,kind,args,ctx){
       if((A.daily.tr|0)>=TRIAL_TRIES)return fail('נגמרו הניסיונות לאתגר היום');const c=calc(S),m=dayNum()%3,hp=Math.max(50,c.dps*(m===1?30:22));A.daily.tr=(A.daily.tr|0)+1;
       const L={b:[clamp(c.dps*1.5/hp,.004,.6),m===1?.05:.075],cr:[clamp(c.crit,0,.75),0],T:[clamp(1/Math.max(.3,c.aspd),.3,1.2),m===2?1:1.5],pool:[c.hp*1.6,hp]};
       A.pd={tower:1,trial:m+1,t:now,live:L,o:{n:'שומר היום',c:'blade',l:S.lvl,r:0,p:Math.round(hp),bossZ:(dayNum()*7)%BASEZ}};r.pd=A.pd;r.left=TRIAL_TRIES-A.daily.tr;break;}
+    // A fight on the player's device is believed only within what the numbers allow: enough time to deal the damage,
+    // and an enemy who, even at his plainest, could not have dealt the player's health LIVE_SURV times over in that time.
+    // Past that no dodging, potion or shield explains a win, so a script cannot climb the tower or the ladder without end.
     case 'trialEnd':{
       const pd=A.pd;if(!pd||!pd.trial)return fail('אין קרב פעיל');const el=(now-pd.t)/1000;let win=!!args.win;
-      if(win&&el<1/(pd.live.b[0]*DUEL_LIVE.maxRate)*.8){win=false;r.denied=true;}
+      if(win&&!livePlausible(pd.live,el)){win=false;r.denied=true;}
       A.pd=null;r.win=win;r.el=Math.round(el);
       if(win){const tier=el<=TRIAL_T[0]?0:el<=TRIAL_T[1]?1:2,best=A.daily.trB;r.tier=tier;A.trials=(A.trials||0)+1;
         if(best==null||tier<best){const rw=TRIAL_RW[tier],old=best==null?{}:TRIAL_RW[best],d={};for(const k in rw){const v=rw[k]-(old[k]||0);if(v>0)d[k]=v;}give(A,S,d);A.daily.trB=tier;r.rt=[d.gems?d.gems+' אבני נשמה':'',d.coins?d.coins+' מטבעות עונה':'',d.boxes?'תיבת אוצר':''].filter(Boolean).join(', ');}}
       break;}
     case 'towerEnd':{
       const pd=A.pd;if(!pd||!pd.tower||pd.trial)return fail('אין קרב פעיל');const el=(now-pd.t)/1000,f=pd.tower;let win=!!args.win;
-      if(win&&el<1/(pd.live.b[0]*DUEL_LIVE.maxRate)*.8){win=false;r.denied=true;}
+      if(win&&!livePlausible(pd.live,el)){win=false;r.denied=true;}
       A.pd=null;r.win=win;r.f=f;if(win){A.daily.tw=Math.max(0,(A.daily.tw|0)-1);A.tower.best=Math.max(A.tower.best|0,f);const rw=towerReward(f);give(A,S,rw);r.rt=towerText(rw);if(f>=PERFECT_FLOOR){const it=perfectDrop(S,clamp(A.open|0,0,ZONES.length-1),null,PERFECT_TOWER);if(it){r.perfect=1;r.notable=[it];}}}break;}
     case 'duelEnd':{
       const pd=A.pd;if(!pd||!pd.live||pd.tower)return fail('אין קרב פעיל');const el=(now-pd.t)/1000,claim=!!args.win;
       // fastest possible kill: ordinary hits with every crit landing plus every skill on cooldown
       const minT=1/(pd.live.b[0]*DUEL_LIVE.maxRate);let win=claim;
-      if(claim&&el<minT*.8){win=false;r.denied=true;}
+      if(claim&&(el<minT*.8||!livePlausible(pd.live,el))){win=false;r.denied=true;}
       r.win=win;r.gain=duelSettle(A,now,win,pd.o.rt);A.pd=null;break;}
     case 'duelAct':{
       const pd=A.pd;if(!pd)return fail('אין קרב פעיל');const a=String(args.a),D=pd.D;
@@ -1105,4 +1114,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {CITY_SHOP,CITY_WEEK,CITY_RATE,CITY_TIER,CITY_RAR,CITY_PERFECT,BANK,sgBuff,sgSees,EXB,exCount,SIEGE_MIN,RESET_RAR,keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {LIVE_SURV,CLEAN_DAY,livePlausible,CITY_SHOP,CITY_WEEK,CITY_RATE,CITY_TIER,CITY_RAR,CITY_PERFECT,BANK,sgBuff,sgSees,EXB,exCount,SIEGE_MIN,RESET_RAR,keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

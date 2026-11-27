@@ -595,3 +595,14 @@ test('the game master walks anywhere; nobody else does',()=>{
   assert.equal(G.apply(A,'travel',{z:far,f:0},{}).ok,false,'and the right does not stay behind');
 });
 
+test('cheats: a win no numbers allow is refused, clean kills pay a few times a day, a character the map kills at once does not kill at full pace',()=>{
+  let now=1.8e12;G.setEnv(Math.random,()=>now);const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'x'},{});const S=A.chars[A.cur];
+  // climbing the tower by claiming wins: it ends where the guardian could have killed the character many times over
+  let last=0,refused=0;for(let i=0;i<400&&!refused;i++){const s=G.apply(A,'towerStart',{},{});if(!s.ok){A.daily.tw=0;continue;}const L=s.pd.live,minT=1/(L.b[0]*G.DUEL_LIVE.maxRate);now+=Math.ceil(minT*1000)+1000;const e=G.apply(A,'towerEnd',{win:true},{});if(e.denied)refused=s.pd.tower;else last=e.f;}
+  assert.ok(refused>0,'a script that always claims a win is stopped');assert.ok(last>=1&&last<60,'a new character climbs a little, not without end: '+last);
+  assert.equal(G.livePlausible({b:[.05,.05]},20),true,'a fair fight');assert.equal(G.livePlausible({b:[.05,.05]},1),false,'too fast');assert.equal(G.livePlausible({b:[.004,.9]},500),false,'not survivable');
+  // the kill allowance
+  const weak=G.maxKps(S,0,[]),far=G.ZONES.length-2;assert.ok(weak>0);const hard=G.maxKps(S,far,[]);S.stats.str=1e6;const glass=G.maxKps(S,far,[]);S.stats.vit=1e6;const tank=G.maxKps(S,far,[]);
+  assert.ok(glass<tank*.5,'all damage and no life: the map kills him, and he kills less: '+glass+' vs '+tank);assert.ok(hard<=glass);
+  assert.ok(G.CLEAN_DAY<=10);
+});
