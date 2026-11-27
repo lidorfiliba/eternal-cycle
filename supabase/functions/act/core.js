@@ -555,17 +555,17 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:2100,Y0:-879,Y1:2150,TIME:59*60,crownT:25,swT:3,resp:10,respIn:50,crownKeep:0,crownPen:1,pots:60,potMax:250,potCd:.25,heal:.06,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:.5,cbMax:.9,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
+const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:25,swT:3,resp:10,respIn:50,crownKeep:0,crownPen:1,pots:60,potMax:250,potCd:.25,heal:.06,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:.5,cbMax:.9,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.012,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   // a wide castle: room to fight in the yard and in the throne room without everyone standing on everyone
-  walls:[[-739,-770,739,-732],[-739,94,-80,132],[80,94,739,132],[-739,-770,-701,-399],[-739,-255,-701,132],[701,-770,739,-399],[701,-255,739,132],[-701,-439,-112,-407],[112,-439,701,-407],[-1050,690,-370,714],[-230,690,230,714],[370,690,1050,714],[-1050,1290,-430,1314],[-290,1290,290,1314],[430,1290,1050,1314]],
-  gates:[[-80,94,80,132],[-739,-399,-701,-255],[701,-399,739,-255],[-430,1290,-290,1314],[290,1290,430,1314],[-370,690,-230,714],[230,690,370,714],
-    [-470,-330,-420,-290],[420,-330,470,-290],[-300,-80,-250,-40],[250,-80,300,-40]],
+  walls:[[-970,-1052,970,-1002],[-970,82,-105,132],[105,82,970,132],[-970,-1052,-920,-565],[-970,-376,-920,132],[920,-1052,970,-565],[920,-376,970,132],[-920,-618,-147,-576],[147,-618,920,-576],[-1250,690,-370,714],[-230,690,230,714],[370,690,1250,714],[-1250,1290,-430,1314],[-290,1290,290,1314],[430,1290,1250,1314]],
+  gates:[[-105,82,105,132],[-970,-565,-920,-376],[920,-565,970,-376],[-430,1290,-290,1314],[290,1290,430,1314],[-370,690,-230,714],[230,690,370,714],[-640,-440,-590,-400],[590,-440,640,-400],[-400,-110,-350,-70],[350,-110,400,-70]],
   // the last four are no gates but the guardian stones in the yard: while one stands, a shield bars the throne room to all but the castle's own
-  stat:[7,8,9,10],shield:[-112,-439,112,-407],statR:170,statHeal:.03,sw:[[-608,-585],[608,-585]],crown:[0,-631],zone:58,
-  shops:[[-520,1960],[528,-143]],shopR:70,camp:[0,1960],yard:[0,-303],posts:[[-608,-585],[608,-585],[-64,17],[64,17],[0,-607]],
-  hall:[-701,-732,701,94]};
+  stat:[7,8,9,10],shield:[-147,-618,147,-576],statR:170,statHeal:.03,sw:[[-798,-809],[798,-809]],crown:[0,-870],zone:58,
+  // potions: beside the camp, half way up the road, and inside the castle
+  shops:[[-170,1990],[0,1010],[693,-229]],shopR:70,camp:[0,1960],yard:[0,-439],posts:[[-798,-809],[798,-809],[-84,-19],[84,-19],[0,-838]],
+  hall:[-920,-1002,920,82]};
 const sgIn=(r,x,y,m)=>x>r[0]-m&&x<r[2]+m&&y>r[1]-m&&y<r[3]+m;
 const sgShield=B=>SG.stat.some(i=>B.sg.gate[i]>0);
 function sgBlocked(B,x,y,g){if(g!==undefined&&g!==B.sg.holder&&sgIn(SG.shield,x,y,SG.rad)&&sgShield(B))return true;if(Math.abs(x)>SG.W/2-10||y<SG.Y0+10||y>SG.Y1-10)return true;for(const w of SG.walls)if(sgIn(w,x,y,SG.rad))return true;for(let i=0;i<SG.gates.length;i++)if(B.sg.gate[i]>0&&sgIn(SG.gates[i],x,y,SG.rad))return true;return false;}
@@ -591,7 +591,7 @@ function sgBuff(f,t){const b=f.bf.b>t,s=f.bf.s>t,h=f.bf.h>t;return {dmg:h?SG.buf
 // ---- Players of the server's own, for a practice siege. They do what a player does and nothing more: walk the road,
 // break a gate, press a switch and stay on it, take the crown if they lead, drink, shield, buff those near them, shove an
 // enemy off a switch, leap, and try the combo. How often the combo comes out right is their skill (f.sk).
-const SG_BAR=[[1302,360],[702,300],[113,0],[-423,0]]; // each wall across the way, south to north: its y, and the x of the way through
+const SG_BAR=[[1302,360],[702,300],[107,0],[-597,0]]; // each wall across the way, south to north: its y, and the x of the way through
 function sgRoute(f,dest){
   const gx=b=>b[1]*(f.side||1);
   if(dest[1]<f.y){for(const b of SG_BAR)if(b[0]<f.y+26&&b[0]>dest[1])return f.y>b[0]+26&&Math.abs(f.x-gx(b))>20?[gx(b),b[0]+46]:[gx(b),b[0]-46];}
@@ -605,8 +605,9 @@ function sgBot(B,i,dt,rnd,ev){
   // where he belongs: attackers on their switch or the crown, defenders beside them
   let dest,spot=false;
   if(q>=0){dest=mine?[SG.sw[q][0]*.86,SG.sw[q][1]+20]:SG.sw[q];spot=!mine&&sgNear(f,SG.sw[q],SG.zone-8);}
-  else if(role==='lead'){dest=mine?[0,-559]:(ready||S.crown[2]===i?SG.crown:[0,-535]);spot=!mine&&ready&&sgNear(f,SG.crown,SG.zone-8);}
-  else dest=[(i%3-1)*110,mine?-498:-543];
+  else if(role==='lead'){dest=mine?[0,-775]:(ready||S.crown[2]===i?SG.crown:[0,-744]);spot=!mine&&ready&&sgNear(f,SG.crown,SG.zone-8);}
+  else dest=[(i%3-1)*140,mine?-695:-754];
+  if(mine&&role!=='lead'&&sgShield(B)){const alive=SG.stat.filter(q=>S.gate[q]>0),g=SG.gates[alive[i%alive.length]];dest=[(g[0]+g[2])/2*.8,(g[1]+g[3])/2+70];spot=false;}
   if(!mine&&f.y<SG.hall[3]+40&&sgShield(B)){let bs=-1,bq=1e9;for(const q of SG.stat){if(S.gate[q]<=0)continue;const g=SG.gates[q],d=Math.hypot((g[0]+g[2])/2-f.x,(g[1]+g[3])/2-f.y);if(d<bq){bq=d;bs=q;}}if(bs>=0){const g=SG.gates[bs];dest=[(g[0]+g[2])/2,(g[1]+g[3])/2];spot=false;}}
   // walking: the one on his spot stays in its middle; the others meet an enemy who comes near, or go on their way
   const chase=e&&!spot&&bd<(q>=0||role==='lead'?(mine?200:90):280);let tx,ty,stop;

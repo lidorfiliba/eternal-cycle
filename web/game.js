@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261127153910';
+const BUILD='20261127154807';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -235,7 +235,7 @@ function drawWings(x,y,g,t,k,flip,cls,bh,mv,anim){
   if(LITE){t=0;mv=false;anim=0;}
   const R=clamp(g[0]|0,1,WING_MAX),hi=R>8,fam=hi?Math.floor((R-9)/7):0,gr=hi?(R-9)%7:0,T=hi?[2,3,4,5,6,7,8][([1,3,4,0,5,6][fam]+gr)%7]:R,c=wctx,at=WING_AT[cls]||WING_AT.blade,f=flip?-1:1;let pal=g[3]?WPAL.s:WPAL[T];
   if(hi&&!g[3]){const h=([8,268,205,172,44,318][fam]+gr*19)%360;pal=['hsl('+h+',88%,'+(34+gr*3)+'%)','hsl('+((h+26)%360)+',100%,'+(72+gr*3)+'%)'];if(fam===5){const hh=(t*90+gr*40)%360;pal=['hsl('+hh+',92%,56%)','hsl('+((hh+150)%360)+',100%,84%)'];}}
-  k*=hi?1.06+fam*.035+gr*.022:1;
+  k*=hi?1.06+fam*.035+gr*.022:1;if(LITE)k*=.72; // in a crowd the others' wings are kept small, so the fight can be read
   if(T===8&&!g[3]&&!hi){const h=(t*70)%360;pal=['hsl('+h+',90%,55%)','hsl('+((h+120)%360)+',95%,80%)'];}
   const wkey=LITE?(g[0]|0)+'|'+cls+'|'+(g[3]?1:0)+'|'+bh:'';let src=wcv;if(wkey&&WCACHE[wkey])src=WCACHE[wkey];else{
   const flap=Math.sin(t*(mv?7:2.6))*(mv?1.5:1),lean=(mv?.22:0)-(anim>0?anim*.35:0),OX=130,OY=185; // beat faster on the run, trail back, open on a strike
@@ -1149,19 +1149,21 @@ function brShow(d,o){
   const a=D.f[o.by];if(!a)return;const va=d.v[o.by],pa=bP(a.x,a.y),ax=pa[0],g=pa[1],col=LOOTC[a.w>=3?'W':'w'],k=o.k,cc=CLS[a.cls].c;
   if(k==='s2'){if(o.by===d.me)snd('fury');SC.fx.push({k:'rune',x:ax,y:g-2,r:60,life:.9,d:.9,c:'#9fe8ff'});return;}
   if(k==='dash'){for(let q=0;q<4;q++)SC.parts.push({x:ax,y:g-20-q*14,vx:(Math.random()-.5)*120,vy:0,life:.4,c:'#9fe8ff',s:3});return;}
-  if(k==='pot'){burst(ax,g-50,'#6fe39a',18);addNum(ax,g-112,'+'+Math.round((o.heal||.3)*100)+'%','#6fe39a',true);return;}
+  if(k==='pot'){burst(ax,g-50,'#6fe39a',o.by===d.me?12:5);if(!b.sg)addNum(ax,g-112,'+'+Math.round((o.heal||.3)*100)+'%','#6fe39a',true);return;}
   const v=D.f[o.to];if(!v)return;if(b.sg&&o.by===d.me){d.cbN=o.miss?0:o.cb|0;d.cbAt=D.t;}
   if(o.px){const q0=bP(v.x,v.y);if(o.to===d.me){v.x=o.px[0];v.y=o.px[1];b.go=null;d.last=[v.x,v.y];}else b.tg[o.to]=[o.px[0],o.px[1]];const q1=bP(o.px[0],o.px[1]); // thrown back: a streak and dust along the way
     SC.fx.push({k:'line',x1:q0[0],y1:q0[1]-10,x2:q1[0],y2:q1[1]-10,life:.3,c:'#e8d8b8',w:4});for(let q=0;q<7;q++)SC.parts.push({x:q0[0]+(q1[0]-q0[0])*q/7,y:q0[1]-4,vx:(Math.random()-.5)*50,vy:-30-Math.random()*40,life:.5,c:'#d8c8a8',s:3});}
   const pv=bP(v.x,v.y),vx=pv[0],ge=pv[1],big=k!=='atk';va.anim=1;if(Math.abs(v.x-a.x)>4)va.face=v.x>=a.x?1:-1;
-  if(k==='s3'){if(o.by===d.me||o.to===d.me){snd('ult');if(!calm)SC.shake=.4;}SC.fx.push({k:'rune',x:vx,y:ge-2,r:120,life:1,d:1,c:cc});SC.fx.push({k:'flash',x:vx,y:ge-40,r:90,life:.35,d:.35,c:cc});SC.fx.push({k:'ring',x:vx,y:ge-6,life:.55,c:cc,r:140});SC.fx.push({k:'ring',x:vx,y:ge-6,life:.8,c:'#fff',r:90});for(let q=-2;q<=2;q++)SC.fx.push({k:'pillar',x:vx+q*28,y:ge,life:.5,d:.5,c:cc});SC.fx.push({k:'star',x:vx,y:ge-40,r:84,rot:.2,life:.45,d:.45,c:'#fff'});}
+  if(k==='s3'&&!(o.by===d.me||o.to===d.me)&&D.f.length>3){SC.fx.push({k:'flash',x:vx,y:ge-40,r:50,life:.25,d:.25,c:cc});SC.fx.push({k:'ring',x:vx,y:ge-6,life:.4,c:cc,r:80});}
+  else if(k==='s3'){if(o.by===d.me||o.to===d.me){snd('ult');if(!calm)SC.shake=.4;}SC.fx.push({k:'rune',x:vx,y:ge-2,r:120,life:1,d:1,c:cc});SC.fx.push({k:'flash',x:vx,y:ge-40,r:90,life:.35,d:.35,c:cc});SC.fx.push({k:'ring',x:vx,y:ge-6,life:.55,c:cc,r:140});SC.fx.push({k:'ring',x:vx,y:ge-6,life:.8,c:'#fff',r:90});for(let q=-2;q<=2;q++)SC.fx.push({k:'pillar',x:vx+q*28,y:ge,life:.5,d:.5,c:cc});SC.fx.push({k:'star',x:vx,y:ge-40,r:84,rot:.2,life:.45,d:.45,c:'#fff'});}
   else if(k==='bash'){if(o.by===d.me||o.to===d.me)snd('slam');SC.fx.push({k:'ring',x:vx,y:ge-20,life:.4,c:'#ffd75e',r:76});SC.fx.push({k:'flash',x:vx,y:ge-40,r:64,life:.25,d:.25,c:'#ffd75e'});if(!o.miss)addNum(vx,ge-128,o.guard?'המגן עצר':'נהדף','#ffd75e',false);if(!calm&&o.to===d.me)SC.shake=.3;}
-  else if(k==='s1'||k==='s0')skillFx(a.cls,k,ax,g,vx,ge,va.face,cc,o.by===d.me||o.to===d.me||D.f.length<=10);
+  else if(k==='s1'||k==='s0')skillFx(a.cls,k,ax,g,vx,ge,va.face,cc,o.by===d.me||o.to===d.me||D.f.length<=3);
   attackFx(a.cls,ax,g,va.face,[{x:vx,y:ge-10}],big,a.w?col:cc);
   if(o.miss){addNum(vx,ge-110,'חמק!','#9fe8ff',true);return;}
-  d.v[o.to].hitT=.18;if(o.by===d.me||o.to===d.me)snd(o.crit?'crit':big?'skill':'hit');addNum(vx,ge-92,fmt(Math.max(1,Math.round(o.dm*(b.sg?(b.hpv&&b.hpv[o.to]||2000)*5:10000)))),o.to===d.me?'#ff5c7a':o.crit?'#ffd75e':'#fff',o.crit||big);
-  if(o.stun)addNum(vx,ge-128,'הלם','#ffd75e',false);
-  if(o.combo){snd('ult');SC.nums.push({x:vx,y:ge-150,txt:'קומבו!',c:'#ff5c7a',s:36,life:1.4});SC.fx.push({k:'star',x:vx,y:ge-40,r:70,rot:0,life:.5,d:.5,c:'#ff5c7a'});SC.fx.push({k:'ring',x:vx,y:ge-10,life:.5,c:'#ffd75e',r:90});snd('slam');burst(vx,ge-40,'#ffb23e',46);burst(vx,ge-40,'#fff',18);for(let q=0;q<3;q++)SC.fx.push({k:'ring',x:vx,y:ge-10,life:.45+q*.18,c:q===1?'#fff':'#ff5c7a',r:70+q*55});for(let q=-3;q<=3;q++)SC.fx.push({k:'pillar',x:vx+q*24,y:ge,life:.4+Math.abs(q)*.06,d:.6,c:q%2?'#ffd75e':'#ff5c7a'});SC.fx.push({k:'flash',x:vx,y:ge-40,r:150,life:.3,d:.3,c:'#fff'});if(!calm)SC.fx.push({k:'screen',life:.22,d:.22,c:'#ffb23e'});if(!calm)SC.shake=o.by===d.me||o.to===d.me?.7:.3;}
+  d.v[o.to].hitT=.18;if(o.by===d.me||o.to===d.me)snd(o.crit?'crit':big?'skill':'hit');if(o.by===d.me||o.to===d.me||D.f.length<=3)addNum(vx,ge-92,fmt(Math.max(1,Math.round(o.dm*(b.sg?(b.hpv&&b.hpv[o.to]||2000)*5:10000)))),o.to===d.me?'#ff5c7a':o.crit?'#ffd75e':'#fff',o.crit||big);
+  if(o.stun&&(o.by===d.me||o.to===d.me||D.f.length<=3))addNum(vx,ge-128,'הלם','#ffd75e',false);
+  if(o.combo&&!(o.by===d.me||o.to===d.me)&&D.f.length>3){SC.nums.push({x:vx,y:ge-130,txt:'קומבו!',c:'#ff5c7a',s:15,life:.8});SC.fx.push({k:'ring',x:vx,y:ge-10,life:.4,c:'#ffd75e',r:60});}
+  else if(o.combo){snd('ult');SC.nums.push({x:vx,y:ge-150,txt:'קומבו!',c:'#ff5c7a',s:W<560?26:36,life:1.2});SC.fx.push({k:'star',x:vx,y:ge-40,r:70,rot:0,life:.5,d:.5,c:'#ff5c7a'});SC.fx.push({k:'ring',x:vx,y:ge-10,life:.5,c:'#ffd75e',r:90});snd('slam');burst(vx,ge-40,'#ffb23e',46);burst(vx,ge-40,'#fff',18);for(let q=0;q<3;q++)SC.fx.push({k:'ring',x:vx,y:ge-10,life:.45+q*.18,c:q===1?'#fff':'#ff5c7a',r:70+q*55});for(let q=-3;q<=3;q++)SC.fx.push({k:'pillar',x:vx+q*24,y:ge,life:.4+Math.abs(q)*.06,d:.6,c:q%2?'#ffd75e':'#ff5c7a'});SC.fx.push({k:'flash',x:vx,y:ge-40,r:150,life:.3,d:.3,c:'#fff'});if(!calm)SC.fx.push({k:'screen',life:.22,d:.22,c:'#ffb23e'});if(!calm)SC.shake=o.by===d.me||o.to===d.me?.7:.3;}
   else if(b.sg&&o.cb===2&&o.by===d.me)addNum(ax,g-150,'קומבו 2/3','#ffb23e',false);
   if(o.dead&&!(b.sg&&o.by!==d.me&&o.to!==d.me))addNum(vx,ge-140,b.names[o.by]+' חיסל את '+b.names[o.to],'#ffd75e',true);
 }
@@ -1231,11 +1233,12 @@ function drawSg(dt){
     ctx.fillStyle='#8d86a8';for(const w of SG.walls){const a=M(w[0],w[1]),c2=M(w[2],w[3]);ctx.fillRect(a[0],a[1],Math.max(1.5,c2[0]-a[0]),Math.max(1.5,c2[1]-a[1]));}SG.sw.forEach((s,q)=>{const p=M(s[0],s[1]);ctx.fillStyle=gc(S2.sw[q]);ctx.fillRect(p[0]-2.5,p[1]-2.5,5,5);});{const p=M(SG.crown[0],SG.crown[1]);ctx.fillStyle='#ffd75e';ctx.fillRect(p[0]-3,p[1]-3,6,6);}
     D.f.forEach((f,i)=>{if(!f.alive)return;const p=M(f.x,f.y);ctx.fillStyle=i===d.me?'#7df9ff':gc(b.g[i]);ctx.beginPath();ctx.arc(p[0],p[1],i===d.me?2.8:1.9,0,7);ctx.fill();});ctx.restore();}
   const hn=S2.holder>0?(b.gn&&b.gn[S2.holder]||'גילדה'):'אף גילדה';
-  {const n=D.f[d.me].bfN|0,bf=[n&1?'חיים':'',n&2?'הגנה':'',n&4?'כוח':'',n===7?'מהירות':''].filter(Boolean);label(bf.length?'באפים עליך: '+bf.join(' · '):'אין עליך באפים. עמדו קרוב זה לזה והפעילו אותם',W/2,82,bf.length?'#9fe8ff':'#b9b3d6',10);}
+  if(W>=560){const n=D.f[d.me].bfN|0,bf=[n&1?'חיים':'',n&2?'הגנה':'',n&4?'כוח':'',n===7?'מהירות':''].filter(Boolean);label(bf.length?'באפים עליך: '+bf.join(' · '):'אין עליך באפים. עמדו קרוב זה לזה והפעילו אותם',W/2,82,bf.length?'#9fe8ff':'#b9b3d6',10);}
   SG.sw.forEach((s,q)=>{const pr=S2.swp[q];if(pr[1]>0&&S2.crown[1]<=0){const bw=W*.5,bx=W/2-bw/2,by=H*.24+q*30;label((pr[0]===myG?'משתלטים על המתג ה':'האויב משתלט על המתג ה')+(q?'ימני':'שמאלי'),W/2,by-4,gc(pr[0]),13);ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(bx,by,bw,8);ctx.fillStyle=gc(pr[0]);ctx.fillRect(bx,by,bw*clamp(pr[1]/SG.swT,0,1),8);}});
   if(S2.crown[1]>0){const bw=W*.6,bx=W/2-bw/2,by=H*.26+8;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(bx,by,bw,10);ctx.fillStyle=gc(S2.crown[0]);ctx.fillRect(bx,by,bw*clamp(S2.crown[1]/SG.crownT,0,1),10);}
   label((b.test?'מצור ידידות':'מצור הטירה')+' · '+mmss(S2.left),W/2,30,'#ffd75e',13);label('מחזיקים בטירה: '+hn,W/2,48,gc(S2.holder),11);
   if(S2.crown[1]>0)label('הכתר נכבש: '+Math.ceil(SG.crownT-S2.crown[1])+' שניות',W/2,H*.26,gc(S2.crown[0]),15);
+  else if(W<560&&D.t>20){}
   else if(me.alive&&myG!==S2.holder)label(S2.sw[0]===myG&&S2.sw[1]===myG?'שני המתגים שלכם. מנהל הגילדה לוקח את הכתר!':'שני חברים מחזיקים את שני המתגים, ומנהל הגילדה לוקח את הכתר',W/2,66,'#dfe6f5',10.5);
   else if(me.alive)label('הגנו על המתגים ועל הכתר עד סוף הזמן',W/2,66,'#dfe6f5',10.5);
   if(!me.alive)label('חוזרים לקרב בעוד רגע',W/2,H*.3,'#ff5c7a',14);
@@ -1325,7 +1328,7 @@ function startDuel(pd,net){
 const DESK=!!(window.matchMedia&&window.matchMedia('(hover:hover) and (pointer:fine)').matches);
 function renderDuelBar(){
   const d=SC.duel,bar=$('duelBar'),hpb=$('duelHp');$('specBtn').style.display=d&&d.spec?'':'none';if(!d||d.spec){bar.style.display='none';hpb.style.display='none';return;}bar.style.display='grid';const me=d.D.f[d.me],off=d.sent||d.go>0;
-  const desk=DESK&&$('stage').clientWidth>=640;bar.classList.toggle('desk',desk);hpb.style.display=desk?'':'none';if(desk){const v=clamp(me.hp,0,1);hpb.firstChild.style.width=(v*100)+'%';hpb.lastChild.textContent=Math.round(v*100)+'%';}
+  const desk=DESK&&$('stage').clientWidth>=640;bar.classList.toggle('desk',desk);hpb.style.display='';hpb.classList.toggle('mob',!desk);if(desk){const v=clamp(me.hp,0,1);hpb.firstChild.style.width=(v*100)+'%';hpb.lastChild.textContent=Math.round(v*100)+'%';}
   const sgOn=!!(d.br&&d.br.sg),cg=sgOn&&d.cbN?d.D.t-d.cbAt:-1,cbK=cg>=SG.cbMin&&cg<=SG.cbMax?(d.cbN===1?'s0':'s1'):'';
   bar.querySelectorAll('button').forEach((b,i)=>{const k=DBTN[i];if(k==='buf'||k==='bash'){b.style.display=sgOn?'':'none';if(!sgOn)return;}const cd=k==='atk'?0:Math.max(0,(me.at[k]||0)-d.D.t),nm=k==='atk'?'תקיפה':k==='dash'?'צעד':k==='bash'?'הדיפה':k==='buf'?BUFN[S.cls][0]:k==='pot'?'שיקוי ×'+me.pots:CLS[S.cls].sk[k==='s0'?0:k==='s1'?3:k==='s2'?4:5],
     t=(desk?'<kbd>'+keyName(keyOf(k))+'</kbd>':'')+nm+'<small>'+(cd>0?Math.ceil(cd)+' שנ׳':k==='pot'&&!me.pots?'נגמר':k==='pot'&&me.wound>d.D.t?'פצוע':k==='buf'?BUFN[S.cls][1]:k==='bash'?'זורק יריב ממתג':k===cbK?'קומבו עכשיו':sgOn&&k==='atk'?'קומבו 1':sgOn&&k==='s0'?'קומבו 2':sgOn&&k==='s1'?'קומבו 3':k==='s3'&&d.br?'זינוק':k==='s2'?'מגן':k==='s3'?'מכה סופית':k==='s1'?'מהמם':k==='dash'?'חמיקה':'&nbsp;')+'</small>';
