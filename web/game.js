@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261127101713';
+const BUILD='20261127103902';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -200,11 +200,16 @@ function wingShape(c,T,pal,t,far){
   }
 }
 // Eight wing styles by tier: leaf, storm feathers, flame, angel, bat, ice, golden, energy. Both wings sweep back from the shoulders.
+// In a crowd a fighter's wings are painted once, still, and kept: painting every feather of thirty pairs of wings on
+// every frame is most of what a plainly drawn fighter costs.
+const WCACHE={};
 function drawWings(x,y,g,t,k,flip,cls,bh,mv,anim){
+  if(LITE){t=0;mv=false;anim=0;}
   const R=clamp(g[0]|0,1,WING_MAX),hi=R>8,fam=hi?Math.floor((R-9)/7):0,gr=hi?(R-9)%7:0,T=hi?[3,5,6,2,7,8][fam]:R,c=wctx,at=WING_AT[cls]||WING_AT.blade,f=flip?-1:1;let pal=g[3]?WPAL.s:WPAL[T];
   if(hi&&!g[3]){const h=([8,268,205,172,44,318][fam]+gr*7)%360;pal=['hsl('+h+',88%,'+(34+gr*3)+'%)','hsl('+((h+26)%360)+',100%,'+(72+gr*3)+'%)'];if(fam===5){const hh=(t*90+gr*40)%360;pal=['hsl('+hh+',92%,56%)','hsl('+((hh+150)%360)+',100%,84%)'];}}
   k*=hi?1.06+fam*.035+gr*.012:1;
   if(T===8&&!g[3]&&!hi){const h=(t*70)%360;pal=['hsl('+h+',90%,55%)','hsl('+((h+120)%360)+',95%,80%)'];}
+  const wkey=LITE?(g[0]|0)+'|'+cls+'|'+(g[3]?1:0)+'|'+bh:'';let src=wcv;if(wkey&&WCACHE[wkey])src=WCACHE[wkey];else{
   const flap=Math.sin(t*(mv?7:2.6))*(mv?1.5:1),lean=(mv?.22:0)-(anim>0?anim*.35:0),OX=130,OY=185; // beat faster on the run, trail back, open on a strike
   c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,340,280);
   c.save();c.translate(OX-14,OY-4);c.rotate(-.42+flap*.11+lean*.7);c.scale(.74,.74);c.globalAlpha=.72;wingShape(c,T,pal,t+.4,true);c.restore(); // far wing, behind and higher
@@ -216,10 +221,11 @@ function drawWings(x,y,g,t,k,flip,cls,bh,mv,anim){
   c.save();c.translate(OX,OY);c.rotate(flap*.14+lean);c.globalAlpha=1;wingShape(c,T,pal,t,false);c.restore();
   if(hi){const jr=5+fam*.6;c.save();c.translate(OX-3,OY-2);const jg=c.createRadialGradient(-1.5,-1.5,0,0,0,jr);jg.addColorStop(0,'#ffffff');jg.addColorStop(.45,pal[1]);jg.addColorStop(1,pal[0]);c.fillStyle=jg;c.beginPath();c.moveTo(0,-jr);c.lineTo(jr*.8,0);c.lineTo(0,jr);c.lineTo(-jr*.8,0);c.closePath();c.fill();c.strokeStyle='#fff8d2';c.lineWidth=1.2;c.stroke();c.restore();}
   if(T===4||T>=7){c.save();c.strokeStyle=T===8?pal[1]:'#fff3b0';c.lineWidth=5;c.globalAlpha=.85;c.beginPath();c.ellipse(OX-(at[0]+3)*2,OY-bh*2*(1-at[1])-20,22,6.5,0,0,7);c.stroke();c.restore();}
+  if(wkey){const cp=document.createElement('canvas');cp.width=340;cp.height=280;cp.getContext('2d').drawImage(wcv,0,0);WCACHE[wkey]=cp;src=cp;}}
   const u=k*.5,ax=x-f*at[0]*k,ay=y-bh*k*at[1];
   ctx.save();ctx.translate(Math.round(ax),Math.round(ay));ctx.scale(-f*u,u);ctx.imageSmoothingEnabled=true;
   const gl=Math.max(glowAmt(g[2],g[1],t),hi?14+fam*2+gr:T>=4?6+T:3);ctx.shadowColor=pal[1];ctx.shadowBlur=LITE?0:gl;
-  ctx.drawImage(wcv,-OX,-OY);ctx.restore();
+  ctx.drawImage(src,-130,-185);ctx.restore();
   if(hi&&!calm&&Math.random()<.12+fam*.05)SC.parts.push({x:ax-f*(10+Math.random()*60)*k*.5,y:ay-Math.random()*60*k*.5,vx:-f*14,vy:-26,life:.8,c:Math.random()<.3?'#fff':pal[1],s:2+(gr>3?1:0)});
   if(T>=6&&!calm&&Math.random()<.22)SC.parts.push({x:ax-f*(10+Math.random()*50)*k*.5,y:ay-Math.random()*50*k*.5,vx:0,vy:T===6?16:-18,life:.7,c:pal[1],s:2});
 }
@@ -397,7 +403,7 @@ function drawHero(x,y,sc,look,t,anim,flip,dead,mv,fury){
     ctx.save();ctx.translate(x,y);ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.4+.15*Math.sin(t*5);ctx.scale(1,.3);ctx.fillStyle=gr;ctx.beginPath();ctx.arc(0,0,50,0,7);ctx.fill();ctx.restore();}
   ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(x,y+1,20*sc,5*sc,0,0,7);ctx.fill();
   if(look.set&&!dead&&!LITE)drawSetAura(x,y,sc,look.set,t);
-  if(!dead&&!look.spr&&look.pet){const px=x+(flip?-1:1)*30*sc,py=y-14*sc,pc=RAR[clamp(look.pet-1,0,4)].c;ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.35+.15*Math.sin(t*4);ctx.fillStyle=pc;ctx.beginPath();ctx.ellipse(px,y+1,12*sc,4*sc,0,0,7);ctx.fill();ctx.restore();drawPet(px,py,sc*(look.pet>=4?1.15:.9),[1,1,2,3,4][clamp(look.pet-1,0,4)],t+2.3,!flip);}
+  if(!dead&&!look.spr&&look.pet&&!LITE){const px=x+(flip?-1:1)*30*sc,py=y-14*sc,pc=RAR[clamp(look.pet-1,0,4)].c;ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.35+.15*Math.sin(t*4);ctx.fillStyle=pc;ctx.beginPath();ctx.ellipse(px,y+1,12*sc,4*sc,0,0,7);ctx.fill();ctx.restore();drawPet(px,py,sc*(look.pet>=4?1.15:.9),[1,1,2,3,4][clamp(look.pet-1,0,4)],t+2.3,!flip);}
   if(!dead&&!look.spr&&!LITE&&petTier(look.r|0))drawPet(x-(flip?-1:1)*38*sc,y-m.bh*k*.92,sc,petTier(look.r|0),t+(look.c==='storm'?1:0),flip);
   let an='idle',fi=Math.floor(t*8);
   if(dead){an='die';fi=Math.min(frames(key,'die')-1,Math.floor((dead===true?9:dead)*8));}
@@ -1003,7 +1009,7 @@ function brBegin(m){
 }
 function brState(m){
   const d=SC.duel;if(!d||!d.br||d.br.phase==='lobby')return;const b=d.br,D=d.D;D.t=+m.T;if(m.ring!=null)b.ring=+m.ring;if(m.sg&&b.sg)b.sg=m.sg;
-  (m.s||[]).forEach((q,i)=>{const f=D.f[i];if(!f)return;const was=f.alive;f.hp=+q[2];f.alive=!!q[3];f.sh=q[4]?D.t+.3:0;f.stun=q[5]?D.t+.3:0;f.kills=q[7]|0;f.inv=q[8]?D.t+.3:0;f.w=q[9]|0;f.ar=q[10]|0;f.bt=q[11]|0;f.pots=q[12]|0;f.bfN=q[13]|0;f.wound=q[14]?D.t+.3:0;
+  (m.s||[]).forEach((q,i)=>{const f=D.f[i];if(!f||!q)return;const was=f.alive;f.hp=+q[2];f.alive=!!q[3];f.sh=q[4]?D.t+.3:0;f.stun=q[5]?D.t+.3:0;f.kills=q[7]|0;f.inv=q[8]?D.t+.3:0;f.w=q[9]|0;f.ar=q[10]|0;f.bt=q[11]|0;f.pots=q[12]|0;f.bfN=q[13]|0;f.wound=q[14]?D.t+.3:0;
     if(i!==d.me){b.tg[i]=[+q[0],+q[1]];d.v[i].face=q[6]<0?-1:1;}
     else if(Math.hypot(f.x-q[0],f.y-q[1])>150){f.x=+q[0];f.y=+q[1];b.go=null;} // the server did not accept where I think I am
     if(!was&&f.alive){b.deadT[i]=0;if(i===d.me){f.x=+q[0];f.y=+q[1];b.go=null;renderDuelBar();}else{f.x=+q[0];f.y=+q[1];}}
@@ -1105,7 +1111,7 @@ function drawSg(dt){
     ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(ax,ya+2,20*sc,6*sc,0,0,7);ctx.fill();
     ctx.strokeStyle=i===tgt?'#ff5c7a':c;ctx.globalAlpha=i===tgt||i===d.me?.95:.55;ctx.lineWidth=i===tgt?2.5:1.5;ctx.beginPath();ctx.ellipse(ax,ya+2,26*sc,8*sc,0,0,7);ctx.stroke();ctx.globalAlpha=1;
     if(a.sh>D.t){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle='#9fe8ff';ctx.globalAlpha=.6;ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(ax,ya-44*sc,28*sc,48*sc,0,0,7);ctx.stroke();ctx.restore();}
-    ctx.save();if(a.inv>D.t)ctx.globalAlpha=.45;LITE=i!==d.me&&D.f.length>3&&!window.EC_FULLFX;drawHero(x,ya,sc,b.looks[i],SC.t+i*1.7,v.anim,v.face<0,dead>0?Math.max(.01,dead):0,v.mv,false);LITE=false;ctx.restore();
+    ctx.save();if(a.inv>D.t)ctx.globalAlpha=.45;LITE=(i!==d.me?D.f.length>3:D.f.length>10)&&!window.EC_FULLFX;drawHero(x,ya,sc,b.looks[i],SC.t+i*1.7,v.anim,v.face<0,dead>0?Math.max(.01,dead):0,v.mv,false);LITE=false;ctx.restore();
     if(dead>0)continue;const top=ya-134*sc;hpBar(ax-26,top,52,a.hp,b.g[i]===myG?'#6fe39a':'#ff5c7a');label((b.tag[i]?'['+b.tag[i]+'] ':'')+b.names[i],ax,top-6,c,10.5);if(a.stun>D.t)label('✦',ax,top-20,'#ffd75e',12);}
   drawFx(dt);
   {const mw=58,mh=102,mx=W-mw-8,my=62,qx=mw/SG.W,qy=mh/(SG.Y1-SG.Y0),M=(x,y)=>[mx+mw/2+x*qx,my+(y-SG.Y0)*qy];ctx.save();ctx.fillStyle='rgba(8,6,20,.75)';ctx.strokeStyle='rgba(255,215,94,.6)';ctx.lineWidth=1.5;ctx.fillRect(mx,my,mw,mh);ctx.strokeRect(mx,my,mw,mh);
@@ -1151,7 +1157,7 @@ function drawBr(dt){
     if(i===d.me&&a.alive){ctx.strokeStyle='rgba(125,249,255,.75)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(ax,ya+2,26*sc,8*sc,0,0,7);ctx.stroke();}
     if(i===tgt){ctx.strokeStyle='#ff5c7a';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(ax,ya+2,28*sc,9*sc,0,0,7);ctx.stroke();}
     if(a.sh>D.t){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle='#9fe8ff';ctx.shadowColor='#9fe8ff';ctx.shadowBlur=12;ctx.globalAlpha=.6;ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(ax,ya-44*sc,28*sc,48*sc,0,0,7);ctx.stroke();ctx.restore();}
-    ctx.save();if(a.inv>D.t)ctx.globalAlpha=.45;LITE=i!==d.me&&D.f.length>3&&!window.EC_FULLFX;drawHero(x,ya,sc,b.looks[i],SC.t+i*1.7,v.anim,v.face<0,dead>0?Math.max(.01,dead):0,v.mv,a.w>=3);LITE=false;ctx.restore();
+    ctx.save();if(a.inv>D.t)ctx.globalAlpha=.45;LITE=(i!==d.me?D.f.length>3:D.f.length>10)&&!window.EC_FULLFX;drawHero(x,ya,sc,b.looks[i],SC.t+i*1.7,v.anim,v.face<0,dead>0?Math.max(.01,dead):0,v.mv,a.w>=3);LITE=false;ctx.restore();
     if(dead>0)continue;const top=ya-134*sc;hpBar(ax-26,top,52,a.hp,i===d.me?'#6fe39a':'#ff5c7a');label(b.names[i]+(a.kills?' · '+a.kills:''),ax,top-6,i===d.me?'#7df9ff':b.bot[i]?'#c9c2ea':'#ffd75e',10.5);
     for(let q=0;q<a.w;q++){ctx.fillStyle=LOOTC.w;ctx.fillRect(ax-26+q*6,top+10,4,4);}for(let q=0;q<a.ar;q++){ctx.fillStyle=LOOTC.a;ctx.fillRect(ax+22-q*6,top+10,4,4);}
     if(a.stun>D.t)label('✦',ax,top-20,'#ffd75e',12);}

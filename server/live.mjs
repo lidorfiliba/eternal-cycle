@@ -145,7 +145,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     }
     if (m.t === 'brAct') {
       const o = G.brAct(B, i, String(m.k), rnd); if (!o) return;
-      const out = brState(B); out.ev = [o]; brAll(out); send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t });
+      const out = brState(B); out.ev = [o]; out.s = out.s.map((q, k) => (k === i || k === o.to ? q : null)); brAll(out); send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t });
       if (B.over) brFinish(b);
     }
   }
@@ -213,7 +213,8 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
       const lim = G.BR.spd * 1.3 * el + (f.inv > B.t ? 190 : 24), dx = (Number(m.x) || 0) - f.x, dy = (Number(m.y) || 0) - f.y, d = Math.hypot(dx, dy) || 1, st = Math.min(d, lim);
       G.sgMove(B, f, f.x + dx / d * st, f.y + dy / d * st); f.face = Number(m.f) < 0 ? -1 : 1; return;
     }
-    if (m.t === 'sgAct') { const o = G.sgAct(B, i, String(m.k), rnd); if (!o) return; if (o.no) return send(uid, { t: 'sgHint', no: o.no }); const out = sgState(B); out.ev = [o]; sgAll(out); return send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t }); }
+    // An action is told to everyone with only the two fighters it touched: with thirty players, a whole picture of everyone on every blow would flood the phones.
+    if (m.t === 'sgAct') { const o = G.sgAct(B, i, String(m.k), rnd); if (!o) return; if (o.no) return send(uid, { t: 'sgHint', no: o.no }); const out = sgState(B); out.ev = [o]; out.s = out.s.map((q, k) => (k === i || k === o.to ? q : null)); sgAll(out); return send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t }); }
   }
 
   // Party invitations: by clicking a player or typing a name. The invited player is asked, and joins only on a yes.
