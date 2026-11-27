@@ -55,7 +55,7 @@ const ZRAW=[
 ];
 const BASEZ=24,REGION=3,CITY_TIER=12,CITY_PERFECT=1.25;let _castle=false,_gm=false; // whether the player's guild holds the castle: the server says so with each request
 // Reset maps are built for characters that kept their stats through resets: [life, damage] multipliers by the resets a map needs.
-const RESET_TOUGH={60:[220,700],75:[400,1400],100:[800,3000],1:[4,4,3],2:[4.5,6,2.7],3:[5,8,2.4],4:[5.5,11,2.2],5:[6.5,14,2],7:[10.5,20,1.8],10:[15,28,1.75],15:[34,70,2.5],20:[42,95,2.1],30:[65,165,1.9],50:[130,400,1.7]}; // health and attack (the third number is no longer used): tougher than the main road; what they give is ancient set pieces, three times as often
+const RESET_TOUGH={60:[10400,14400],75:[24600,24700],100:[58900,40800],1:[4,4,3],2:[4.5,6,2.7],3:[5,8,2.4],4:[5.5,11,2.2],5:[6.5,14,2],7:[10.5,20,1.8],10:[15,28,1.75],15:[34,70,2.5],20:[42,95,2.1],30:[65,165,1.9],50:[130,400,1.7]}; // health and attack (the third number is no longer used): tougher than the main road; what they give is ancient set pieces, three times as often
 const SIGS=['xp','gold','hp','crit','aspd','cdmg','drop','dmg'],RSIGS=['xp','dmg','gold','cdmg','aspd','crit'];
 const ZONES=ZRAW.map((q,i)=>{
   const min=q[2],req=q[11]||0,base=i<BASEZ,j=i-BASEZ,z={n:q[0],m:q[1],min:min,spr:q[3],tint:q[4],kind:q[5],c:q[6],sky:[q[7],q[8]],sil:q[9],amb:q[10],fly:q[3].indexOf('eye')===0};
@@ -73,12 +73,12 @@ const MHP=ZONES.map(z=>z.hp),MATK=ZONES.map(z=>z.atk),ZSPR=ZONES.map(z=>z.spr),Z
 const CLS={
  blade:{n:'לוחם להב',main:'str',coef:1.5,combo:'סערת להבים',c:'#ff8a4d',wn:'להב',range:50,sk:['סערת להבים','שרשרת ברזל','זעם הקרב','מכת מחץ','חומת פלדה','אלף להבים'],al:{str:.6,agi:.15,vit:.25}},
  storm:{n:'מכשפת סער',main:'ene',coef:1.5,combo:'ברק שרשרת',c:'#6fd3ff',wn:'מטה',range:175,sk:['ברק שרשרת','מערבולת','הארת סער','כדור אש','מגן קסם','מטר מטאורים'],al:{ene:.6,agi:.15,vit:.25}},
- // the warlord leads from the middle of the line: his strength comes from his own endurance, he hits less hard than
- // the blade and stands far longer, and those who fight beside him stand longer too. He wears a cape where others wear wings.
- lord:{n:'אדון מלחמה',main:'vit',coef:.7,hpM:.55,combo:'צו מלחמה',c:'#f2c14e',wn:'שרביט',range:95,sk:['צו מלחמה','שלשלאות פיקוד','דגל המצביא','מהלומת שרביט','חומת מגינים','משפט המלך'],al:{vit:.7,agi:.3}},
+ // the warlord leads from the middle of the line: he hits less hard than the blade and stands far longer, at every
+ // stage of a character's life, with all stats full as much as on the way there, and those who fight beside him stand longer too. He wears a cape where others wear wings.
+ lord:{n:'אדון מלחמה',main:'str',coef:1.3,hpMul:1.3,combo:'צו מלחמה',c:'#f2c14e',wn:'שרביט',range:95,sk:['צו מלחמה','שלשלאות פיקוד','דגל המצביא','מהלומת שרביט','חומת מגינים','משפט המלך'],al:{str:.45,vit:.4,agi:.15}},
  hunter:{n:'צייד צללים',main:'agi',coef:0.62,combo:'מטר חניתות',c:'#8be28b',wn:'חנית',range:235,sk:['מטר חניתות','רשת צללים','עין הנץ','חנית חודרת','צעד צל','מטח הציידים'],al:{agi:.7,vit:.3}}
 };
-const STATN={str:['כוח','נזק ללוחם להב'],agi:['זריזות','מהירות, קריטי, הגנה'],vit:['חיוניות','חיים והגנה. נזק לאדון מלחמה'],ene:['אנרגיה','נזק למכשפת סער']};
+const STATN={str:['כוח','נזק ללוחם להב ולאדון מלחמה'],agi:['זריזות','מהירות, קריטי, הגנה'],vit:['חיוניות','חיים והגנה'],ene:['אנרגיה','נזק למכשפת סער']};
 const RAR=[{n:'רגיל',c:'#b9b4c7',m:1},{n:'קסום',c:'#5aa9ff',m:1.25},{n:'נדיר',c:'#c77dff',m:1.6},{n:'אגדי',c:'#ffb23e',m:2.1},{n:'עתיק',c:'#3df5c8',m:2.8}];
 const TIERN=['חניך','ברזל','כסף ירח','חול זועם','כפור','גחלת','צל','נצח','תהום','קרחון','זהב טהור','מעגל','אפר הזמן','בריאה','הריק'];
 // Fifty ranks of wings, each stronger than the one before. Monsters drop only the first eight; every rank above
@@ -187,14 +187,14 @@ function calc(s,au){
   const sc=setCounts(s);for(const z in sc)for(const b of setTable(z))if(sc[z]>=b[0])a[b[1]]+=b[2]*(parseInt(z)===VOID_TIER-1?VOID_SET:1); // and its sets give half as much again
   {const n=exCount(s);for(const b of EXB)if(n>=b[0])a[b[1]]+=b[2];}
   const main=st[c.main];
-  const base=10+main*c.coef+(st.str+st.agi+st.ene-(c.main==='vit'?0:main))*0.15+atk;
+  const base=10+main*c.coef+(st.str+st.agi+st.ene-main)*0.15+atk;
   const ml=mastery(s.kills);
   let dmg=base*(1+0.04*s.resets)*(1+a.dmg/100)*(1+wd/100)*(1+ml*MASTERY_PCT/100);
   let aspd=Math.min(3.2,(1.1+st.agi/500)*(1+a.aspd/100));
   let crit=Math.min(.6,.05+st.agi/3000+a.crit/100);
   const cdmg=2+a.cdmg/100;
-  let hp=(120+st.vit*10*(c.hpM||1)+s.lvl*6+ahp)*(1+a.hp/100)*(1+wh/100)*(1+ml*MASTERY_PCT/100);
-  let def=(st.agi*.15+st.vit*.1*(c.hpM||1)+adef)*(1+a.def/100);
+  let hp=(120+st.vit*10+s.lvl*6+ahp)*(c.hpMul||1)*(1+a.hp/100)*(1+wh/100)*(1+ml*MASTERY_PCT/100);
+  let def=(st.agi*.15+st.vit*.1+adef)*(1+a.def/100);
   if(au&&au.length){if(au.includes('lord')){hp*=1.12;def*=1.12;}if(au.includes('blade'))dmg*=1.12;if(au.includes('storm'))aspd*=1.1;if(au.includes('hunter'))crit=Math.min(.75,crit+.08);}
   const dps=dmg*aspd*(1+crit*(cdmg-1))*1.3;
   const boost=s.boost>(s._now||_now())?1.5:1,vip=(s.vip||0)>(s._now||_now())?1.15:1;
