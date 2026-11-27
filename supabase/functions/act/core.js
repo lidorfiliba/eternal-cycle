@@ -573,7 +573,7 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:25,swT:3,resp:10,respIn:50,crownKeep:0,crownPen:1,pots:60,potMax:250,potCd:.25,heal:.06,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
+const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:25,swT:3,resp:10,respIn:40,crownKeep:0,crownPen:1,pots:60,potMax:250,potCd:.25,heal:.06,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.012,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   // a wide castle: room to fight in the yard and in the throne room without everyone standing on everyone

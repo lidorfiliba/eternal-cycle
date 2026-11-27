@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261127170520';
+const BUILD='20261127174354';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -631,7 +631,7 @@ function attackFx(cls,hx,hy,face,targets,combo,c){
     burst(tg.x,tg.y-26,c,combo?12:5);
     SC.fx.push({k:'flash',x:tg.x,y:tg.y-26,r:combo?44:22,life:.2,d:.2,c:c});if(combo&&!calm)SC.fx.push({k:'star',x:tg.x,y:tg.y-28,r:26,rot:Math.random()*3,life:.28,d:.28,c:c});
   }
-  if(combo){SC.fx.push({k:'ring',x:targets[0]?targets[0].x:hx,y:hy-20,life:.4,c:c});if(!calm)SC.shake=.25;}
+  if(combo&&!SC.duel){SC.fx.push({k:'ring',x:targets[0]?targets[0].x:hx,y:hy-20,life:.4,c:c});if(!calm)SC.shake=.25;}
 }
 function drawFx(dt){
   ctx.save();ctx.globalCompositeOperation='lighter';
@@ -1121,11 +1121,11 @@ function brBegin(m){
 }
 function brState(m){
   const d=SC.duel;if(!d||!d.br||d.br.phase==='lobby')return;const b=d.br,D=d.D;D.t=+m.T;if(m.ring!=null)b.ring=+m.ring;if(m.sg&&b.sg)b.sg=m.sg;
-  (m.s||[]).forEach((q,i)=>{const f=D.f[i];if(!f||!q)return;const was=f.alive;f.hp=+q[2];f.alive=!!q[3];f.sh=q[4]?D.t+.3:0;f.stun=q[5]?D.t+.3:0;f.kills=q[7]|0;f.inv=q[8]?D.t+.3:0;f.w=q[9]|0;f.ar=q[10]|0;f.bt=q[11]|0;f.pots=q[12]|0;f.bfN=q[13]|0;f.wound=q[14]?D.t+.3:0;
+  (m.s||[]).forEach((q,i)=>{const f=D.f[i];if(!f||!q)return;const was=f.alive;f.hp=+q[2];f.alive=!!q[3];f.sh=q[4]?D.t+.3:0;f.stun=q[5]?D.t+.3:0;f.kills=q[7]|0;f.inv=q[8]?D.t+.3:0;f.w=q[9]|0;f.ar=q[10]|0;f.bt=q[11]|0;f.pots=q[12]|0;f.bfN=q[13]|0;f.wound=q[14]?D.t+.3:0;if(q[15]!=null){f.rs=q[15]|0;f.rsAt=SC.t;}
     if(i!==d.me){b.tg[i]=[+q[0],+q[1]];d.v[i].face=q[6]<0?-1:1;}
     else if(D.t>(d.noSnap||0)&&Math.hypot(f.x-q[0],f.y-q[1])>320){f.x=+q[0];f.y=+q[1];b.go=null;} // the server did not accept where I think I am
     if(!was&&f.alive){b.deadT[i]=0;if(i===d.me){f.x=+q[0];f.y=+q[1];b.go=null;renderDuelBar();}else{f.x=+q[0];f.y=+q[1];}}
-    if(was&&!f.alive){b.deadT[i]=.01;const p=bP(f.x,f.y);burst(p[0],p[1]-40,'#ff5c7a',26);snd('bossdie');if(i===d.me){SC.nums.push({x:W/2,y:H*.4,txt:b.sg?'נפלת. חוזרים בעוד כמה שניות':'נפלת',c:'#ff5c7a',s:b.sg?22:30,life:2.2});renderDuelBar();}}});
+    if(was&&!f.alive){b.deadT[i]=.01;const p=bP(f.x,f.y);burst(p[0],p[1]-40,'#ff5c7a',26);snd('bossdie');if(i===d.me){SC.nums.push({x:W/2,y:H*.4,txt:b.sg?'נפלת':'נפלת',c:'#ff5c7a',s:b.sg?22:30,life:2.2});renderDuelBar();}}});
   for(const o of m.ev||[])brShow(d,o);
 }
 function brShow(d,o){
@@ -1150,13 +1150,13 @@ function brShow(d,o){
   if(k==='s2'){if(o.by===d.me)snd('fury');SC.fx.push({k:'rune',x:ax,y:g-2,r:60,life:.9,d:.9,c:'#9fe8ff'});return;}
   if(k==='dash'){for(let q=0;q<4;q++)SC.parts.push({x:ax,y:g-20-q*14,vx:(Math.random()-.5)*120,vy:0,life:.4,c:'#9fe8ff',s:3});return;}
   if(k==='pot'){burst(ax,g-50,'#6fe39a',o.by===d.me?12:5);return;}
-  const v=D.f[o.to];if(!v)return;if(o.by===d.me){d.cbN=o.miss?0:o.cb|0;d.cbAt=D.t;}
+  const v=D.f[o.to];if(!v)return;if(o.by===d.me){d.cbN=o.miss?0:o.cb|0;d.cbAt=D.t;if(d.cbN===2)SC.nums.push({x:ax,y:g-150,txt:'2/3',c:'#ffd75e',s:20,life:.7});}
   if(o.px){const q0=bP(v.x,v.y);if(o.to===d.me){v.x=o.px[0];v.y=o.px[1];b.go=null;d.last=[v.x,v.y];}else b.tg[o.to]=[o.px[0],o.px[1]];const q1=bP(o.px[0],o.px[1]); // thrown back: a streak and dust along the way
     SC.fx.push({k:'line',x1:q0[0],y1:q0[1]-10,x2:q1[0],y2:q1[1]-10,life:.3,c:'#e8d8b8',w:4});for(let q=0;q<7;q++)SC.parts.push({x:q0[0]+(q1[0]-q0[0])*q/7,y:q0[1]-4,vx:(Math.random()-.5)*50,vy:-30-Math.random()*40,life:.5,c:'#d8c8a8',s:3});}
   const pv=bP(v.x,v.y),vx=pv[0],ge=pv[1],big=k!=='atk';va.anim=1;if(Math.abs(v.x-a.x)>4)va.face=v.x>=a.x?1:-1;
   if(k==='s3'&&!(o.by===d.me||o.to===d.me)&&D.f.length>3){SC.fx.push({k:'flash',x:vx,y:ge-40,r:50,life:.25,d:.25,c:cc});SC.fx.push({k:'ring',x:vx,y:ge-6,life:.4,c:cc,r:80});}
-  else if(k==='s3'){if(o.by===d.me||o.to===d.me){snd('ult');if(!calm)SC.shake=.4;}SC.fx.push({k:'rune',x:vx,y:ge-2,r:120,life:1,d:1,c:cc});SC.fx.push({k:'flash',x:vx,y:ge-40,r:90,life:.35,d:.35,c:cc});SC.fx.push({k:'ring',x:vx,y:ge-6,life:.55,c:cc,r:140});SC.fx.push({k:'ring',x:vx,y:ge-6,life:.8,c:'#fff',r:90});for(let q=-2;q<=2;q++)SC.fx.push({k:'pillar',x:vx+q*28,y:ge,life:.5,d:.5,c:cc});SC.fx.push({k:'star',x:vx,y:ge-40,r:84,rot:.2,life:.45,d:.45,c:'#fff'});}
-  else if(k==='bash'){if(o.by===d.me||o.to===d.me)snd('slam');SC.fx.push({k:'ring',x:vx,y:ge-20,life:.4,c:'#ffd75e',r:76});SC.fx.push({k:'flash',x:vx,y:ge-40,r:64,life:.25,d:.25,c:'#ffd75e'});if(!o.miss)addNum(vx,ge-128,o.guard?'המגן עצר':'נהדף','#ffd75e',false);if(!calm&&o.to===d.me)SC.shake=.3;}
+  else if(k==='s3'){if(o.by===d.me||o.to===d.me)snd('ult');SC.fx.push({k:'rune',x:vx,y:ge-2,r:120,life:1,d:1,c:cc});SC.fx.push({k:'flash',x:vx,y:ge-40,r:90,life:.35,d:.35,c:cc});SC.fx.push({k:'ring',x:vx,y:ge-6,life:.55,c:cc,r:140});SC.fx.push({k:'ring',x:vx,y:ge-6,life:.8,c:'#fff',r:90});for(let q=-2;q<=2;q++)SC.fx.push({k:'pillar',x:vx+q*28,y:ge,life:.5,d:.5,c:cc});SC.fx.push({k:'star',x:vx,y:ge-40,r:84,rot:.2,life:.45,d:.45,c:'#fff'});}
+  else if(k==='bash'){if(o.by===d.me||o.to===d.me)snd('slam');SC.fx.push({k:'ring',x:vx,y:ge-20,life:.4,c:'#ffd75e',r:76});SC.fx.push({k:'flash',x:vx,y:ge-40,r:64,life:.25,d:.25,c:'#ffd75e'});if(!o.miss)addNum(vx,ge-128,o.guard?'המגן עצר':'נהדף','#ffd75e',false);}
   else if(k==='s1'||k==='s0')skillFx(a.cls,k,ax,g,vx,ge,va.face,cc,o.by===d.me||o.to===d.me||D.f.length<=3);
   attackFx(a.cls,ax,g,va.face,[{x:vx,y:ge-10}],big,a.w?col:cc);
   if(o.miss){addNum(vx,ge-110,'חמק!','#9fe8ff',true);return;}
@@ -1193,7 +1193,8 @@ function updateBr(dt){
     let vx=SC.hero.dir,vy=SC.hero.dz;if(joy.v[0]||joy.v[1]){vx=joy.v[0];vy=joy.v[1];}if(vx||vy)b.go=null;else if(b.go){const gx=b.go[0]-me.x,gy2=b.go[1]-me.y,gd=Math.hypot(gx,gy2);if(gd<8)b.go=null;else{vx=gx/gd;vy=gy2/gd;}}
     if(vx||vy){const n=Math.hypot(vx,vy),sp=BR.spd*(1+.12*(me.bt|0))*dt;if(b.sg){me.g=b.g[d.me];sgMove({sg:b.sg},me,me.x+vx/n*sp,me.y+vy/n*sp);}else{me.x+=vx/n*sp;me.y+=vy/n*sp;const r=Math.hypot(me.x,me.y),lim=b.phase==='lobby'?240:BR.R;if(r>lim){me.x*=lim/r;me.y*=lim/r;}}vm.mv=true;if(Math.abs(vx)>.15)vm.face=vx>0?1:-1;}}
   if(b.phase==='fight'){
-    if(d.holdAtk||b.auto)duelAct('atk');
+    if(d.q){if(D.t>d.q.until||!me.alive)d.q=null;else if(me.at[d.q.k]<=D.t){const k=d.q.k;d.q=null;duelAct(k);}}
+    else if(d.holdAtk||b.auto)duelAct('atk');
     if(me.alive&&(d.posT-=dt)<=0&&(Math.abs(me.x-d.last[0])>.5||Math.abs(me.y-d.last[1])>.5)){d.posT=.08;d.last=[me.x,me.y];netSend({t:b.sg?'sgPos':'brPos',x:Math.round(me.x),y:Math.round(me.y),f:vm.face});}
     D.f.forEach((f,i)=>{if(i===d.me)return;const tg=b.tg[i],v=d.v[i];v.mv=false;if(tg&&f.alive){const ex=tg[0]-f.x,ey=tg[1]-f.y;if(Math.abs(ex)>1||Math.abs(ey)>1){f.x+=ex*Math.min(1,dt*10);f.y+=ey*Math.min(1,dt*10);v.mv=Math.hypot(ex,ey)>4;}}});
   }
@@ -1226,7 +1227,7 @@ function drawSg(dt){
     const p=bP(me.x,me.y);ctx.strokeStyle='rgba(125,249,255,.22)';ctx.lineWidth=1;ctx.setLineDash([5,6]);ctx.beginPath();ctx.ellipse(p[0],p[1],rng*k,rng*k*.55,0,0,7);ctx.stroke();ctx.setLineDash([]);}
   if(b.go&&me.alive){const p=bP(b.go[0],b.go[1]);ctx.strokeStyle='rgba(125,249,255,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(p[0],p[1],9,4,0,0,7);ctx.stroke();}
   const ord=D.f.map((_,i)=>i).sort((p,q)=>D.f[p].y-D.f[q].y);
-  for(const i of ord){const a=D.f[i],v=d.v[i];if(!a.alive&&!(b.deadT[i]>0&&b.deadT[i]<1.6))continue;const dead=a.alive?0:b.deadT[i],p=bP(a.x,a.y),ax=p[0],ya=p[1]-(v.hop>0?Math.sin(Math.PI*(1-v.hop/.38))*70:0);if(ax<-80||ax>W+80||ya<-40||ya>H+140)continue;const x=ax+(v.hitT>0?(Math.random()-.5)*5:0),c=i===d.me?'#7df9ff':gc(b.g[i]);
+  for(const i of ord){const a=D.f[i],v=d.v[i];if(!a.alive&&!(b.deadT[i]>0&&b.deadT[i]<1.6))continue;const dead=a.alive?0:b.deadT[i],p=bP(a.x,a.y),ax=p[0],ya=p[1]-(v.hop>0?Math.sin(Math.PI*(1-v.hop/.38))*70:0);if(ax<-80||ax>W+80||ya<-40||ya>H+140)continue;const x=ax+(v.hitT>.1?(Math.random()-.5)*2.5:0),c=i===d.me?'#7df9ff':gc(b.g[i]);
     ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(ax,ya+2,20*sc,6*sc,0,0,7);ctx.fill();
     ctx.strokeStyle=i===tgt?'#ff5c7a':c;ctx.globalAlpha=i===tgt||i===d.me?.95:.55;ctx.lineWidth=i===tgt?2.5:1.5;ctx.beginPath();ctx.ellipse(ax,ya+2,26*sc,8*sc,0,0,7);ctx.stroke();ctx.globalAlpha=1;
     if(a.sh>D.t){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle='#9fe8ff';ctx.globalAlpha=.6;ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(ax,ya-44*sc,28*sc,48*sc,0,0,7);ctx.stroke();ctx.restore();}
@@ -1245,7 +1246,7 @@ function drawSg(dt){
   else if(W<560&&D.t>20){}
   else if(me.alive&&myG!==S2.holder)label(S2.sw[0]===myG&&S2.sw[1]===myG?'שני המתגים שלכם. מנהל הגילדה לוקח את הכתר!':'שני חברים מחזיקים את שני המתגים, ומנהל הגילדה לוקח את הכתר',W/2,66,'#dfe6f5',10.5);
   else if(me.alive)label('הגנו על המתגים ועל הכתר עד סוף הזמן',W/2,66,'#dfe6f5',10.5);
-  if(!me.alive)label('חוזרים לקרב בעוד רגע',W/2,H*.3,'#ff5c7a',14);
+  if(!me.alive){const left=Math.max(0,Math.ceil((me.rs|0)-(SC.t-(me.rsAt||SC.t))));label(left>0?'נפלת. חוזרים לקרב בעוד '+left+' שניות':'חוזרים לקרב בעוד רגע',W/2,H*.3,'#ff5c7a',16);if(myG===S2.holder&&left>0)label('מגינים חוזרים לאט יותר מתוקפים',W/2,H*.3+20,'#c9c2ea',11);}
 }
 function drawBr(dt){
   if(SC.duel.br.sg)return drawSg(dt);
@@ -1272,7 +1273,7 @@ function drawBr(dt){
     const p=bP(me.x,me.y);ctx.strokeStyle='rgba(125,249,255,.22)';ctx.lineWidth=1;ctx.setLineDash([5,6]);ctx.beginPath();ctx.ellipse(p[0],p[1],rng*k,rng*k*.55,0,0,7);ctx.stroke();ctx.setLineDash([]);}
   if(b.go&&me.alive){const p=bP(b.go[0],b.go[1]);ctx.strokeStyle='rgba(125,249,255,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(p[0],p[1],9,4,0,0,7);ctx.stroke();}
   const ord=D.f.map((_,i)=>i).sort((p,q)=>D.f[p].y-D.f[q].y);
-  for(const i of ord){const a=D.f[i],v=d.v[i],dead=b.deadT[i]||0;if(dead>1.6)continue;const p=bP(a.x,a.y),ax=p[0],ya=p[1]-(v.hop>0?Math.sin(Math.PI*(1-v.hop/.38))*70:0);if(ax<-80||ax>W+80||ya<-40||ya>H+140)continue;const x=ax+(v.hitT>0?(Math.random()-.5)*5:0);
+  for(const i of ord){const a=D.f[i],v=d.v[i],dead=b.deadT[i]||0;if(dead>1.6)continue;const p=bP(a.x,a.y),ax=p[0],ya=p[1]-(v.hop>0?Math.sin(Math.PI*(1-v.hop/.38))*70:0);if(ax<-80||ax>W+80||ya<-40||ya>H+140)continue;const x=ax+(v.hitT>.1?(Math.random()-.5)*2.5:0);
     ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(ax,ya+2,20*sc,6*sc,0,0,7);ctx.fill();
     if(i===d.me&&a.alive){ctx.strokeStyle='rgba(125,249,255,.75)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(ax,ya+2,26*sc,8*sc,0,0,7);ctx.stroke();}
     if(i===tgt){ctx.strokeStyle='#ff5c7a';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(ax,ya+2,28*sc,9*sc,0,0,7);ctx.stroke();}
@@ -1355,7 +1356,7 @@ function dShow(d,o){ // play what a move did; o comes from liveAct, here or on t
   if(o.miss==='lane'){addNum(vx,ge-110,'החטיא','#c9c2ea',false);return;}
   if(o.miss==='inv'){addNum(vx,ge-110,'חמק!','#9fe8ff',true);return;}
   if(o.guard)SC.fx.push({k:'ring',x:vx,y:ge-40,life:.3,c:'#9fe8ff',r:50});
-  d.v[1-i].hitT=.18;snd(o.crit?'crit':big?'skill':'hit');addNum(vx,ge-92,fmt(Math.round(o.dm*pool)),o.crit?'#ffd75e':big?col:'#fff',o.crit||big);if(big&&!calm)SC.shake=Math.max(SC.shake,.18);
+  d.v[1-i].hitT=.18;snd(o.crit?'crit':big?'skill':'hit');addNum(vx,ge-92,fmt(Math.round(o.dm*pool)),o.crit?'#ffd75e':big?col:'#fff',o.crit||big);if(big&&!calm&&!D.pvp)SC.shake=Math.max(SC.shake,.18);
   if(o.stun)addNum(vx,ge-128,'הלם','#ffd75e',false);
   if(o.combo){snd('ult');SC.nums.push({x:vx,y:ge-150,txt:'קומבו!',c:'#ff5c7a',s:W<560?26:36,life:1.2});SC.fx.push({k:'star',x:vx,y:ge-40,r:70,rot:0,life:.5,d:.5,c:'#ff5c7a'});SC.fx.push({k:'ring',x:vx,y:ge-10,life:.5,c:'#ffd75e',r:90});burst(vx,ge-40,'#ffb23e',30);if(!calm)SC.shake=.4;}
 }
@@ -1367,11 +1368,12 @@ function dashMove(d,i){const D=d.D,me=D.f[i],en=D.f[1-i],mine=i===d.me;let vx,vz
   me.x=clamp(me.x+vx*DUEL_LIVE.dash.d,20,LIVE_W-20);me.z=clamp(me.z+vz*.55,0,1);}
 function duelAct(k){
   const d=SC.duel;if(!d||d.sent||d.go>0||d.spec)return;const D=d.D,me=D.f[d.me];
+  if((d.br||D.pvp)&&(k==='s0'||k==='s1')&&me.at[k]>D.t&&me.at[k]-D.t<.5&&!(me.stun>D.t)){d.q={k:k,until:D.t+.7};return;}
   if(d.br){if(d.br.phase!=='fight'||!me.alive||D.t<0||me.stun>D.t||me.at[k]>D.t||(k==='pot'&&!me.pots))return;
     if(k==='bash'&&d.br.sg){const r=LIVE_RNG[me.cls]+30,mg=d.br.g[d.me];if(!D.f.some((f,i)=>i!==d.me&&f.alive&&d.br.g[i]!==mg&&Math.hypot(f.x-me.x,f.y-me.y)<=r)){const p=bP(me.x,me.y);addNum(p[0],p[1]-110,'אין יריב צמוד להדוף','#ffd75e',false);me.at.bash=D.t+.6;return;}}
     {const q=d.sel,f=q>=0?D.f[q]:null;if(q>=0&&(!f||!f.alive))d.sel=-1;netSend(d.sel>=0?{t:d.br.sg?'sgAct':'brAct',k:k,to:d.sel}:{t:d.br.sg?'sgAct':'brAct',k:k});}
-    if(k==='dash'){me.at.dash=D.t+DUEL_LIVE.dash.cd;d.noSnap=D.t+.8;let vx=joy.v[0]||SC.hero.dir,vy=joy.v[1]||SC.hero.dz;if(!vx&&!vy){if(d.br.go){vx=d.br.go[0]-me.x;vy=d.br.go[1]-me.y;}else{const an=Math.random()*Math.PI*2;vx=Math.cos(an);vy=Math.sin(an);}}const n=Math.hypot(vx,vy)||1;if(d.br.sg)me.g=d.br.g[d.me];if(d.br.sg)sgMove({sg:d.br.sg},me,me.x+vx/n*DUEL_LIVE.dash.d,me.y+vy/n*DUEL_LIVE.dash.d);else{me.x+=vx/n*DUEL_LIVE.dash.d;me.y+=vy/n*DUEL_LIVE.dash.d;const r=Math.hypot(me.x,me.y);if(r>BR.R){me.x*=BR.R/r;me.y*=BR.R/r;}}netSend({t:d.br.sg?'sgPos':'brPos',x:Math.round(me.x),y:Math.round(me.y),f:d.v[d.me].face});}else me.at[k]=D.t+(k==='pot'?.12:k==='atk'?.25:.3);return;}
-  if(d.net){if(me.stun>D.t||me.at[k]>D.t)return;netSend({t:'act',k:k});if(k==='dash'){me.at.dash=D.t+DUEL_LIVE.dash.cd;dashMove(d,d.me);netSend({t:'pos',x:me.x,z:me.z});}else if(k==='atk')me.at.atk=D.t+D.T[d.me];return;}
+    if(k==='dash'){me.at.dash=D.t+DUEL_LIVE.dash.cd;d.noSnap=D.t+.8;let vx=joy.v[0]||SC.hero.dir,vy=joy.v[1]||SC.hero.dz;if(!vx&&!vy){if(d.br.go){vx=d.br.go[0]-me.x;vy=d.br.go[1]-me.y;}else{const an=Math.random()*Math.PI*2;vx=Math.cos(an);vy=Math.sin(an);}}const n=Math.hypot(vx,vy)||1;if(d.br.sg)me.g=d.br.g[d.me];if(d.br.sg)sgMove({sg:d.br.sg},me,me.x+vx/n*DUEL_LIVE.dash.d,me.y+vy/n*DUEL_LIVE.dash.d);else{me.x+=vx/n*DUEL_LIVE.dash.d;me.y+=vy/n*DUEL_LIVE.dash.d;const r=Math.hypot(me.x,me.y);if(r>BR.R){me.x*=BR.R/r;me.y*=BR.R/r;}}netSend({t:d.br.sg?'sgPos':'brPos',x:Math.round(me.x),y:Math.round(me.y),f:d.v[d.me].face});}else if(k==='atk'||k==='s0'||k==='s1'){const n=D.t+SG.skT;for(const q of ['atk','s0','s1'])if(me.at[q]<n)me.at[q]=n;}else me.at[k]=D.t+(k==='pot'?.12:.3);return;}
+  if(d.net){if(me.stun>D.t||me.at[k]>D.t)return;netSend({t:'act',k:k});if(D.pvp&&(k==='atk'||k==='s0'||k==='s1')){const n=D.t+SG.skT;for(const q of ['atk','s0','s1'])if(me.at[q]<n)me.at[q]=n;return;}if(k==='dash'){me.at.dash=D.t+DUEL_LIVE.dash.cd;dashMove(d,d.me);netSend({t:'pos',x:me.x,z:me.z});}else if(k==='atk')me.at.atk=D.t+D.T[d.me];return;}
   const o=liveAct(D,0,k,Math.random);if(!o)return;if(k==='dash')dashMove(d,0);dShow(d,o);renderDuelBar();if(k==='s1'||k==='s3')d.ai.threat=.5;
 }
 function duelAI(d,dt){ // the absent player, played here with his own numbers and the same moves
@@ -1413,7 +1415,8 @@ function updateDuel(dt){
   if(me.stun<=D.t){const jx=SC.hero.dir||(Math.abs(joy.v[0])>.3?Math.sign(joy.v[0]):0),jz=SC.hero.dz||(Math.abs(joy.v[1])>.3?Math.sign(joy.v[1]):0); // the stick, or the keys
     if(jx){me.x=clamp(me.x+jx*(me.cls==='blade'?165:145)*dt,20,LIVE_W-20);vm.mv=true;vm.face=jx;}
     if(jz){me.z=clamp(me.z+jz*.95*dt,0,1);vm.mv=true;}}
-  if(d.holdAtk)duelAct('atk');
+  if(d.q){const me=D.f[d.me];if(D.t>d.q.until)d.q=null;else if(me.at[d.q.k]<=D.t){const k=d.q.k;d.q=null;duelAct(k);}}
+  else if(d.holdAtk)duelAct('atk');
   if(d.net){ // tell the server where I stand, and glide the other side toward where it said he is
     if((d.posT-=dt)<=0&&(Math.abs(me.x-d.last[0])>.5||Math.abs(me.z-d.last[1])>.01)){d.posT=.05;d.last=[me.x,me.z];netSend({t:'pos',x:Math.round(me.x*10)/10,z:Math.round(me.z*100)/100});}
     const op=D.f[1-d.me],vo=d.v[1-d.me];vo.mv=false;if(d.tgt){const ex=d.tgt[0]-op.x,ez=d.tgt[1]-op.z;if(Math.abs(ex)>1||Math.abs(ez)>.02){op.x+=ex*Math.min(1,dt*20);op.z+=ez*Math.min(1,dt*20);vo.mv=true;if(Math.abs(ex)>2)vo.face=ex>0?1:-1;}}

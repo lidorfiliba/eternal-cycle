@@ -157,7 +157,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
   const sgAll = (m) => { if (!sg) return; const s = JSON.stringify(m); for (const uid of sg.idx.keys()) { const o = socks.get(uid); if (o && o.readyState === 1) o.send(s); } };
   const who = (B, i) => (i >= 0 && B.f[i] ? [B.f[i].n, B.f[i].tag] : null);
   const sgView = (B) => ({ gate: B.sg.gate.map(r3), sw: B.sg.sw, swn: B.sg.swBy.map((i) => who(B, i)), swp: B.sg.swp.map((p) => [p[0], r3(p[1]), p[2]]), crown: [B.sg.crown[0], r3(B.sg.crown[1]), B.sg.crown[2]], holder: B.sg.holder, left: Math.max(0, Math.round((B.sg.time || G.SG.TIME) - B.t)) });
-  const sgState = (B) => ({ t: 'brS', T: B.t, sg: sgView(B), s: B.f.map((f) => [Math.round(f.x), Math.round(f.y), r3(f.hp), f.alive ? 1 : 0, f.sh > B.t ? 1 : 0, f.stun > B.t ? 1 : 0, f.face < 0 ? -1 : 1, f.kills, f.inv > B.t ? 1 : 0, 0, 0, 0, f.pots, G.sgBuff(f, B.t).n, f.wound > B.t ? 1 : 0]) });
+  const sgState = (B) => ({ t: 'brS', T: B.t, sg: sgView(B), s: B.f.map((f) => [Math.round(f.x), Math.round(f.y), r3(f.hp), f.alive ? 1 : 0, f.sh > B.t ? 1 : 0, f.stun > B.t ? 1 : 0, f.face < 0 ? -1 : 1, f.kills, f.inv > B.t ? 1 : 0, 0, 0, 0, f.pots, G.sgBuff(f, B.t).n, f.wound > B.t ? 1 : 0, f.alive || !f.resp ? 0 : Math.max(1, Math.ceil(f.resp - B.t))]) });
   const sgPub = (B, i, x) => { const f = B.f[i], p = x.prof[i] || {}; return Object.assign(pub(p), { n: f.n, c: f.c, bot: f.bot ? 1 : 0, g: f.g, tag: f.tag }); };
   async function sgFinish(x) {
     if (x.done) return; x.done = true; clearInterval(x.timer); if (sg === x) sg = null; const B = x.B, holder = B.sg.holder, hn = holder > 0 ? (x.names.get(holder) || '') : '';
