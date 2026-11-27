@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261127084220';
+const BUILD='20261127084853';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -11,6 +11,32 @@ const KEY='eternal-cycle-v2',PKEY='eternal-cycle-prefs';
 let A=null,S=null,C=null,statsDirty=true,panelDirty=true,tab='char',demo=false,busy=false,localDirty=false;
 let prefs={mute:false};try{Object.assign(prefs,JSON.parse(localStorage.getItem(PKEY)||'{}'));}catch(e){}
 const savePrefs=()=>{try{localStorage.setItem(PKEY,JSON.stringify(prefs));}catch(e){}};
+// Controls the player sets for himself: which key does what on a keyboard, and how large the touch controls are.
+// Fight keys and map-skill keys are two separate sets, so the same key may serve in both.
+const KEYDEF={atk:' ',s0:'1',s1:'2',s2:'3',s3:'4',dash:'q',pot:'e',buf:'r',bash:'f',use:'g',k0:'1',k1:'2',k2:'3',k3:'4',k4:'5',k5:'6'};
+const KEYS_FIGHT=[['atk','תקיפה'],['s0','מיומנות ראשונה'],['s1','מיומנות מהממת'],['s3','מיומנות גדולה'],['s2','מגן'],['dash','צעד'],['pot','שיקוי'],['buf','באף לקבוצה'],['bash','הדיפה'],['use','לחיצה על מתג או כתר']];
+const KEYS_FARM=[0,1,2,3,4,5].map(i=>['k'+i,'מיומנות '+(i+1)]);
+const keyOf=a=>(prefs.keys&&prefs.keys[a])||KEYDEF[a],keyName=k=>k===' '?'רווח':k.length===1?k.toUpperCase():k;
+const keyAct=(list,k)=>{for(const x of list)if(keyOf(x[0])===k)return x[0];return '';};
+const keyTaken=k=>!!(keyAct(KEYS_FIGHT,k)||keyAct(KEYS_FARM,k));
+function applySizes(){const st=document.documentElement.style;st.setProperty('--mvS',clampN(prefs.mvS,70,160)/100);st.setProperty('--atS',clampN(prefs.atS,70,160)/100);}
+function clampN(v,a,b){v=Number(v)||100;return Math.max(a,Math.min(b,v));}
+let bindWait='';
+function settingsHtml(){
+  const row=x=>'<div class="kv" style="margin:4px 0"><span>'+x[1]+'</span><button class="btn sm'+(bindWait===x[0]?' pri':'')+'" data-act="bindKey" data-k="'+x[0]+'" style="min-width:86px">'+(bindWait===x[0]?'לחץ על מקש':keyName(keyOf(x[0])))+'</button></div>';
+  return '<h2>הגדרות שליטה</h2><p class="hint">גודל הכפתורים במסך מגע</p>'+
+    '<div class="kv"><span>כפתורי תנועה</span><b class="num" id="szMvV">'+clampN(prefs.mvS,70,160)+'%</b></div><input type="range" id="szMv" min="70" max="160" step="5" value="'+clampN(prefs.mvS,70,160)+'" style="width:100%">'+
+    '<div class="kv"><span>כפתורי תקיפה</span><b class="num" id="szAtV">'+clampN(prefs.atS,70,160)+'%</b></div><input type="range" id="szAt" min="70" max="160" step="5" value="'+clampN(prefs.atS,70,160)+'" style="width:100%">'+
+    '<h2 style="margin-top:12px">מקשים במקלדת</h2><p class="hint">לוחצים על שורה ואז על המקש הרצוי. הליכה תמיד בחצים, וגם באותיות שלא נבחרו למשהו אחר.</p><p class="hint"><b>בקרב: זירה, מגדל, מצור והמעגל האחרון</b></p>'+KEYS_FIGHT.map(row).join('')+
+    '<p class="hint" style="margin-top:8px"><b>במפות</b></p>'+KEYS_FARM.map(row).join('')+
+    '<div class="grid2" style="margin-top:10px"><button class="btn" data-act="keysReset">חזרה לברירת המחדל</button><button class="btn pri" data-act="closeModal">סגור</button></div>';
+}
+function openSettings(){bindWait='';openModal(settingsHtml());}
+window.addEventListener('keydown',e=>{if(!bindWait)return;if(!$('modal').classList.contains('on')){bindWait='';return;}e.preventDefault();e.stopImmediatePropagation();const k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(k!=='Escape'&&!/^(Shift|Control|Alt|Meta|Tab|Enter|Arrow.*)$/.test(k)){const list=bindWait[0]==='k'&&bindWait.length===2?KEYS_FARM:KEYS_FIGHT,old=keyOf(bindWait),other=keyAct(list,k);prefs.keys=prefs.keys||{};if(other&&other!==bindWait)prefs.keys[other]=old;prefs.keys[bindWait]=k;savePrefs();}
+  bindWait='';$('modalBox').innerHTML=settingsHtml();},true);
+document.addEventListener('input',e=>{const t=e.target;if(!t||(t.id!=='szMv'&&t.id!=='szAt'))return;if(t.id==='szMv'){prefs.mvS=+t.value;$('szMvV').textContent=t.value+'%';}else{prefs.atS=+t.value;$('szAtV').textContent=t.value+'%';}savePrefs();applySizes();});
+applySizes();
 const $=id=>document.getElementById(id);
 const esc=t=>String(t).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const L=x=>'<span dir="ltr">'+x+'</span>';
@@ -826,14 +852,13 @@ function holdBtn(id,d){const b=$(id);const on=e=>{e.preventDefault();initAudio()
   b.addEventListener('pointerdown',on);for(const ev of ['pointerup','pointercancel','pointerleave'])b.addEventListener(ev,off);b.addEventListener('contextmenu',e=>e.preventDefault());}
 holdBtn('mvL',-1);holdBtn('mvR',1);
 for(const [id,v] of [['mvU',-1],['mvD',1]]){const b=$(id),on=e=>{e.preventDefault();initAudio();SC.hero.dz=v;b.classList.add('hold');},off=()=>{if(SC.hero.dz===v)SC.hero.dz=0;b.classList.remove('hold');};b.addEventListener('pointerdown',on);for(const ev of ['pointerup','pointercancel','pointerleave'])b.addEventListener(ev,off);b.addEventListener('contextmenu',e=>e.preventDefault());}
-window.addEventListener('keydown',e=>{if(!SC.duel||e.target&&e.target.tagName==='INPUT')return;if(e.key==='ArrowUp'||e.key==='w'){SC.hero.dz=-1;e.preventDefault();}else if(e.key==='ArrowDown'||e.key==='s'){SC.hero.dz=1;e.preventDefault();}});
+window.addEventListener('keydown',e=>{if(!SC.duel||e.target&&e.target.tagName==='INPUT')return;if(e.key==='ArrowUp'||(e.key==='w'&&!keyTaken('w'))){SC.hero.dz=-1;e.preventDefault();}else if(e.key==='ArrowDown'||(e.key==='s'&&!keyTaken('s'))){SC.hero.dz=1;e.preventDefault();}});
 window.addEventListener('keyup',e=>{if((e.key==='ArrowUp'||e.key==='w')&&SC.hero.dz<0||(e.key==='ArrowDown'||e.key==='s')&&SC.hero.dz>0)SC.hero.dz=0;});
 {const bar=$('duelBar');bar.addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||b.disabled||!SC.duel)return;e.preventDefault();initAudio();if(b.dataset.a==='atk')SC.duel.holdAtk=true;duelAct(b.dataset.a);});
   for(const ev of ['pointerup','pointercancel','pointerleave'])bar.addEventListener(ev,()=>{if(SC.duel)SC.duel.holdAtk=false;});bar.addEventListener('contextmenu',e=>e.preventDefault());
-  const DK={' ':'atk','1':'s0','2':'s1','3':'s2','4':'s3','q':'dash','e':'pot','/':'dash'};
-  window.addEventListener('keydown',e=>{if(!SC.duel||e.target&&e.target.tagName==='INPUT')return;const k=DK[e.key.toLowerCase()];if(!k)return;e.preventDefault();if(k==='atk')SC.duel.holdAtk=true;duelAct(k);});
-  window.addEventListener('keyup',e=>{if(SC.duel&&e.key===' ')SC.duel.holdAtk=false;});}
-window.addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT')return;const k=e.key;if(k==='ArrowLeft'||k==='a')SC.hero.dir=-1;else if(k==='ArrowRight'||k==='d')SC.hero.dir=1;else if(k>='1'&&k<='6'&&S&&!demo)cast(+k-1,false);});
+  window.addEventListener('keydown',e=>{if(!SC.duel||e.target&&e.target.tagName==='INPUT')return;const k=keyAct(KEYS_FIGHT,e.key.toLowerCase());if(!k)return;e.preventDefault();if(k==='use'){const u=$('useBtn');if(u&&u.style.display!=='none')u.click();return;}if(k==='atk')SC.duel.holdAtk=true;duelAct(k);});
+  window.addEventListener('keyup',e=>{if(SC.duel&&e.key.toLowerCase()===keyOf('atk'))SC.duel.holdAtk=false;});}
+window.addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT')return;const k=e.key;if(k==='ArrowLeft'||(k==='a'&&!keyTaken('a')))SC.hero.dir=-1;else if(k==='ArrowRight'||(k==='d'&&!keyTaken('d')))SC.hero.dir=1;else if(S&&!demo&&!SC.duel){const fk=keyAct(KEYS_FARM,k.length===1?k.toLowerCase():k);if(fk)cast(+fk[1],false);}});
 window.addEventListener('keyup',e=>{const k=e.key;if((k==='ArrowLeft'||k==='a')&&SC.hero.dir<0||(k==='ArrowRight'||k==='d')&&SC.hero.dir>0)SC.hero.dir=0;});
 window.addEventListener('blur',()=>{SC.hero.dir=0;});
 // The walking stick of the Last Circle: hold it and lean it the way you want to go.
@@ -1404,7 +1429,7 @@ function renderHud(){
   {const kw=!duel&&!SC.ev&&S&&!demo?keepWin():null,kb=$('keepBtn');kb.style.display=kw?'':'none';if(kw){const t=(A.keys>0||(A.ev&&A.ev[kw.key]&&A.ev[kw.key].in)?'שגר למצודה':'המצודה פתוחה · אין מפתח')+' · מתחילה בעוד '+mmss((keepStart(kw)-Date.now())/1000);if(kb.textContent!==t)kb.textContent=t;}}
   {const up=!duel&&S&&!demo&&ws&&ws.readyState===1,sgo=up&&sgLive>Date.now()&&guild.mine,se=up&&!sgo?brSign():0,bb=$('brBtn');bb.style.display=se||sgo?'':'none';const act=sgo?'sgJoin':'brJoin';if(bb.dataset.act!==act)bb.dataset.act=act;if(se||sgo){const t=sgo?(sgTest?'מצור ידידות':'מצור הטירה')+' · הצטרף · '+mmss((sgLive-Date.now())/1000):'המעגל האחרון נפתח · השתגר לזירה · '+mmss((se-Date.now())/1000);if(bb.textContent!==t)bb.textContent=t;}}
   $('resetNow').style.display=canReset(S)&&!duel?'block':'none';
-  $('autoBtn').style.display=$('skills').style.display=duel||zi<0?'none':'';$('paceTag').style.visibility=$('bigBtn').style.visibility=$('sndBtn').style.visibility=$('fsBtn').style.visibility=duel?'hidden':'';if(duel)renderDuelBar();{const brm=duel&&SC.duel&&!SC.duel.spec;$('joy').style.display=brm?'':'none';$('mv').style.display=brm?'none':'';if(!brm&&(joy.v[0]||joy.v[1]))joy.v=[0,0];}$('mvU').style.display=$('mvD').style.display='none';$('stage').classList.toggle('duel',duel);
+  $('autoBtn').style.display=$('skills').style.display=duel||zi<0?'none':'';$('paceTag').style.visibility=$('bigBtn').style.visibility=$('setBtn').style.visibility=$('sndBtn').style.visibility=$('fsBtn').style.visibility=duel?'hidden':'';if(duel)renderDuelBar();{const brm=duel&&SC.duel&&!SC.duel.spec;$('joy').style.display=brm?'':'none';$('mv').style.display=brm?'none':'';if(!brm&&(joy.v[0]||joy.v[1]))joy.v=[0,0];}$('mvU').style.display=$('mvD').style.display='none';$('stage').classList.toggle('duel',duel);
   $('sndBtn').textContent=prefs.mute?'צליל כבוי':'צליל פעיל';$('sndBtn').classList.toggle('on',!prefs.mute);
   $('autoBtn').textContent='אוטומטי: '+(S.auto?'פעיל':'כבוי');$('autoBtn').classList.toggle('on',!!S.auto);
   const bs=$('skills').children,h=SC.hero;
@@ -1739,7 +1764,7 @@ function accountHtml2(){
   if(!ONLINE)return '<h2>העברה בין מכשירים</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">מצב מקומי: ההתקדמות שמורה במכשיר הזה. קוד השמירה מעביר אותה למכשיר אחר, וטעינה מחליפה את מה שיש כאן.</p><button class="btn" data-act="expSave">העתק קוד שמירה</button><input type="text" id="impCode" placeholder="הדבק כאן קוד שמירה" autocomplete="off"><button class="btn" data-act="impSave">טען קוד שמירה</button></div>';
   return '<h2>שפה · Language</h2>'+'<div class="seg notr" style="justify-content:center"><button class="btn sm'+(getLang()==='he'?' pri':'')+'" data-act="lang" data-l="he">עברית</button><button class="btn sm'+(getLang()==='en'?' pri':'')+'" data-act="lang" data-l="en">English</button></div>'+'<h2>חשבון</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">מחובר כ-<b dir="auto">'+esc(session&&session.user||'')+'</b>. אפשר להיכנס עם אותו שם וסיסמה מכל מכשיר.</p>'+
     (me.secret?'':'<p class="hint" style="color:var(--bad)">עוד לא הוגדרה שאלת שחזור. בלעדיה אי אפשר לשחזר סיסמה שנשכחה.</p>')+
-    '<button class="btn'+(me.secret?'':' pri')+'" data-act="acct" data-k="secret">שאלת שחזור</button><button class="btn" data-act="acct" data-k="pass">שינוי סיסמה</button>'+
+    '<button class="btn'+(me.secret?'':' pri')+'" data-act="acct" data-k="secret">שאלת שחזור</button><button class="btn" data-act="acct" data-k="pass">שינוי סיסמה</button><button class="btn" data-act="settings">הגדרות שליטה: מקשים וגודל כפתורים</button>'+
     (me.admin?'<a class="btn" href="admin.html" style="text-align:center;text-decoration:none;color:inherit">מסך ניהול</a>':'')+
     (me.admin?'<div class="card" style="display:flex;flex-direction:column;gap:6px;border-color:var(--gold)"><b style="color:var(--gold)">כלי מנהל המשחק</b><p class="hint">שיגור: בלשונית מפה כל המפות פתוחות לך, בכל רמה, כולל העיר העתיקה והחנות שלה.</p><p class="hint">רק החשבון שלך רואה את זה, והשרת בודק את ההרשאה מחדש בכל לחיצה. כל פעולה מוכרזת בצ׳אט העולמי.</p>'+
       '<button class="btn pri" data-act="gm" data-a="br" data-sec="90">פתח את המעגל האחרון עכשיו · הרשמה 90 שניות</button><button class="btn sm" data-act="gm" data-a="br" data-sec="30">פתח לבדיקה מהירה · 30 שניות</button><button class="btn sm" data-act="gm" data-a="brStop">בטל הרשמה פתוחה</button>'+
@@ -1837,6 +1862,10 @@ document.addEventListener('click',async e=>{
   if(a==='sk'){cast(+b.dataset.i,false);renderHud();return;}
   if(a==='auto'){S.auto=!S.auto;SC.hero.tgt=null;renderHud();send('setAuto',{on:S.auto});return;}
   if(a==='mute'){prefs.mute=!prefs.mute;savePrefs();renderHud();return;}
+  if(a==='settings'){openSettings();return;}
+  if(a==='bindKey'){bindWait=b.dataset.k;$('modalBox').innerHTML=settingsHtml();return;}
+  if(a==='keysReset'){prefs.keys={};prefs.mvS=100;prefs.atS=100;savePrefs();applySizes();openSettings();return;}
+  if(a==='closeModal'&&bindWait){bindWait='';}
   if(a==='item'){openSheet(id);return;}
   if(a==='newChar'){$('modalBox').innerHTML='';showCreate(true);return;}
   if(a==='expSave'){saveLocal();const code=btoa(unescape(encodeURIComponent(JSON.stringify(A))));const inp=$('impCode');
