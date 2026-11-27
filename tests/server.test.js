@@ -382,7 +382,7 @@ test('friends, blocking, reports and private messages',async()=>{
   const {makeServer}=await import('../server/index.mjs');const {WebSocket}=await import('ws');const {createHash}=await import('node:crypto');const {db}=await world();
   const srv=makeServer(fakeAdmin(db),'test-secret');await new Promise(r=>srv.listen(0,r));const port=srv.address().port,base='http://127.0.0.1:'+port;
   const post=async(body,tok)=>(await (await fetch(base,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},tok?{'x-ec-token':tok}:{}),body:JSON.stringify(body)})).json());
-  const mkUser=async n=>{const r=await post({kind:'register',args:{user:n,pass:'correct-horse-9',q:0,a:'rex'}});await post({kind:'create',args:{name:n,cls:'blade'}},r.token);
+  const mkUser=async n=>{const r=await post({kind:'register',args:{user:n,pass:'correct-horse-9',q:0,a:'rex'}});if(!r.token)console.log('REG',n,JSON.stringify(r).slice(0,200));await post({kind:'create',args:{name:n,cls:'blade'}},r.token);
     const uid=(await db.query('select user_id from users where username=$1',[n])).rows[0].user_id;return {tok:r.token,uid,key:createHash('md5').update(uid+'peer').digest('hex').slice(0,10)};};
   const open=async u=>{const ws=new WebSocket('ws://127.0.0.1:'+port+'/ws');u.q=[];u.wait=t=>new Promise((res,rej)=>{const go=()=>{const i=u.q.findIndex(m=>m.t===t);if(i>=0)return res(u.q.splice(i,1)[0]);setTimeout(go,10);};go();setTimeout(()=>rej(new Error('no '+t+' message')),4000);});
     ws.on('message',d=>u.q.push(JSON.parse(String(d))));await new Promise(r=>ws.on('open',r));ws.send(JSON.stringify({t:'hello',token:u.tok}));await u.wait('hi');u.ws=ws;u.send=m=>ws.send(JSON.stringify(m));};
@@ -399,6 +399,22 @@ test('friends, blocking, reports and private messages',async()=>{
     await open(b);a.send({t:'who',ks:[b.key]});assert.deepEqual((await a.wait('who')).on,[b.key]);
     await new Promise(r=>setTimeout(r,950));a.send({t:'whisper',k:b.key,m:'מה <b>נשמע</b>'});const w=await b.wait('whisper');assert.equal(w.from.n,'dana');assert.equal(w.from.k,a.key);assert.equal(w.m,'מה bנשמע/b');await a.wait('whispered');
     await db.query("update accounts set muted_until=now()+interval '1 hour' where user_id=$1",[a.uid]);await new Promise(r=>setTimeout(r,950));a.send({t:'whisper',k:b.key,m:'עוד'});await a.wait('muted');
+  
+    { // game-master travel: the flag in the database decides, not the browser's word
+      const G2=await import('../web/core.js'),zi=G2.ZONES.findIndex(z=>z.castle),u2=await mkUser('ziva');
+      await db.query('update users set is_admin=true where user_id=$1',[u2.uid]);
+      assert.equal((await post({kind:'travel',args:{z:zi,f:0,gm:1}},a.tok)).result.ok,false,'a player who claims to be game master gets nothing');
+      const t=await post({kind:'travel',args:{z:zi,f:0,gm:1}},u2.tok);assert.equal(t.result.ok,true,t.result.msg);assert.equal(t.state.chars[0].zone,zi);
+      assert.equal((await post({kind:'travel',args:{z:zi,f:0}},u2.tok)).result.ok,false,'and even he, only when he asks as game master');}
+    { // party invitations: asked, and joined only on a yes
+      const c=a,e=b;if(!c.ws||c.ws.readyState!==1)await open(c);if(!e.ws||e.ws.readyState!==1)await open(e);c.q.length=0;e.q.length=0;await new Promise(r=>setTimeout(r,300));
+      c.send({t:'pInv',n:'nobody'});assert.equal((await c.wait('pRes')).why,'off','an unknown name');await new Promise(r=>setTimeout(r,2600));
+      c.send({t:'pInv',n:'OMER'});assert.equal((await e.wait('pAsk')).n,'dana');assert.equal((await c.wait('pRes')).sent,1);
+      assert.equal((await db.query('select count(*)::int n from party_members')).rows[0].n,1,'nobody joins before saying yes');
+      e.send({t:'pAns',ok:false});assert.equal((await c.wait('pRes')).why,'no');await new Promise(r=>setTimeout(r,2600));
+      c.send({t:'pInv',k:e.key});await e.wait('pAsk');await c.wait('pRes');e.send({t:'pAns',ok:true});assert.equal((await e.wait('pRes')).joined,1);assert.equal((await c.wait('pRes')).acc,1);
+      assert.equal((await db.query('select count(*)::int n from party_members')).rows[0].n,2);
+      e.send({t:'pAns',ok:true});await new Promise(r=>setTimeout(r,200));assert.equal((await db.query('select count(*)::int n from party_members')).rows[0].n,2,'an answer with no question does nothing');}
   }finally{for(const u of [a,b])if(u.ws)u.ws.close();srv.live.close();srv.close();}
 });
 

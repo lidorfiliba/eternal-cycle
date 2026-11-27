@@ -48,7 +48,7 @@ const ZRAW=[
  // The ancient city: open only to the guild that holds the castle.
  ['העיר העתיקה','שומר קדום',360,'skel','#ffd75e','brute','#ffe9a0','#1a1404','#a07a1a','#0e0a02','#fff4c8',0,1]
 ];
-const BASEZ=24,REGION=3,CITY_TIER=12,CITY_PERFECT=1.25;let _castle=false; // whether the player's guild holds the castle: the server says so with each request
+const BASEZ=24,REGION=3,CITY_TIER=12,CITY_PERFECT=1.25;let _castle=false,_gm=false; // whether the player's guild holds the castle: the server says so with each request
 // Reset maps are built for characters that kept their stats through resets: [life, damage] multipliers by the resets a map needs.
 const RESET_TOUGH={1:[4,4,3],2:[4.5,6,2.7],3:[5,8,2.4],4:[5.5,11,2.2],5:[6.5,14,2],7:[10.5,20,1.8],10:[15,28,1.75],15:[34,70,2.5],20:[42,95,2.1],30:[65,165,1.9],50:[130,400,1.7]}; // health and attack (the third number is no longer used): tougher than the main road; what they give is ancient set pieces, three times as often
 const SIGS=['xp','gold','hp','crit','aspd','cdmg','drop','dmg'],RSIGS=['xp','dmg','gold','cdmg','aspd','crit'];
@@ -196,7 +196,7 @@ function floorMin(z,f){
 // The challenge for players who have reset is in the reset maps (see RESET_TOUGH).
 const STAT_MAX=32767,PARTY_SHARE=.5;
 function zs(z,f){const d=ZONES[z];f=clamp(f|0,0,FLOORS-1);return {hp:Math.round(d.hp*(1+.4*f)),atk:Math.round(d.atk*(1+.3*f)),xp:Math.round(d.xp*(1+.3*f)),gold:1+.3*f,drop:1+.15*f};}
-function canFloor(s,z,f){return z<0?f===0:(f>=0&&f<FLOORS&&canEnter(s,z)&&s.lvl>=floorMin(z,f));}
+function canFloor(s,z,f){return z<0?f===0:(f>=0&&f<FLOORS&&canEnter(s,z)&&(_gm||s.lvl>=floorMin(z,f)));}
 function afkFloor(s,z){let f=z===s.zone?clamp(s.floor|0,0,FLOORS-1):0;while(f>0&&s.lvl<floorMin(z,f))f--;return f;}
 function zoneInfo(zi,c,f,fl){
   const z=zs(zi,fl),kt=z.hp/c.dps+0.55,taken=z.atk*300/(300+c.def);
@@ -205,7 +205,8 @@ function zoneInfo(zi,c,f,fl){
 }
 // May this character stand in this map? Story maps open by beating bosses; reset maps open by reset count.
 function canEnter(s,z){
-  if(z<0)return true;const d=ZONES[z];if(!d||d.min>s.lvl)return false;if(d.castle)return _castle;
+  if(z<0)return true;const d=ZONES[z];if(!d)return false;if(_gm)return true; // the game master walks anywhere, to test
+  if(d.min>s.lvl)return false;if(d.castle)return _castle;
   return d.req?s.resets>=d.req:z<=s.open;
 }
 function afkZone(s){
@@ -476,7 +477,7 @@ function liveOver(D){if(!D.over&&(D.f[0].hp<=0||D.f[1].hp<=0||D.t>=DUEL_LIVE.tim
 // to the arena during sign-up. Empty places are taken by fighters the server plays. Everyone starts equal, whatever
 // they wear outside: strength comes from what is found on the ground (weapons, armor, boots, potions). The field is
 // a wide round plain; a circle closes on its middle and burns whoever is outside. Positions are x,y from the middle.
-const BR={R:700,MAX:8,FILL:6,TIME:150,HOLD:20,END:60,SIGN:2,pots:1,ring:.1,hit:.032,T:.6,spd:150,pick:30,loot0:24,every:6,drop:40,
+const BR={leap:220,push:30,R:700,MAX:8,FILL:6,TIME:150,HOLD:20,END:60,SIGN:2,pots:1,ring:.1,hit:.032,T:.6,spd:150,pick:30,loot0:24,every:6,drop:40,
   rng:110,wMax:3,aMax:3,bMax:2,pMax:4};
 const brDist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const brSpeed=f=>BR.spd*(1+.12*(f.bt|0));
@@ -502,12 +503,16 @@ function brAct(B,i,k,rnd){
   if(k==='s2'){me.at.s2=t+K.sk[2].cd;me.sh=t+K.sk[2].dur;return o;}
   if(k==='dash'){me.at.dash=t+K.dash.cd;me.inv=t+K.dash.inv;return o;}
   if(k==='pot'){if(me.pots<1)return null;me.at.pot=t+K.potCd;me.pots--;me.hp=Math.min(1,me.hp+K.heal);o.heal=K.heal;return o;}
-  const rng=BR.rng+(k==='atk'?14:k==='s3'?60:k==='s0'?40:20);let j=-1,bd=1e9; // the same reach and the same blow for every class: here only finds make one stronger
+  const rng=k==='s3'?BR.leap:BR.rng+(k==='atk'?14:k==='s0'?40:20);let j=-1,bd=1e9; // the same reach and the same blow for every class: here only finds make one stronger
   B.f.forEach((e,q)=>{if(q===i||!e.alive)return;const d=brDist(e,me);if(d<=rng&&d<bd){bd=d;j=q;}});if(j<0)return null;
   const e=B.f[j];let mult;if(k==='atk'){me.at.atk=t+BR.T;me.chain=(me.chain+1)%4;mult=me.chain===0?1.5:1;}else{const sk=K.sk[k==='s0'?0:k==='s1'?1:3];me.at[k]=t+sk.cd;mult=sk.m*1.6;}
-  o.to=j;if(Math.abs(e.x-me.x)>4)me.face=e.x>=me.x?1:-1;if(e.inv>t){o.miss=true;return o;}
+  o.to=j;if(Math.abs(e.x-me.x)>4)me.face=e.x>=me.x?1:-1;
+  if(k==='s3'){const d=brDist(e,me);if(d>44){me.x=e.x-(e.x-me.x)/d*26;me.y=e.y-(e.y-me.y)/d*26;me.pushT=t+.3;o.jx=[Math.round(me.x),Math.round(me.y)];}} // the great skill leaps onto the enemy
+  if(e.inv>t){o.miss=true;return o;}
   o.crit=rnd()<.1;let dm=BR.hit*(1+.35*me.w)*(1-.15*e.ar)*mult*(o.crit?1.5:1)*(.9+rnd()*.2);if(e.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}
-  e.hp-=dm;o.dm=dm;if(k==='s1'&&!o.guard){e.stun=t+K.sk[1].stun;o.stun=true;}if(e.hp<=0){brKill(B,j,i);o.dead=true;}return o;
+  e.hp-=dm;o.dm=dm;if(k==='s1'&&!o.guard){e.stun=t+K.sk[1].stun;o.stun=true;}
+  if(k==='s0'&&!o.guard){const dx=e.x-me.x,dy=e.y-me.y,d=Math.hypot(dx,dy)||1;e.x+=dx/d*BR.push;e.y+=dy/d*BR.push;e.pushT=t+.3;o.px=[Math.round(e.x),Math.round(e.y)];} // the quick skill throws back: toward the fire, if you aim well
+  if(e.hp<=0){brKill(B,j,i);o.dead=true;}return o;
 }
 // One step of the server's clock: new finds appear, whoever walks over one takes it, the circle burns whoever is
 // outside, and the server's own fighters look for gear, close in and fight.
@@ -544,7 +549,7 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:1500,Y0:-500,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:10,guardResp:15,pots:5,potMax:60,potCd:3,heal:.25,potPrice:500,hit:.045,gam:.3,hitMin:.02,hitMax:.06,critMax:1.6,comboM:1.5,comboFlat:.28,wound:2.5,cbMin:.3,cbMax:1.1,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s0:2.5,s1:4},
+const SG={W:1500,Y0:-500,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:10,guardResp:15,pots:5,potMax:60,potCd:3,heal:.25,potPrice:500,hit:.045,gam:.3,hitMin:.02,hitMax:.06,critMax:1.6,comboM:1.5,comboFlat:.28,wound:2.5,cbMin:.3,cbMax:1.1,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s0:2.5,s1:4,s3:12},leap:230,bashCd:7,bashM:.3,bashPush:34,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.03,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   walls:[[-462,-432,462,-408],[-462,108,-50,132],[50,108,462,132],[-462,-432,-438,-200],[-462,-110,-438,132],[438,-432,462,-200],[438,-110,462,132],
@@ -560,7 +565,7 @@ function sgMove(B,f,nx,ny){let dx=nx-f.x,dy=ny-f.y;const d=Math.hypot(dx,dy);if(
 function sgSees(B,a,e){const n=Math.ceil(brDist(a,e)/10);for(let i=1;i<n;i++){const x=a.x+(e.x-a.x)*i/n,y=a.y+(e.y-a.y)*i/n;for(const w of SG.walls)if(sgIn(w,x,y,0))return false;for(let q=0;q<SG.gates.length;q++)if(B.sg.gate[q]>0&&sgIn(SG.gates[q],x,y,0))return false;}return true;}
 const sgSpawn=(B,f,rnd)=>{const inside=f.g===B.sg.holder,p=f.post||(inside?SG.yard:SG.camp);f.x=p[0]+(f.post?0:(rnd()-.5)*160);f.y=p[1]+(f.post?0:(rnd()-.5)*60);f.hp=1;f.alive=true;f.resp=0;f.stun=0;f.sh=0;f.inv=0;f.wound=0;f.cb=0;f.bf={b:0,s:0,h:0};};
 function sgFighter(p,g,tag,rnd){return {id:p.id,n:p.n,c:CLS[p.c]?p.c:'blade',bot:!!p.bot,g:g,tag:String(tag||'').slice(0,4),x:0,y:0,hp:1,d:p.d,T:clamp(1/Math.max(.3,p.a),.3,1.2),pool:Math.max(1,p.h*5),def:p.f,cr:p.cr,cdm:clamp(Number(p.cd)||1.5,1.2,6),cb:0,cbT:-9,cbTo:-1,cacc:0,wound:0,pushT:0,pushI:.8,bf:{b:0,s:0,h:0},
-  at:{atk:0,s0:1,s1:3,s2:0,s3:8,dash:0,pot:0,use:0,buf:0},lead:!!p.lead,stun:0,sh:0,inv:0,alive:true,resp:0,kills:0,pots:SG.pots,bought:0,shopT:0,chain:0,face:1,think:rnd()*.5,post:null};}
+  at:{atk:0,s0:1,s1:3,s2:0,s3:8,dash:0,pot:0,use:0,buf:0,bash:0},lead:!!p.lead,stun:0,sh:0,inv:0,alive:true,resp:0,kills:0,pots:SG.pots,bought:0,shopT:0,chain:0,face:1,think:rnd()*.5,post:null};}
 function sgNew(rnd,avg){
   return {t:-3,over:0,f:[],sg:{holder:0,gate:SG.gates.map(()=>SG.gateHp),sw:[0,0],swBy:[-1,-1],swp:[[0,0,-1],[0,0,-1]],crown:[0,0,-1],caps:0}}; // no guards: the castle is a guild's, or nobody's
 }
@@ -583,13 +588,16 @@ function sgAct(B,i,k,rnd){
   if(k==='s2'){me.at.s2=t+K.sk[2].cd;me.sh=t+K.sk[2].dur;return o;}
   if(k==='dash'){me.at.dash=t+K.dash.cd;me.inv=t+K.dash.inv;return o;}
   if(k==='pot'){if(me.pots<1)return null;if(me.wound>t){o.no='wound';return o;}me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+SG.heal);o.heal=SG.heal;return o;}
-  const rng=LIVE_RNG[me.c]+(k==='atk'?14:k==='s3'?60:k==='s0'?40:20),au=sgBuff(me,t);let j=-1,bd=1e9;
+  // the great skill is a leap: it reaches far, and carries the attacker onto his enemy
+  const rng=k==='s3'?Math.max(SG.leap,LIVE_RNG[me.c]+60):LIVE_RNG[me.c]+(k==='atk'?14:k==='bash'?30:k==='s0'?40:20),au=sgBuff(me,t);let j=-1,bd=1e9;
   B.f.forEach((e,q)=>{if(q===i||!e.alive||e.g===me.g)return;const d=brDist(e,me);if(d<=rng&&d<bd&&sgSees(B,me,e)){bd=d;j=q;}});
-  let mult;const cool=()=>{if(k==='atk'){me.at.atk=t+me.T*au.spd;me.chain=(me.chain+1)%4;mult=me.T/1.5*(me.chain===0?1.5:.84)*1.5;}else{const sk=K.sk[k==='s0'?0:k==='s1'?1:3];me.at[k]=t+(SG.cd[k]||sk.cd);mult=sk.m;}};
+  let mult;const cool=()=>{if(k==='atk'){me.at.atk=t+me.T*au.spd;me.chain=(me.chain+1)%4;mult=me.T/1.5*(me.chain===0?1.5:.84)*1.5;}else if(k==='bash'){me.at.bash=t+SG.bashCd;mult=SG.bashM;}else{const sk=K.sk[k==='s0'?0:k==='s1'?1:3];me.at[k]=t+(SG.cd[k]||sk.cd);mult=sk.m;}};
   if(j<0){ // nobody in reach: a gate, if one stands near and the castle is not mine
     if(me.g===B.sg.holder)return null;let gi=-1;SG.gates.forEach((g,q)=>{if(B.sg.gate[q]<=0)return;const cx=(g[0]+g[2])/2,cy=(g[1]+g[3])/2,d=Math.hypot(cx-me.x,cy-me.y);if(d<=rng+50&&d<bd){bd=d;gi=q;}});if(gi<0)return null;
     cool();B.sg.gate[gi]=Math.max(0,B.sg.gate[gi]-SG.gateHit*mult);o.gate=gi;o.dm=SG.gateHit*mult;if(B.sg.gate[gi]<=0)o.broke=true;return o;}
-  const e=B.f[j];cool();o.to=j;if(Math.abs(e.x-me.x)>4)me.face=e.x>=me.x?1:-1;if(e.inv>t){o.miss=true;me.cb=0;return o;}
+  const e=B.f[j];cool();o.to=j;if(Math.abs(e.x-me.x)>4)me.face=e.x>=me.x?1:-1;
+  if(k==='s3'){const d=brDist(e,me);if(d>44){sgMove(B,me,e.x-(e.x-me.x)/d*26,e.y-(e.y-me.y)/d*26);me.pushT=t+SG.pushT;o.jx=[Math.round(me.x),Math.round(me.y)];}}
+  if(e.inv>t){o.miss=true;me.cb=0;return o;}
   // Each character's own numbers decide, but as in the old sieges the gap is pressed together: the strongest hits a
   // few times harder than the weakest, not hundreds of times. What is left over is decided by play.
   const raw=(x,y)=>x.d*300/(300+y.def)/y.pool,rel=Math.sqrt(raw(me,e)/Math.max(1e-9,raw(e,me)));
@@ -605,7 +613,8 @@ function sgAct(B,i,k,rnd){
   if(o.combo){if(e.wound>t)o.again=true;else{dm=dm*SG.comboM+SG.comboFlat*(o.guard?1-K.sk[2].cut:1);if(!o.guard)e.wound=t+SG.wound;}}
   e.hp-=dm;o.dm=dm;if((k==='s1'||o.combo)&&!o.guard){e.stun=t+K.sk[1].stun;o.stun=true;}
   // blows that move: the quick skill and the combo throw the enemy back a little, unless he stands behind his shield
-  if((k==='s0'||o.combo)&&!o.guard&&(o.combo||!(e.pushI>t))){e.pushI=t+SG.pushI;const dx=e.x-me.x,dy=e.y-me.y,d=Math.hypot(dx,dy)||1,ps=o.combo?SG.pushC:SG.push;sgMove(B,e,e.x+dx/d*ps,e.y+dy/d*ps);e.pushT=t+SG.pushT;o.px=[Math.round(e.x),Math.round(e.y)];}
+  // The shove is the move for it: little harm, a long throw, and it does not wait for the last push to wear off.
+  if((k==='s0'||k==='bash'||o.combo)&&!o.guard&&(o.combo||k==='bash'||!(e.pushI>t))){e.pushI=t+SG.pushI;const dx=e.x-me.x,dy=e.y-me.y,d=Math.hypot(dx,dy)||1,ps=k==='bash'?SG.bashPush:o.combo?SG.pushC:SG.push;sgMove(B,e,e.x+dx/d*ps,e.y+dy/d*ps);e.pushT=t+SG.pushT;o.px=[Math.round(e.x),Math.round(e.y)];}
 if(e.hp<=0){sgDown(B,j,i);o.dead=true;}return o;
 }
 const sgNear=(f,p,r)=>Math.abs(f.x-p[0])<r&&Math.abs(f.y-p[1])<r;
@@ -872,7 +881,7 @@ function buildOpps(A,S,players,selfId){
 // apply() is the only code that may change an account. The server runs it on the stored
 // state; the client runs it only in local (unprotected) mode. Arguments are untrusted.
 function apply(A,kind,args,ctx){
-  args=args||{};ctx=ctx||{};const now=_now(),r={ok:true};_castle=!!ctx.castle;loginDay(A);ensureWeek(A);
+  args=args||{};ctx=ctx||{};const now=_now(),r={ok:true};_castle=!!ctx.castle;_gm=!!ctx.gm;loginDay(A);ensureWeek(A);
   const fail=m=>({ok:false,msg:m});
   if(kind==='create'){
     const nm=String(args.name||'').replace(/[<>&"'\u2605\u0000-\u001f]/g,'').trim().slice(0,14)||'גיבור',cls=CLS[args.cls]?args.cls:'blade';

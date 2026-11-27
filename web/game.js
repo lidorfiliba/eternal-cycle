@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261127080929';
+const BUILD='20261127084220';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -45,6 +45,7 @@ async function rpc(kind,args){
 if(typeof window!=='undefined'&&window.EC_MOCK)rpc=window.EC_MOCK; // test hook: an in-page stand-in for the server
 // Every state change goes through send(), one at a time and in order.
 function send(kind,args){
+  if(ONLINE&&me.admin&&(kind==='tick'||kind==='travel'||kind==='buy'))args=Object.assign({gm:1},args); // the server checks the right itself
   const run=async()=>{
     if(!ONLINE){const r=apply(A,kind,args,{});S=A.chars[A.cur]||S;touch();localDirty=true;return r;}
     const j=await rpc(kind,args);
@@ -957,7 +958,7 @@ function brCard(live){
 // The field is seen from above at a slant: x runs across, y runs away from the viewer at half scale. The view follows me.
 const BRS=()=>Math.min(1,W/430),bP=(x,y)=>{const c=SC.duel.br.cam,k=BRS();return [W/2+(x-c[0])*k,gy()-70+(y-c[1])*k*.55];};
 const LOOTN={w:'נשק',a:'שריון',p:'שיקוי',b:'מגפיים',W:'נשק אגדי'},LOOTC={w:'#ffb23e',a:'#5aa9ff',p:'#6fe39a',b:'#7df9ff',W:'#ffd75e'};
-const brF=(x,y)=>({x:x,y:y,hp:1,cls:S.cls,at:{atk:0,s0:0,s1:0,s2:0,s3:0,dash:0,pot:0,buf:0},stun:0,sh:0,inv:0,bfN:0,wound:0,pots:BR.pots,alive:true,kills:0,w:0,ar:0,bt:0});
+const brF=(x,y)=>({x:x,y:y,hp:1,cls:S.cls,at:{atk:0,s0:0,s1:0,s2:0,s3:0,dash:0,pot:0,buf:0,bash:0},stun:0,sh:0,inv:0,bfN:0,wound:0,pots:BR.pots,alive:true,kills:0,w:0,ar:0,bt:0});
 function brEnter(n,left){
   flushTick();
   SC.duel={br:{phase:'lobby',n:n,until:Date.now()+left,looks:[lookOf(S)],names:[S.name],bot:[0],tg:[null],ring:BR.R,cam:[0,0],deadT:[0],loot:[],go:null},D:{f:[brF(0,0)],t:0,T:[1],pool:[1]},me:0,v:[{anim:0,face:1,mv:false,hitT:0}],end:0,sent:false,go:1,holdAtk:false,opp:lookOf(S),posT:0,last:[0,0]};
@@ -996,14 +997,18 @@ function brShow(d,o){
   if(o.k==='spawn'){const l=o.l;if(!b.loot.some(x=>x.id===l[0]))b.loot.push({id:l[0],x:+l[1],y:+l[2],k:String(l[3]),born:SC.t});if(o.big){snd('boss');announce('נשק אגדי נחת במרכז המעגל!',true);}return;}
   if(o.k==='pick'){const it=b.loot.find(x=>x.id===o.id);b.loot=b.loot.filter(x=>x.id!==o.id);const f=D.f[o.by];if(f){const p=bP(f.x,f.y);burst(p[0],p[1]-30,LOOTC[o.it]||'#fff',12);if(o.by===d.me){snd('rare');addNum(p[0],p[1]-120,'+ '+LOOTN[o.it],LOOTC[o.it],true);renderDuelBar();}else if(o.it==='W')addNum(p[0],p[1]-120,b.names[o.by]+' לקח את הנשק האגדי','#ffd75e',true);}return;}
   if(o.k==='ring'){const v=D.f[o.to];if(v){const p=bP(v.x,v.y);addNum(p[0],p[1]-110,b.names[o.to]+' נשרף מחוץ למעגל','#ff5c7a',false);}return;}
+  {const a0=D.f[o.by];if(a0&&o.jx){const p0=bP(a0.x,a0.y),c0=CLS[a0.cls].c;a0.x=o.jx[0];a0.y=o.jx[1];if(o.by===d.me){b.go=null;d.last=[a0.x,a0.y];}else b.tg[o.by]=[o.jx[0],o.jx[1]];d.v[o.by].hop=.38;const p1=bP(a0.x,a0.y); // the leap: an arc of light from where he stood to where he lands
+    for(let q=0;q<10;q++)SC.parts.push({x:p0[0]+(p1[0]-p0[0])*q/10,y:p0[1]-24-Math.sin(q/10*Math.PI)*70,vx:0,vy:-14,life:.55,c:q%2?'#fff':c0,s:4});SC.fx.push({k:'ring',x:p0[0],y:p0[1]-6,life:.35,c:c0,r:50});}}
   const a=D.f[o.by];if(!a)return;const va=d.v[o.by],pa=bP(a.x,a.y),ax=pa[0],g=pa[1],col=LOOTC[a.w>=3?'W':'w'],k=o.k,cc=CLS[a.cls].c;
   if(k==='s2'){if(o.by===d.me)snd('fury');SC.fx.push({k:'rune',x:ax,y:g-2,r:60,life:.9,d:.9,c:'#9fe8ff'});return;}
   if(k==='dash'){for(let q=0;q<4;q++)SC.parts.push({x:ax,y:g-20-q*14,vx:(Math.random()-.5)*120,vy:0,life:.4,c:'#9fe8ff',s:3});return;}
   if(k==='pot'){burst(ax,g-50,'#6fe39a',18);addNum(ax,g-112,'+'+Math.round((o.heal||.3)*100)+'%','#6fe39a',true);return;}
   const v=D.f[o.to];if(!v)return;if(b.sg&&o.by===d.me){d.cbN=o.miss?0:o.cb|0;d.cbAt=D.t;}
-  if(o.px){if(o.to===d.me){v.x=o.px[0];v.y=o.px[1];b.go=null;d.last=[v.x,v.y];}else b.tg[o.to]=[o.px[0],o.px[1]];}
+  if(o.px){const q0=bP(v.x,v.y);if(o.to===d.me){v.x=o.px[0];v.y=o.px[1];b.go=null;d.last=[v.x,v.y];}else b.tg[o.to]=[o.px[0],o.px[1]];const q1=bP(o.px[0],o.px[1]); // thrown back: a streak and dust along the way
+    SC.fx.push({k:'line',x1:q0[0],y1:q0[1]-10,x2:q1[0],y2:q1[1]-10,life:.3,c:'#e8d8b8',w:4});for(let q=0;q<7;q++)SC.parts.push({x:q0[0]+(q1[0]-q0[0])*q/7,y:q0[1]-4,vx:(Math.random()-.5)*50,vy:-30-Math.random()*40,life:.5,c:'#d8c8a8',s:3});}
   const pv=bP(v.x,v.y),vx=pv[0],ge=pv[1],big=k!=='atk';va.anim=1;if(Math.abs(v.x-a.x)>4)va.face=v.x>=a.x?1:-1;
-  if(k==='s3'){if(o.by===d.me||o.to===d.me){snd('ult');if(!calm)SC.shake=.4;}SC.fx.push({k:'rune',x:ax,y:g-2,r:120,life:1,d:1,c:cc});SC.fx.push({k:'flash',x:vx,y:ge-40,r:90,life:.35,d:.35,c:cc});}
+  if(k==='s3'){if(o.by===d.me||o.to===d.me){snd('ult');if(!calm)SC.shake=.4;}SC.fx.push({k:'rune',x:vx,y:ge-2,r:120,life:1,d:1,c:cc});SC.fx.push({k:'flash',x:vx,y:ge-40,r:90,life:.35,d:.35,c:cc});SC.fx.push({k:'ring',x:vx,y:ge-6,life:.55,c:cc,r:140});SC.fx.push({k:'ring',x:vx,y:ge-6,life:.8,c:'#fff',r:90});for(let q=-2;q<=2;q++)SC.fx.push({k:'pillar',x:vx+q*28,y:ge,life:.5,d:.5,c:cc});SC.fx.push({k:'star',x:vx,y:ge-40,r:84,rot:.2,life:.45,d:.45,c:'#fff'});}
+  else if(k==='bash'){if(o.by===d.me||o.to===d.me)snd('slam');SC.fx.push({k:'ring',x:vx,y:ge-20,life:.4,c:'#ffd75e',r:76});SC.fx.push({k:'flash',x:vx,y:ge-40,r:64,life:.25,d:.25,c:'#ffd75e'});if(!o.miss)addNum(vx,ge-128,o.guard?'המגן עצר':'נהדף','#ffd75e',false);if(!calm&&o.to===d.me)SC.shake=.3;}
   else if(k==='s1'){SC.fx.push({k:'pillar',x:vx,y:ge,life:.45,d:.45,c:cc});SC.fx.push({k:'star',x:vx,y:ge-44,r:46,rot:.4,life:.4,d:.4,c:cc});}
   else if(k==='s0')SC.fx.push({k:'rune',x:ax,y:g-2,r:56,life:.6,d:.6,c:cc});
   attackFx(a.cls,ax,g,va.face,[{x:vx,y:ge-10}],big,a.w?col:cc);
@@ -1027,7 +1032,7 @@ function brTap(px,py){ // a tap on the field: walk there
 }
 function updateBr(dt){
   const d=SC.duel,b=d.br,D=d.D,me=D.f[d.me],vm=d.v[d.me];
-  for(const v of d.v){v.anim=Math.max(0,v.anim-dt*3.2);v.hitT=Math.max(0,v.hitT-dt);}
+  for(const v of d.v){v.anim=Math.max(0,v.anim-dt*3.2);v.hitT=Math.max(0,v.hitT-dt);v.hop=Math.max(0,(v.hop||0)-dt);}
   for(let i=0;i<b.deadT.length;i++)if(b.deadT[i]>0)b.deadT[i]+=dt;
   if(b.phase==='end'){if((d.end-=dt)<=0)brExit();return;}
   if(b.phase==='fight'){D.t+=dt;if(d.go>0&&D.t>=0){d.go=0;renderDuelBar();snd('boss');}}
@@ -1067,7 +1072,7 @@ function drawSg(dt){
     const p=bP(me.x,me.y);ctx.strokeStyle='rgba(125,249,255,.22)';ctx.lineWidth=1;ctx.setLineDash([5,6]);ctx.beginPath();ctx.ellipse(p[0],p[1],rng*k,rng*k*.55,0,0,7);ctx.stroke();ctx.setLineDash([]);}
   if(b.go&&me.alive){const p=bP(b.go[0],b.go[1]);ctx.strokeStyle='rgba(125,249,255,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(p[0],p[1],9,4,0,0,7);ctx.stroke();}
   const ord=D.f.map((_,i)=>i).sort((p,q)=>D.f[p].y-D.f[q].y);
-  for(const i of ord){const a=D.f[i],v=d.v[i];if(!a.alive&&!(b.deadT[i]>0&&b.deadT[i]<1.6))continue;const dead=a.alive?0:b.deadT[i],p=bP(a.x,a.y),ax=p[0],ya=p[1];if(ax<-80||ax>W+80||ya<-40||ya>H+140)continue;const x=ax+(v.hitT>0?(Math.random()-.5)*5:0),c=i===d.me?'#7df9ff':gc(b.g[i]);
+  for(const i of ord){const a=D.f[i],v=d.v[i];if(!a.alive&&!(b.deadT[i]>0&&b.deadT[i]<1.6))continue;const dead=a.alive?0:b.deadT[i],p=bP(a.x,a.y),ax=p[0],ya=p[1]-(v.hop>0?Math.sin(Math.PI*(1-v.hop/.38))*70:0);if(ax<-80||ax>W+80||ya<-40||ya>H+140)continue;const x=ax+(v.hitT>0?(Math.random()-.5)*5:0),c=i===d.me?'#7df9ff':gc(b.g[i]);
     ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(ax,ya+2,20*sc,6*sc,0,0,7);ctx.fill();
     ctx.strokeStyle=i===tgt?'#ff5c7a':c;ctx.globalAlpha=i===tgt||i===d.me?.95:.55;ctx.lineWidth=i===tgt?2.5:1.5;ctx.beginPath();ctx.ellipse(ax,ya+2,26*sc,8*sc,0,0,7);ctx.stroke();ctx.globalAlpha=1;
     if(a.sh>D.t){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle='#9fe8ff';ctx.globalAlpha=.6;ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(ax,ya-44*sc,28*sc,48*sc,0,0,7);ctx.stroke();ctx.restore();}
@@ -1112,7 +1117,7 @@ function drawBr(dt){
     const p=bP(me.x,me.y);ctx.strokeStyle='rgba(125,249,255,.22)';ctx.lineWidth=1;ctx.setLineDash([5,6]);ctx.beginPath();ctx.ellipse(p[0],p[1],rng*k,rng*k*.55,0,0,7);ctx.stroke();ctx.setLineDash([]);}
   if(b.go&&me.alive){const p=bP(b.go[0],b.go[1]);ctx.strokeStyle='rgba(125,249,255,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(p[0],p[1],9,4,0,0,7);ctx.stroke();}
   const ord=D.f.map((_,i)=>i).sort((p,q)=>D.f[p].y-D.f[q].y);
-  for(const i of ord){const a=D.f[i],v=d.v[i],dead=b.deadT[i]||0;if(dead>1.6)continue;const p=bP(a.x,a.y),ax=p[0],ya=p[1];if(ax<-80||ax>W+80||ya<-40||ya>H+140)continue;const x=ax+(v.hitT>0?(Math.random()-.5)*5:0);
+  for(const i of ord){const a=D.f[i],v=d.v[i],dead=b.deadT[i]||0;if(dead>1.6)continue;const p=bP(a.x,a.y),ax=p[0],ya=p[1]-(v.hop>0?Math.sin(Math.PI*(1-v.hop/.38))*70:0);if(ax<-80||ax>W+80||ya<-40||ya>H+140)continue;const x=ax+(v.hitT>0?(Math.random()-.5)*5:0);
     ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(ax,ya+2,20*sc,6*sc,0,0,7);ctx.fill();
     if(i===d.me&&a.alive){ctx.strokeStyle='rgba(125,249,255,.75)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(ax,ya+2,26*sc,8*sc,0,0,7);ctx.stroke();}
     if(i===tgt){ctx.strokeStyle='#ff5c7a';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(ax,ya+2,28*sc,9*sc,0,0,7);ctx.stroke();}
@@ -1158,7 +1163,7 @@ async function tryEgg(k){if(!S||demo||egg.tried[k]||(A.eggs&&A.eggs[k]))return;e
 /* ---------- the arena: a live duel. You walk, strike, cast, guard, dash and drink; nothing happens by itself.
    The rules are liveAct in core.js. Against an absent player the fight runs here and the game plays his side;
    against a connected player the server runs it and this screen only sends what you try and shows what happened. ---------- */
-const DBTN=['atk','s0','s1','s3','s2','dash','pot','buf'],BUFN={blade:['זעקת קרב','חיים לקבוצה'],storm:['מגן נשמה','הגנה לקבוצה'],hunter:['עין הנץ','כוח לקבוצה']};
+const DBTN=['atk','s0','s1','s3','s2','dash','pot','buf','bash'],BUFN={blade:['זעקת קרב','חיים לקבוצה'],storm:['מגן נשמה','הגנה לקבוצה'],hunter:['עין הנץ','כוח לקבוצה']};
 const dX=u=>u*(W/LIVE_W),dy=f=>gy()-(1-f.z)*84,dsc=f=>.8+f.z*.2;
 function startDuel(pd,net){
   if(pd.tower&&!pd.o.w)pd.o.w=[1,0,0,0];
@@ -1172,8 +1177,8 @@ function startDuel(pd,net){
 function renderDuelBar(){
   const d=SC.duel,bar=$('duelBar');$('specBtn').style.display=d&&d.spec?'':'none';if(!d||d.spec){bar.style.display='none';return;}bar.style.display='grid';const me=d.D.f[d.me],off=d.sent||d.go>0;
   const sgOn=!!(d.br&&d.br.sg),cg=sgOn&&d.cbN?d.D.t-d.cbAt:-1,cbK=cg>=SG.cbMin&&cg<=SG.cbMax?(d.cbN===1?'s0':'s1'):'';
-  bar.querySelectorAll('button').forEach((b,i)=>{const k=DBTN[i];if(k==='buf'){b.style.display=sgOn?'':'none';if(!sgOn)return;}const cd=k==='atk'?0:Math.max(0,(me.at[k]||0)-d.D.t),nm=k==='atk'?'תקיפה':k==='dash'?'צעד':k==='buf'?BUFN[S.cls][0]:k==='pot'?'שיקוי ×'+me.pots:CLS[S.cls].sk[k==='s0'?0:k==='s1'?3:k==='s2'?4:5],
-    t=nm+'<small>'+(cd>0?Math.ceil(cd)+' שנ׳':k==='pot'&&!me.pots?'נגמר':k==='pot'&&me.wound>d.D.t?'פצוע':k==='buf'?BUFN[S.cls][1]:k===cbK?'קומבו עכשיו':k==='s2'?'מגן':k==='s3'?'מכה סופית':k==='s1'?'מהמם':k==='dash'?'חמיקה':'&nbsp;')+'</small>';
+  bar.querySelectorAll('button').forEach((b,i)=>{const k=DBTN[i];if(k==='buf'||k==='bash'){b.style.display=sgOn?'':'none';if(!sgOn)return;}const cd=k==='atk'?0:Math.max(0,(me.at[k]||0)-d.D.t),nm=k==='atk'?'תקיפה':k==='dash'?'צעד':k==='bash'?'הדיפה':k==='buf'?BUFN[S.cls][0]:k==='pot'?'שיקוי ×'+me.pots:CLS[S.cls].sk[k==='s0'?0:k==='s1'?3:k==='s2'?4:5],
+    t=nm+'<small>'+(cd>0?Math.ceil(cd)+' שנ׳':k==='pot'&&!me.pots?'נגמר':k==='pot'&&me.wound>d.D.t?'פצוע':k==='buf'?BUFN[S.cls][1]:k==='bash'?'מזיז יריב':k===cbK?'קומבו עכשיו':k==='s3'&&d.br?'זינוק':k==='s2'?'מגן':k==='s3'?'מכה סופית':k==='s1'?'מהמם':k==='dash'?'חמיקה':'&nbsp;')+'</small>';
     if(b.dataset.h!==t){b.dataset.h=t;b.innerHTML=t;}const dis=off||cd>0||(k==='pot'&&!me.pots);if(b.disabled!==dis)b.disabled=dis;b.classList.toggle('rdy',!dis&&(cbK?k===cbK:k==='s3'&&!sgOn));});
 }
 function dShow(d,o){ // play what a move did; o comes from liveAct, here or on the server
@@ -1231,7 +1236,7 @@ function towerAI(d,dt){ // a floor guardian: walks you down, swings, and marks t
 function updateDuel(dt){
   if(SC.duel.br)return updateBr(dt);
   const d=SC.duel,D=d.D,me=D.f[d.me],vm=d.v[d.me];
-  for(const v of d.v){v.anim=Math.max(0,v.anim-dt*3.2);v.hitT=Math.max(0,v.hitT-dt);}
+  for(const v of d.v){v.anim=Math.max(0,v.anim-dt*3.2);v.hitT=Math.max(0,v.hitT-dt);v.hop=Math.max(0,(v.hop||0)-dt);}
   if(d.end>0){d.end-=dt;if(d.end<=0)finishDuel();return;}
   if(d.go>0){d.go-=dt;if(d.go<=0){renderDuelBar();snd('boss');}return;}
   if(d.sent)return;
@@ -1340,6 +1345,8 @@ function netMsg(m){
   else if(m.t==='brMe'){if(d&&d.br){const f=d.D.f[d.me];if(m.at)for(const k in f.at)f.at[k]=+m.at[k]||0;f.pots=m.pots|0;renderDuelBar();}}
   else if(m.t==='brEnd')brOver(m);
   else if(m.t==='offline')toast('הוא לא מחובר כרגע');
+  else if(m.t==='pAsk'){snd('boss');openModal('<h2>הזמנה לפארטי</h2><p style="margin:8px 0 12px">'+esc(String(m.n||'שחקן').slice(0,14))+' מזמין אותך לפארטי שלו. להצטרף?</p><div class="grid2"><button class="btn pri" data-act="pans" data-ok="1">כן, הצטרף</button><button class="btn" data-act="pans" data-ok="0">לא</button></div>');}
+  else if(m.t==='pRes'){if(m.ok&&m.sent)toast('ההזמנה נשלחה. מחכים לתשובה');else if(m.ok){toast(m.joined?'הצטרפת לפארטי':'ההזמנה התקבלה. הוא בפארטי שלך',4);snd('rare');act('pget',{});}else toast({off:'השחקן לא נמצא או לא מחובר',full:'הפארטי מלא, עד חמישה שחקנים','in':'הוא כבר בפארטי שלך',busy:'יש לו הזמנה פתוחה. נסה שוב עוד רגע',no:'ההזמנה נדחתה',join:'ההצטרפות נכשלה. מי שכבר בפארטי אחר צריך לעזוב אותו קודם'}[m.why]||'ההזמנה לא נשלחה',4);}
   else if(m.t==='muted')toast('אתה מושתק ולא יכול לשלוח הודעות');
   else if(m.t==='declined')toast('ההזמנה לדו-קרב לא התקבלה');
   else if(m.t==='busy')toast('השחקן באמצע קרב אחר');
@@ -1477,7 +1484,7 @@ function renderGear(){
 function renderZones(){
   let h='<p class="hint">בכל מפה שלוש קומות: בכל קומה המפלצות חזקות יותר, ויש יותר ניסיון, זהב וסיכוי לשלל. עוברים בין קומות ומפות דרך השערים שבקצוות, או בקפיצה מכאן. שער חדש נפתח אחרי ניצחון על הבוס של המפה. הבוס מופיע אחרי '+L(BOSSN)+' חיסולים כשאתה משחק בעצמך.</p>';
   h+='<div class="card zone'+(SC.zi<0?' cur':'')+'"><div class="sw" style="background:linear-gradient('+TOWN.sky[0]+','+TOWN.sky[1]+')"></div><div class="z"><b>'+TOWN.n+'</b><small>נפח, סוחרת, שומר המעגל, כרוז העונה, שער הזירה</small></div><button class="btn sm" data-act="zone" data-i="-1"'+(SC.zi<0?' disabled':'')+'>'+(SC.zi<0?'כאן':'קפוץ')+'</button></div>';
-  ZONES.forEach((z,i)=>{const opened=z.castle?!!(guild.mine&&guild.mine.castle):z.req?S.resets>=z.req:i<=A.open,lv=z.min<=S.lvl,zf=zoneInfo(i,C,AFK),cur=SC.zi===i;
+  ZONES.forEach((z,i)=>{const opened=(ONLINE&&me.admin)||(z.castle?!!(guild.mine&&guild.mine.castle):z.req?S.resets>=z.req:i<=A.open),lv=z.min<=S.lvl,zf=zoneInfo(i,C,AFK),cur=SC.zi===i;
     if(i<BASEZ&&i%REGION===0)h+='<h2>אזור '+L(i/REGION+1)+' · ציוד '+TIERN[tierOf(i)-1]+'</h2>';
     if(z.castle)h+='<h2>העיר העתיקה</h2><p class="hint">הפרס של הגילדה שמחזיקה בטירה. מפלצות קשות, ציוד בדרגת '+TIERN[tierOf(i)-1]+', וחלקי סט עתיק נופלים כאן מעט יותר מאשר במפות הריסט. מי שהגילדה שלו מאבדת את הטירה יוצא מהעיר.</p>';
     if(i===BASEZ)h+='<h2>מפות ריסט</h2><p class="hint">נפתחות לפי מספר הריסטים של הדמות. המפלצות חזקות יותר, הניסיון והזהב גבוהים יותר, והציוד בדרגות חדשות עם סטים עתיקים משלו. נכנסים אליהן מכאן.</p>';
@@ -1494,7 +1501,7 @@ function shopList(name,list,have,curName){
 }
 function renderShop(){
   let h=renderCredits()+renderMarket()+'<h2>חנות אותות ריסט</h2><p class="hint">אותות מקבלים רק מריסט. יש לך '+L(A.cred)+'.'+((A.areset|0)>0?' ריסטים אוטומטיים שנותרו: '+L(A.areset|0)+'.':'')+'</p>'+shopList('reset',RESET_SHOP,A.cred,'אותות');
-  {const cas=!!(guild.mine&&guild.mine.castle);h+='<h2>חנות העיר העתיקה</h2><p class="hint">נקודות עתיקות נופלות רק ממפלצות בעיר העתיקה, כשמשחקים שם בעצמך, ועד '+CITY_WEEK+' בשבוע. יש לך '+L(A.anc|0)+'. השבוע אספת '+L((A.week&&A.week.anc)|0)+' מתוך '+CITY_WEEK+'.'+(cas?'':' החנות פתוחה רק לגילדה שמחזיקה בטירה.')+'</p>'+shopList('city',CITY_SHOP,cas?A.anc|0:-1,'נקודות');}
+  {const cas=!!(guild.mine&&guild.mine.castle)||(ONLINE&&me.admin);h+='<h2>חנות העיר העתיקה</h2><p class="hint">נקודות עתיקות נופלות רק ממפלצות בעיר העתיקה, כשמשחקים שם בעצמך, ועד '+CITY_WEEK+' בשבוע. יש לך '+L(A.anc|0)+'. השבוע אספת '+L((A.week&&A.week.anc)|0)+' מתוך '+CITY_WEEK+'.'+(cas?'':' החנות פתוחה רק לגילדה שמחזיקה בטירה.')+'</p>'+shopList('city',CITY_SHOP,cas?A.anc|0:-1,'נקודות');}
   h+='<h2>חנות זהב</h2>'+(A.boost>Date.now()?'<p class="hint">מגילת ניסיון פעילה עוד '+fmtT((A.boost-Date.now())/1000)+'.</p>':'')+shopList('gold',GOLD_SHOP,A.gold,'זהב');
   h+='<h2>חנות העונה</h2><p class="hint">מטבעות עונה מקבלים מהפס, מריסטים ומהזירה.</p>'+shopList('season',SEASON_SHOP,A.coins,'מטבעות');
   return h;
@@ -1570,9 +1577,10 @@ function renderParty(){
   const per=Math.round(PARTY_XP*100),buffs=Object.keys(AURAS).map(k=>'<div class="kv"><span>'+esc(CLS[k].n)+' · '+esc(AURAS[k].n)+'</span><b'+(auras.includes(k)?' style="color:var(--good)"':'')+'>'+L('+')+esc(AURAS[k].d)+(auras.includes(k)?' · פעיל':'')+'</b></div>').join('');
   const rules='<p class="hint">עד חמישה שחקנים. כל מקצוע נותן באף משלו לחברי הפארטי שנלחמים איתו באותה מפה, גם מול בוסים. מהשחקן השלישי באותה מפה, כל חבר מוסיף '+L(per+'%')+' ניסיון, עד '+L(per*3+'%')+'. בנוסף, כל חיסול של חבר במפה שלך נותן לך עד '+L(Math.round(PARTY_SHARE*100)+'%')+' מהניסיון שלו. עד 15 רמות הפרש מקבלים הכול, ומשם זה יורד, עד '+L('15%')+' מהסכום בהפרש של 100 רמות ומעלה.</p>'+buffs;
   if(!party.code)return h+'<div class="card" style="display:flex;flex-direction:column;gap:8px">'+rules+'<p class="hint">חברי פארטי יכולים גם למכור פריטים ישירות זה לזה.</p>'+
-    '<button class="btn pri" data-act="pcreate">צור פארטי</button><input type="text" id="pcode" maxlength="6" placeholder="קוד פארטי של חבר" autocomplete="off" dir="ltr"><button class="btn" data-act="pjoin">הצטרף עם קוד</button></div>';
+    '<input type="text" id="pname" maxlength="14" placeholder="שם של שחקן מחובר" autocomplete="off"><button class="btn pri" data-act="pinvite">הזמן לפארטי</button><p class="hint">השחקן מקבל שאלה ועונה כן או לא. אפשר גם ללחוץ על שחקן במפה או ברשימת השחקנים ולהזמין משם.</p><button class="btn" data-act="pcreate">צור פארטי</button><input type="text" id="pcode" maxlength="6" placeholder="קוד פארטי של חבר" autocomplete="off" dir="ltr"><button class="btn" data-act="pjoin">הצטרף עם קוד</button></div>';
   h+='<div class="card"><div class="kv"><span>קוד להזמנת חברים</span><b class="num" dir="ltr" style="letter-spacing:2px;color:var(--gold)">'+esc(party.code)+'</b></div>';
   for(const m of party.members)h+='<div class="kv"><span><i class="dot" style="background:var(--'+(m.active?'good':'line')+')"></i>'+esc(m.n)+(m.me?' (אתה)':'')+(m.leader?' · מוביל':'')+'</span><b>רמה '+L(m.l)+' · '+esc(zoneName(clamp(m.zone|0,-1,ZONES.length-1)))+'</b></div>';
+  if(party.members.length<5)h+='<div style="display:flex;gap:6px;margin-top:8px"><input type="text" id="pname" maxlength="14" placeholder="שם של שחקן מחובר" autocomplete="off" style="flex:1"><button class="btn sm pri" data-act="pinvite">הזמן</button></div>';
   return h+'<div style="margin-top:6px">'+rules+'</div><p class="hint" style="margin-top:6px">איתך במפה עכשיו: '+L(partyN)+' חברים. בונוס ניסיון: '+L(Math.round(partyXp(partyN)*100)+'%')+'.</p><button class="btn sm" data-act="pleave">עזוב פארטי</button></div>';
 }
 function renderArena(){
@@ -1733,7 +1741,7 @@ function accountHtml2(){
     (me.secret?'':'<p class="hint" style="color:var(--bad)">עוד לא הוגדרה שאלת שחזור. בלעדיה אי אפשר לשחזר סיסמה שנשכחה.</p>')+
     '<button class="btn'+(me.secret?'':' pri')+'" data-act="acct" data-k="secret">שאלת שחזור</button><button class="btn" data-act="acct" data-k="pass">שינוי סיסמה</button>'+
     (me.admin?'<a class="btn" href="admin.html" style="text-align:center;text-decoration:none;color:inherit">מסך ניהול</a>':'')+
-    (me.admin?'<div class="card" style="display:flex;flex-direction:column;gap:6px;border-color:var(--gold)"><b style="color:var(--gold)">כלי מנהל המשחק</b><p class="hint">רק החשבון שלך רואה את זה, והשרת בודק את ההרשאה מחדש בכל לחיצה. כל פעולה מוכרזת בצ׳אט העולמי.</p>'+
+    (me.admin?'<div class="card" style="display:flex;flex-direction:column;gap:6px;border-color:var(--gold)"><b style="color:var(--gold)">כלי מנהל המשחק</b><p class="hint">שיגור: בלשונית מפה כל המפות פתוחות לך, בכל רמה, כולל העיר העתיקה והחנות שלה.</p><p class="hint">רק החשבון שלך רואה את זה, והשרת בודק את ההרשאה מחדש בכל לחיצה. כל פעולה מוכרזת בצ׳אט העולמי.</p>'+
       '<button class="btn pri" data-act="gm" data-a="br" data-sec="90">פתח את המעגל האחרון עכשיו · הרשמה 90 שניות</button><button class="btn sm" data-act="gm" data-a="br" data-sec="30">פתח לבדיקה מהירה · 30 שניות</button><button class="btn sm" data-act="gm" data-a="brStop">בטל הרשמה פתוחה</button>'+
       '<button class="btn pri" data-act="gm" data-a="siege" data-min="10">פתח מצור ידידות ל-10 דקות</button><button class="btn sm" data-act="gm" data-a="siegeStop">סגור מצור שרץ</button>'+
       '<button class="btn" data-act="gm" data-a="boost" data-xp="2" data-drop="1" data-min="60">ניסיון כפול לכולם לשעה</button><button class="btn" data-act="gm" data-a="boost" data-xp="1" data-drop="2" data-min="60">שלל כפול לכולם לשעה</button><button class="btn" data-act="gm" data-a="boost" data-xp="2" data-drop="2" data-min="30">ניסיון ושלל כפולים לחצי שעה</button><button class="btn sm" data-act="gm" data-a="boost" data-min="0">בטל בונוס</button>'+
@@ -1886,7 +1894,8 @@ document.addEventListener('click',async e=>{
     else if(a==='trial'){r=await act('trialStart',{});if(r.ok)startDuel(r.pd);else toast(r.msg==='net'?'אין חיבור לשרת':r.msg);}
     else if(a==='tower'){r=await act('towerStart',{});if(r.ok)startDuel(r.pd);else toast(r.msg==='net'?'אין חיבור לשרת':r.msg);}
     else if(a==='pvpYes'||a==='pvpNo'){closeModal();netSend({t:'answer',id:+b.dataset.id,ok:a==='pvpYes'});r={ok:true};}
-    else if(a==='pinvite'){closeModal();try{const j=await rpc('say',{m:b.dataset.n+', בוא לפארטי שלי. הקוד: '+party.code,g:false});toast(j&&j.result&&j.result.ok?'ההזמנה נשלחה בצ\'אט':'ההזמנה לא נשלחה');beatT=99;}catch(e){}r={ok:true};}
+    else if(a==='pinvite'){closeModal();if(b.dataset.k)netSend({t:'pInv',k:b.dataset.k});else{const n=($('pname')&&$('pname').value||'').trim();if(!n)toast('הקלד שם של שחקן מחובר');else netSend({t:'pInv',n:n});}r={ok:true};}
+    else if(a==='pans'){closeModal();netSend({t:'pAns',ok:b.dataset.ok==='1'});r={ok:true};}
     else if(a==='reroll'){loadArena();}
     else if(a==='pt'){r=await act('pt',{k:b.dataset.k,n:b.dataset.n});}
     else if(a==='autoPts'||a==='autoEq'||a==='autoSell'){r=await act(a,{});}
@@ -1917,7 +1926,7 @@ function showPeer(p){
     '<div class="kv"><span>רמה</span><b class="num">'+L(s.l)+'</b></div><div class="kv"><span>ריסטים</span><b class="num">'+L(s.r)+'</b></div><div class="kv"><span>כוח לחימה</span><b class="num">'+L(fmt(s.p))+'</b></div>'+
     '<div class="kv"><span>נשק</span><b>'+gearLine(s.w,TIERN)+'</b></div><div class="kv"><span>שריון</span><b>'+gearLine(s.ar,TIERN)+'</b></div><div class="kv"><span>כנפיים</span><b>'+gearLine(s.g,WINGN)+'</b></div>'+
     (pet?'<div class="kv"><span>מלווה</span><b>'+pet[1]+'</b></div>':'')+
-    '<div class="grid2" style="margin-top:10px"><button class="btn pri" data-act="challenge" data-k="'+esc(p.k)+'"'+(A.tickets>0&&SC.mode==='farm'?'':' disabled')+'>אתגר לדו-קרב</button><button class="btn" data-act="pinvite" data-n="'+esc(s.n)+'"'+(party.code?'':' disabled')+'>'+(party.code?'שלח קוד פארטי':'אין לך פארטי')+'</button></div>'+
+    '<div class="grid2" style="margin-top:10px"><button class="btn pri" data-act="challenge" data-k="'+esc(p.k)+'"'+(A.tickets>0&&SC.mode==='farm'?'':' disabled')+'>אתגר לדו-קרב</button><button class="btn" data-act="pinvite" data-k="'+esc(p.k)+'"'+(party.members.length>=5?' disabled':'')+'>הזמן לפארטי</button></div>'+
     '<p class="hint" style="margin-top:6px">אם הוא מחובר הוא מקבל הזמנה, ואם הוא מקבל אותה נלחמים זה בזה בזמן אמת. אחרת נלחמים בדמות שלו, שהמשחק מפעיל. עולה כרטיס זירה.</p>'+
     '<div class="grid2" style="margin-top:6px"><button class="btn" data-act="wTo" data-k="'+esc(p.k)+'" data-n="'+esc(s.n)+'">הודעה פרטית</button><button class="btn" data-act="friend" data-on="'+(isFriend(p.k)?0:1)+'" data-k="'+esc(p.k)+'" data-n="'+esc(s.n)+'">'+(isFriend(p.k)?'הסר מהחברים':'הוסף לחברים')+'</button>'+
     '<button class="btn sm" data-act="block" data-on="'+(isBlocked(p.k)?0:1)+'" data-k="'+esc(p.k)+'" data-n="'+esc(s.n)+'">'+(isBlocked(p.k)?'בטל חסימה':'חסום')+'</button><button class="btn sm" data-act="reportAsk" data-k="'+esc(p.k)+'" data-n="'+esc(s.n)+'">דווח</button></div>'+
@@ -2103,7 +2112,7 @@ function siegeLine(){
 function renderGuild(){
   let h='<h2>גילדה</h2>';if(!ONLINE)return h+'<p class="hint">גילדות עובדות רק במצב מקוון, מול השרת.</p>';
   const g=guild.mine,hold=guild.holder;
-  h+='<div class="card"><p class="hint"><b>מצור הטירה</b> · '+siegeLine()+' קרב חי על טירה מוקפת חומה בסוף דרך ארוכה: עוברים את הסוללות, פורצים שער, שני חברים לוחצים על שני המתגים ונשארים עליהם, ומנהל הגילדה לוקח את הכתר במשך חצי דקה. מי שיוצא מהמתג או נופל מאבד אותו, והכתר נעצר. מי שנופל חוזר מהמחנה הרחוק. המצור נמשך שעה. המתגים והכתר נמצאים בחדר הכתר, מאחורי פתח אחד צר. קונים שיקויים אצל המוכר. קומבו עושים רק בסדר אחד ובקצב: תקיפה, אז המיומנות הראשונה, אז המיומנות המהממת, כל אחת כשהכפתור שלה נדלק. לחיצה מוקדמת, מאוחרת או אחרת באמצע מבטלת. קומבו מכה חזק, מהמם, הודף ומונע שיקוי לרגע. המיומנות הראשונה הודפת את היריב, וככה מזיזים שחקן ממתג. מגן עוצר הדיפה והלם. כל מקצוע מפעיל באף על חברי הגילדה שלידו: לוחם חיים, מכשפה הגנה, צייד כוח, ושלושתם יחד גם מהירות. הכוח של הדמות נותן יתרון, אבל משחק טוב יכול לנצח דמות חזקה יותר. מי שמחזיק בכתר כשהזמן נגמר מחזיק בטירה שבוע, וכל חברי הגילדה מקבלים '+L('+10%')+' ניסיון וזהב, וגישה לעיר העתיקה.</p>'+(sgLive>Date.now()?'<button class="btn pri glow" style="width:100%;margin-bottom:6px" data-act="sgJoin"'+(netUp()&&SC.mode==='farm'&&guild.mine?'':' disabled')+'>'+(guild.mine?(sgTest?'הצטרף למצור הידידות':'הצטרף למצור')+' · נשארו '+L(mmss((sgLive-Date.now())/1000)):'רק חברי גילדה יכולים להצטרף')+'</button>':'')+'<p class="hint" style="display:none"></p><div class="kv"><span>מחזיקה בטירה</span><b>'+(hold?esc(hold.name)+' ['+esc(hold.tag)+']':'אף גילדה')+'</b></div></div>';
+  h+='<div class="card"><p class="hint"><b>מצור הטירה</b> · '+siegeLine()+' קרב חי על טירה מוקפת חומה בסוף דרך ארוכה: עוברים את הסוללות, פורצים שער, שני חברים לוחצים על שני המתגים ונשארים עליהם, ומנהל הגילדה לוקח את הכתר במשך חצי דקה. מי שיוצא מהמתג או נופל מאבד אותו, והכתר נעצר. מי שנופל חוזר מהמחנה הרחוק. המצור נמשך שעה. המתגים והכתר נמצאים בחדר הכתר, מאחורי פתח אחד צר. קונים שיקויים אצל המוכר. קומבו עושים רק בסדר אחד ובקצב: תקיפה, אז המיומנות הראשונה, אז המיומנות המהממת, כל אחת כשהכפתור שלה נדלק. לחיצה מוקדמת, מאוחרת או אחרת באמצע מבטלת. קומבו מכה חזק, מהמם, הודף ומונע שיקוי לרגע. המיומנות הראשונה הודפת את היריב, וככה מזיזים שחקן ממתג. מגן עוצר הדיפה והלם, אבל לא את כל הנזק: מי שלא ממלא חיים בזמן נופל גם מאחורי מגן. המיומנות הגדולה היא זינוק: היא מגיעה רחוק ומנחיתה אותך על היריב. הדיפה היא מכה חלשה שזורקת את היריב רחוק, וככה אחד דוחף ממתג בזמן שהאחרים תוקפים. כל מקצוע מפעיל באף על חברי הגילדה שלידו: לוחם חיים, מכשפה הגנה, צייד כוח, ושלושתם יחד גם מהירות. הכוח של הדמות נותן יתרון, אבל משחק טוב יכול לנצח דמות חזקה יותר. מי שמחזיק בכתר כשהזמן נגמר מחזיק בטירה שבוע, וכל חברי הגילדה מקבלים '+L('+10%')+' ניסיון וזהב, וגישה לעיר העתיקה.</p>'+(sgLive>Date.now()?'<button class="btn pri glow" style="width:100%;margin-bottom:6px" data-act="sgJoin"'+(netUp()&&SC.mode==='farm'&&guild.mine?'':' disabled')+'>'+(guild.mine?(sgTest?'הצטרף למצור הידידות':'הצטרף למצור')+' · נשארו '+L(mmss((sgLive-Date.now())/1000)):'רק חברי גילדה יכולים להצטרף')+'</button>':'')+'<p class="hint" style="display:none"></p><div class="kv"><span>מחזיקה בטירה</span><b>'+(hold?esc(hold.name)+' ['+esc(hold.tag)+']':'אף גילדה')+'</b></div></div>';
   if(!g){
     h+='<div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">עד 20 חברים. כל רמת גילדה מוסיפה '+L('1%')+' ניסיון לכל החברים, עד '+L('10%')+'. הרמה עולה מהחיסולים של כולם.</p>'+
       '<input type="text" id="gname" maxlength="14" placeholder="שם הגילדה, 3 עד 14 תווים" autocomplete="off"><input type="text" id="gtag" maxlength="4" placeholder="תג, 2 עד 4 תווים" autocomplete="off" dir="ltr">'+

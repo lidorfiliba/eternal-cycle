@@ -575,3 +575,23 @@ test('the keep: who comes back stronger before the gate shuts enters the keep of
   G.apply(A,'evLeave',{},{});assert.equal(G.apply(A,'evEnter',{id:w.e.id},{}).ok,false,'but not after leaving by choice');
   const B2=G.newAccount();G.apply(B2,'create',{cls:'blade',name:'y'},{});B2.keys=1;B2.chars[0].lvl=300;assert.equal(G.apply(B2,'evEnter',{id:w.e.id},{}).ok,false,'and nobody new gets in after the start');
 });
+test('moves that move: the leap carries the attacker onto a far enemy, the shove throws him off, a shield stands',()=>{
+  const rnd=()=>.5,P=(id,c)=>({id,n:id,c:c||'blade',d:400,a:1.5,h:2700,f:70,cr:0,cd:2});
+  const X=G.sgNew(rnd,{}),a=G.sgAdd(X,P('a'),1,'',rnd),e=G.sgAdd(X,P('e'),2,'',rnd),fa=X.f[a],fe=X.f[e];X.t=30;
+  fa.x=0;fa.y=1900;fe.x=180;fe.y=1900;fe.pool=1e9;assert.equal(G.sgAct(X,a,'atk',rnd),null,'too far for a blow');
+  const o=G.sgAct(X,a,'s3',rnd);assert.ok(o&&o.to===e&&o.jx&&o.dm>0,'the leap reaches');assert.ok(Math.abs(fa.x-fe.x)<40,'and lands beside him: '+fa.x);
+  fa.at.bash=0;const x0=fe.x,b=G.sgAct(X,a,'bash',rnd);assert.ok(b.px&&fe.x-x0>=G.SG.bashPush-1,'the shove throws far');assert.ok(b.dm<o.dm/3,'and harms little');
+  X.t+=.1;fa.at.s0=0;fa.x=fe.x-20;assert.ok(!G.sgAct(X,a,'s0',rnd).px,'an ordinary push still waits');X.t+=10;fa.at.bash=0;fa.x=fe.x-20;fe.sh=X.t+5;const y0=fe.x,g=G.sgAct(X,a,'bash',rnd);assert.ok(g.guard&&fe.x===y0,'a shield stops the shove');
+  assert.ok(g.dm>0,'but not all the harm: he must still refill his health');
+  { // the last circle: the same leap, and the quick skill throws back
+    const B=G.brNew([{id:'p',n:'p',c:'blade'},{id:'q',n:'q',c:'storm'}],rnd);B.t=5;const p=B.f[0],q=B.f[1];p.x=0;p.y=0;q.x=170;q.y=0;p.at.s3=0;p.at.s0=0;
+    const l=G.brAct(B,0,'s3',rnd);assert.ok(l&&l.jx&&Math.abs(p.x-q.x)<40);const qx=q.x,s=G.brAct(B,0,'s0',rnd);assert.ok(s.px&&q.x>qx+20,'thrown back');}
+});
+test('the game master walks anywhere; nobody else does',()=>{
+  G.setEnv(Math.random,()=>1.8e12);const zi=G.ZONES.findIndex(z=>z.castle),far=G.ZONES.length-2;
+  const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'x'},{});
+  assert.equal(G.apply(A,'travel',{z:zi,f:0,gm:1},{}).ok,false,'the word of the browser is nothing');assert.equal(G.apply(A,'travel',{z:far,f:0},{}).ok,false);
+  assert.equal(G.apply(A,'travel',{z:zi,f:0},{gm:true,castle:true}).ok,true);assert.equal(G.apply(A,'travel',{z:far,f:2},{gm:true}).ok,true);
+  assert.equal(G.apply(A,'travel',{z:far,f:0},{}).ok,false,'and the right does not stay behind');
+});
+

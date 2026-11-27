@@ -133,7 +133,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     }
     if (b.phase !== 'fight') return; const i = b.idx.get(uid), B = b.B, f = B.f[i]; if (!f || !f.alive || B.t < 0) return;
     if (m.t === 'brPos') {
-      if (f.stun > B.t) return; const now = clock(), el = Math.min(1, (now - (ws.brT || now)) / 1000); ws.brT = now;
+      if (f.stun > B.t || f.pushT > B.t) return; const now = clock(), el = Math.min(1, (now - (ws.brT || now)) / 1000); ws.brT = now;
       const lim = G.brSpeed(f) * 1.3 * el + (f.inv > B.t ? 190 : 24), dx = (Number(m.x) || 0) - f.x, dy = (Number(m.y) || 0) - f.y, d = Math.hypot(dx, dy) || 1, st = Math.min(d, lim);
       f.x += dx / d * st; f.y += dy / d * st; { const r = Math.hypot(f.x, f.y); if (r > G.BR.R) { f.x *= G.BR.R / r; f.y *= G.BR.R / r; } } f.face = Number(m.f) < 0 ? -1 : 1; return;
     }
@@ -198,9 +198,33 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     if (m.t === 'sgAct') { const o = G.sgAct(B, i, String(m.k), rnd); if (!o) return; if (o.no) return send(uid, { t: 'sgHint', no: o.no }); const out = sgState(B); out.ev = [o]; sgAll(out); return send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t }); }
   }
 
+  // Party invitations: by clicking a player or typing a name. The invited player is asked, and joins only on a yes.
+  // The party itself lives in the database as before; this only carries the question and the answer.
+  const pInv = new Map(); // invited uid -> { from, code, at }
+  async function partyMsg(ws, m) {
+    const uid = ws.uid, now = clock(), no = (why) => send(uid, { t: 'pRes', ok: false, why });
+    if (m.t === 'pInv') {
+      if (now - (ws.lastPI || 0) < 2500) return; ws.lastPI = now;
+      let to = m.k != null ? keys.get(String(m.k)) : null; const nm = String(m.n || '').trim().toLowerCase().slice(0, 14);
+      if (!to && nm) { let n = 0; for (const [u, sk] of socks) { if (n++ > 200) break; if (!sk.name) { const p = await snap(u); sk.name = p ? p.n : ''; } if (u !== uid && String(sk.name).toLowerCase() === nm) { to = u; break; } } }
+      if (!to || to === uid || !socks.has(to)) return no('off');
+      let info = (await admin.rpc('party_info', { p_user: uid })).data;
+      if (!info || !info.code) { const c = await admin.rpc('party_create', { p_user: uid }); if (c.error) return no('fail'); info = (await admin.rpc('party_info', { p_user: uid })).data; }
+      if (!info || !info.code) return no('fail'); const mem = info.members || [];
+      if (mem.some((x) => x.id === to)) return no('in'); if (mem.length >= 5) return no('full');
+      const cur = pInv.get(to); if (cur && now - cur.at < 20000 && cur.from !== uid) return no('busy');
+      if (!ws.name) { const p = await snap(uid); ws.name = p ? p.n : ''; }
+      pInv.set(to, { from: uid, code: info.code, at: now }); send(to, { t: 'pAsk', n: String(ws.name || '').slice(0, 14) }); return send(uid, { t: 'pRes', ok: true, sent: 1 });
+    }
+    const inv = pInv.get(uid); if (!inv) return; pInv.delete(uid); if (now - inv.at > 60000) return;
+    if (m.ok !== true) return send(inv.from, { t: 'pRes', ok: false, why: 'no' });
+    const j = await admin.rpc('party_join', { p_user: uid, p_code: inv.code }), ok = !j.error;
+    send(uid, { t: 'pRes', ok, joined: 1, why: ok ? '' : 'join' }); send(inv.from, { t: 'pRes', ok, acc: 1, why: ok ? '' : 'join' });
+  }
   async function onMsg(ws, m) {
     const uid = ws.uid, d = inDuel.get(uid), side = d ? d.u.indexOf(uid) : -1;
     if (m.t === 'gm') return gmMsg(ws, m);
+    if (m.t === 'pInv' || m.t === 'pAns') return partyMsg(ws, m);
     if (typeof m.t === 'string' && m.t.slice(0, 2) === 'sg') return sgMsg(ws, m);
     if (typeof m.t === 'string' && m.t.slice(0, 2) === 'br') return brMsg(ws, m);
     if (m.t === 'challenge') {

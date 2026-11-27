@@ -1,5 +1,6 @@
 // Request handling for the game, independent of the runtime so it can be tested with a stand-in database.
 // `admin` is a Supabase service-role client; `G` is the shared rules module.
+const gmSeen = new Map(); // who was last confirmed, or refused, as game master, and when
 export function makeHandler(admin, G, rnd, clock = Date.now) {
   const plain = (o) => JSON.parse(JSON.stringify(o));
   const MARKET_MSG = {
@@ -198,9 +199,12 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
         const { data } = await admin.from("arena").select("user_id,snap").order("seen_at", { ascending: false }).limit(300);
         for (const row of data || []) { if (row.user_id !== uid && (await peerKey(row.user_id)) === args.k) { ctx.target = G.cleanPlayer(row.user_id, row.snap); break; } }
       }
-      if ((kind === "buy" && args.shop === "city") || (kind === "travel" && G.ZONES[Math.floor(Number(args.z))] && G.ZONES[Math.floor(Number(args.z))].castle)) { // the ancient city: only for the guild that holds the castle
+      // The game master may walk anywhere, to test. The right is the is_admin flag in the database, asked again at most once a minute; the client's word alone gives nothing.
+      if (args.gm === 1 && (kind === "tick" || kind === "travel" || kind === "buy")) { const c = gmSeen.get(uid); let ok = c && c.t > now - 60000 ? c.ok : null; if (ok === null) { const q = await admin.rpc("is_admin", { p_user: uid }); ok = q.data === true; gmSeen.set(uid, { ok, t: now }); if (gmSeen.size > 500) gmSeen.clear(); } if (ok) ctx.gm = true; }
+      if (!ctx.gm && ((kind === "buy" && args.shop === "city") || (kind === "travel" && G.ZONES[Math.floor(Number(args.z))] && G.ZONES[Math.floor(Number(args.z))].castle))) { // the ancient city: only for the guild that holds the castle
         const gt = await admin.rpc("guild_tick", { p_user: uid, p_kills: 0, p_siege: false, p_key: G.siegeInfo(now).key }); if (!gt.error && gt.data) ctx.castle = !!gt.data.castle;
       }
+      if (ctx.gm) ctx.castle = true;
       if (kind === "tick" && Number(args.z) >= 0) {
         const pm = await admin.rpc("party_mates", { p_user: uid, p_zone: Math.floor(Number(args.z)) });
         const mates = pm.error || !Array.isArray(pm.data) ? [] : pm.data;
@@ -209,7 +213,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
         if (!shareXp) { const tk = await admin.rpc("party_share_take", { p_user: uid }); shareXp = tk.error ? 0 : Number(tk.data) || 0; }
         ctx.shareXp = shareXp;
         const gt = await admin.rpc("guild_tick", { p_user: uid, p_kills: 0, p_siege: false, p_key: G.siegeInfo(now).key });
-        if (!gt.error && gt.data) { ctx.guildLvl = Number(gt.data.lvl) || 0; ctx.castle = !!gt.data.castle; }
+        if (!gt.error && gt.data) { ctx.guildLvl = Number(gt.data.lvl) || 0; ctx.castle = ctx.gm || !!gt.data.castle; }
       }
       G.setEnv(rnd, () => now); // set right before the synchronous rules call; no await in between
       const r = G.apply(A, kind, args, ctx);
