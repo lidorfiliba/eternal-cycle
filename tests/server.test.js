@@ -442,6 +442,14 @@ test('friends, blocking, reports and private messages',async()=>{
       room.mons[5].hp=1;await new Promise(r=>setTimeout(r,400));a.send({t:'sh',i:5,m:1});const d3=await a.wait('sd');assert.equal(d3.c,1);
       assert.equal(srv.live.takeKills(a.uid,z,1),0,'credits belong to their floor');assert.equal(srv.live.takeKills(a.uid,z,0),1,'whole kills are counted');assert.equal(srv.live.takeKills(a.uid,z,0),0,'once');
       const r1=await a.wait('sr');assert.equal(r1.i,3,'and the monster returns');
+      // the map's boss is each player's own, but its health is the server's: a kill report may name a boss only after the server saw it fall
+      assert.equal(srv.live.takeFlag(a.uid,z,0,'b'),false);a.send({t:'sh',i:-1,m:1});const bh=await a.wait('sh');assert.ok(bh.i===-1&&bh.h<=1&&bh.h>.9,'thirty monsters\' worth of health');assert.ok(!b.q.some(m=>m.t==='sh'&&m.i===-1),'and only he sees it');
+      srv.live.socks.get(a.uid).pm[z+':0b'].hp=1;await new Promise(r=>setTimeout(r,500));a.send({t:'sh',i:-1,m:1});assert.equal((await a.wait('sd')).i,-1);assert.equal(srv.live.takeFlag(a.uid,z,1,'b'),false);assert.equal(srv.live.takeFlag(a.uid,z,0,'b'),true);assert.equal(srv.live.takeFlag(a.uid,z,0,'b'),false,'once');
+      // joining again does not refill the allowance
+      a.q.length=0;for(let n=0;n<30;n++)a.send({t:'sh',i:6,m:6});await new Promise(r=>setTimeout(r,300));const before=a.q.filter(m=>m.t==='sh'&&m.i===6).length;await new Promise(r=>setTimeout(r,450));a.send({t:'sj',z:z,f:0});await a.wait('ss');a.q.length=0;for(let n=0;n<30;n++)a.send({t:'sh',i:6,m:6});await new Promise(r=>setTimeout(r,300));
+      assert.ok(before<=4&&a.q.filter(m=>m.t==='sh'&&m.i===6).length<=2,'thirty blows asked, a few given; and after joining again, no more than time allows: '+before+' '+a.q.filter(m=>m.t==='sh'&&m.i===6).length);
+      // a keep is a room of its own, and its kills are counted apart
+      await new Promise(r=>setTimeout(r,450));a.q.length=0;a.send({t:'sj',z:3,f:0,ev:1});const ks=await a.wait('ss');assert.ok(ks.ev===1&&ks.hp.length===22);assert.equal(srv.live.takeKills(a.uid,3,0,false),0);
       const tk=await post({kind:'tick',args:{z:z,f:0,kills:500,dt:5}},a.tok);assert.ok(tk.result&&!tk.error,'the kill report of that map goes through the server\'s own count: '+JSON.stringify(tk).slice(0,80));}
   }finally{for(const u of [a,b])if(u.ws)u.ws.close();srv.live.close();srv.close();}
 });

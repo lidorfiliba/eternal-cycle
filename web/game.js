@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261127122419';
+const BUILD='20261127124324';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -634,19 +634,19 @@ function enterZone(z,side,f,ev){
   h.x=side==='R'?mapW()-110:110;h.face=side==='R'?-1:1;
   if(h.climb&&h.climb.ph==='wait'){h.climb.ph='in';h.climb.t=.45;h.x=side==='R'?mapW()-50:50;}else h.climb=null;
   if(z>=0){const n=ev?22:8,gap=ev?52:140;for(let i=0;i<n;i++)SC.mons.push(newMon((ev?240:300)+i*gap+Math.random()*(ev?30:50),z));}
-  {const was=SC.sh;SC.sh=!!(ONLINE&&CFG.api&&!demo&&!ev&&z>=0&&ZONES[z].shared);SC.shAcc=0;if(SC.sh){SC.mons.forEach((m,i)=>{m.sid=i;});netSend({t:'sj',z:z,f:SC.fl});}else if(was)netSend({t:'sl'});}
+  {const was=SC.sh;SC.sh=!!(ONLINE&&CFG.api&&!demo&&z>=0&&ZONES[z].shared);SC.shAcc=0;if(SC.sh){SC.mons.forEach((m,i)=>{m.sid=i;});netSend({t:'sj',z:z,f:SC.fl,ev:ev?1:0});}else if(was)netSend({t:'sl'});}
   h.up=0;h.lift=0;if(hasDeck(z))for(const i of [2,3,4]){const m=SC.mons[i];m.up=1;m.home=clamp(m.home,DECK.x0+50,DECK.x1-50);m.x=m.home;}
   if(z<0&&ONLINE&&!demo)loadMarket();
   if(z<0||z!==S.zone){auras=[];partyN=0;}statsDirty=true;panelDirty=true;syncBoss();peers=[];beatT=99;
 }
 function spawnBoss(){
   const zi=SC.zi,z=ZONES[zi];if(SC.boss||zi<0)return;
-  const b=newMon(MW-280,zi);b.boss=true;b.hp=b.max=zs(zi,SC.fl).hp*30;b.slamT=4;b.wind=0;b.m2T=8;b.mets=[];b.metN=0;b.metT=0;b.chg=null;b.dash=null;b.weak=0;b.clean=true;SC.boss=b;SC.mons.push(b);snd('boss');toast('הבוס של '+z.n+' הופיע בקצה המפה');
+  const b=newMon(MW-280,zi);b.boss=true;if(SC.sh)b.sid=-1;b.hp=b.max=zs(zi,SC.fl).hp*30;b.slamT=4;b.wind=0;b.m2T=8;b.mets=[];b.metN=0;b.metT=0;b.chg=null;b.dash=null;b.weak=0;b.clean=true;SC.boss=b;SC.mons.push(b);snd('boss');toast('הבוס של '+z.n+' הופיע בקצה המפה');
 }
 // A champion: one monster of the pack that is far stronger and carries a sure rare drop. The server decides when.
 function syncElite(){
   if(!A||SC.mode!=='farm'||SC.ev)return;const e=A.elite,want=!!(e&&e.z===SC.zi&&(e.f|0)===SC.fl&&SC.zi>=0),cur=SC.mons.find(m=>m.elite);
-  if(want&&!cur&&!pend.elite){const h=SC.hero,m=newMon(clamp(h.x+(h.x<mapW()/2?1:-1)*(150+Math.random()*60),160,mapW()-160),SC.zi);m.elite=true;for(let q=-1;q<=1;q++)SC.fx.push({k:'pillar',x:m.x+q*26,y:m.y,life:.9,d:.9,c:'#ffd75e'});SC.fx.push({k:'ring',x:m.x,y:m.y-20,life:.8,c:'#ffd75e',r:120});m.hp=m.max=zs(SC.zi,SC.fl).hp*ELITE_HP;m.ag=true;SC.mons.push(m);snd('growl');announce('מפלצת אלופה הופיעה במפה הזו, זוהרת בזהב. הבס אותה לשלל מיוחד',true);}
+  if(want&&!cur&&!pend.elite){const h=SC.hero,m=newMon(clamp(h.x+(h.x<mapW()/2?1:-1)*(150+Math.random()*60),160,mapW()-160),SC.zi);m.elite=true;if(SC.sh)m.sid=-2;for(let q=-1;q<=1;q++)SC.fx.push({k:'pillar',x:m.x+q*26,y:m.y,life:.9,d:.9,c:'#ffd75e'});SC.fx.push({k:'ring',x:m.x,y:m.y-20,life:.8,c:'#ffd75e',r:120});m.hp=m.max=zs(SC.zi,SC.fl).hp*ELITE_HP;m.ag=true;SC.mons.push(m);snd('growl');announce('מפלצת אלופה הופיעה במפה הזו, זוהרת בזהב. הבס אותה לשלל מיוחד',true);}
   else if(!want&&cur&&cur.die<=0){SC.mons=SC.mons.filter(m=>m!==cur);if(SC.hero.tgt===cur)SC.hero.tgt=null;}
 }
 function dropOrbs(m,rep){
@@ -724,12 +724,13 @@ let myKey='';
 function shCredit(c){SC.shAcc=(SC.shAcc||0)+c;while(SC.shAcc>=1-1e-9){SC.shAcc-=1;if(killBudget<1)continue;killBudget-=1;pend.kills++;const l0=S.lvl;addXp(S,zs(SC.zi,SC.fl).xp*C.xpM);afterXp(S.lvl-l0);if(pend.kills>=25)flushTick();}}
 function shMsg(m){
   if(!SC.sh||SC.mode!=='farm')return;const find=i=>SC.mons.find(q=>q.sid===i);
-  if(m.t==='ss'){if(m.z!==SC.zi||m.f!==SC.fl)return;const n=m.hp.length;for(let i=SC.mons.filter(x=>x.sid!=null).length;i<n;i++){const mm=newMon(300+((i*97)%1120)+70,SC.zi);mm.sid=i;SC.mons.push(mm);}
+  if(m.t==='ss'){if(m.z!==SC.zi||m.f!==SC.fl||!!m.ev!==!!SC.ev||SC.evWait)return;const n=m.hp.length;for(let i=SC.mons.filter(x=>x.sid>=0).length;i<n;i++){const mm=newMon(SC.ev?240+((i*97)%1100):300+((i*97)%1120)+70,SC.zi);mm.sid=i;SC.mons.push(mm);}
     SC.mons.forEach(x=>{if(x.sid==null)return;const h=m.hp[x.sid];if(h==null)return;if(h<=0){if(x.die<=0&&x.resp<=0){x.resp=1e9;x.dead=true;}}else{x.hp=x.max*h;if(x.resp>0)x.resp=.01;}});return;}
   const x=find(m.i);if(!x)return;
   if(m.t==='sr'){if(x.resp>0)x.resp=.01;else if(x.die<=0){x.hp=x.max;x.dead=false;}return;}
   const mine=m.k===myKey;addNum(x.x,x.y-60,fmt(m.d),m.cr?'#ffd75e':mine?'#fff':'#9fd0ff',!!m.cr);x.hit=1;x.ag=true;if(mine)snd(m.cr?'crit':'hit');
   if(m.t==='sh'){x.hp=x.max*m.h;return;}
+  if(x.boss||x.elite){x.hp=0;if(x.die<=0){x.die=.45;x.dead=true;onKill(x,SC.zi);}return;} // the map's boss or its champion: the server saw it fall
   x.hp=0;if(x.die<=0&&x.resp<=0){x.die=.45;x.dead=true;burst(x.x,x.y-24,ZONES[SC.zi].c,10);if(mine)snd('kill');SC.drops.push({x:x.x,y:x.y-24,vx:(Math.random()-.5)*160,vy:-200,c:'#f2c14e',s:3,age:0,life:4});}
   if(m.c>0)shCredit(+m.c);
 }
@@ -1371,7 +1372,7 @@ function netOpen(){
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ONLINE&&S&&!demo)netOpen();});
 function netMsg(m){
-  if(m.t==='hi'){myKey=String(m.k||'');if(SC.sh)netSend({t:'sj',z:SC.zi,f:SC.fl});return;}
+  if(m.t==='hi'){myKey=String(m.k||'');if(SC.sh)netSend({t:'sj',z:SC.zi,f:SC.fl,ev:SC.ev?1:0});return;}
   if(m.t==='ss'||m.t==='sh'||m.t==='sd'||m.t==='sr'){shMsg(m);return;}
   const d=SC.duel;
   if(m.t==='invite'){if(SC.mode!=='farm'||!S){netSend({t:'answer',id:m.id,ok:false});return;}snd('boss');const f=m.from||{};

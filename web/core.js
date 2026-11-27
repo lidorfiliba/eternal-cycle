@@ -985,7 +985,9 @@ function apply(A,kind,args,ctx){
         if(!canFloor(S,z,f))return fail('צריך רמה '+floorMin(z,f)+' לקומה הזו');
         if(z!==S.zone||f!==(S.floor|0)){S.zone=z;S.floor=f;A.bossAt=null;A.allow=Math.min(A.allow||0,3);}}
       const zd=zs(z,f),rep={},em=evMods(now),au=cleanAuras(ctx.auras),c=calc(S,au),pn=int(ctx.partyN,0,4),gl=int(ctx.guildLvl,0,10),cs=ctx.castle?1:0,pb=(1+partyXp(pn))*em.xp*(1+gl*.01+cs*.1);c.dropM*=em.drop*zd.drop*(au.includes('hunter')?1.15:1);r.auras=au;c.goldM*=zd.gold*(1+cs*.1)*em.gold;r.partyN=pn;r.guildLvl=gl;r.castle=cs;
-      const k=Math.min(int(args.kills,0,1000),Math.floor(A.allow||0));r.claimed=int(args.kills,0,1000);r.kills=k;
+      // kills the server counted in a keep's room are good only for the keep this character is really in
+      const svOk=!(inEv&&args.sv&&int(args.z,-1,ZONES.length-1)!==z);
+      const k=svOk?Math.min(int(args.kills,0,1000),Math.floor(A.allow||0)):0;r.claimed=svOk?int(args.kills,0,1000):0;r.kills=k;
       A.casts=(A.casts||0)+int(args.casts,0,30);
       {const sh=Math.max(0,Math.min(Number(ctx.shareXp)||0,5e7));if(sh>0){r.shared=Math.round(sh);rep.levels=(rep.levels||0)+addXp(S,sh);}} // from party members' kills here; the server supplies it
       r.base=k*zd.xp;

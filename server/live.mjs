@@ -222,35 +222,48 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
   // own saved strength, at no more than his own pace, and everyone on the floor sees every blow. A kill is credited
   // to those who hurt the monster, each by his share, and the kill report of that map counts these credits and
   // nothing the browser says. More players on the floor, more monsters.
-  const rooms = new Map(), credit = new Map();
+  const rooms = new Map(), credit = new Map(), flags = new Map();
   const roomSize = (key) => { let n = 0; for (const o of socks.values()) if (o.sroom === key) n++; return n; };
   const roomSend = (key, m) => { const s = JSON.stringify(m); for (const o of socks.values()) if (o.sroom === key && o.readyState === 1) o.send(s); };
-  const roomView = (r) => ({ t: 'ss', z: r.z, f: r.f, hp: r.mons.map((x) => (x.alive ? Math.max(.001, r3(x.hp / r.max)) : 0)) });
-  const roomFit = (r, key) => { const want = Math.min(24, 8 + 2 * Math.max(0, roomSize(key) - 1)); while (r.mons.length < want) r.mons.push({ hp: r.max, alive: true, at: 0, dm: new Map() }); };
+  const roomView = (r) => ({ t: 'ss', z: r.z, f: r.f, ev: r.ev ? 1 : 0, hp: r.mons.map((x) => (x.alive ? Math.max(.001, r3(x.hp / r.max)) : 0)) });
+  const roomFit = (r, key) => { const n = Math.max(0, roomSize(key) - 1), want = r.ev ? Math.min(40, 22 + 4 * n) : Math.min(24, 8 + 2 * n); while (r.mons.length < want) r.mons.push({ hp: r.max, alive: true, at: 0, dm: new Map() }); };
   async function sharedMsg(ws, m) {
     const uid = ws.uid, now = clock();
     if (m.t === 'sl') { ws.sroom = null; return; }
     if (m.t === 'sj') {
-      const z = Math.floor(Number(m.z)), f = Math.max(0, Math.min(G.FLOORS - 1, Math.floor(Number(m.f)) || 0)), Z = G.ZONES[z]; if (!Z || !Z.shared) { ws.sroom = null; return; }
-      const key = z + ':' + f; ws.sroom = key; let r = rooms.get(key); if (!r) { r = { z, f, max: G.zs(z, f).hp, mons: [] }; rooms.set(key, r); } roomFit(r, key);
-      const p = await snap(uid); ws.sp = p ? { d: p.d, a: p.a, cr: p.cr, cd: p.cd } : null; ws.spAt = now; ws.sb = 6; ws.sbT = now; return roomSend(key, roomView(r));
+      if (now - (ws.sjAt || 0) < 400) return; ws.sjAt = now;
+      const z = Math.floor(Number(m.z)), ev = !!m.ev, f = ev ? 0 : Math.max(0, Math.min(G.FLOORS - 1, Math.floor(Number(m.f)) || 0)), Z = G.ZONES[z]; if (!Z || !Z.shared || (ev && z >= G.BASEZ)) { ws.sroom = null; return; }
+      // a keep is a room of its own: many weak monsters that return fast
+      const key = (ev ? 'k' : '') + z + ':' + f; ws.sroom = key; let r = rooms.get(key); if (!r) { r = { z, f, ev, max: Math.max(1, Math.round(G.zs(z, f).hp * (ev ? G.KEEP_HP : 1))), back: ev ? 900 : 2500, mons: [] }; rooms.set(key, r); } roomFit(r, key);
+      const p = await snap(uid); ws.sp = p ? { d: p.d, a: p.a, cr: p.cr, cd: p.cd } : null; ws.spAt = now; if (ws.sb == null) { ws.sb = 6; ws.sbT = now; } // the allowance is the player's, not the room's: joining again does not refill it
+      return roomSend(key, roomView(r));
     }
     // his strength is read again after anything he does that may have changed it (a level, a piece of gear), and at least every half minute
     if (now - (ws.spAt || 0) > (ws.sp && !ws.spOld ? 30000 : 1200)) { ws.spAt = now; ws.spOld = false; snap(uid).then((q) => { if (q) ws.sp = { d: q.d, a: q.a, cr: q.cr, cd: q.cd }; }).catch(() => {}); }
-    const key = ws.sroom, r = key && rooms.get(key), p = ws.sp; if (!r || !p) return; const i = Math.floor(Number(m.i)), mon = r.mons[i]; if (!mon || !mon.alive) return;
+    const key = ws.sroom, r = key && rooms.get(key), p = ws.sp; if (!r || !p) return; const i = Math.floor(Number(m.i));
+    // The boss of a map and its champion are each player's own, but their health is kept here too: -1 the boss, -2 the champion.
+    const own = !r.ev && (i === -1 || i === -2), pk = own ? key + (i === -1 ? 'b' : 'e') : '';
+    let mon; if (own) { const pm = ws.pm || (ws.pm = {}); mon = pm[pk]; if (!mon || !mon.alive) mon = pm[pk] = { hp: r.max * (i === -1 ? 30 : G.ELITE_HP), top: r.max * (i === -1 ? 30 : G.ELITE_HP), alive: true }; } else mon = r.mons[i];
+    if (!mon || !mon.alive) return;
     // his own pace: so many blows' worth a second, a short burst allowed; whatever he asks beyond it is cut down to it
-    ws.sb = Math.min(12, (ws.sb || 0) + (now - (ws.sbT || now)) / 1000 * Math.max(.3, p.a) * 2.8); ws.sbT = now; if (ws.sb < .2) return;
+    ws.sb = Math.min(12, (ws.sb || 0) + (now - (ws.sbT || now)) / 1000 * Math.max(.3, p.a) * (r.ev ? 12 : 2.8)); ws.sbT = now; if (ws.sb < .2) return;
     let mult = Math.max(.2, Math.min(6, Number(m.m) || 1)); if (mult > ws.sb) mult = ws.sb; ws.sb -= mult;
     const crit = rnd() < p.cr, d = Math.max(1, Math.round(p.d * (crit ? p.cd : 1) * mult * (.9 + rnd() * .2)));
-    mon.hp -= d; mon.dm.set(uid, (mon.dm.get(uid) || 0) + d);
+    mon.hp -= d;
+    if (own) { // only he sees it; a kill sets a mark that his next kill report may use once
+      if (mon.hp > 0) return send(uid, { t: 'sh', i, d, k: ws.key, cr: crit ? 1 : 0, h: r3(mon.hp / mon.top) });
+      mon.alive = false; const fl = flags.get(uid) || {}; fl[pk] = now; flags.set(uid, fl); return send(uid, { t: 'sd', i, d, k: ws.key, cr: crit ? 1 : 0 });
+    }
+    mon.dm.set(uid, (mon.dm.get(uid) || 0) + d);
     if (mon.hp > 0) return roomSend(key, { t: 'sh', i, d, k: ws.key, cr: crit ? 1 : 0, h: r3(mon.hp / r.max) });
-    mon.alive = false; mon.at = now + 2500; let tot = 0; for (const v of mon.dm.values()) tot += v; const told = new Set();
+    mon.alive = false; mon.at = now + r.back; let tot = 0; for (const v of mon.dm.values()) tot += v; const told = new Set();
     for (const [u, v] of mon.dm) { const c = credit.get(u) || { key, n: 0 }; if (c.key !== key) { c.key = key; c.n = 0; } c.n += v / tot; credit.set(u, c); told.add(u); const o = socks.get(u); if (o && o.sroom === key) send(u, { t: 'sd', i, d, k: ws.key, cr: crit ? 1 : 0, c: r3(v / tot) }); }
-    mon.dm = new Map(); const s = JSON.stringify({ t: 'sd', i, d, k: ws.key, cr: crit ? 1 : 0 }); for (const [u, o] of socks) if (o.sroom === key && !told.has(u) && o.readyState === 1) o.send(s);
+    mon.dm = new Map(); const s2 = JSON.stringify({ t: 'sd', i, d, k: ws.key, cr: crit ? 1 : 0 }); for (const [u, o] of socks) if (o.sroom === key && !told.has(u) && o.readyState === 1) o.send(s2);
   }
-  const roomClock = setInterval(() => { const now = clock(); for (const [key, r] of rooms) { if (!roomSize(key)) { rooms.delete(key); continue; } r.mons.forEach((x, i) => { if (!x.alive && now >= x.at) { x.alive = true; x.hp = r.max; roomSend(key, { t: 'sr', i }); } }); } if (credit.size > 5000) credit.clear(); }, 400); roomClock.unref();
+  const roomClock = setInterval(() => { const now = clock(); for (const [key, r] of rooms) { if (!roomSize(key)) { rooms.delete(key); continue; } r.mons.forEach((x, i) => { if (!x.alive && now >= x.at) { x.alive = true; x.hp = r.max; roomSend(key, { t: 'sr', i }); } }); } if (credit.size > 5000) credit.clear(); if (flags.size > 5000) flags.clear(); }, 300); roomClock.unref();
   const stale = (uid) => { const o = socks.get(uid); if (o) o.spOld = true; };
-  const takeKills = (uid, z, f) => { const c = credit.get(uid); if (!c || c.key !== z + ':' + f) return 0; const n = Math.floor(c.n + 1e-9); c.n -= n; return n; };
+  const takeFlag = (uid, z, f, what) => { const fl = flags.get(uid), k = z + ':' + f + what; if (!fl || !fl[k]) return false; const ok = clock() - fl[k] < 180000; delete fl[k]; return ok; };
+  const takeKills = (uid, z, f, ev) => { const c = credit.get(uid); if (!c || c.key !== (ev ? 'k' : '') + z + ':' + f) return 0; const n = Math.floor(c.n + 1e-9); c.n -= n; return n; };
   // Party invitations: by clicking a player or typing a name. The invited player is asked, and joins only on a yes.
   // The party itself lives in the database as before; this only carries the question and the answer.
   const pInv = new Map(); // invited uid -> { from, code, at }
@@ -375,5 +388,5 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
       ws.on('error', () => {});
     });
   });
-  return { socks, duels, takeKills, stale, rooms, sgNow: () => sg, sgOpen, brNow: () => br, brOpen: (ms) => (br = { key: 'manual', phase: 'sign', joined: new Map(), end: clock() + ms, idx: new Map() }), brBegin: () => { if (br && br.phase === 'sign') brStart(br); }, close: () => { clearInterval(roomClock); for (const d of duels.values()) clearInterval(d.timer); clearInterval(brClock); if (br && br.timer) clearInterval(br.timer); if (sg) clearInterval(sg.timer); wss.close(); } };
+  return { socks, duels, takeKills, takeFlag, stale, rooms, sgNow: () => sg, sgOpen, brNow: () => br, brOpen: (ms) => (br = { key: 'manual', phase: 'sign', joined: new Map(), end: clock() + ms, idx: new Map() }), brBegin: () => { if (br && br.phase === 'sign') brStart(br); }, close: () => { clearInterval(roomClock); for (const d of duels.values()) clearInterval(d.timer); clearInterval(brClock); if (br && br.timer) clearInterval(br.timer); if (sg) clearInterval(sg.timer); wss.close(); } };
 }
