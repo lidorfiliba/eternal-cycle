@@ -551,7 +551,7 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:1500,Y0:-500,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:10,respIn:20,crownKeep:.5,pots:5,potMax:60,potCd:3,heal:.25,potPrice:500,hit:.045,gam:.3,hitMin:.02,hitMax:.06,critMax:1.6,comboM:1.5,comboFlat:.28,wound:2.5,cbMin:.3,cbMax:1.1,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s0:2.5,s1:4,s3:12},leap:230,bashCd:7,bashM:.3,bashPush:34,
+const SG={W:1500,Y0:-500,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:10,respIn:25,crownKeep:0,crownPen:1,pots:5,potMax:60,potCd:3,heal:.25,potPrice:500,hit:.045,gam:.3,hitMin:.02,hitMax:.06,critMax:1.6,comboM:1.5,comboFlat:.28,wound:2.5,cbMin:.3,cbMax:1.1,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s0:2.5,s1:4,s3:12},leap:230,bashCd:7,bashM:.3,bashPush:34,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.012,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   walls:[[-462,-432,462,-408],[-462,108,-50,132],[50,108,462,132],[-462,-432,-438,-200],[-462,-110,-438,132],[438,-432,462,-200],[438,-110,462,132],
@@ -676,7 +676,7 @@ function sgStep(B,dt,rnd){
       else{sp[1]+=dt;if(sp[1]>=SG.swT){S.sw[q]=f.g;S.swBy[q]=sp[2];S.swp[q]=[0,0,-1];ev.push({k:'sw',q:q,g:f.g,by:sp[2]});}}}});
   { // The crown: only the guild's leader, and only while two others of his guild hold the two switches.
     const c=S.crown;if(c[2]>=0){const f=B.f[c[2]],ok=f&&f.alive&&f.stun<=t&&sgNear(f,SG.crown,SG.zone)&&f.g!==S.holder&&S.swBy[0]>=0&&S.swBy[1]>=0&&S.sw[0]===f.g&&S.sw[1]===f.g;
-      if(!ok){if(f&&f.alive)f.cacc=c[1];S.crown=[0,0,-1];ev.push({k:'cstop',keep:f&&f.alive?Math.floor(c[1]):0});}
+      if(!ok){if(f&&f.alive)f.cacc=Math.max(0,c[1]-SG.crownPen);S.crown=[0,0,-1];ev.push({k:'cstop',keep:f&&f.alive?Math.floor(Math.max(0,c[1]-SG.crownPen)):0});}
       else{c[1]+=dt;if(c[1]>=SG.crownT){const g=f.g;S.holder=g;S.caps++;S.crown=[0,0,-1];for(const x of B.f)x.cacc=0;S.sw=[0,0];S.swBy=[-1,-1];S.swp=[[0,0,-1],[0,0,-1]];S.gate=SG.gates.map(()=>SG.gateHp);ev.push({k:'taken',g:g,by:c[2]});
         B.f.forEach((x,q)=>{if(x.alive&&x.g!==g){x.post=null;sgSpawn(B,x,rnd);ev.push({k:'out',to:q});}});}}}}
   // the server's own players, where a practice siege has them

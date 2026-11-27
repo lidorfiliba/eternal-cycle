@@ -612,6 +612,6 @@ test('the practice siege: the server\'s own players walk the road, break the gat
   B.t=0;let broke=0,sw=0,taken=0;for(let n=0;n<1500&&!taken;n++)for(const o of G.sgStep(B,.2,rnd)){if(o.broke)broke=B.t;if(o.k==='sw')sw=B.t;if(o.k==='taken')taken=B.t;}
   assert.ok(broke>10&&broke<120,'the gate falls, and not at once: '+broke);assert.ok(sw>broke,'then a switch');assert.ok(taken>sw+G.SG.crownT-1&&B.sg.holder===1,'then the crown, after its half minute: '+taken);
   // against defenders it is a fight, and a fallen leader keeps half of his time on the crown
-  const X=G.sgNew(rnd,{}),a=G.sgAdd(X,P('l','blade'),1,'A',rnd,true);X.t=5;X.sg.crown=[1,20,a];G.sgDown(X,a,-1);assert.equal(X.f[a].cacc,20*G.SG.crownKeep);
+  const X=G.sgNew(rnd,{}),a=G.sgAdd(X,P('l','blade'),1,'A',rnd,true);X.t=5;X.sg.crown=[1,20,a];G.sgDown(X,a,-1);assert.equal(X.f[a].cacc,0,'a leader who falls loses all his time on the crown, as in the old sieges');
   assert.ok(G.SG.respIn>G.SG.resp,'a defender waits longer to return than an attacker');
 });
