@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261127192600';
-const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,wskinOn,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261127193705';
+const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,wskinOn,CAPEN,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
@@ -157,8 +157,8 @@ function glowAmt(p,r,t){let g=p>=13?24:p>=11?16+5*Math.sin(t*6):p>=9?12:p>=7?7:0
 function gearColor(g,t,fallback){if(!g)return fallback;if(g[2]>=15)return 'hsl('+((t*90)%360)+',95%,68%)';return RAR[g[1]].c;}
 const WPAL={1:['#2f7a45','#b6ef86'],2:['#2260c9','#a8e8ff'],3:['#c42d18','#ffbe55'],4:['#caa02e','#fff8d2'],5:['#35106b','#d596ff'],6:['#1b6ea8','#effcff'],7:['#a8740a','#fff1a8'],8:['#ff4fa3','#7df9ff'],s:['#a637ee','#62f3e2']};
 const SPR={"mh":{"w":128,"h":69,"ax":28,"ay":69,"bh":52,"a":{"idle":[0,8],"run":[1,8],"atk":[2,6],"atk2":[3,6],"hit":[4,4],"die":[5,6]}},"ew":{"w":94,"h":69,"ax":26,"ay":69,"bh":58,"a":{"idle":[0,8],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,5]}},"hu":{"w":91,"h":66,"ax":42,"ay":66,"bh":42,"a":{"idle":[0,8],"run":[1,8],"atk":[2,7],"atk2":[3,5],"hit":[4,3],"die":[5,8]}},"mush":{"w":71,"h":45,"ax":32,"ay":45,"bh":37,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"gob":{"w":88,"h":46,"ax":44,"ay":46,"bh":36,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"skel":{"w":98,"h":59,"ax":32,"ay":57,"bh":51,"a":{"idle":[0,4],"run":[1,4],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"eye":{"w":56,"h":41,"ax":27,"ay":33,"bh":33,"a":{"idle":[0,8],"atk":[1,8],"hit":[2,4],"die":[3,4]}},"worm":{"w":77,"h":54,"ax":30,"ay":54,"bh":45,"a":{"idle":[0,9],"run":[1,9],"atk":[2,16],"hit":[3,3],"die":[4,8]}},"skel_f":{"w":98,"h":59,"ax":32,"ay":57,"bh":51,"a":{"idle":[0,4],"run":[1,4],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"gob_r":{"w":88,"h":46,"ax":44,"ay":46,"bh":36,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"eye_p":{"w":56,"h":41,"ax":27,"ay":33,"bh":33,"a":{"idle":[0,8],"atk":[1,8],"hit":[2,4],"die":[3,4]}},"skel_g":{"w":98,"h":59,"ax":32,"ay":57,"bh":51,"a":{"idle":[0,4],"run":[1,4],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"n_smith":{"w":128,"h":69,"ax":28,"ay":69,"bh":52,"a":{"idle":[0,8]}},"n_merch":{"w":91,"h":66,"ax":42,"ay":66,"bh":42,"a":{"idle":[0,8]}},"n_guard":{"w":94,"h":69,"ax":26,"ay":69,"bh":58,"a":{"idle":[0,8]}},"n_herald":{"w":91,"h":66,"ax":42,"ay":66,"bh":42,"a":{"idle":[0,8]}},"n_arena":{"w":128,"h":69,"ax":28,"ay":69,"bh":52,"a":{"idle":[0,8]}},"mush_d":{"w":71,"h":45,"ax":32,"ay":45,"bh":37,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"worm_i":{"w":77,"h":54,"ax":30,"ay":54,"bh":45,"a":{"idle":[0,9],"run":[1,9],"atk":[2,16],"hit":[3,3],"die":[4,8]}},"gob_g":{"w":88,"h":46,"ax":44,"ay":46,"bh":36,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"skel_d":{"w":98,"h":59,"ax":32,"ay":57,"bh":51,"a":{"idle":[0,4],"run":[1,4],"atk":[2,8],"hit":[3,4],"die":[4,4]}}};
-const IMG={},CLSSPR={blade:'mh',storm:'ew',hunter:'hu'};
-function loadSprites(){for(const k in SPR){const im=new Image();if(k==='mh'||k==='ew'||k==='hu')im.onload=()=>measureBody(k);im.src='assets/'+k+'.png';IMG[k]=im;}}
+const IMG={},CLSSPR={blade:'mh',storm:'ew',hunter:'hu',lord:'lord'};SPR.lord=SPR.mh; // the warlord moves as the blade does, in his own colours
+function loadSprites(){for(const k in SPR){const im=new Image();if(k==='mh'||k==='ew'||k==='hu'||k==='lord')im.onload=()=>measureBody(k);im.src='assets/'+k+'.png';IMG[k]=im;}}
 // Where the hero's body is in every animation frame, so wings and the weapon on the back move with it.
 // Thin parts (the weapon in the hand) are worn away first; what is left is the body. Stored as [middle x, top y] in sprite pixels.
 const BODY={};
@@ -188,7 +188,7 @@ function spr(key,an,fi,x,y,k,flip,glowC,glowB,alpha,sheet){if(LITE)glowB=0;
 }
 const frames=(key,an)=>{const m=SPR[key];return (m.a[an]||m.a.idle)[1];};
 const wcv=document.createElement('canvas');wcv.width=340;wcv.height=280;const wctx=wcv.getContext('2d');
-const WING_AT={blade:[5,.7],storm:[3,.72],hunter:[4,.76]}; // where the wings meet the back: pixels behind the middle, share of body height
+const WING_AT={blade:[5,.7],storm:[3,.72],hunter:[4,.76],lord:[4,.74]}; // where the wings meet the back: pixels behind the middle, share of body height
 const WLEN=[0,60,80,86,104,106,94,116,122];
 // One wing, drawn in its own space: the shoulder is the origin, +x points behind the hero, -y is up.
 function wingShape(c,T,pal,t,far){
@@ -231,7 +231,30 @@ function wingShape(c,T,pal,t,far){
 // In a crowd a fighter's wings are painted once, still, and kept: painting every feather of thirty pairs of wings on
 // every frame is most of what a plainly drawn fighter costs.
 const WCACHE={};
+// The warlord wears a cape where others wear wings: the same item, the same fifty ranks. It grows longer and richer with
+// the rank: a border, a lining, an emblem, a fur collar, a second layer, a hem cut in tails, light along its edge.
+function drawCape(x,y,g,t,k,flip,bh,mv,anim){
+  const R=clamp(g[0]|0,1,WING_MAX),hi=R>8,fam=hi?Math.floor((R-9)/7):0,gr=hi?(R-9)%7:0,wsk=g[5]|0,f=flip?-1:1,at=WING_AT.lord;
+  let pal=g[3]?WPAL.s:WPAL[hi?[3,5,6,2,7,8][fam]:R];
+  if(hi&&!g[3]){const h=([8,268,205,172,44,318][fam]+gr*19)%360;pal=['hsl('+h+',78%,'+(26+gr*2)+'%)','hsl('+((h+26)%360)+',100%,'+(68+gr*3)+'%)'];if(fam===5){const hh=(t*90+gr*40)%360;pal=['hsl('+hh+',85%,40%)','hsl('+((hh+150)%360)+',100%,80%)'];}}
+  if(wsk===1)pal=['#fff6d8','#ffd75e'];else if(wsk===2)pal=['#1a0a26','#ff3b5c'];
+  const L=Math.min(bh*at[1]+(hi?3:-2),18+R*2.4),wide=9+Math.min(R,20)*.45+(hi?fam:0),sway=LITE?0:Math.sin(t*2.6)*1.6+Math.sin(t*4.1)*.7,back=(mv?7+Math.sin(t*9)*1.5:0)+(anim>0?anim*5:0),tails=hi?2+(fam+gr)%3:R>=6?2:0;
+  ctx.save();ctx.translate(Math.round(x-f*at[0]*k*.2),Math.round(y-bh*k*at[1]));ctx.scale(f*k,k);ctx.lineJoin='round';
+  const shape=(grow,drop)=>{const bx=-(wide+grow)-back+sway,by=L+drop;ctx.beginPath();ctx.moveTo(-4,-3);ctx.lineTo(4.5,-2.5);ctx.quadraticCurveTo(6+grow*.3-back*.25,by*.55,3-back*.4+sway*.5,by);
+    if(tails){const n=tails*2;for(let i=1;i<=n;i++){const u=i/n,px=3-back*.4+sway*.5+(bx-(3-back*.4+sway*.5))*u;ctx.lineTo(px,by-(i%2?4.5+grow*.3:0)+Math.sin(t*3+i)*(LITE?0:.6));}}else ctx.quadraticCurveTo((bx+3)/2,by+2.2,bx,by-1.5);
+    ctx.quadraticCurveTo(bx-2,by*.5,-4,-3);ctx.closePath();};
+  if(hi&&(gr>=3||fam>=2)){shape(3.5,2.5);ctx.fillStyle=pal[1];ctx.globalAlpha=.55;ctx.fill();ctx.globalAlpha=1;} // the second layer, under the first
+  shape(0,0);const gd=ctx.createLinearGradient(0,-3,-wide,L);gd.addColorStop(0,pal[0]);gd.addColorStop(.75,pal[0]);gd.addColorStop(1,pal[1]);ctx.fillStyle=gd;
+  if(!LITE&&(hi||wsk||g[3]||R>=7)){ctx.shadowColor=pal[1];ctx.shadowBlur=(hi?8+fam*2:5)+(wsk?6:0);}ctx.fill();ctx.shadowBlur=0;
+  if(R>=3){ctx.strokeStyle=R>=5||hi?'#ffd75e':pal[1];ctx.lineWidth=hi?1.5:1;ctx.stroke();}
+  if(R>=5){ctx.save();ctx.clip();ctx.strokeStyle=pal[1];ctx.globalAlpha=.5;ctx.lineWidth=1;for(let i=1;i<=3;i++){ctx.beginPath();ctx.moveTo(1-i*2.2,0);ctx.quadraticCurveTo(-i*3.2-back*.3,L*.5,-i*(wide/3.4)-back+sway,L+2);ctx.stroke();}ctx.restore();} // folds
+  if(R>=7){const ex=-wide*.45-back*.5+sway*.4,ey=L*.52,er=2.4+(hi?fam*.35:0);ctx.fillStyle='#ffd75e';ctx.beginPath();ctx.moveTo(ex,ey-er*1.5);ctx.lineTo(ex+er,ey);ctx.lineTo(ex,ey+er*1.5);ctx.lineTo(ex-er,ey);ctx.closePath();ctx.fill();if(hi){ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ex,ey,er*.35,0,7);ctx.fill();}} // the emblem
+  if(hi||R===8){ctx.fillStyle=wsk===2?'#3a2a48':'#f4f0ff';for(let i=0;i<5;i++){ctx.beginPath();ctx.arc(-4+i*2.1,-3+Math.abs(i-2)*.35,1.9+(hi?gr*.08:0),0,7);ctx.fill();}} // fur at the shoulders
+  ctx.restore();
+  if((hi||wsk)&&!calm&&!LITE&&Math.random()<.1+fam*.03)SC.parts.push({x:x-f*(wide+back)*k*(.4+Math.random()*.6),y:y-bh*k*at[1]+L*k*(.6+Math.random()*.4),vx:-f*10,vy:-18,life:.7,c:Math.random()<.3?'#fff':pal[1],s:2});
+}
 function drawWings(x,y,g,t,k,flip,cls,bh,mv,anim){
+  if(cls==='lord'){drawCape(x,y,g,t,k,flip,bh,mv,anim);return;}
   if(LITE){t=0;mv=false;anim=0;}
   const R=clamp(g[0]|0,1,WING_MAX),hi=R>8,fam=hi?Math.floor((R-9)/7):0,gr=hi?(R-9)%7:0,T=hi?[2,3,4,5,6,7,8][([1,3,4,0,5,6][fam]+gr)%7]:R,c=wctx,at=WING_AT[cls]||WING_AT.blade,f=flip?-1:1;let pal=g[3]?WPAL.s:WPAL[T];
   const wsk=g[5]|0;
@@ -421,7 +444,7 @@ function drawBackWeapon(x,y,look,t,k,flip){
     else if(st===5){poly([[-wd,0],[wd,0],[wd,-len*.75],[0,-len],[-wd,-len*.75]],base);ctx.fillStyle=edge;for(let i=1;i<4;i++){ctx.beginPath();ctx.arc(0,-len*i*.22,.9,0,7);ctx.fill();}} // rune blade
     else poly([[-wd,0],[wd,0],[wd*.8,-len*.8],[0,-len],[-wd*.8,-len*.8]],base);
     ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(0,-2);ctx.lineTo(0,-len*.8);ctx.stroke();
-  }else if(look.c==='storm'){
+  }else if(look.c==='storm'||look.c==='lord'){
     const len=22+st*1.2;shaft(8,-len,1.7,st>=3?'#3b2a5c':'#6b4a2e');const ty=-len-2,pul=1+.12*Math.sin(t*5);
     if(st===1){ctx.strokeStyle=edge;ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(0,ty-2,4.5,.6,Math.PI*2-.6+1.2);ctx.stroke();} // crescent
     else if(st===2)poly([[0,ty-9],[3,ty-3],[0,ty+2],[-3,ty-3]],base); // crystal
@@ -599,6 +622,14 @@ function castArt(m,col){
 }
 // Each class's two fighting skills have a look of their own. In a crowd only the blows that touch me are drawn in full.
 function skillFx(cls,k,ax,g,vx,ge,face,c,full){
+  if(cls==='lord'&&full){
+    if(k==='s0'){ // the order of war: a golden wave rolls out from his raised scepter, banners of light at his sides
+      for(let q=0;q<3;q++)SC.fx.push({k:'ring',x:ax,y:g-6,life:.35+q*.14,c:q===1?'#fff':c,r:60+q*46});for(const q of [-1,1])SC.fx.push({k:'pillar',x:ax+q*30,y:g,life:.4,d:.4,c:c});
+      SC.fx.push({k:'wave',x:ax+face*10,y:g,dir:face,dist:Math.min(240,Math.abs(vx-ax)+70),h:86,life:.32,d:.32,c:c});SC.fx.push({k:'flash',x:vx,y:ge-30,r:50,life:.22,d:.22,c:'#fff'});burst(vx,ge-30,c,12);}
+    else{ // the king's judgement: a crown of light falls on the enemy and bursts around him
+      SC.fx.push({k:'met',x0:vx,y0:ge-260,x:vx,y:ge-10,life:.22,d:.22,c:'#fff'});for(let q=0;q<6;q++){const a=q*Math.PI/3;SC.fx.push({k:'pillar',x:vx+Math.cos(a)*54,y:ge+Math.sin(a)*6,life:.4+q*.03,d:.5,c:q%2?c:'#fff'});}
+      SC.fx.push({k:'rune',x:vx,y:ge-2,r:92,life:.8,d:.8,c:c});SC.fx.push({k:'star',x:vx,y:ge-70,r:44,rot:0,life:.5,d:.5,c:c});SC.fx.push({k:'ring',x:vx,y:ge-4,life:.6,c:'#fff',r:120});burst(vx,ge-40,c,20);}
+    return;}
   if(!full){if(k==='s1'){SC.fx.push({k:'pillar',x:vx,y:ge,life:.35,d:.35,c:c});}else SC.fx.push({k:'flash',x:vx,y:ge-30,r:30,life:.2,d:.2,c:c});return;}
   if(cls==='blade'){
     if(k==='s0'){ // blade storm: three crescents turning through the enemy, a wave running out of the swing
@@ -625,7 +656,7 @@ function skillFx(cls,k,ax,g,vx,ge,face,c,full){
 }
 function attackFx(cls,hx,hy,face,targets,combo,c){
   for(const tg of targets){
-    if(cls==='blade')SC.fx.push({k:'slash',x:tg.x-6*face,y:tg.y-28,rot:Math.random()*1.2-.6+(face<0?3.14:0),life:.22,c:c,big:combo});
+    if(cls==='blade'||cls==='lord')SC.fx.push({k:'slash',x:tg.x-6*face,y:tg.y-28,rot:Math.random()*1.2-.6+(face<0?3.14:0),life:.22,c:c,big:combo});
     else if(cls==='storm'){if(combo){const pts=[];let px=tg.x+(Math.random()-.5)*30,py=0;while(py<tg.y-20){pts.push([px,py]);px+=(Math.random()-.5)*26;py+=18;}pts.push([tg.x,tg.y-24]);SC.fx.push({k:'bolt',pts:pts,life:.28,c:c});}
       else SC.fx.push({k:'line',x1:hx+16*face,y1:hy-96,x2:tg.x,y2:tg.y-26,life:.16,c:c,w:4});}
     else{if(combo){for(let i=0;i<4;i++)SC.fx.push({k:'line',x1:tg.x-60+i*14+Math.random()*10,y1:-10,x2:tg.x-10+i*6,y2:tg.y-18,life:.2+i*.04,c:c,w:2});}
@@ -843,7 +874,7 @@ const alive=()=>SC.mons.filter(m=>m.die<=0&&m.resp<=0);
 // More of them with level (one from 30, two from 120, three from 250, four from 350), each for 60% of the hit.
 const splashN=l=>l>=350?4:l>=250?3:l>=120?2:l>=30?1:0;
 function splash(m,col){
-  const n=splashN(S.lvl);if(!n||m.boss)return;const h=SC.hero,cls=S.cls,R=cls==='blade'?80:cls==='storm'?130:170;
+  const n=splashN(S.lvl);if(!n||m.boss)return;const h=SC.hero,cls=S.cls,R=cls==='blade'?80:cls==='lord'?110:cls==='storm'?130:170;
   const near=alive().filter(o=>o!==m&&!o.boss&&(cls==='hunter'?(o.x-m.x)*h.face>0&&Math.abs(o.x-m.x)<R:Math.abs(o.x-m.x)<R)).sort((a,b)=>Math.abs(a.x-m.x)-Math.abs(b.x-m.x)).slice(0,n);
   let px=m.x;for(const o of near){
     if(cls==='storm')SC.fx.push({k:'bolt',pts:[[px,m.y-28],[(px+o.x)/2+(Math.random()-.5)*14,m.y-40-Math.random()*14],[o.x,o.y-26]],life:.2,c:col});
@@ -869,7 +900,7 @@ function cast(i,auto){
     addNum(h.x,gy()-100,'+'+fmt(C.hp*.3),'#6fe39a',true);SC.nums.push({x:h.x,y:gy()-135,txt:CLS[S.cls].sk[4]+'!',c:'#9fe8ff',s:18,life:1});}
   else if(i===5){const ts=alive().filter(m=>Math.abs(m.x-h.x)<560);if(!ts.length&&auto)return false;
     snd('ult');h.anim=1;h.skA=.5;SC.fx.push({k:'rune',x:h.x,y:gy()-2,r:210,life:1.1,d:1.1,c:col});if(!calm){SC.fx.push({k:'screen',life:.3,d:.3,c:col});SC.shake=.45;}for(const d of [-1,1])SC.fx.push({k:'wave',x:h.x+d*30,y:gy(),dir:d,dist:520,h:110,life:.6,d:.6,c:col});for(let k=0;k<5;k++)SC.fx.push({k:'ring',x:h.x+(k-2)*200,y:gy()-20,life:.35+k*.06,c:col,r:150});
-    if(S.cls==='blade')for(let k=0;k<9;k++)SC.fx.push({k:'cres',x:h.x+(k-4)*95+Math.random()*30,y:gy()-30-Math.random()*50,R:40+Math.random()*24,rot:Math.random()*6.28,sp:(Math.random()<.5?-1:1)*1.6,life:.3+k*.05,d:.3+k*.05,c:col});
+    if(S.cls==='blade'||S.cls==='lord')for(let k=0;k<9;k++)SC.fx.push({k:'cres',x:h.x+(k-4)*95+Math.random()*30,y:gy()-30-Math.random()*50,R:40+Math.random()*24,rot:Math.random()*6.28,sp:(Math.random()<.5?-1:1)*1.6,life:.3+k*.05,d:.3+k*.05,c:col});
     else if(S.cls==='storm'){const tg=ts.length?ts:[{x:h.x+h.face*160}];for(let k=0;k<Math.max(7,tg.length);k++){const tx=tg[k%tg.length].x+(k>=tg.length?(Math.random()-.5)*240:0),d=.35+k*.07;SC.fx.push({k:'met',x0:tx+170,y0:-30,x:tx,y:gy()-14,life:d,d:d,c:k%2?'#ff8a4d':col});}}
     else for(let k=0;k<26;k++){const tx=h.x-520+k*40+Math.random()*30;SC.fx.push({k:'line',x1:tx+70,y1:-10,x2:tx,y2:gy()-8,life:.18+k*.02,c:col,w:2});}
     for(const m of ts){burst(m.x,gy()-40,col,14);SC.fx.push({k:'flash',x:m.x,y:gy()-36,r:60,life:.35,d:.35,c:col});strike(m,6,col,true);}
@@ -960,7 +991,7 @@ function updateWorld(dt){
       if(S.auto&&h.autoSk<=0&&h.cds[0]<=0&&S.lvl>=SKLV[0]&&cast(0,true))h.autoSk=8;
       if(h.atkT<=0){h.atkT=1/(C.aspd*(h.buff>0?2:1));h.anim=1;h.lastAtk=SC.t;const col=gearColor(lookOf(S).w,SC.t,CLS[S.cls].c);h.chain=SC.t-(h.chainT||0)>2.5?1:(h.chain||0)+1;h.chainT=SC.t;const step=h.chain%4; // the ordinary attack is a four-beat chain: jab, cross, jab, finisher
         if(step===0){attackFx(S.cls,h.x,hY(),h.face,[m],true,col);h.skA=.25;
-          if(S.cls==='blade'){SC.fx.push({k:'cres',x:m.x,y:gy()-38,R:50,rot:h.face<0?3.14:0,sp:1.4*h.face,life:.28,d:.28,c:col});SC.fx.push({k:'wave',x:h.x+h.face*20,y:gy(),dir:h.face,dist:150,h:64,life:.3,d:.3,c:col});}
+          if(S.cls==='blade'||S.cls==='lord'){SC.fx.push({k:'cres',x:m.x,y:gy()-38,R:50,rot:h.face<0?3.14:0,sp:1.4*h.face,life:.28,d:.28,c:col});SC.fx.push({k:'wave',x:h.x+h.face*20,y:gy(),dir:h.face,dist:150,h:64,life:.3,d:.3,c:col});}
           else if(S.cls==='storm'){SC.fx.push({k:'pillar',x:m.x,y:gy(),life:.35,d:.35,c:col});SC.fx.push({k:'rune',x:m.x,y:gy()-2,r:44,life:.5,d:.5,c:col});}
           else for(let q=-1;q<=1;q++)SC.fx.push({k:'line',x1:h.x+18*h.face,y1:gy()-58+q*10,x2:m.x,y2:m.y-26+q*14,life:.16+Math.abs(q)*.04,c:col,w:2.5});
           strike(m,1.8,col,true);if((h.artN=(h.artN||0)+1)%3===0&&SC.mode==='farm')castArt(m,col);}
@@ -1326,7 +1357,7 @@ async function tryEgg(k){if(!S||demo||egg.tried[k]||(A.eggs&&A.eggs[k]))return;e
 /* ---------- the arena: a live duel. You walk, strike, cast, guard, dash and drink; nothing happens by itself.
    The rules are liveAct in core.js. Against an absent player the fight runs here and the game plays his side;
    against a connected player the server runs it and this screen only sends what you try and shows what happened. ---------- */
-const DBTN=['atk','s0','s1','s3','s2','dash','pot','buf','bash'],BUFN={blade:['זעקת קרב','חיים לקבוצה'],storm:['מגן נשמה','הגנה לקבוצה'],hunter:['עין הנץ','כוח לקבוצה']};
+const DBTN=['atk','s0','s1','s3','s2','dash','pot','buf','bash'],BUFN={lord:['פיקוד','חיים לקבוצה'],blade:['זעקת קרב','חיים לקבוצה'],storm:['מגן נשמה','הגנה לקבוצה'],hunter:['עין הנץ','כוח לקבוצה']};
 const dX=u=>u*(W/LIVE_W),dy=f=>gy()-(1-f.z)*84,dsc=f=>.8+f.z*.2;
 function startDuel(pd,net){
   if(pd.tower&&!pd.o.w)pd.o.w=[1,0,0,0];
@@ -1614,9 +1645,9 @@ function renderChar(){
    '<div class="kv"><span>חיים</span><b class="num">'+fmt(c.hp)+'</b></div>'+
    '<div class="kv"><span>הגנה</span><b class="num">'+fmt(c.def)+'</b></div>'+
    '<div class="kv"><span>בונוס ניסיון</span><b class="num">'+L('+'+Math.round((c.xpM-1)*100)+'%')+'</b></div>'+
-   '<div class="kv"><span>טווח תקיפה</span><b>'+(S.cls==='blade'?'קרוב':'רחוק')+'</b></div></div></div>';
+   '<div class="kv"><span>טווח תקיפה</span><b>'+(S.cls==='blade'?'קרוב':S.cls==='lord'?'בינוני':'רחוק')+'</b></div></div></div>';
   {const sk=CLS[S.cls].sk,cb=n=>'<b style="color:#ff5c7a;margin-inline-start:6px">קומבו '+n+'/3</b>',mv=[['תקיפה',cb(1),'מכה רגילה. פותחת את הקומבו'],[sk[0],cb(2),'מיומנות מהירה בלי המתנה. החוליה השנייה בקומבו'],[sk[3],cb(3),'סוגרת את הקומבו. רק בקומבו היא מהממת'],[sk[5],'','המיומנות הגדולה. זינוק אל יריב רחוק'],[sk[4],'','מגן לשלוש שניות. עוצר הדיפה והלם'],['צעד','','חמיקה קצרה לכיוון שמכוונים'],['הדיפה','','במצור בלבד. זורקת יריב רחוק'],[BUFN[S.cls][0],'','במצור בלבד. '+BUFN[S.cls][1]]];
-    h+='<h2>המתקפות שלך בקרב</h2><div class="card"><p class="hint">בזירה, במגדל, במצור ובמעגל האחרון. <b>קומבו עובד בכל קרב מול שחקנים:</b> לוחצים על שלוש המתקפות המסומנות לפי הסדר, הכי מהר שאפשר. קומבו מתפוצץ על היריב, מוריד חלק גדול מהחיים שלו, מהמם אותו והודף אותו.</p><p class="hint"><b>בחירת יריב:</b> לחיצה על יריב מסמנת אותו, והמכות שלך הולכות אליו כל עוד הוא בטווח. <b>מכת אזור:</b> '+(S.cls==='blade'?'המיומנות הראשונה שלך פוגעת בכל היריבים שסביבך':S.cls==='storm'?'המיומנות המהממת שלך פוגעת גם ביריבים שליד היריב שבחרת':'המיומנות הראשונה שלך פוגעת גם בשני היריבים הקרובים אליך')+'.</p>'+mv.map(m=>'<div class="kv" style="align-items:flex-start;margin:6px 0"><span><b>'+m[0]+'</b>'+m[1]+'<br><small style="color:var(--dim)">'+m[2]+'</small></span></div>').join('')+'</div>';}
+    h+='<h2>המתקפות שלך בקרב</h2><div class="card"><p class="hint">בזירה, במגדל, במצור ובמעגל האחרון. <b>קומבו עובד בכל קרב מול שחקנים:</b> לוחצים על שלוש המתקפות המסומנות לפי הסדר, הכי מהר שאפשר. קומבו מתפוצץ על היריב, מוריד חלק גדול מהחיים שלו, מהמם אותו והודף אותו.</p><p class="hint"><b>בחירת יריב:</b> לחיצה על יריב מסמנת אותו, והמכות שלך הולכות אליו כל עוד הוא בטווח. <b>מכת אזור:</b> '+(S.cls==='blade'?'המיומנות הראשונה שלך פוגעת בכל היריבים שסביבך':S.cls==='storm'||S.cls==='lord'?'המיומנות המהממת שלך פוגעת גם ביריבים שליד היריב שבחרת':'המיומנות הראשונה שלך פוגעת גם בשני היריבים הקרובים אליך')+'.</p>'+mv.map(m=>'<div class="kv" style="align-items:flex-start;margin:6px 0"><span><b>'+m[0]+'</b>'+m[1]+'<br><small style="color:var(--dim)">'+m[2]+'</small></span></div>').join('')+'</div>';}
   {const ml=mastery(A.kills),a0=masteryNeed(ml),a1=masteryNeed(ml+1);
     h+='<h2>דרגת המעגל</h2><div class="card" style="display:block"><div class="kv"><b style="color:var(--gold)">דרגה '+L(ml)+'</b><b class="num">'+L('+'+ml*MASTERY_PCT+'%')+' נזק וחיים</b></div><div class="bar gold" style="margin:6px 0"><i style="width:'+clamp((A.kills-a0)/(a1-a0)*100,0,100)+'%"></i></div><p class="hint">הדרגה הזו לא נגמרת. כל מפלצת שהחשבון חיסל אי פעם נספרת, וכל דרגה מוסיפה '+L(MASTERY_PCT+'%')+' נזק וחיים לכל הדמויות. עוד '+L(fmt(Math.max(0,a1-A.kills)))+' חיסולים לדרגה הבאה.</p></div>';}
   {const R=totalResets(A),nx=ARTS.find(a=>R<a.r);
@@ -1799,7 +1830,7 @@ function openSheet(id){
   h+=diff+'</div>';
   if(isSet(it)){const sk=setKey(it),n=setCounts(S)[sk]||0;h+='<div class="card r4"><b style="color:var(--r4)">סט עתיק: '+setName(sk)+' · לבושים '+L(n+'/6')+'</b>'+setLines(sk,n)+'</div>';}
   if(it.s==='g'&&it.t<WING_MAX){const n=wingFeathers(it.t),ok=it.p>=15&&(A.feathers||0)>=n;
-    h+='<button class="btn'+(ok?' pri glow':'')+'" data-act="wingEvolve" data-id="'+it.id+'"'+(ok?'':' disabled')+' style="width:100%;margin-bottom:6px">פתח ל'+WINGN[it.t]+' · '+L(n)+' נוצות · '+L(Math.round(wingChance(it.t)*100)+'%')+'</button>'+
+    h+='<button class="btn'+(ok?' pri glow':'')+'" data-act="wingEvolve" data-id="'+it.id+'"'+(ok?'':' disabled')+' style="width:100%;margin-bottom:6px">פתח ל'+(S.cls==='lord'?CAPEN:WINGN)[it.t]+' · '+L(n)+' נוצות · '+L(Math.round(wingChance(it.t)*100)+'%')+'</button>'+
       '<p class="hint" style="margin-bottom:6px">'+(it.p<15?'כנפיים מתפתחות לדרגה הבאה רק ב-'+L('+15')+'. ':'')+'יש לך '+L(A.feathers||0)+' נוצות נצח. קונים אותן בחנות העונה, ומקבלים בפס העונה ולעיתים מבוסים. כישלון שורף את הנוצות, הכנפיים נשארות. הדרגה הבאה מתחילה מ-'+L('+0')+' וחלשה מהנוכחית עד שמשדרגים אותה שוב. דרגה '+L(it.t+'/'+WING_MAX)+'.</p>';}
   if(it.ex&&!isFull(it))h+='<button class="btn'+(A.jewels>0?' pri':'')+'" data-act="exAdd" data-id="'+it.id+'"'+(A.jewels>0?'':' disabled')+' style="width:100%;margin-bottom:6px">הוסף אופציה · אבני שלמות: '+L(A.jewels||0)+'</button>';
   if(it.p<15)h+='<p class="hint">שדרוג לדרגה '+L('+'+(it.p+1))+': '+L(uc.gems)+' אבני נשמה ו-'+L(fmt(uc.gold))+' זהב · סיכוי '+L(Math.round(upChance(it)*100)+'%')+(it.p>=7?' · כישלון מוריד דרגה אחת'+(A.charms?' (יש קמע הגנה)':''):'')+'</p>';
@@ -1830,10 +1861,10 @@ function showOffline(list){
 }
 let pickCls='blade';
 function showCreate(extra){
-  const cl=k=>'<button data-act="pick" data-k="'+k+'" data-x="'+(extra?1:'')+'" class="'+(pickCls===k?'on':'')+'">'+CLS[k].n+'<small>'+(k==='blade'?'קרב קרוב':'קרב מרחוק')+'</small></button>';
+  const cl=k=>'<button data-act="pick" data-k="'+k+'" data-x="'+(extra?1:'')+'" class="'+(pickCls===k?'on':'')+'">'+CLS[k].n+'<small>'+(k==='blade'?'קרב קרוב':k==='lord'?'עמיד, מחזק את הקבוצה':'קרב מרחוק')+'</small></button>';
   openModal('<h3>'+(extra?'דמות חדשה':'מעגל הנצח')+'</h3><p class="hint">'+(extra?'הדמות החדשה מתחילה בכפר וחולקת איתך זהב, תיק ושערים.':'לוחצים על המסך כדי ללכת, על מפלצת כדי לתקוף, ומפעילים כישורים. מביסים בוסים, פותחים מפות, מגיעים לרמה 400 ועושים ריסט.')+'</p>'+
     '<label for="nm" class="hint">שם הדמות</label><input type="text" id="nm" maxlength="14" value="'+esc($('nm')?$('nm').value:'')+'" placeholder="עד 14 תווים" autocomplete="off">'+
-    '<div class="cls">'+cl('blade')+cl('storm')+cl('hunter')+'</div><div class="acts"><button class="btn pri" data-act="create" data-x="'+(extra?1:'')+'">'+(extra?'צור דמות':'צא לדרך')+'</button>'+(extra?'<button class="btn" data-act="closeModal">ביטול</button>':'')+'</div>');
+    '<div class="cls">'+cl('blade')+cl('storm')+cl('hunter')+cl('lord')+'</div><div class="acts"><button class="btn pri" data-act="create" data-x="'+(extra?1:'')+'">'+(extra?'צור דמות':'צא לדרך')+'</button>'+(extra?'<button class="btn" data-act="closeModal">ביטול</button>':'')+'</div>');
 }
 /* ---------- picking up a new version without being asked ---------- */
 // BUILD is stamped on every commit, together with version.txt. When the two differ, a newer client is out:
@@ -2078,7 +2109,7 @@ document.addEventListener('click',async e=>{
     else if(a==='claimPass'){for(let n=0;n<PASS_MAX&&passLevel(S)>A.pass.claimed;n++){r=await act('claimPass',{});if(!r.ok)break;snd('rare');toast('פרס עונה: '+r.t);}passScroll=null;}
     else if(a==='claimEvent'){r=await act('claimEvent',{id:b.dataset.k});if(r.ok){snd('rare');toast('פרס האירוע: '+r.rt);if(r.levels)afterXp(r.levels);}}
     else if(a==='answer'){r=await act('answer',{a:+b.dataset.i});if(r.ok){snd(r.correct?'ok':'fail');toast(r.correct?'תשובה נכונה. אסוף את הפרס':'תשובה שגויה');}}
-    else if(a==='wingEvolve'){const id=+b.dataset.id;r=await act('wingEvolve',{id:id});if(r.ok){if(r.evolved){snd('rare');toast('הכנפיים התפתחו: '+WINGN[r.t-1],4);announce('הכנפיים שלך התפתחו ל'+WINGN[r.t-1],true);}else{snd('slam');toast('הפיתוח נכשל. '+r.need+' נוצות נשרפו');}openSheet(id);}else toast(r.msg);}
+    else if(a==='wingEvolve'){const id=+b.dataset.id;r=await act('wingEvolve',{id:id});if(r.ok){if(r.evolved){snd('rare');toast((S.cls==='lord'?'הגלימה התפתחה: '+CAPEN[r.t-1]:'הכנפיים התפתחו: '+WINGN[r.t-1]),4);announce('הכנפיים שלך התפתחו ל'+WINGN[r.t-1],true);}else{snd('slam');toast('הפיתוח נכשל. '+r.need+' נוצות נשרפו');}openSheet(id);}else toast(r.msg);}
     else if(a==='exAdd'){const id=+b.dataset.id;r=await act('exAdd',{id:id});if(r.ok){snd('rare');toast(r.full?'הפריט הגיע לאקסלנט מלא':'נוספה אופציה: '+AFF[r.opt[0]][0]+' '+r.opt[1]+'%',4);openSheet(id);}}
     else if(a==='claimLogin'){r=await act('claimLogin',{});if(r.ok){snd('rare');closeModal();toast('פרס יום '+r.day+': '+r.t);}}
     else if(a==='claimTask'){r=await act('claimTask',{k:b.dataset.k});if(r.ok){snd('coin');toast(r.rt?'קיבלת '+r.rt:r.xp+' ניסיון לפס');}}

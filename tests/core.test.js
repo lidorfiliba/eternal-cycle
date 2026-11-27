@@ -669,3 +669,23 @@ test('wing looks from the credits shop: a look only, bought once, worn or taken 
   assert.equal(G.fighter(s).g,null,'without wings there is nothing to show');s.eq.g={id:99,s:'g',t:3,r:1,p:0,z:1,af:[]};const f=G.fighter(s);assert.equal(f.g[5],1);assert.equal(G.cleanPlayer('x',f).g[5],1,'and it reaches the others');
   assert.equal(G.cleanPlayer('x',Object.assign({},f,{g:[3,1,0,0,0,77]})).g[5],G.WSKIN.length-1,'a made-up look is cut down to a real one');
 });
+
+test('the warlord: strength from endurance, less harm and more life than the blade, a cape for wings, his own place in every fight',()=>{
+  let t=1.8e12;G.setEnv(()=>.5,()=>t);const mk=c=>{const A=G.newAccount();const r=G.apply(A,'create',{name:'Hero'+c,cls:c},{});assert.ok(r.ok,r.msg);const s=A.chars[0];s.lvl=300;s.pts=299*5;G.autoAlloc(s);return [A,s];};
+  const [AL,L]=mk('lord'),[AB,B]=mk('blade');assert.equal(L.cls,'lord');assert.equal(L.pts,0,'automatic points know where to go');assert.ok(L.stats.vit>L.stats.agi&&L.stats.str===15);
+  const cl=G.calc(L),cb=G.calc(B);assert.ok(cl.dps<cb.dps&&cl.dps>cb.dps*.7,'he strikes less hard than the blade, not by much: '+cl.dps+' '+cb.dps);assert.ok(cl.hp>cb.hp*1.2&&cl.hp<cb.hp*1.6,'and stands longer: '+cl.hp+' '+cb.hp);
+  assert.ok(cl.dmg>0&&isFinite(cl.power)&&cl.power>0);const withAura=G.calc(B,['lord']);assert.ok(withAura.hp>cb.hp*1.1&&withAura.def>cb.def*1.1,'beside him the party stands longer');
+  const cape={id:L.nid++,s:'g',t:3,r:1,p:0,z:1,af:[]};assert.equal(G.itemName(cape,'lord'),G.CAPEN[2]);assert.equal(G.itemName(cape,'blade'),G.WINGN[2]);assert.equal(G.CAPEN.length,G.WINGN.length,'a cape for every rank of wings');
+  A:{L.inv.push(cape);assert.ok(G.apply(AL,'equip',{id:cape.id}).ok);const f=G.fighter(L),c=G.cleanPlayer('x',f);assert.equal(c.c,'lord');assert.ok(c.g&&c.g[0]===3);}
+  // the map, the keep and the reset treat him as any other
+  assert.ok(G.apply(AL,'travel',{z:0}).ok);AL.allow=30;const k=G.apply(AL,'tick',{z:0,f:0,kills:5},{});assert.ok(k.ok&&k.kills===5,JSON.stringify(k).slice(0,120));
+  // fights against players
+  const fl=G.fighter(L),fb=G.fighter(B),rnd=()=>.5;
+  const D=G.liveNew(fl,fb,true);D.t=5;D.f[1].x=D.f[0].x+60;D.f[1].z=D.f[0].z;assert.ok(G.liveAct(D,0,'atk',rnd),'his reach is between the blade\'s and the witch\'s');assert.ok(G.LIVE_RNG.lord>G.LIVE_RNG.blade&&G.LIVE_RNG.lord<G.LIVE_RNG.storm);
+  const S=G.sgNew(rnd,{}),a=G.sgAdd(S,Object.assign({id:'l'},fl),1,'A',rnd),e1=G.sgAdd(S,Object.assign({id:'e1'},fb),2,'B',rnd),e2=G.sgAdd(S,Object.assign({id:'e2'},fb),2,'B',rnd),m=G.sgAdd(S,Object.assign({id:'m'},fb),1,'A',rnd);S.t=5;
+  for(const i of [a,e1,e2,m]){S.f[i].x=0;S.f[i].y=1900;S.f[i].bot=false;}S.f[e1].x=60;S.f[e2].x=100;
+  const s1=G.sgAct(S,a,'s1',rnd);assert.ok(s1&&s1.to===e1&&s1.more&&s1.more.length===1&&s1.more[0][0]===e2,'his judgement falls on those beside his enemy');S.t+=1;assert.ok(!G.sgAct(S,a,'s0',rnd).more);
+  const bf=G.sgAct(S,a,'buf',rnd);assert.ok(bf&&bf.bk==='b'&&bf.n>=2,'his command gives life to the guild around him');
+  const R=G.brNew([{id:'p',n:'p',c:'lord'},{id:'q',n:'q',c:'blade'}],rnd);R.t=5;R.f[0].x=0;R.f[0].y=0;R.f[1].x=60;R.f[1].y=0;assert.ok(G.brAct(R,0,'atk',rnd));
+  assert.equal(G.cleanPlayer('x',{c:'nosuch'}).c,'blade','an unknown class is never trusted');
+});

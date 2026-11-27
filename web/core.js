@@ -66,16 +66,21 @@ const MHP=ZONES.map(z=>z.hp),MATK=ZONES.map(z=>z.atk),ZSPR=ZONES.map(z=>z.spr),Z
 const CLS={
  blade:{n:'לוחם להב',main:'str',coef:1.5,combo:'סערת להבים',c:'#ff8a4d',wn:'להב',range:50,sk:['סערת להבים','שרשרת ברזל','זעם הקרב','מכת מחץ','חומת פלדה','אלף להבים'],al:{str:.6,agi:.15,vit:.25}},
  storm:{n:'מכשפת סער',main:'ene',coef:1.5,combo:'ברק שרשרת',c:'#6fd3ff',wn:'מטה',range:175,sk:['ברק שרשרת','מערבולת','הארת סער','כדור אש','מגן קסם','מטר מטאורים'],al:{ene:.6,agi:.15,vit:.25}},
+ // the warlord leads from the middle of the line: his strength comes from his own endurance, he hits less hard than
+ // the blade and stands far longer, and those who fight beside him stand longer too. He wears a cape where others wear wings.
+ lord:{n:'אדון מלחמה',main:'vit',coef:.7,hpM:.55,combo:'צו מלחמה',c:'#f2c14e',wn:'שרביט',range:95,sk:['צו מלחמה','שלשלאות פיקוד','דגל המצביא','מהלומת שרביט','חומת מגינים','משפט המלך'],al:{vit:.7,agi:.3}},
  hunter:{n:'צייד צללים',main:'agi',coef:0.62,combo:'מטר חניתות',c:'#8be28b',wn:'חנית',range:235,sk:['מטר חניתות','רשת צללים','עין הנץ','חנית חודרת','צעד צל','מטח הציידים'],al:{agi:.7,vit:.3}}
 };
-const STATN={str:['כוח','נזק ללוחם להב'],agi:['זריזות','מהירות, קריטי, הגנה'],vit:['חיוניות','חיים והגנה'],ene:['אנרגיה','נזק למכשפת סער']};
+const STATN={str:['כוח','נזק ללוחם להב'],agi:['זריזות','מהירות, קריטי, הגנה'],vit:['חיוניות','חיים והגנה. נזק לאדון מלחמה'],ene:['אנרגיה','נזק למכשפת סער']};
 const RAR=[{n:'רגיל',c:'#b9b4c7',m:1},{n:'קסום',c:'#5aa9ff',m:1.25},{n:'נדיר',c:'#c77dff',m:1.6},{n:'אגדי',c:'#ffb23e',m:2.1},{n:'עתיק',c:'#3df5c8',m:2.8}];
 const TIERN=['חניך','ברזל','כסף ירח','חול זועם','כפור','גחלת','צל','נצח','תהום','קרחון','זהב טהור','מעגל','אפר הזמן','בריאה'];
 // Fifty ranks of wings, each stronger than the one before. Monsters drop only the first eight; every rank above
 // is reached by evolving a +15 wing with season feathers (see wingEvolve), so the top of the ladder takes months.
 const WING_MAX=50,WING_FAM=['דרקון','צללים','כוכבים','סופה','עידן','אינסוף'],WING_GR=['','מחוזקות','נעלות','מלכותיות','קדומות','שמימיות','אלוהיות'];
 const WINGN=['כנפי עלה','כנפי סער','כנפי להבה','כנפי נצח','כנפי תהום','כנפי קרחון','כנפי זהב','כנפי המעגל'];
+const CAPEN=['גלימת עלה','גלימת סער','גלימת להבה','גלימת נצח','גלימת תהום','גלימת קרחון','גלימת זהב','גלימת המעגל']; // the same item on a warlord's back
 for(let i=9;i<=WING_MAX;i++)WINGN.push('כנפי '+WING_FAM[Math.floor((i-9)/7)]+(WING_GR[(i-9)%7]?' '+WING_GR[(i-9)%7]:''));
+{const CAPE_GR=['','מחוזקת','נעלה','מלכותית','קדומה','שמימית','אלוהית'];for(let i=9;i<=WING_MAX;i++)CAPEN.push('גלימת '+WING_FAM[Math.floor((i-9)/7)]+(CAPE_GR[(i-9)%7]?' '+CAPE_GR[(i-9)%7]:''));}
 const wingBase=t=>t<=8?6+6*t:54+1.6*(t-8);
 const wingFeathers=t=>1+Math.floor(t/4),wingChance=t=>clamp(1-t*.014,.32,1); // to go from rank t to t+1
 const AFF={dmg:['נזק',3,8],crit:['סיכוי קריטי',1,4],cdmg:['נזק קריטי',8,20],aspd:['מהירות תקיפה',2,6],hp:['חיים',4,10],def:['הגנה',4,10],xp:['ניסיון',3,8],gold:['זהב',5,15],drop:['סיכוי שלל',2,6]};
@@ -152,7 +157,7 @@ function itemVals(it){
 }
 function itemName(it,cls){
   if(it.s==='y')return petName(it);
-  if(it.s==='g')return (it.ex?(isFull(it)?'אקסלנט מלא · ':'אקסלנט · '):'')+(it.season?'כנפי העונה':WINGN[it.t-1]);
+  if(it.s==='g')return (it.ex?(isFull(it)?'אקסלנט מלא · ':'אקסלנט · '):'')+(cls==='lord'?(it.season?'גלימת העונה':CAPEN[it.t-1]):(it.season?'כנפי העונה':WINGN[it.t-1]));
   return (it.pf?'עתיק מושלם · ':it.ex?(isFull(it)?'אקסלנט מלא · ':'אקסלנט · '):'')+(it.s==='w'?CLS[cls].wn:SLOTN[it.s])+(isSet(it)?' · '+setName(setKey(it)):' '+TIERN[it.t-1]);
 }
 function itemScore(it){
@@ -162,7 +167,7 @@ function itemScore(it){
   return b*(1+a*0.12);
 }
 // What each class gives to party members fighting on the same map.
-const AURAS={blade:{n:'זעקת קרב',d:'12% נזק'},storm:{n:'רוח סער',d:'10% מהירות תקיפה'},hunter:{n:'עין הצייד',d:'8% קריטי ו-15% נפילות'}};
+const AURAS={blade:{n:'זעקת קרב',d:'12% נזק'},storm:{n:'רוח סער',d:'10% מהירות תקיפה'},hunter:{n:'עין הצייד',d:'8% קריטי ו-15% נפילות'},lord:{n:'פיקוד',d:'12% חיים והגנה'}};
 const cleanAuras=l=>Array.isArray(l)?[...new Set(l.filter(k=>typeof k==='string'&&AURAS[k]))]:[];
 // The rank of the Cycle: it never ends. Every monster the account has ever killed counts, each rank asks for more
 // kills than the one before, and each gives a little damage and health to every character on the account.
@@ -175,15 +180,15 @@ function calc(s,au){
   const sc=setCounts(s);for(const z in sc)for(const b of setTable(z))if(sc[z]>=b[0])a[b[1]]+=b[2];
   {const n=exCount(s);for(const b of EXB)if(n>=b[0])a[b[1]]+=b[2];}
   const main=st[c.main];
-  const base=10+main*c.coef+(st.str+st.agi+st.ene-main)*0.15+atk;
+  const base=10+main*c.coef+(st.str+st.agi+st.ene-(c.main==='vit'?0:main))*0.15+atk;
   const ml=mastery(s.kills);
   let dmg=base*(1+0.04*s.resets)*(1+a.dmg/100)*(1+wd/100)*(1+ml*MASTERY_PCT/100);
   let aspd=Math.min(3.2,(1.1+st.agi/500)*(1+a.aspd/100));
   let crit=Math.min(.6,.05+st.agi/3000+a.crit/100);
   const cdmg=2+a.cdmg/100;
-  const hp=(120+st.vit*10+s.lvl*6+ahp)*(1+a.hp/100)*(1+wh/100)*(1+ml*MASTERY_PCT/100);
-  const def=(st.agi*.15+st.vit*.1+adef)*(1+a.def/100);
-  if(au&&au.length){if(au.includes('blade'))dmg*=1.12;if(au.includes('storm'))aspd*=1.1;if(au.includes('hunter'))crit=Math.min(.75,crit+.08);}
+  let hp=(120+st.vit*10*(c.hpM||1)+s.lvl*6+ahp)*(1+a.hp/100)*(1+wh/100)*(1+ml*MASTERY_PCT/100);
+  let def=(st.agi*.15+st.vit*.1*(c.hpM||1)+adef)*(1+a.def/100);
+  if(au&&au.length){if(au.includes('lord')){hp*=1.12;def*=1.12;}if(au.includes('blade'))dmg*=1.12;if(au.includes('storm'))aspd*=1.1;if(au.includes('hunter'))crit=Math.min(.75,crit+.08);}
   const dps=dmg*aspd*(1+crit*(cdmg-1))*1.3;
   const boost=s.boost>(s._now||_now())?1.5:1,vip=(s.vip||0)>(s._now||_now())?1.15:1;
   return {dmg,aspd,crit,cdmg,hp,def,dps,power:Math.round(dps*.6+hp*.25+def*2),
@@ -457,7 +462,7 @@ const DUEL_LIVE={time:75,pots:3,heal:.3,sk:[{m:.9,cd:5},{m:1.6,cd:9,stun:.8},{cd
 // One set of rules for the live duel, used by the browser (against a fighter the game plays) and by the server
 // (between two players who are both connected, where the server alone decides what a move did).
 // Positions are in arena units: LIVE_W across, depth z from 0 to 1. Times are seconds on the duel's own clock D.t.
-const LIVE_W=400,LIVE_RNG={blade:62,storm:185,hunter:235},LIVE_LANE=.3;
+const LIVE_W=400,LIVE_RNG={blade:62,storm:185,hunter:235,lord:105},LIVE_LANE=.3;
 const LIVE_SURV=20,CLEAN_DAY=10;
 function livePlausible(L,el){const minT=1/(Math.max(1e-6,L.b[0])*DUEL_LIVE.maxRate);return el>=minT*.8&&L.b[1]*minT<=LIVE_SURV;}
 function liveFrom(L,ca,cb){
@@ -664,9 +669,9 @@ function sgBot(B,i,dt,rnd,ev){
 function sgGang(e,i,t){const hb=e.hb||(e.hb={});let n=0;for(const k in hb){if(t-hb[k]>SG.gangT)delete hb[k];else if(+k!==i)n++;}hb[i]=t;return n;}
 // Each class has one skill that strikes more than one: the blade sweeps all around himself, the witch's storm bursts around
 // her enemy, the hunter's volley finds the nearest few in his reach. The others take a part of the blow, and no combo.
-const areaOf=(c,k)=>(c==='blade'&&k==='s0')||(c==='storm'&&k==='s1')||(c==='hunter'&&k==='s0');
+const areaOf=(c,k)=>(c==='blade'&&k==='s0')||((c==='storm'||c==='lord')&&k==='s1')||(c==='hunter'&&k==='s0'),atFoe=c=>c==='storm'||c==='lord'; // the warlord's judgement falls around his enemy, as the witch's storm does
 function areaList(B,i,j,k,rng,sees){const me=B.f[i],e=B.f[j],t=B.t,L=[];B.f.forEach((x,q)=>{if(q===i||q===j||!x.alive||(me.g!==undefined&&x.g===me.g)||x.inv>t)return;
-    const d=me.c==='storm'?brDist(x,e):brDist(x,me),lim=me.c==='storm'?SG.areaR:me.c==='blade'?Math.min(rng,LIVE_RNG.blade+SG.areaB+14):rng;if(d<=lim&&(!sees||sees(x)))L.push([d,q]);});
+    const d=atFoe(me.c)?brDist(x,e):brDist(x,me),lim=atFoe(me.c)?(me.c==='lord'?SG.areaR*.75:SG.areaR):me.c==='blade'?Math.min(rng,LIVE_RNG.blade+SG.areaB+14):rng;if(d<=lim&&(!sees||sees(x)))L.push([d,q]);});
   return L.sort((a,b)=>a[0]-b[0]).slice(0,me.c==='hunter'?2:SG.areaN).map(x=>x[1]);}
 function sgAct(B,i,k,rnd,want){
   const me=B.f[i],t=B.t,K=DUEL_LIVE;if(B.over||t<0||!me||!me.alive||me.stun>t||!(k in me.at)||me.at[k]>t)return null;
@@ -675,7 +680,7 @@ function sgAct(B,i,k,rnd,want){
     for(let q=0;q<2;q++)if(sgNear(me,SG.sw[q],SG.zone)){if(S.swBy[q]===i)return null;if(S.swBy[q]>=0){o.no='held';return o;}S.swp[q]=[me.g,.0001,i];o.q=q;o.g=me.g;return o;}
     if(sgNear(me,SG.crown,SG.zone)){if(!me.lead){o.no='lead';return o;}if(me.g===S.holder){o.no='own';return o;}if(!(S.swBy[0]>=0&&S.swBy[1]>=0&&S.sw[0]===me.g&&S.sw[1]===me.g)){o.no='sw';return o;}S.crown=[me.g,Math.max(.0001,me.cacc||0),i];o.c=1;o.g=me.g;return o;}
     return null;}
-  if(k==='buf'){me.at.buf=t+SG.buf.cd;const key=me.c==='blade'?'b':me.c==='storm'?'s':'h';o.bk=key;o.n=0;for(const f of B.f)if(f.alive&&f.g===me.g&&brDist(f,me)<=SG.buf.r){f.bf[key]=t+SG.buf.dur;o.n++;}return o;}
+  if(k==='buf'){me.at.buf=t+SG.buf.cd;const key=me.c==='blade'||me.c==='lord'?'b':me.c==='storm'?'s':'h';o.bk=key;o.n=0;for(const f of B.f)if(f.alive&&f.g===me.g&&brDist(f,me)<=SG.buf.r){f.bf[key]=t+SG.buf.dur;o.n++;}return o;}
   if(k==='s2'){me.at.s2=t+K.sk[2].cd;me.sh=t+K.sk[2].dur;return o;}
   if(k==='dash'){me.at.dash=t+K.dash.cd;me.inv=t+K.dash.inv;return o;}
   if(k==='pot'){if(me.pots<1)return null;if(me.wound>t){o.no='wound';return o;}me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+SG.heal);o.heal=SG.heal;return o;}
@@ -1224,4 +1229,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {WSKIN,wskinOn,bankCap,PET_PERM,nameBad,NAME_MIN,PETN2,petName,sgCamp,areaOf,sgShield,sgBot,sgRoute,sgNear,LIVE_SURV,CLEAN_DAY,livePlausible,CITY_SHOP,CITY_WEEK,CITY_RATE,CITY_TIER,CITY_RAR,CITY_PERFECT,BANK,sgBuff,sgSees,EXB,exCount,SIEGE_MIN,RESET_RAR,keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {CAPEN,WSKIN,wskinOn,bankCap,PET_PERM,nameBad,NAME_MIN,PETN2,petName,sgCamp,areaOf,sgShield,sgBot,sgRoute,sgNear,LIVE_SURV,CLEAN_DAY,livePlausible,CITY_SHOP,CITY_WEEK,CITY_RATE,CITY_TIER,CITY_RAR,CITY_PERFECT,BANK,sgBuff,sgSees,EXB,exCount,SIEGE_MIN,RESET_RAR,keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
