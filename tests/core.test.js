@@ -56,13 +56,13 @@ test('junk arguments never corrupt the account',()=>{
   assert.ok(G.adopt(JSON.parse(JSON.stringify(A))),'state still serialises and loads');
 });
 test('character slots are gated and names are sanitised',()=>{
-  const {A}=fresh();assert.equal(G.apply(A,'create',{name:'שני',cls:'storm'}).ok,false);
+  const {A}=fresh();assert.equal(G.apply(A,'create',{name:'שנית',cls:'storm'}).ok,false);
   A.maxLvl=50;const r=G.apply(A,'create',{name:'<img src=x onerror=1>  ארוך מאוד מאוד מאוד',cls:'zzz'});assert.ok(r.ok);
   const c=A.chars[1];assert.ok(c.name.length<=14&&!/[<>&"']/.test(c.name));assert.equal(c.cls,'blade');
 });
 let DROPS_I=0;
 test('AFK-only time to first reset stays in the designed range and sets work',()=>{
-  const now=clock(1.8e12);G.setEnv(Math.random,now);const A=G.newAccount();G.apply(A,'create',{name:'x',cls:'blade'});A.open=G.BASEZ-1;const s=A.chars[0];let t=0;
+  const now=clock(1.8e12);G.setEnv(Math.random,now);const A=G.newAccount();G.apply(A,'create',{name:'xxxx',cls:'blade'});A.open=G.BASEZ-1;const s=A.chars[0];let t=0;
   while(s.lvl<G.CAP&&t<40*3600){let z=0;for(let i=0;i<G.BASEZ;i++)if(G.ZONES[i].min<=s.lvl)z=i;s.zone=z;s.last=now();G.offline(s,300);now.add(300);t+=300;}
   console.log('AFK-only minutes to first reset:',t/60);assert.ok(t/60>200&&t/60<480,'minutes: '+t/60);
   for(const k of G.DROPS){s.eq[k]=G.makeItem(s,k,8,4,21+DROPS_I++%3);delete s.eq[k].v;}
@@ -163,7 +163,7 @@ test('the keep: a crafted key, a five-minute gate before it begins, nobody enter
   assert.deepEqual([1,14,15,80,81,330,331,400].map(G.evTier),[0,0,1,1,2,6,7,7]);assert.deepEqual(G.tierRange(7),[331,400]);assert.deepEqual(G.tierRange(1),[15,80]);
   assert.ok(G.tierReward(7).lv===undefined&&G.tierReward(2).gems>G.tierReward(1).gems,'no prize is paid in levels');assert.ok(G.EVENTS.every(e=>!e.rw||e.rw.lv===undefined));
   const start=Date.parse('2026-11-26T12:00:00Z'),at=start-2*60000; // two minutes before the keep begins: the gate is open
-  const mk=(lvl,t0)=>{const A=G.newAccount();const st={now:t0};G.setEnv(()=>.5,()=>st.now);G.apply(A,'create',{name:'a',cls:'blade'});const s=A.chars[0];s.lvl=lvl;s.stats.str=5000;s.stats.vit=3000;s.autoPts=false;A.open=7;return {A,s,st};};
+  const mk=(lvl,t0)=>{const A=G.newAccount();const st={now:t0};G.setEnv(()=>.5,()=>st.now);G.apply(A,'create',{name:'aaaa',cls:'blade'});const s=A.chars[0];s.lvl=lvl;s.stats.str=5000;s.stats.vit=3000;s.autoPts=false;A.open=7;return {A,s,st};};
   {const {A}=mk(100,at);assert.equal(G.apply(A,'craftKey',{}).ok,false,'needs shards');A.shards=7;A.gold=5000;assert.ok(G.apply(A,'craftKey',{}).ok);assert.equal(A.keys,1);assert.equal(A.shards,2);assert.equal(A.gold,5000-G.KEY_GOLD);}
   {const {A}=mk(100,start-10*60000);A.keys=1;assert.equal(G.apply(A,'evEnter',{id:'crimson'}).ok,false,'the gate opens only five minutes before');assert.equal(A.keys,1);}
   {const {A}=mk(10,at);A.keys=1;assert.match(G.apply(A,'evEnter',{id:'crimson'}).msg,/מרמה 15/);}
@@ -197,7 +197,7 @@ test('wear the best: strongest piece per slot from the shared bag; gear worn by 
 
 test('saved games from the 8 + 4 map list are renumbered once',()=>{
   const old={v:2,gold:5,gems:1,cred:0,coins:0,boxes:0,sboxes:0,charms:0,bless:0,bonusPts:0,boost:0,inv:[{id:1,s:'h',t:3,r:1,p:0,z:2,af:[]},{id:2,s:'a',t:10,r:4,p:0,z:9,af:[]}],nid:3,kills:0,killAcc:0,pass:{key:'x',xp:0,claimed:0},day:'x',daily:{kills:0,resets:0,wins:0,ups:0,done:{}},rating:1000,tickets:5,
-    autoEq:true,autoSell:1,open:4,zk:{'2':50,'9':7},bossM:{'4':12},q:0,chars:[{name:'a',cls:'blade',lvl:200,xp:0,resets:2,pts:0,stats:{str:15,agi:15,vit:15,ene:15},zone:4,floor:1,eq:{w:{id:9,s:'w',t:5,r:2,p:3,z:4,af:[]},h:null,a:null,p:null,l:null,b:null,g:null},last:0}],cur:0,last:0};
+    autoEq:true,autoSell:1,open:4,zk:{'2':50,'9':7},bossM:{'4':12},q:0,chars:[{name:'aaaa',cls:'blade',lvl:200,xp:0,resets:2,pts:0,stats:{str:15,agi:15,vit:15,ene:15},zone:4,floor:1,eq:{w:{id:9,s:'w',t:5,r:2,p:3,z:4,af:[]},h:null,a:null,p:null,l:null,b:null,g:null},last:0}],cur:0,last:0};
   const A=G.adopt(JSON.parse(JSON.stringify(old))),s=A.chars[0];
   assert.equal(A.open,12);assert.equal(s.zone,12);assert.equal(G.ZONES[s.zone].n,'מצודת הכפור','the character stands in the same place');
   assert.deepEqual(A.zk,{'6':50,'26':7});assert.deepEqual(A.bossM,{'12':12});assert.equal(A.inv[0].z,6);assert.equal(A.inv[1].z,26);assert.equal(s.eq.w.z,12);assert.equal(s.eq.w.t,5,'tiers are untouched');
@@ -205,7 +205,7 @@ test('saved games from the 8 + 4 map list are renumbered once',()=>{
 });
 
 test('the season pass is long: play feeds it only up to a daily amount, tasks come on top, saved levels survive',()=>{
-  const st={now:Date.parse('2026-11-26T12:20:00Z')};G.setEnv(()=>.5,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'a',cls:'blade'});const s=A.chars[0];s.lvl=200;s.stats.str=9000;s.stats.vit=5000;s.autoPts=false;
+  const st={now:Date.parse('2026-11-26T12:20:00Z')};G.setEnv(()=>.5,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'aaaa',cls:'blade'});const s=A.chars[0];s.lvl=200;s.stats.str=9000;s.stats.vit=5000;s.autoPts=false;
   G.apply(A,'travel',{z:0});for(let i=0;i<600;i++){st.now+=20000;G.apply(A,'tick',{z:0,kills:40});}
   assert.ok(A.kills>10000,'kills '+A.kills);assert.equal(A.pass.xp,G.PASS_DAY,'a whole day of grinding stops at the daily amount');
   A.daily.kills=5000;assert.ok(G.apply(A,'claimTask',{k:'kills'}).ok);assert.equal(A.pass.xp,G.PASS_DAY+60,'tasks are on top of it');
@@ -228,7 +228,7 @@ test('the manual duel: choices decide between equals, gear decides between unequ
   assert.ok(play(even,even,G.duelAI,spam)>.7,'thoughtful play beats mashing attack: '+play(even,even,G.duelAI,spam));
   assert.ok(play(F(2500,20000),even,spam,G.duelAI)>.8,'much better gear still wins while mashing');
   const eq=play(even,even,G.duelAI,G.duelAI);assert.ok(eq>.3&&eq<.7,'equals playing the same way split: '+eq);assert.ok(play(F(1250,11500),even,G.duelAI,G.duelAI)>.7,'with equal play the better gear wins');
-  const st={now:Date.parse('2026-11-26T12:20:00Z')};G.setEnv(rnd,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'a',cls:'blade'});
+  const st={now:Date.parse('2026-11-26T12:20:00Z')};G.setEnv(rnd,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'aaaa',cls:'blade'});
   assert.equal(G.apply(A,'duelAct',{a:'a'}).ok,false);G.apply(A,'opps',{},{players:[],uid:'x'});const t0=A.tickets,s0=G.apply(A,'duelStart',{i:1});assert.ok(s0.ok);assert.equal(A.tickets,t0-1);
   assert.ok(G.apply(A,'duelStart',{i:0}).ok,'asking again resumes');assert.equal(A.tickets,t0-1);assert.equal(G.apply(A,'duelAct',{a:'u'}).ok,false);
   let r,n=0;const rt=A.rating;do{r=G.apply(A,'duelAct',{a:G.duelAI(A.pd.D,0)});n++;}while(r.ok&&!r.D.over&&n<40);assert.ok(r.D.over);assert.equal(A.pd,null);assert.notEqual(A.rating,rt);
@@ -237,7 +237,7 @@ test('the manual duel: choices decide between equals, gear decides between unequ
 
 test('wings: fifty ranks, each stronger; only +15 wings evolve, with feathers, and a failure costs only the feathers',()=>{
   assert.equal(G.WING_MAX,50);const st={now:Date.parse('2026-11-26T12:20:00Z')};let x=.99;G.setEnv(()=>x,()=>st.now);
-  const A=G.newAccount();G.apply(A,'create',{name:'a',cls:'blade'});const s=A.chars[0];
+  const A=G.newAccount();G.apply(A,'create',{name:'aaaa',cls:'blade'});const s=A.chars[0];
   const mk=(t,p)=>({id:900+t,s:'g',t:t,r:2,p:p,z:-1,af:[]});let prev=0;for(let t=1;t<=50;t++){const v=G.itemVals(mk(t,15)).wd;assert.ok(v>prev,'rank '+t);prev=v;}
   assert.ok(G.itemName(mk(9,0),'blade')!==G.itemName(mk(50,0),'blade'));assert.equal(new Set(Array.from({length:50},(_,i)=>G.itemName(mk(i+1,0),'blade'))).size,50,'fifty different names');
   const w=mk(8,14);A.inv.push(w);A.feathers=10;assert.match(G.apply(A,'wingEvolve',{id:w.id}).msg,/\+15|15/);
@@ -249,20 +249,20 @@ test('wings: fifty ranks, each stronger; only +15 wings evolve, with feathers, a
 });
 
 test('gear asks for stats: a weak character cannot wear strong gear, automatic points always can, resets do not strip gear',()=>{
-  const st={now:Date.parse('2026-11-26T12:20:00Z')};G.setEnv(()=>.5,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'a',cls:'blade'});const s=A.chars[0];
+  const st={now:Date.parse('2026-11-26T12:20:00Z')};G.setEnv(()=>.5,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'aaaa',cls:'blade'});const s=A.chars[0];
   const top={id:5001,s:'w',t:8,r:3,p:0,z:21,af:[]};A.inv.push(top);s.autoPts=false;assert.match(G.apply(A,'equip',{id:5001}).msg,/כוח/);assert.equal(!!(s.eq.w&&s.eq.w.id===5001),false);
   assert.equal(G.apply(A,'bestEq',{}).n,0,'the button does not put it on either');
   s.pts=5000;G.apply(A,'autoPts',{});assert.ok(G.canWear(s,top),'automatic points go first to what the gear asks');assert.ok(G.apply(A,'equip',{id:5001}).ok);
   assert.ok(G.reqOf({s:'w',t:8,p:15},'blade').str>G.reqOf({s:'w',t:8,p:0},'blade').str);assert.ok(G.reqOf({s:'w',t:9,p:0},'blade').str>G.reqOf({s:'w',t:8,p:0},'blade').str);
   assert.deepEqual(Object.keys(G.reqOf({s:'a',t:3,p:0},'hunter')).sort(),['agi','vit']);assert.deepEqual(Object.keys(G.reqOf({s:'w',t:3,p:0},'storm')),['ene']);
-  for(const cls of ['blade','storm','hunter']){const B=G.newAccount();G.apply(B,'create',{name:'b',cls:cls});const c=B.chars[0];
+  for(const cls of ['blade','storm','hunter']){const B=G.newAccount();G.apply(B,'create',{name:'bbbb',cls:cls});const c=B.chars[0];
     for(let zi=0;zi<24;zi++){const L=G.ZONES[zi].min;c.stats={str:15,agi:15,vit:15,ene:15};c.pts=5*(L-1);c.autoPts=true;G.apply(B,'autoPts',{});G.apply(B,'autoPts',{});
       for(const sl of ['w','a','h'])assert.ok(G.canWear(c,{s:sl,t:G.tierOf(zi),r:4,p:9,z:zi,af:[]}),cls+' at level '+L+' wears +9 '+sl+' of map '+zi);}}
   s.lvl=400;assert.ok(G.apply(A,'reset',{}).ok);assert.equal(s.eq.w.id,5001);assert.ok(G.canWear(s,top));
 });
 
 test('respec, pickup filter, weekly tasks, side quests and hidden finds',()=>{
-  const st={now:Date.parse('2026-11-26T12:20:00Z')};let x=.5;G.setEnv(()=>x,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'a',cls:'blade'});const s=A.chars[0];
+  const st={now:Date.parse('2026-11-26T12:20:00Z')};let x=.5;G.setEnv(()=>x,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'aaaa',cls:'blade'});const s=A.chars[0];
   s.autoPts=false;s.stats.str=500;s.stats.vit=300;assert.match(G.apply(A,'respec',{}).msg,/אותות/);A.cred=20;const r=G.apply(A,'respec',{});assert.ok(r.ok);assert.equal(r.pts,770);assert.equal(s.pts,770);assert.deepEqual(s.stats,{str:15,agi:15,vit:15,ene:15});assert.equal(A.cred,20-G.RESPEC_COST);
   assert.equal(G.apply(A,'respec',{}).ok,false);
   s.lvl=300;s.stats.str=9000;s.stats.vit=9000;A.autoSell=0;A.autoEq=false;assert.ok(G.pickOf(A)['0']);G.apply(A,'pick',{k:'0'});G.apply(A,'pick',{k:'1'});assert.equal(G.pickOf(A)['0'],false);assert.equal(G.apply(A,'pick',{k:'zz'}).ok,false);
@@ -277,7 +277,7 @@ test('respec, pickup filter, weekly tasks, side quests and hidden finds',()=>{
 });
 
 test('the live duel: the server fixes the numbers and refuses a win claimed faster than it could be earned',()=>{
-  const st={now:Date.parse('2026-11-26T12:20:00Z')};G.setEnv(()=>.5,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'a',cls:'blade'});
+  const st={now:Date.parse('2026-11-26T12:20:00Z')};G.setEnv(()=>.5,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'aaaa',cls:'blade'});
   assert.equal(G.apply(A,'duelEnd',{win:true}).ok,false);G.apply(A,'opps',{},{players:[],uid:'x'});const s0=G.apply(A,'duelStart',{i:1});assert.ok(s0.ok&&s0.pd.live&&s0.pd.live.b[0]>0&&s0.pd.live.pool[1]>0);
   const r0=A.rating;st.now+=1500;const fast=G.apply(A,'duelEnd',{win:true});assert.ok(fast.ok);assert.equal(fast.win,false);assert.ok(fast.denied);assert.equal(A.rating,r0-12);assert.equal(A.pd,null);
   G.apply(A,'opps',{},{players:[],uid:'x'});G.apply(A,'duelStart',{i:1});st.now+=30000;const ok=G.apply(A,'duelEnd',{win:true});assert.equal(ok.win,true);assert.ok(ok.gain>0);
@@ -285,7 +285,7 @@ test('the live duel: the server fixes the numbers and refuses a win claimed fast
 });
 
 test('a duel against a player seen on the map uses the fighter the server looked up, never one the client sends',()=>{
-  const st={now:Date.parse('2026-11-26T12:20:00Z')};G.setEnv(()=>.5,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'a',cls:'blade'});
+  const st={now:Date.parse('2026-11-26T12:20:00Z')};G.setEnv(()=>.5,()=>st.now);const A=G.newAccount();G.apply(A,'create',{name:'aaaa',cls:'blade'});
   assert.match(G.apply(A,'duelStart',{k:'0123456789'}).msg,/לא כאן/);
   const t=G.cleanPlayer('u2',{n:'יריב',c:'storm',l:50,r:1,p:900,d:120,a:1.1,h:900,f:60,cr:.1,cd:2,rt:1100});const r=G.apply(A,'duelStart',{k:'0123456789'},{target:t});
   assert.ok(r.ok);assert.equal(r.pd.o.n,'יריב');assert.equal(r.pd.o.id,undefined,'ids never reach the browser');assert.ok(r.pd.live.b[1]>0);
@@ -323,7 +323,7 @@ test('endless progress: cycle rank from lifetime kills, champions, and the tower
   assert.ok(G.masteryNeed(100)>G.masteryNeed(50)*3,'each rank costs more than the last');
   const b1=G.towerBoss(1),b30=G.towerBoss(30);assert.ok(b30.hp>b1.hp*100&&b30.atk>b1.atk*20);assert.ok(G.towerReward(10).feathers>=1&&G.towerReward(3).coins>0&&!G.towerReward(1).coins);
   let t=Date.UTC(2026,10,26,12,20);G.setEnv(()=>.5,()=>t);
-  const A=G.newAccount();G.apply(A,'create',{name:'Tow',cls:'blade'},{});
+  const A=G.newAccount();G.apply(A,'create',{name:'Toww',cls:'blade'},{});
   const s=G.apply(A,'towerStart',{},{});assert.ok(s.ok&&s.pd&&s.pd.tower===1,JSON.stringify(s).slice(0,200));assert.equal(s.left,G.TOWER_TRIES-1);
   assert.ok(!G.apply(A,'duelEnd',{win:true},{}).ok,'a tower fight cannot be closed as an arena fight');
   const fast=G.apply(A,'towerEnd',{win:true},{});assert.ok(!fast.ok||fast.denied||!(A.tower&&A.tower.best),'a win reported instantly is not accepted');
@@ -336,14 +336,14 @@ test('endless progress: cycle rank from lifetime kills, champions, and the tower
 
 test('a boss beaten without taking a marked move pays one extra soul stone, and only with an accepted kill',()=>{
   let t=Date.UTC(2026,10,26,12,20);G.setEnv(()=>.5,()=>t);
-  const run=clean=>{const A=G.newAccount();G.apply(A,'create',{name:'Cln',cls:'blade'},{});G.apply(A,'travel',{z:0},{});A.bossAt={z:0,t:t-600000};const g=A.gems,r=G.apply(A,'tick',{z:0,f:0,kills:0,boss:true,clean:clean},{});return [A.gems-g,r.rep];};
+  const run=clean=>{const A=G.newAccount();G.apply(A,'create',{name:'Clnn',cls:'blade'},{});G.apply(A,'travel',{z:0},{});A.bossAt={z:0,t:t-600000};const g=A.gems,r=G.apply(A,'tick',{z:0,f:0,kills:0,boss:true,clean:clean},{});return [A.gems-g,r.rep];};
   const [a,ra]=run(true),[b,rb]=run(false);assert.ok(ra.boss&&rb.boss,'both kills accepted');assert.equal(a-b,1);assert.ok(ra.clean&&!rb.clean);
-  const A=G.newAccount();G.apply(A,'create',{name:'Cln',cls:'blade'},{});G.apply(A,'travel',{z:0},{});const g=A.gems,r=G.apply(A,'tick',{z:0,f:0,kills:0,boss:true,clean:true},{});assert.ok(!r.rep.clean&&A.gems===g,'no boss, no bonus');
+  const A=G.newAccount();G.apply(A,'create',{name:'Clnn',cls:'blade'},{});G.apply(A,'travel',{z:0},{});const g=A.gems,r=G.apply(A,'tick',{z:0,f:0,kills:0,boss:true,clean:true},{});assert.ok(!r.rep.clean&&A.gems===g,'no boss, no bonus');
   G.setEnv(Math.random,Date.now);
 });
 
 test('two ancient sets per tier, and the perfect ancient piece',()=>{
-  G.setEnv(()=>.5,()=>1.8e12);const A=G.newAccount();G.apply(A,'create',{name:'Set',cls:'blade'},{});const s=A.chars[0];
+  G.setEnv(()=>.5,()=>1.8e12);const A=G.newAccount();G.apply(A,'create',{name:'Sett',cls:'blade'},{});const s=A.chars[0];
   for(const k of G.DROPS){s.eq[k]=G.makeItem(s,k,3,4,6);s.eq[k].v=1;}
   assert.equal(G.setCounts(s)['2b'],6);assert.equal(G.setCounts(s)[2],undefined,'the two sets of a tier do not count together');assert.equal(G.setName('2b'),G.SETN2[2]);assert.equal(G.setName('2'),G.SETN[2]);
   const c2=G.calc(s);delete s.eq.w.v;const mixed=G.calc(s);assert.ok(mixed.hp<c2.hp,'breaking the set loses its six-piece bonus');assert.ok(G.itemName(s.eq.h,'blade').includes(G.SETN2[2]));
@@ -357,7 +357,7 @@ test('two ancient sets per tier, and the perfect ancient piece',()=>{
 });
 
 test('jewelry: two rings and a necklace give percent damage and health, drop, upgrade and stay out of sets',()=>{
-  G.setEnv(()=>.5,()=>1.8e12);const A=G.newAccount();G.apply(A,'create',{name:'Jew',cls:'blade'},{});const s=A.chars[0];s.stats.str=5000;
+  G.setEnv(()=>.5,()=>1.8e12);const A=G.newAccount();G.apply(A,'create',{name:'Jeww',cls:'blade'},{});const s=A.chars[0];s.stats.str=5000;
   assert.ok('r' in s.eq&&'q' in s.eq&&'n' in s.eq);const c0=G.calc(s);
   const r=G.makeItem(s,'r',5,3,12),q=G.makeItem(s,'q',5,3,12),n=G.makeItem(s,'n',5,4,12);r.af=[];q.af=[];n.af=[];
   assert.ok(G.itemVals(r).wd>0&&!G.itemVals(r).wh);assert.ok(G.itemVals(q).wh>0&&!G.itemVals(q).wd);assert.ok(G.itemVals(n).wd>0&&G.itemVals(n).wh>0);assert.equal(n.v,undefined);
@@ -390,9 +390,9 @@ test('the last circle: an open round field, everyone equal, gear from the ground
   { // a whole fight between the server's own fighters: they gear up, the legendary weapon lands, someone wins
     const C=G.brNew(G.brBots([P('x',1)],6,rnd),rnd);let picks=0,big=0,m=0;while(!C.over&&m++<3000)for(const e of G.brStep(C,.2,rnd)){if(e.k==='pick')picks++;if(e.big)big++;}
     assert.ok(C.over&&picks>=6,'picks: '+picks);assert.ok(C.t<G.BR.drop||big===1);assert.ok(C.f.every(f=>Math.hypot(f.x,f.y)<=G.BR.R+1));}
-  const A=G.newAccount();G.apply(A,'create',{name:'Win',cls:'blade'},{});const c0=A.coins,f0=A.feathers||0,rt=G.brReward(A,0,2);assert.ok(rt.includes('תיבה עתיקה'));assert.equal(A.coins,c0+40);assert.equal((A.feathers||0),f0+1);
+  const A=G.newAccount();G.apply(A,'create',{name:'Winn',cls:'blade'},{});const c0=A.coins,f0=A.feathers||0,rt=G.brReward(A,0,2);assert.ok(rt.includes('תיבה עתיקה'));assert.equal(A.coins,c0+40);assert.equal((A.feathers||0),f0+1);
   const got=A.inv.concat(Object.values(A.chars[0].eq).filter(Boolean));assert.ok(got.some(it=>it.r===4&&G.DROPS.includes(it.s)),'two or more players: the chest holds an ancient piece');assert.ok(got.some(it=>G.JEW.includes(it.s)));
-  const A2=G.newAccount();G.apply(A2,'create',{name:'Sec',cls:'blade'},{});const sb=A2.sboxes;G.brReward(A2,1,2);assert.equal(A2.sboxes,sb+1);const c5=A2.coins;G.brReward(A2,4,2);assert.equal(A2.coins,c5+5);
+  const A2=G.newAccount();G.apply(A2,'create',{name:'Secc',cls:'blade'},{});const sb=A2.sboxes;G.brReward(A2,1,2);assert.equal(A2.sboxes,sb+1);const c5=A2.coins;G.brReward(A2,4,2);assert.equal(A2.coins,c5+5);
   const w=G.brWindow(Date.UTC(2026,10,26,10,10,30));assert.equal(w.phase,'sign');assert.equal(G.brWindow(Date.UTC(2026,10,26,10,13,0)).phase,'fight');assert.equal(G.brWindow(Date.UTC(2026,10,26,10,40,0)),null);
   G.setEnv(Math.random,Date.now);
 });
@@ -405,13 +405,13 @@ test('a game master bonus is clamped, ends on time, and multiplies what events g
 });
 
 test('what others see of a player carries the count of perfect ancient pieces',()=>{
-  G.setEnv(()=>.5,()=>1.8e12);const A=G.newAccount();G.apply(A,'create',{name:'Pf',cls:'blade'},{});const s=A.chars[0];assert.equal(G.fighter(s).pf,0);
+  G.setEnv(()=>.5,()=>1.8e12);const A=G.newAccount();G.apply(A,'create',{name:'Pfff',cls:'blade'},{});const s=A.chars[0];assert.equal(G.fighter(s).pf,0);
   s.eq.h=G.makeItem(s,'h',1,4,0);s.eq.h.pf=1;s.eq.a=G.makeItem(s,'a',1,4,0);s.eq.a.pf=1;assert.equal(G.fighter(s).pf,2);assert.equal(G.cleanPlayer('x',G.fighter(s)).pf,2);assert.equal(G.cleanPlayer('x',{pf:999}).pf,10);
   G.setEnv(Math.random,Date.now);
 });
 
 test("the day's trial: sized to the character, timed by the server, a better medal pays the difference",()=>{
-  let t=Date.UTC(2026,10,26,12,20);G.setEnv(()=>.5,()=>t);const A=G.newAccount();G.apply(A,'create',{name:'Tri',cls:'blade'},{});const c=G.calc(A.chars[0]);
+  let t=Date.UTC(2026,10,26,12,20);G.setEnv(()=>.5,()=>t);const A=G.newAccount();G.apply(A,'create',{name:'Trii',cls:'blade'},{});const c=G.calc(A.chars[0]);
   const s=G.apply(A,'trialStart',{},{});assert.ok(s.ok&&s.pd.trial>=1&&s.pd.trial<=3);assert.ok(Math.abs(s.pd.live.pool[1]/c.dps-(s.pd.trial===2?30:22))<.5,'the guardian is a fixed number of seconds of my own damage');
   assert.ok(!G.apply(A,'towerEnd',{win:true},{}).ok,'a trial cannot be closed as a tower floor');assert.ok(!G.apply(A,'duelEnd',{win:true},{}).ok);
   const fast=G.apply(A,'trialEnd',{win:true},{});assert.ok(fast.denied&&A.daily.trB==null,'an instant win is refused');
@@ -433,7 +433,7 @@ test('a bought auto reset: only while away, the character resets at the top, sta
 });
 
 test('time until an absent character stands at the reset level',()=>{
-  const now=clock(1.8e12);G.setEnv(()=>.5,now);const A=G.newAccount();G.apply(A,'create',{name:'Eta',cls:'blade'},{});const s=A.chars[0];A.open=G.BASEZ-1;
+  const now=clock(1.8e12);G.setEnv(()=>.5,now);const A=G.newAccount();G.apply(A,'create',{name:'Etaa',cls:'blade'},{});const s=A.chars[0];A.open=G.BASEZ-1;
   assert.equal(G.afkEta(A),null,'in town nothing trains');s.zone=20;s.lvl=G.CAP-1;s.xp=0;s.stats.str=4000;s.stats.vit=2000;const snap=JSON.stringify(A);
   const e1=G.afkEta(A);assert.ok(e1>0&&e1<3600,'one level away: '+e1);assert.equal(JSON.stringify(A),snap,'asking changes nothing');
   s.last=now();const rep=G.offline(s,Math.ceil(e1)+2);assert.equal(s.lvl,G.CAP,'and it is right: the character is there after that long');
@@ -443,7 +443,7 @@ test('time until an absent character stands at the reset level',()=>{
 });
 
 test('pets: rare in boxes, timed from the first wear, a small bonus, sell what the filter leaves, tradeable while unworn',()=>{
-  let t=1.8e12,x=.5;G.setEnv(()=>x,()=>t);const A=G.newAccount();G.apply(A,'create',{name:'Pet',cls:'blade'},{});const s=A.chars[0];
+  let t=1.8e12,x=.5;G.setEnv(()=>x,()=>t);const A=G.newAccount();G.apply(A,'create',{name:'Pett',cls:'blade'},{});const s=A.chars[0];
   assert.ok(G.PET_BOX[4]<=.00005&&G.PET_BOX.reduce((a,b)=>a+b,0)<.04,'pets are rare, the best one almost never');
   x=.999;assert.equal(G.petRoll(s,1),null);x=0;assert.equal(G.petRoll(s,1).r,4);x=G.PET_BOX[4]+G.PET_BOX[3]+G.PET_BOX[2]+G.PET_BOX[1]+.001;assert.equal(G.petRoll(s,1).r,0);
   const base=G.calc(s),p=G.makePet(s,3);assert.equal(G.itemName(p,'blade'),G.PETN[3]);assert.equal(p.until,undefined);A.inv.push(p);
@@ -515,16 +515,16 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
   fe.pots=0;fe.x=G.SG.shops[0][0];fe.y=G.SG.shops[0][1];for(let i=0;i<100;i++)G.sgStep(B,.2,rnd);assert.ok(fe.pots>=30&&fe.bought===fe.pots,'a great many potions can be carried: '+fe.pots);
   fe.hp=.1;B.t+=10;fe.wound=0;assert.ok(G.sgAct(B,e,'pot',rnd));B.t+=G.SG.potCd+.1;assert.ok(G.sgAct(B,e,'pot',rnd),'and drunk every few seconds');
   B.sg.time=B.t+1;for(let i=0;i<10;i++)G.sgStep(B,.2,rnd);assert.ok(B.over);
-  const A=G.newAccount();G.apply(A,'create',{name:'Sg',cls:'blade'},{});A.gold=1200;const c0=A.coins;G.sgReward(A,true,2);assert.equal(A.coins,c0+30);assert.equal(A.gold,200);G.sgReward(A,false,5);assert.equal(A.gold,0,'never below nothing');assert.equal(A.coins,c0+40);
+  const A=G.newAccount();G.apply(A,'create',{name:'Sggg',cls:'blade'},{});A.gold=1200;const c0=A.coins;G.sgReward(A,true,2);assert.equal(A.coins,c0+30);assert.equal(A.gold,200);G.sgReward(A,false,5);assert.equal(A.gold,0,'never below nothing');assert.equal(A.coins,c0+40);
   G.setEnv(Math.random,Date.now);
 });
 
 test('reset maps give no extra experience, only more ancient set pieces; full excellent pieces have a bonus of their own',()=>{
   const zr=G.ZONES.findIndex(z=>z.req===10),zm=G.BASEZ-1;assert.ok(G.ZONES[zr].xp<G.ZONES[zm].xp*2.2,'no experience bonus beyond what they always had');assert.ok(G.RESET_RAR[4]>=2&&Math.abs(G.RESET_RAR.reduce((a,b)=>a+b,0)-100)<1e-9);
   let seed=5;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};G.setEnv(rnd,()=>1.8e12);
-  const count=zi=>{const A=G.newAccount();G.apply(A,'create',{name:'D',cls:'blade'},{});const s=A.chars[0];A.autoSell=0;A.autoEq=false;let n=0;for(let i=0;i<300;i++){A.inv.length=0;const rep={};G.rollLoot(s,zi,600,G.calc(s),rep);n+=A.inv.filter(it=>it.r===4&&G.DROPS.includes(it.s)).length;}return n;};
+  const count=zi=>{const A=G.newAccount();G.apply(A,'create',{name:'DDDD',cls:'blade'},{});const s=A.chars[0];A.autoSell=0;A.autoEq=false;let n=0;for(let i=0;i<300;i++){A.inv.length=0;const rep={};G.rollLoot(s,zi,600,G.calc(s),rep);n+=A.inv.filter(it=>it.r===4&&G.DROPS.includes(it.s)).length;}return n;};
   const a=count(zr),b=count(zm);assert.ok(a>b*2,'ancient pieces: '+a+' in a reset map against '+b+' on the main road');
-  const A=G.newAccount();G.apply(A,'create',{name:'Ex',cls:'blade'},{});const s=A.chars[0],c0=G.calc(s);assert.equal(G.exCount(s),0);
+  const A=G.newAccount();G.apply(A,'create',{name:'Exxx',cls:'blade'},{});const s=A.chars[0],c0=G.calc(s);assert.equal(G.exCount(s),0);
   for(const k of G.DROPS){const it=G.makeItem(s,k,1,2,0);it.af=[];s.eq[k]=it;}const plain=G.calc(s);
   for(const k of ['w','h']){const it=s.eq[k];it.ex=1;it.af=G.POOL[k].map(x=>[x,0]);}assert.equal(G.exCount(s),2);assert.ok(Math.abs(G.calc(s).crit-plain.crit-.03)<1e-6,'two full excellent pieces: crit');
   for(const k of G.DROPS){const it=s.eq[k];it.ex=1;it.af=G.POOL[k].map(x=>[x,0]);}assert.equal(G.exCount(s),6);assert.ok(G.calc(s).dmg>plain.dmg*1.14);
@@ -544,14 +544,14 @@ test('the bank holds items outside the bag, and a full bag does not eat a box',(
 });
 test('the ancient city: only the guild that holds the castle may enter; ancient pieces a little more often, nothing extreme',()=>{
   G.setEnv(Math.random,()=>1.8e12);const zi=G.ZONES.findIndex(z=>z.castle);assert.ok(zi>=0&&!G.ZONES[zi].req);
-  const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'x'},{});const S=A.chars[A.cur];S.lvl=380;
+  const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'xxxx'},{});const S=A.chars[A.cur];S.lvl=380;
   assert.equal(G.apply(A,'travel',{z:zi,f:0},{}).ok,false,'not without the castle');assert.equal(G.apply(A,'travel',{z:zi,f:0},{castle:true}).ok,true);assert.equal(S.zone,zi);
   assert.equal(G.apply(A,'tick',{z:zi,f:0,kills:1,dt:5},{}).ok,false,'and out when the castle is lost');
   assert.equal(G.tierOf(zi),G.CITY_TIER);assert.ok(G.CITY_RAR[4]>G.RESET_RAR[4]&&G.CITY_RAR[4]<G.RESET_RAR[4]*1.5,'a little more, not much more');assert.ok(G.CITY_PERFECT>1&&G.CITY_PERFECT<=1.3);
 });
 test('ancient points: only from the city, capped by the week, spent only in the city shop while the castle is held',()=>{
   G.setEnv(Math.random,()=>1.8e12);const zi=G.ZONES.findIndex(z=>z.castle);
-  const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'x'},{});const S=A.chars[A.cur];S.lvl=380;S.stats.str=40000;S.stats.vit=40000;
+  const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'xxxx'},{});const S=A.chars[A.cur];S.lvl=380;S.stats.str=40000;S.stats.vit=40000;
   G.apply(A,'tick',{z:0,f:0,kills:40,dt:30},{});assert.equal(A.anc|0,0,'nothing outside the city');
   assert.equal(G.apply(A,'travel',{z:zi,f:0},{castle:true}).ok,true);
   let now=1.8e12;for(let i=0;i<4000&&(A.anc|0)<G.CITY_WEEK;i++){now+=60e3;G.setEnv(Math.random,()=>now);A.inv.length=0;G.apply(A,'tick',{z:zi,f:0,kills:100,dt:60},{castle:true});assert.ok((A.week.anc|0)<=G.CITY_WEEK,'never more than the weekly cap');}
@@ -566,13 +566,13 @@ test('ancient points: only from the city, capped by the week, spent only in the 
 
 test('the keep: who comes back stronger before the gate shuts enters the keep of his new level',()=>{
   let now=Date.UTC(2026,10,27,9,56,30);G.setEnv(Math.random,()=>now);const w=G.keepGate(now);assert.ok(w,'the gate is open five minutes before the hour');
-  const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'x'},{});const S=A.chars[A.cur];A.keys=1;S.lvl=G.TIER_MIN[2];
+  const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'xxxx'},{});const S=A.chars[A.cur];A.keys=1;S.lvl=G.TIER_MIN[2];
   const a=G.apply(A,'evEnter',{id:w.e.id},{});assert.ok(a.ok,a.msg);assert.equal(a.tier,3);G.apply(A,'evLeave',{},{});
   S.lvl=G.TIER_MIN[3];now+=60e3;const b=G.apply(A,'evEnter',{id:w.e.id},{});assert.ok(b.ok,b.msg);assert.equal(b.tier,4,'the higher keep');assert.equal(A.keys,0,'and no second key');
   now=Date.UTC(2026,10,27,10,3,0);S.evIn=null; // dropped by the server, not by choice
   const c=G.apply(A,'evEnter',{id:w.e.id},{});assert.ok(c.ok,'he walks back in while it runs: '+c.msg);
   G.apply(A,'evLeave',{},{});assert.equal(G.apply(A,'evEnter',{id:w.e.id},{}).ok,false,'but not after leaving by choice');
-  const B2=G.newAccount();G.apply(B2,'create',{cls:'blade',name:'y'},{});B2.keys=1;B2.chars[0].lvl=300;assert.equal(G.apply(B2,'evEnter',{id:w.e.id},{}).ok,false,'and nobody new gets in after the start');
+  const B2=G.newAccount();G.apply(B2,'create',{cls:'blade',name:'yyyy'},{});B2.keys=1;B2.chars[0].lvl=300;assert.equal(G.apply(B2,'evEnter',{id:w.e.id},{}).ok,false,'and nobody new gets in after the start');
 });
 test('moves that move: the leap carries the attacker onto a far enemy, the shove throws him off, a shield stands',()=>{
   const rnd=()=>.5,P=(id,c)=>({id,n:id,c:c||'blade',d:400,a:1.5,h:2700,f:70,cr:0,cd:2});
@@ -588,14 +588,14 @@ test('moves that move: the leap carries the attacker onto a far enemy, the shove
 });
 test('the game master walks anywhere; nobody else does',()=>{
   G.setEnv(Math.random,()=>1.8e12);const zi=G.ZONES.findIndex(z=>z.castle),far=G.ZONES.length-2;
-  const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'x'},{});
+  const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'xxxx'},{});
   assert.equal(G.apply(A,'travel',{z:zi,f:0,gm:1},{}).ok,false,'the word of the browser is nothing');assert.equal(G.apply(A,'travel',{z:far,f:0},{}).ok,false);
   assert.equal(G.apply(A,'travel',{z:zi,f:0},{gm:true,castle:true}).ok,true);assert.equal(G.apply(A,'travel',{z:far,f:2},{gm:true}).ok,true);
   assert.equal(G.apply(A,'travel',{z:far,f:0},{}).ok,false,'and the right does not stay behind');
 });
 
 test('cheats: a win no numbers allow is refused, clean kills pay a few times a day, a character the map kills at once does not kill at full pace',()=>{
-  let now=1.8e12;G.setEnv(Math.random,()=>now);const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'x'},{});const S=A.chars[A.cur];
+  let now=1.8e12;G.setEnv(Math.random,()=>now);const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'xxxx'},{});const S=A.chars[A.cur];
   // climbing the tower by claiming wins: it ends where the guardian could have killed the character many times over
   let last=0,refused=0;for(let i=0;i<400&&!refused;i++){const s=G.apply(A,'towerStart',{},{});if(!s.ok){A.daily.tw=0;continue;}const L=s.pd.live,minT=1/(L.b[0]*G.DUEL_LIVE.maxRate);now+=Math.ceil(minT*1000)+1000;const e=G.apply(A,'towerEnd',{win:true},{});if(e.denied)refused=s.pd.tower;else last=e.f;}
   assert.ok(refused>0,'a script that always claims a win is stopped');assert.ok(last>=1&&last<60,'a new character climbs a little, not without end: '+last);

@@ -59,7 +59,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
     if (!p) return { code: "", members: [] };
     return { code: p.code, members: (p.members || []).map((m) => {
       const c = G.cleanPlayer(m.id, m.snap);
-      return { n: c.n, c: c.c, l: c.l, r: c.r, zone: m.zone, active: !!m.active, me: m.id === uid, leader: m.id === p.leader };
+      return { n: c.n, c: c.c, l: c.l, r: c.r, zone: m.zone, f: m.floor | 0, active: !!m.active, me: m.id === uid, leader: m.id === p.leader };
     }) };
   }
 
@@ -329,7 +329,9 @@ export function makeAuth(admin, secret, clock = Date.now) {
   const enc = new TextEncoder(), dec = new TextDecoder();
   const b64 = (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   const unb64 = (t) => Uint8Array.from(atob(t.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
-  const USER_RE = /^[\p{L}\p{N}_]{3,16}$/u;
+  const USER_RE = /^[\p{L}\p{N}_]{4,16}$/u; // new accounts only: older, shorter names still sign in
+  const USER_NO = ['admin', 'owner', 'lidor', 'gmaster', 'gamemaster', 'moderator', 'support', 'system', 'santrio', '\u05d0\u05d3\u05de\u05d9\u05df', '\u05de\u05e0\u05d4\u05dc', '\u05d1\u05e2\u05dc\u05d9\u05dd', '\u05dc\u05d9\u05d3\u05d5\u05e8', '\u05ea\u05de\u05d9\u05db\u05d4'];
+  const userBad = (u) => { const x = u.replace(/_/g, ''); return USER_NO.some((w) => x.includes(w)) || /^gm(\d*|s)$/.test(x) || /^gm[^a-z]/.test(u); };
   const norm = (u) => String(u == null ? "" : u).normalize("NFKC").trim().toLowerCase();
   const fail = (msg) => ({ ok: false, msg });
   let hkey = null;
@@ -422,7 +424,8 @@ export function makeAuth(admin, secret, clock = Date.now) {
   async function register(user, pass, ip, q, answer) {
     const u = norm(user), pw = String(pass == null ? "" : pass), a = normAns(answer); q = Number(q);
     if (!okQ(q) || a.length < 2) return fail("בחר שאלת שחזור וכתוב תשובה. בלעדיה אי אפשר לשחזר סיסמה");
-    if (!USER_RE.test(u)) return fail("שם משתמש: 3 עד 16 תווים, אותיות, ספרות וקו תחתון");
+    if (!USER_RE.test(u)) return fail("שם משתמש: 4 עד 16 תווים, אותיות, ספרות וקו תחתון");
+    if (userBad(u)) return fail("השם הזה שמור. בחר שם אחר");
     if (pw.length < 8 || pw.length > 72) return fail("סיסמה: 8 עד 72 תווים");
     const ex = await admin.from("users").select("username").eq("username", u).maybeSingle();
     if (ex.data) return fail("שם המשתמש תפוס");

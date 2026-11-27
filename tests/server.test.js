@@ -53,11 +53,11 @@ test('account lifecycle: unknown user, create, and the stored state is the sourc
   assert.equal((await handle(U(1),'sync',{})).result.msg,'new');
   assert.equal((await handle(U(1),'tick',{z:0,kills:50})).result.msg,'new');
   const c=await handle(U(1),'create',{name:'ראשון',cls:'hunter'});assert.ok(c.result.ok);assert.equal(c.state.chars[0].cls,'hunter');
-  assert.equal((await handle(U(1),'create',{name:'שני',cls:'blade'})).result.ok,false,'second slot is locked');
+  assert.equal((await handle(U(1),'create',{name:'שנית',cls:'blade'})).result.ok,false,'second slot is locked');
   assert.equal((await row(U(1))).state.chars.length,1);
 });
 test('forged ticks are clamped, logged, and parallel requests cannot double-count',async()=>{
-  const {db,handle,clock,row}=await world();await handle(U(1),'create',{name:'a',cls:'blade'});
+  const {db,handle,clock,row}=await world();await handle(U(1),'create',{name:'aaaa',cls:'blade'});
   await handle(U(1),'travel',{z:0});clock.add(10);
   const r=await handle(U(1),'tick',{z:0,kills:900});assert.ok(r.result.ok);assert.ok(r.result.kills<=21);
   assert.equal((await db.query("select count(*)::int c from audit where kind in ('clamp','blatant')")).rows[0].c,1);
@@ -71,7 +71,7 @@ test('forged ticks are clamped, logged, and parallel requests cannot double-coun
   assert.equal((await handle(U(1),'reset',{})).result.ok,false);
 });
 test('a refused action leaves the stored account untouched',async()=>{
-  const {handle,row}=await world();await handle(U(1),'create',{name:'a',cls:'blade'});
+  const {handle,row}=await world();await handle(U(1),'create',{name:'aaaa',cls:'blade'});
   const v=(await row(U(1))).version;
   for(const [k,a] of [['buy',{shop:'gold',k:'box'}],['reset',{}],['equip',{id:999}],['nope',{}],['duel',{i:0}]])assert.equal((await handle(U(1),k,a)).result.ok,false);
   assert.equal((await row(U(1))).version,v);
@@ -99,7 +99,7 @@ test('market through the server: listing, hidden direct offers, buying, cancelli
 });
 test('party through the server: bonus only for active members in the same map',async()=>{
   const {handle,clock}=await world();
-  for(const n of [1,2])await handle(U(n),'create',{name:'p'+n,cls:'storm'});
+  for(const n of [1,2])await handle(U(n),'create',{name:'pppp'+n,cls:'storm'});
   const p=await handle(U(1),'pcreate',{});assert.match(p.party.code,/^[0-9A-F]{6}$/);
   assert.equal((await handle(U(2),'pjoin',{code:'000000'})).result.ok,false);
   const j=await handle(U(2),'pjoin',{code:p.party.code});assert.ok(j.result.ok);assert.equal(j.party.members.length,2);
@@ -114,28 +114,28 @@ test('party through the server: bonus only for active members in the same map',a
 test('accounts: register, sign in, signed sessions, brute-force brake, signup throttle',async()=>{
   const {db,auth,clock,handle}=await world();
   assert.equal((await auth.register('ab','longenough1','1.1.1.1',1,'Herzl')).ok,false,'short name');
-  assert.equal((await auth.register('lidor','short','1.1.1.1',1,'Herzl')).ok,false,'short password');
+  assert.equal((await auth.register('danor','short','1.1.1.1',1,'Herzl')).ok,false,'short password');
   assert.equal((await auth.register('bad name!','longenough1','1.1.1.1',1,'Herzl')).ok,false);
-  const r=await auth.register('  Lidor_28 ','correct horse 1','1.1.1.1',1,'Herzl');assert.ok(r.ok,r.msg);assert.equal(r.user,'lidor_28');
+  const r=await auth.register('  Danor_28 ','correct horse 1','1.1.1.1',1,'Herzl');assert.ok(r.ok,r.msg);assert.equal(r.user,'danor_28');
   const uid=await auth.verify(r.token);assert.match(uid,/^[0-9a-f-]{36}$/);
-  assert.equal((await auth.register('LIDOR_28','another pass 1','1.1.1.1',1,'Herzl')).ok,false,'names are unique regardless of case');
-  const he=await auth.register('לידור','סיסמה ארוכה 1','1.1.1.1',1,'Herzl');assert.ok(he.ok,'Hebrew names work');
-  const stored=(await db.query('select pass_hash,salt from users where username=$1',['lidor_28'])).rows[0];
+  assert.equal((await auth.register('DANOR_28','another pass 1','1.1.1.1',1,'Herzl')).ok,false,'names are unique regardless of case');
+  const he=await auth.register('דניאל','סיסמה ארוכה 1','1.1.1.1',1,'Herzl');assert.ok(he.ok,'Hebrew names work');
+  const stored=(await db.query('select pass_hash,salt from users where username=$1',['danor_28'])).rows[0];
   assert.ok(!stored.pass_hash.includes('correct')&&stored.pass_hash.length>=40,'only a hash is stored');
   assert.ok((await handle(uid,'create',{name:'גיבור',cls:'blade'})).result.ok,'the id from the token owns the game account');
-  const l=await auth.login('Lidor_28','correct horse 1','2.2.2.2');assert.ok(l.ok);assert.equal(await auth.verify(l.token),uid,'same account from another device');
+  const l=await auth.login('Danor_28','correct horse 1','2.2.2.2');assert.ok(l.ok);assert.equal(await auth.verify(l.token),uid,'same account from another device');
   assert.equal(await auth.verify(l.token+'x'),null);assert.equal(await auth.verify('abc.def'),null);assert.equal(await auth.verify(''),null);
   const other=makeAuth({from(){},rpc(){}},'another-secret',clock);assert.equal(await other.verify(l.token),null,'a token signed with a different secret is rejected');
   const forged=Buffer.from('00000000-0000-0000-0000-000000000001.'+(clock()+1e9)).toString('base64url')+'.'+l.token.split('.')[1];assert.equal(await auth.verify(forged),null,'payload cannot be swapped');
   clock.add(91*24*3600);assert.equal(await auth.verify(l.token),null,'expired');
-  const m1=(await auth.login('lidor_28','wrong','3.3.3.3')).msg,m2=(await auth.login('nobody_here','wrong','3.3.3.3')).msg;assert.equal(m1,m2,'no hint whether the user exists');
-  for(let i=0;i<10;i++)await auth.login('lidor_28','wrong'+i,'3.3.3.3');
-  assert.equal((await auth.login('lidor_28','correct horse 1','9.9.9.9')).ok,false,'locked after repeated failures, even with the right password');
+  const m1=(await auth.login('danor_28','wrong','3.3.3.3')).msg,m2=(await auth.login('nobody_here','wrong','3.3.3.3')).msg;assert.equal(m1,m2,'no hint whether the user exists');
+  for(let i=0;i<10;i++)await auth.login('danor_28','wrong'+i,'3.3.3.3');
+  assert.equal((await auth.login('danor_28','correct horse 1','9.9.9.9')).ok,false,'locked after repeated failures, even with the right password');
   const made=[];for(let i=0;i<6;i++)made.push((await auth.register('farm_'+i,'longenough1','7.7.7.7',1,'Herzl')).ok);
   assert.deepEqual(made,[true,true,true,true,true,false],'five sign-ups per address per hour');
 });
 test('timed events: bonus XP, objectives, rewards once, quiz once',async()=>{
-  const {handle,clock,row}=await world();await handle(U(1),'create',{name:'a',cls:'blade'});
+  const {handle,clock,row}=await world();await handle(U(1),'create',{name:'aaaa',cls:'blade'});
   clock.add((Date.UTC(2026,10,26,8,29,0)-clock())/1000);                 // 10:29 local, nothing live
   await handle(U(1),'travel',{z:0});clock.add(20);const base=await handle(U(1),'tick',{z:0,kills:5});
   assert.equal((await handle(U(1),'claimEvent',{id:'square'})).result.ok,false);
@@ -153,18 +153,18 @@ test('timed events: bonus XP, objectives, rewards once, quiz once',async()=>{
   assert.equal((await handle(U(1),'claimEvent',{id:'bounty'})).result.ok,false,'bonus hours have no reward to claim');
 });
 test('rate limit per account',async()=>{
-  const {handle}=await world();await handle(U(1),'create',{name:'a',cls:'blade'});let refused=0;
+  const {handle}=await world();await handle(U(1),'create',{name:'aaaa',cls:'blade'});let refused=0;
   for(let i=0;i<260;i++){const r=await handle(U(1),'autoEq',{});if(!r.result.ok)refused++;}
   assert.ok(refused>=15&&refused<=25,'refused '+refused);
 });
 
 test('players on the same floor see each other, and only there',async()=>{
   const {handle}=await world();
-  for(const [i,n] of [[1,'אחד'],[2,'שתיים'],[3,'שלוש']]){await handle(U(i),'create',{name:n,cls:'blade'});}
+  for(const [i,n] of [[1,'אחדד'],[2,'שתיים'],[3,'שלוש']]){await handle(U(i),'create',{name:n,cls:'blade'});}
   await handle(U(1),'travel',{z:0});await handle(U(2),'travel',{z:0});
   const b1=(await handle(U(1),'beat',{x:400,f:-1,a:true,s:0})).beat;assert.deepEqual(b1.peers,[],'nobody else has checked in yet');
   const b2=(await handle(U(2),'beat',{x:900,f:1,s:0})).beat;
-  assert.equal(b2.peers.length,1);assert.equal(b2.peers[0].s.n,'אחד');assert.equal(b2.peers[0].x,400);assert.equal(b2.peers[0].f,-1);assert.equal(b2.peers[0].a,true);
+  assert.equal(b2.peers.length,1);assert.equal(b2.peers[0].s.n,'אחדד');assert.equal(b2.peers[0].x,400);assert.equal(b2.peers[0].f,-1);assert.equal(b2.peers[0].a,true);
   assert.ok(!JSON.stringify(b2).includes(U(1)),'account ids never leave the server');
   const b3=(await handle(U(3),'beat',{x:1,s:0})).beat;assert.equal(b3.peers.length,0,'the town is a different place');assert.equal(b3.online,3);
   assert.ok((await handle(U(1),'beat',{x:1,s:0})).beat.skip,'a heartbeat right after another is ignored');
@@ -187,7 +187,7 @@ test('chat: world and guild channels, pacing, mute',async()=>{
 });
 test('guilds: founding costs gold, members raise the level, leaving hands over the lead',async()=>{
   const {db,handle,poke,row,clock}=await world();
-  for(const i of [1,2,3]){await handle(U(i),'create',{name:'ג'+i,cls:'blade'});}
+  for(const i of [1,2,3]){await handle(U(i),'create',{name:'גגגג'+i,cls:'blade'});}
   assert.equal((await handle(U(1),'gcreate',{name:'נשרים',tag:'NS'})).result.ok,false,'not enough gold');
   await poke(U(1),s=>{s.gold=25000;});await poke(U(2),s=>{s.gold=25000;});
   assert.equal((await handle(U(1),'gcreate',{name:'x',tag:'NS'})).result.ok,false,'bad name');assert.equal((await row(U(1))).state.gold,25000,'a refused founding costs nothing');
@@ -204,19 +204,19 @@ test('guilds: founding costs gold, members raise the level, leaving hands over t
 });
 test('siege: the guild with the most kills in the window takes the castle and its bonus',async()=>{
   const {db,handle,poke,clock}=await world();
-  for(const i of [1,2]){await handle(U(i),'create',{name:'מ'+i,cls:'blade'});await poke(U(i),s=>{s.gold=30000;});await handle(U(i),'gcreate',{name:'גילדה'+i,tag:'G'+i});}
+  for(const i of [1,2]){await handle(U(i),'create',{name:'ממממ'+i,cls:'blade'});await poke(U(i),s=>{s.gold=30000;});await handle(U(i),'gcreate',{name:'גילדה'+i,tag:'G'+i});}
   await db.query("select guild_tick($1,40,true,'s1')",[U(1)]);await db.query("select guild_tick($1,90,true,'s1')",[U(2)]);await db.query("select guild_tick($1,500,false,'s1')",[U(1)]);
   assert.equal((await db.query("select count(*)::int c from castle where siege='s1'")).rows[0].c,1,'the previous siege is closed once');
   await db.query("select guild_tick($1,0,false,'s2')",[U(1)]);await db.query("select guild_tick($1,0,false,'s2')",[U(2)]);
   const c=(await db.query("select g.name,c.pts from castle c join guilds g on g.id=c.guild_id where siege='s2'")).rows[0];assert.equal(c.name,'גילדה2');assert.equal(Number(c.pts),90);
   assert.equal((await db.query('select sum(siege_pts)::int s from guilds')).rows[0].s,0);
   assert.equal((await db.query("select guild_tick($1,0,false,'s2') v",[U(2)])).rows[0].v.castle,true);
-  const A=G.newAccount();G.apply(A,'create',{name:'a',cls:'blade'},{});G.apply(A,'travel',{z:0},{});
+  const A=G.newAccount();G.apply(A,'create',{name:'aaaa',cls:'blade'},{});G.apply(A,'travel',{z:0},{});
   const run=(ctx)=>{const B=G.adopt(JSON.parse(JSON.stringify(A)));G.setEnv(()=>.5,()=>B.last+20000);G.apply(B,'tick',{z:0,kills:10},ctx);const c=B.chars[0];let x=c.xp;for(let l=1;l<c.lvl;l++)x+=G.need(l);return {xp:x};};
   assert.ok(run({castle:true,guildLvl:10}).xp>run({}).xp*1.15,'castle and guild level add experience');
 });
 test('blatant forged claims suspend the account automatically',async()=>{
-  const {db,handle,clock,rebase}=await world();await handle(U(1),'create',{name:'a',cls:'blade'});await handle(U(1),'travel',{z:0});
+  const {db,handle,clock,rebase}=await world();await handle(U(1),'create',{name:'aaaa',cls:'blade'});await handle(U(1),'travel',{z:0});
   let last=null;for(let i=0;i<5;i++){clock.add(5);last=await handle(U(1),'tick',{z:0,kills:900});}
   assert.equal(last.banned,true);await rebase();
   const r=await handle(U(1),'sync',{});assert.equal(r.banned,true);assert.match(r.result.msg,/מושעה/);
@@ -229,7 +229,7 @@ test('recovery question, password change, account deletion, admin tools',async()
   const {db,handle,auth,clock,rebase}=await world();
   assert.equal((await auth.register('dana','longenough1','1.1.1.1')).ok,false,'a recovery answer is required');
   const r=await auth.register('dana','longenough1','1.1.1.1',2,'  Tel  Aviv ');assert.ok(r.ok,r.msg);const s0=await auth.session(r.token);
-  await handle(s0.uid,'create',{name:'דנה',cls:'storm'});
+  await handle(s0.uid,'create',{name:'דנהה',cls:'storm'});
   assert.equal((await auth.forgot('DANA')).q,2);assert.equal((await auth.forgot('ghost')).q,(await auth.forgot('ghost')).q,'unknown names get a stable question');
   assert.equal((await auth.recover('dana','haifa','brand new pass','2.2.2.2')).ok,false);
   clock.add(60);const rec=await auth.recover('dana','tel aviv','brand new pass','2.2.2.2');assert.ok(rec.ok,rec.msg);
@@ -240,7 +240,7 @@ test('recovery question, password change, account deletion, admin tools',async()
   assert.match((await auth.recover('dana','tel aviv','whatever pass','5.5.5.5')).msg,/יותר מדי/,'guessing answers is braked like guessing passwords');
   assert.equal((await auth.chpass(s1.uid,'nope','another pass 2')).ok,false);assert.ok((await auth.chpass(s1.uid,'brand new pass','another pass 2')).ok);
   assert.equal((await auth.setSecret(s1.uid,'another pass 2',0,'rex')).ok,true);assert.equal((await auth.forgot('dana')).q,0);
-  const boss=await auth.register('boss','longenough1','3.3.3.3',0,'x1');const bu=(await auth.session(boss.token)).uid;await handle(bu,'create',{name:'מנהל',cls:'blade'});
+  const boss=await auth.register('boss','longenough1','3.3.3.3',0,'x1');const bu=(await auth.session(boss.token)).uid;await handle(bu,'create',{name:'מפקד',cls:'blade'});
   assert.equal((await handle(bu,'aview',{})).result.ok,false,'not an admin yet');assert.equal((await auth.adminReset(bu,'dana')).ok,false);
   await db.query("update users set is_admin=true where username='boss'");
   const v=await handle(bu,'aview',{});assert.ok(v.result.ok);assert.equal(v.admin.users,2);
@@ -253,18 +253,18 @@ test('recovery question, password change, account deletion, admin tools',async()
 
 test('leaderboard: top players by resets then level, and by power, without account ids',async()=>{
   const {db,handle,poke}=await world();
-  for(const [i,n] of [[1,'א'],[2,'ב'],[3,'ג']])await handle(U(i),'create',{name:n,cls:'blade'});
+  for(const [i,n] of [[1,'אאאא'],[2,'בבבב'],[3,'גגגג']])await handle(U(i),'create',{name:n,cls:'blade'});
   await db.query("update arena set resets=5,power=100,snap=jsonb_set(snap,'{l}','120') where user_id=$1",[U(1)]);
   await db.query("update arena set resets=5,power=900,snap=jsonb_set(snap,'{l}','300') where user_id=$1",[U(2)]);
   await db.query("update arena set resets=1,power=5000 where user_id=$1",[U(3)]);
   const r=await handle(U(1),'top',{});assert.ok(r.result.ok);
-  assert.deepEqual(r.top.resets.map(x=>x.n),['ב','א','ג'],'same resets: the higher level leads');assert.deepEqual(r.top.power.map(x=>x.n),['ג','ב','א']);
+  assert.deepEqual(r.top.resets.map(x=>x.n),['בבבב','אאאא','גגגג'],'same resets: the higher level leads');assert.deepEqual(r.top.power.map(x=>x.n),['גגגג','בבבב','אאאא']);
   assert.equal(r.top.resets[1].me,true);assert.equal(r.top.resets[0].me,false);assert.ok(!JSON.stringify(r).includes(U(2)));
 });
 
 test('party training: a member\'s kills hand experience to the others on the same map, once',async()=>{
   const {db,handle,clock,poke,row}=await world();
-  for(const [i,n] of [[1,'ותיק'],[2,'חדש'],[3,'רחוק']])await handle(U(i),'create',{name:n,cls:'blade'});
+  for(const [i,n] of [[1,'ותיק'],[2,'חדשש'],[3,'רחוק']])await handle(U(i),'create',{name:n,cls:'blade'});
   await poke(U(1),s=>{s.chars[0].lvl=120;s.chars[0].stats.str=6000;s.chars[0].stats.vit=3000;s.open=3;});
   await poke(U(2),s=>{s.chars[0].autoPts=false;});
   const code=(await db.query('select party_create($1) c',[U(1)])).rows[0].c;for(const i of [2,3])await db.query('select party_join($1,$2)',[U(i),code]);
@@ -283,7 +283,7 @@ test('party training: a member\'s kills hand experience to the others on the sam
 
 test('paid credits: a request, an admin confirming it once, and spending the credits',async()=>{
   const {db,handle,auth,row}=await world();
-  const boss=await auth.register('boss','longenough1','3.3.3.3',0,'x1');const bu=(await auth.session(boss.token)).uid;await handle(bu,'create',{name:'מנהל',cls:'blade'});
+  const boss=await auth.register('boss','longenough1','3.3.3.3',0,'x1');const bu=(await auth.session(boss.token)).uid;await handle(bu,'create',{name:'מפקד',cls:'blade'});
   await handle(U(1),'create',{name:'קונה',cls:'blade'});
   assert.match((await handle(U(1),'onew',{pack:'p2',ref:'x'})).result.msg,/עוד לא נפתחו/,'closed until payment details are set');
   assert.equal((await handle(U(1),'aset',{key:'pay_info',value:'hack'})).result.ok,false,'players cannot open the shop');
@@ -308,8 +308,8 @@ test('paid credits: a request, an admin confirming it once, and spending the cre
 
 test('daily backup: a snapshot of the accounts, and one account put back from it',async()=>{
   const {db,handle,auth,row}=await world();
-  const boss=await auth.register('boss','longenough1','3.3.3.3',0,'x1');const bu=(await auth.session(boss.token)).uid;await handle(bu,'create',{name:'מנהל',cls:'blade'});
-  const pl=await auth.register('dana','longenough1','4.4.4.4',0,'x1');const pu=(await auth.session(pl.token)).uid;await handle(pu,'create',{name:'דנה',cls:'storm'});
+  const boss=await auth.register('boss','longenough1','3.3.3.3',0,'x1');const bu=(await auth.session(boss.token)).uid;await handle(bu,'create',{name:'מפקד',cls:'blade'});
+  const pl=await auth.register('dana','longenough1','4.4.4.4',0,'x1');const pu=(await auth.session(pl.token)).uid;await handle(pu,'create',{name:'דנהה',cls:'storm'});
   await db.query("update accounts set state=jsonb_set(state,'{gold}','777') where user_id=$1",[pu]);
   assert.equal((await handle(pu,'abackup',{})).result.ok,false,'players cannot run or read backups');
   await db.query("update users set is_admin=true where username='boss'");
@@ -324,12 +324,12 @@ test('daily backup: a snapshot of the accounts, and one account put back from it
 });
 test('world boss: everyone\'s kills take from one health pool, and each collects once by share',async()=>{
   const {db,handle,clock,poke}=await world();
-  for(const [u,n] of [[U(1),'חזק'],[U(2),'חלש']]){await handle(u,'create',{name:n,cls:'blade'});await handle(u,'travel',{z:0});}
+  for(const [u,n] of [[U(1),'חזקק'],[U(2),'חלשש']]){await handle(u,'create',{name:n,cls:'blade'});await handle(u,'travel',{z:0});}
   await poke(U(1),s=>{s.chars[0].stats.str=6000;s.chars[0].stats.vit=3000;s.chars[0].autoPts=false;});
   assert.equal((await handle(U(1),'claimWorld',{})).result.ok,false,'nothing to collect before any opening');
   clock.add(165*60+30);for(const u of [U(1),U(2)])await handle(u,'tick',{z:0,kills:0}); // 12:45 Israel time: the boss is up
   let w1,w2;for(let i=0;i<6;i++){clock.add(15);w1=(await handle(U(1),'tick',{z:0,kills:30})).world;w2=(await handle(U(2),'tick',{z:0,kills:30})).world;}
-  assert.ok(w1&&w2,'ticks report the fight');assert.equal(w2.n,2);assert.ok(w2.hp<w2.max);assert.ok(w1.mine>w2.mine*2,'the stronger player hits harder: '+w1.mine+' vs '+w2.mine);assert.equal(w2.top[0].n,'חזק');
+  assert.ok(w1&&w2,'ticks report the fight');assert.equal(w2.n,2);assert.ok(w2.hp<w2.max);assert.ok(w1.mine>w2.mine*2,'the stronger player hits harder: '+w1.mine+' vs '+w2.mine);assert.equal(w2.top[0].n,'חזקק');
   assert.equal((await handle(U(1),'claimWorld',{})).result.msg,'הקרב עוד לא נגמר');
   const g=await handle(U(2),'wget',{});assert.equal(g.world.hp,w2.hp);
   await db.query("update world_boss set hp=0, killed_at=now()");
@@ -346,7 +346,7 @@ test('the Node server speaks the same protocol as the edge function',async()=>{
     assert.equal((await (await fetch(base)).json()).ok,true,'health check');
     assert.equal((await post({kind:'tick',args:{}})).status,401);
     const reg=await post({kind:'register',args:{user:'nodeuser',pass:'correct-horse-9',q:0,a:'rex'}});assert.ok(reg.j.token,JSON.stringify(reg.j));assert.equal(reg.cors,'https://example.test');
-    const c=await post({kind:'create',args:{name:'נוד',cls:'blade'}},reg.j.token);assert.ok(c.j.result.ok);assert.equal(c.j.state.chars[0].name,'נוד');
+    const c=await post({kind:'create',args:{name:'נודד',cls:'blade'}},reg.j.token);assert.ok(c.j.result.ok);assert.equal(c.j.state.chars[0].name,'נודד');
     const l=await post({kind:'login',args:{user:'nodeuser',pass:'correct-horse-9'}});assert.ok(l.j.token);assert.ok((await post({kind:'sync',args:{}},l.j.token)).j.state.chars.length===1);
     assert.equal((await fetch(base,{method:'POST',body:'x'.repeat(5000)})).status,413);
   }finally{srv.close();}
@@ -359,18 +359,18 @@ test('live duel over the socket: invite, server-decided hits, result written to 
     const uid=(await db.query('select user_id from users where username=$1',[n])).rows[0].user_id;return {tok:r.token,uid,key:createHash('md5').update(uid+'peer').digest('hex').slice(0,10)};};
   const open=async u=>{const ws=new WebSocket('ws://127.0.0.1:'+port+'/ws');u.q=[];u.wait=t=>new Promise((res,rej)=>{const go=()=>{const i=u.q.findIndex(m=>m.t===t);if(i>=0)return res(u.q.splice(i,1)[0]);setTimeout(go,10);};go();setTimeout(()=>rej(new Error('no '+t+' message')),4000);});
     ws.on('message',d=>u.q.push(JSON.parse(String(d))));await new Promise(r=>ws.on('open',r));ws.send(JSON.stringify({t:'hello',token:u.tok}));await u.wait('hi');u.ws=ws;u.send=m=>ws.send(JSON.stringify(m));};
-  const a=await mkUser('alef','blade'),b=await mkUser('bet','blade');
+  const a=await mkUser('alef','blade'),b=await mkUser('bett','blade');
   try{
     const bad=new WebSocket('ws://127.0.0.1:'+port+'/ws');await new Promise(r=>bad.on('open',r));bad.send(JSON.stringify({t:'hello',token:'forged'}));await new Promise(r=>bad.on('close',r));
     await open(a);a.send({t:'challenge',k:b.key});assert.equal((await a.wait('gone')).t,'gone','the other player is not connected');
     await open(b);const st0=async u=>(await db.query('select state from accounts where user_id=$1',[u.uid])).rows[0].state,t0=(await st0(a)).tickets,r0=(await st0(a)).rating;
     a.send({t:'challenge',k:b.key});const inv=await b.wait('invite');assert.equal(inv.from.n,'alef');b.send({t:'answer',id:inv.id,ok:true});
-    const sa=await a.wait('start'),sb=await b.wait('start');assert.equal(sa.side,0);assert.equal(sb.side,1);assert.equal(sa.opp.n,'bet');assert.equal(sa.opp.id,undefined);assert.equal((await st0(a)).tickets,t0-1,'the challenger pays the ticket');
+    const sa=await a.wait('start'),sb=await b.wait('start');assert.equal(sa.side,0);assert.equal(sb.side,1);assert.equal(sa.opp.n,'bett');assert.equal(sa.opp.id,undefined);assert.equal((await st0(a)).tickets,t0-1,'the challenger pays the ticket');
     const d=[...srv.live.duels.values()][0];d.t0-=3000; // past the countdown
     a.send({t:'act',k:'atk'});await new Promise(r=>setTimeout(r,150));assert.equal(a.q.filter(m=>m.t==='ev').length,0,'too far apart: the server ignores the swing');
     a.send({t:'pos',x:200,z:.5});b.send({t:'pos',x:240,z:.5});assert.equal((await b.wait('pos')).x,200);
     a.send({t:'act',k:'atk'});const ev=await b.wait('ev');assert.equal(ev.o.by,0);assert.ok(ev.o.dm>0);assert.ok(ev.f[1].hp<1);await a.wait('ev');
-    const c=await mkUser('gimel','storm');await open(c);c.send({t:'duels'});const dl=await c.wait('duels');assert.deepEqual(dl.list.map(x=>[x.a,x.b]),[['alef','bet']]);
+    const c=await mkUser('gimel','storm');await open(c);c.send({t:'duels'});const dl=await c.wait('duels');assert.deepEqual(dl.list.map(x=>[x.a,x.b]),[['alef','bett']]);
     c.send({t:'watch',id:dl.list[0].id});const wv=await c.wait('watching');assert.equal(wv.p[0].n,'alef');assert.ok(wv.f[1].hp<1);assert.equal(wv.xz[0][0],200);
     a.send({t:'pos',x:210,z:.5});assert.equal((await c.wait('pos')).s,0);c.send({t:'act',k:'atk'});await new Promise(r=>setTimeout(r,120));assert.equal(c.q.filter(m=>m.t==='ev').length,0,'a spectator cannot act in the fight');
     d.D.f[1].hp=.001;d.t0-=30000;a.send({t:'act',k:'s3'});
@@ -462,7 +462,7 @@ test('the last circle over the socket: only connected players who joined fight, 
     const uid=(await db.query('select user_id from users where username=$1',[n])).rows[0].user_id;return {tok:r.token,uid,key:createHash('md5').update(uid+'peer').digest('hex').slice(0,10)};};
   const open=async u=>{const ws=new WebSocket('ws://127.0.0.1:'+port+'/ws');u.q=[];u.wait=t=>new Promise((res,rej)=>{const go=()=>{const i=u.q.findIndex(m=>m.t===t);if(i>=0)return res(u.q.splice(i,1)[0]);setTimeout(go,10);};go();setTimeout(()=>rej(new Error('no '+t+' message')),4000);});
     ws.on('message',d=>u.q.push(JSON.parse(String(d))));await new Promise(r=>ws.on('open',r));ws.send(JSON.stringify({t:'hello',token:u.tok}));await u.wait('hi');u.ws=ws;u.send=m=>ws.send(JSON.stringify(m));};
-  const a=await mkUser('gimel','blade'),b=await mkUser('dalet','storm'),c=await mkUser('hey','hunter');
+  const a=await mkUser('gimel','blade'),b=await mkUser('dalet','storm'),c=await mkUser('heyy','hunter');
   try{
     await open(a);await open(b);await open(c);const st=async u=>(await db.query('select state from accounts where user_id=$1',[u.uid])).rows[0].state;
     a.send({t:'brJoin'});assert.equal((await a.wait('brNo')).t,'brNo','no sign-up is open');
@@ -488,7 +488,7 @@ test('game master tools: only an account flagged in the database can open events
     const uid=(await db.query('select user_id from users where username=$1',[n])).rows[0].user_id;return {tok:r.token,uid,key:createHash('md5').update(uid+'peer').digest('hex').slice(0,10)};};
   const open=async u=>{const ws=new WebSocket('ws://127.0.0.1:'+port+'/ws');u.q=[];u.wait=t=>new Promise((res,rej)=>{const go=()=>{const i=u.q.findIndex(m=>m.t===t);if(i>=0)return res(u.q.splice(i,1)[0]);setTimeout(go,10);};go();setTimeout(()=>rej(new Error('no '+t+' message')),4000);});
     ws.on('message',d=>u.q.push(JSON.parse(String(d))));await new Promise(r=>ws.on('open',r));ws.send(JSON.stringify({t:'hello',token:u.tok}));await u.wait('hi');u.ws=ws;u.send=m=>ws.send(JSON.stringify(m));};
-  const a=await mkUser('vav','blade'),b=await mkUser('zayin','storm');const G=await import('../supabase/functions/act/core.js');
+  const a=await mkUser('vavv','blade'),b=await mkUser('zayin','storm');const G=await import('../supabase/functions/act/core.js');
   try{
     await open(a);await open(b);
     b.send({t:'gm',a:'br',sec:60});b.send({t:'gm',a:'boost',xp:3,drop:3,min:60});await new Promise(r=>setTimeout(r,400));
@@ -511,7 +511,7 @@ test('phone notifications: a subscription is checked, the message goes out once 
     const uid=(await db.query('select user_id from users where username=$1',[n])).rows[0].user_id;return {tok:r.token,uid,key:createHash('md5').update(uid+'peer').digest('hex').slice(0,10)};};
   const open=async u=>{const ws=new WebSocket('ws://127.0.0.1:'+port+'/ws');u.q=[];u.wait=t=>new Promise((res,rej)=>{const go=()=>{const i=u.q.findIndex(m=>m.t===t);if(i>=0)return res(u.q.splice(i,1)[0]);setTimeout(go,10);};go();setTimeout(()=>rej(new Error('no '+t+' message')),4000);});
     ws.on('message',d=>u.q.push(JSON.parse(String(d))));await new Promise(r=>ws.on('open',r));ws.send(JSON.stringify({t:'hello',token:u.tok}));await u.wait('hi');u.ws=ws;u.send=m=>ws.send(JSON.stringify(m));};
-  const a=await mkUser('tet','blade');const G=await import('../supabase/functions/act/core.js');
+  const a=await mkUser('tett','blade');const G=await import('../supabase/functions/act/core.js');
   try{
     const g=await post({kind:'pushget',args:{}},a.tok);assert.ok(g.ok&&!g.on&&g.key.length>80);
     const K={p256dh:'BPk3rXcB1dLxq0c0Yb0mE0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ0aQ',auth:'abcdefghijklmnop'};
@@ -519,9 +519,9 @@ test('phone notifications: a subscription is checked, the message goes out once 
     assert.ok((await post({kind:'pushon',args:{sub:{endpoint:'https://fcm.googleapis.com/fcm/send/abc123',keys:K},lang:'he'}},a.tok)).ok);assert.ok((await post({kind:'pushget',args:{}},a.tok)).on);
     const st=(await db.query('select state from accounts where user_id=$1',[a.uid])).rows[0].state;st.chars[0].lvl=G.CAP-1;st.chars[0].xp=0;st.chars[0].stats.str=4000;st.chars[0].stats.vit=2000;st.chars[0].zone=0;await db.query('update accounts set state=$1 where user_id=$2',[JSON.stringify(st),a.uid]);
     await open(a);a.ws.close();await new Promise(r=>setTimeout(r,400));const row=async()=>(await db.query('select * from push_subs where user_id=$1',[a.uid])).rows[0];
-    const r1=await row();assert.ok(r1.notify_at&&new Date(r1.notify_at).getTime()>Date.now(),'leaving the game schedules the message');assert.equal(r1.name,'tet');
+    const r1=await row();assert.ok(r1.notify_at&&new Date(r1.notify_at).getTime()>Date.now(),'leaving the game schedules the message');assert.equal(r1.name,'tett');
     assert.equal(await srv.push.tick(),0,'not yet');await db.query("update push_subs set notify_at=now()-interval '1 minute' where user_id=$1",[a.uid]);
-    assert.equal(await srv.push.tick(),1);assert.equal(sent.length,1);assert.equal(sent[0][0].endpoint,'https://fcm.googleapis.com/fcm/send/abc123');assert.ok(sent[0][1].body.includes('tet')&&sent[0][1].body.includes(String(G.CAP)));assert.equal(await srv.push.tick(),0,'once only');
+    assert.equal(await srv.push.tick(),1);assert.equal(sent.length,1);assert.equal(sent[0][0].endpoint,'https://fcm.googleapis.com/fcm/send/abc123');assert.ok(sent[0][1].body.includes('tett')&&sent[0][1].body.includes(String(G.CAP)));assert.equal(await srv.push.tick(),0,'once only');
     await srv.push.away(a.uid);assert.ok((await row()).notify_at);await open(a);await new Promise(r=>setTimeout(r,300));assert.equal((await row()).notify_at,null,'coming back cancels it');
     await db.query("update push_subs set notify_at=now()-interval '1 minute' where user_id=$1",[a.uid]);fail=410;await srv.push.tick();assert.equal((await post({kind:'pushget',args:{}},a.tok)).on,false,'a subscription the push service no longer knows is dropped');
   }finally{if(a.ws)a.ws.close();srv.live.close();srv.close();}
@@ -535,7 +535,7 @@ test('players on one map see each other\'s hits, held to what the character coul
     const uid=(await db.query('select user_id from users where username=$1',[n])).rows[0].user_id;return {tok:r.token,uid,key:createHash('md5').update(uid+'peer').digest('hex').slice(0,10)};};
   const open=async u=>{const ws=new WebSocket('ws://127.0.0.1:'+port+'/ws');u.q=[];u.wait=t=>new Promise((res,rej)=>{const go=()=>{const i=u.q.findIndex(m=>m.t===t);if(i>=0)return res(u.q.splice(i,1)[0]);setTimeout(go,10);};go();setTimeout(()=>rej(new Error('no '+t+' message')),4000);});
     ws.on('message',d=>u.q.push(JSON.parse(String(d))));await new Promise(r=>ws.on('open',r));ws.send(JSON.stringify({t:'hello',token:u.tok}));await u.wait('hi');u.ws=ws;u.send=m=>ws.send(JSON.stringify(m));};
-  const a=await mkUser('yod','blade'),b=await mkUser('kaf','blade');
+  const a=await mkUser('yodd','blade'),b=await mkUser('kaff','blade');
   try{
     await open(a);await open(b);b.send({t:'mv',z:0,fl:0,x:100,f:1,a:false,v:0});await new Promise(r=>setTimeout(r,80));
     a.send({t:'mv',z:0,fl:0,x:200,f:1,a:true,v:0,h:1e15,c:1});const m1=await b.wait('mv');assert.equal(m1.h,undefined,'nothing is shown before the server knows his strength');
@@ -553,7 +553,7 @@ test('castle siege over the socket: guild members join a running siege, the serv
     const uid=(await db.query('select user_id from users where username=$1',[n])).rows[0].user_id;return {tok:r.token,uid,key:createHash('md5').update(uid+'peer').digest('hex').slice(0,10)};};
   const open=async u=>{const ws=new WebSocket('ws://127.0.0.1:'+port+'/ws');u.q=[];u.wait=t=>new Promise((res,rej)=>{const go=()=>{const i=u.q.findIndex(m=>m.t===t);if(i>=0)return res(u.q.splice(i,1)[0]);setTimeout(go,10);};go();setTimeout(()=>rej(new Error('no '+t+' message')),4000);});
     ws.on('message',d=>u.q.push(JSON.parse(String(d))));await new Promise(r=>ws.on('open',r));ws.send(JSON.stringify({t:'hello',token:u.tok}));await u.wait('hi');u.ws=ws;u.send=m=>ws.send(JSON.stringify(m));};
-  const a=await mkUser('lamed','blade'),b=await mkUser('mem','storm'),c=await mkUser('nun','blade');let c2=null;const G=await import('../supabase/functions/act/core.js');
+  const a=await mkUser('lamed','blade'),b=await mkUser('memm','storm'),c=await mkUser('nunn','blade');let c2=null;const G=await import('../supabase/functions/act/core.js');
   try{
     const gid=(await db.query("insert into guilds (name,tag,leader) values ('אריות','AR',$1) returning id",[a.uid])).rows[0].id;await db.query('insert into guild_members (user_id,guild_id) values ($1,$2),($3,$2)',[a.uid,gid,b.uid]);
     await open(a);await open(b);await open(c);a.send({t:'sgJoin'});assert.equal((await a.wait('sgNo')).why,'closed');

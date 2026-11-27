@@ -70,7 +70,7 @@ test('a browser session cannot read or write tables, or call market functions di
 });
 test('parties: codes, size limit, same-map bonus, leaving',async()=>{
   const db=await setup();const U4='00000000-0000-0000-0000-000000000004',U5='00000000-0000-0000-0000-000000000005',U6='00000000-0000-0000-0000-000000000006';
-  for(const u of [U4,U5,U6]){G.setEnv(Math.random,Date.now);const A=G.newAccount();G.apply(A,'create',{name:'x',cls:'storm'});
+  for(const u of [U4,U5,U6]){G.setEnv(Math.random,Date.now);const A=G.newAccount();G.apply(A,'create',{name:'xxxx',cls:'storm'});
     await db.query('insert into auth.users values ($1)',[u]);await db.query('insert into accounts(user_id,state) values ($1,$2)',[u,JSON.stringify(A)]);}
   const code=(await db.query('select party_create($1) c',[U1])).rows[0].c;assert.match(code,/^[0-9A-F]{6}$/);
   await assert.rejects(db.query('select party_create($1)',[U1]),/in_party/);
