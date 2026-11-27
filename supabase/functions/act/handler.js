@@ -225,7 +225,8 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
           if (!m || m.id === uid) return { result: { ok: false, msg: MARKET_MSG.not_party }, state: row.state };
           to = m.id;
         }
-        if (kind === "mlist") { const it = (row.state.inv || []).find((x) => x && x.id === id); if (it && it.s === "y" && it.until) return { result: { ok: false, msg: "חיית מחמד שכבר ליוותה אותך לא נמכרת" }, state: row.state }; }
+        if (kind === "mlist") { const it = (row.state.inv || []).find((x) => x && x.id === id); if (it && it.s === "y" && it.perm) return { result: { ok: false, msg: "חיית מחמד מחנות הקרדיטים לא נמכרת" }, state: row.state };
+          if (it && it.s === "y" && it.until) return { result: { ok: false, msg: "חיית מחמד שכבר ליוותה אותך לא נמכרת" }, state: row.state }; }
         const call = kind === "mlist"
           ? admin.rpc("market_list", { p_user: uid, p_item_id: id, p_price: Math.floor(Number(args.price)) || 0, p_to: to })
           : admin.rpc(kind === "mbuy" ? "market_buy" : "market_cancel", { p_user: uid, p_listing: id });

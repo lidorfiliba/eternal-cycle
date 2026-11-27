@@ -627,3 +627,14 @@ test('many on one: a crowd\'s blows weaken, a stun is not chained without end, a
   X.t+=1;const t0=X.t;assert.ok(G.sgAct(X,a,'s0',rnd)&&!G.sgAct(X,a,'s1',rnd),'the fighting skills share one short beat');X.t=t0+G.SG.skT+.05;assert.ok(G.sgAct(X,a,'s1',rnd),'and wait for nothing more');
   assert.ok(G.SG.heal/G.SG.potCd>=.1,'a potion gives back a tenth of life a second');
 });
+
+test('the credits shop sells what is found nowhere else: a pet that stays, a new name, bank room',()=>{
+  let t=1.8e12;G.setEnv(()=>.5,()=>t);const A=G.newAccount();G.apply(A,'create',{name:'Shopper',cls:'blade'},{});const s=A.chars[0];
+  assert.equal(G.apply(A,'buy',{shop:'prem',k:'ppet'}).ok,false,'not without credits');A.prem=2000;
+  const b=G.apply(A,'buy',{shop:'prem',k:'ppet'});assert.ok(b.ok&&b.item.perm&&b.item.r===2);assert.equal(G.itemName(b.item,'blade'),G.PET_PERM);
+  assert.equal(G.apply(A,'sell',{id:b.item.id}).ok,false,'never sold by a slip of the finger');
+  assert.ok(G.apply(A,'equip',{id:b.item.id}).ok);t+=400*864e5;G.apply(A,'tick',{z:-1,kills:0},{});assert.ok(s.eq.y&&s.eq.y.perm&&!s.eq.y.until,'a year later it is still there');
+  assert.equal(G.apply(A,'buy',{shop:'prem',k:'rename',name:'ab'}).ok,false);assert.equal(G.apply(A,'buy',{shop:'prem',k:'rename',name:'GMaster'}).ok,false);
+  const p0=A.prem;assert.ok(G.apply(A,'buy',{shop:'prem',k:'rename',name:'Newname'}).ok);assert.equal(s.name,'Newname');assert.ok(A.prem<p0);
+  for(let i=0;i<3;i++)assert.ok(G.apply(A,'buy',{shop:'prem',k:'bankx'}).ok);assert.equal(G.bankCap(A),G.BANK+120);assert.equal(G.apply(A,'buy',{shop:'prem',k:'bankx'}).ok,false,'three and no more');
+});

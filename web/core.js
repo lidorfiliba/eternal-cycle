@@ -3,7 +3,7 @@
 let _rnd=Math.random,_now=Date.now;
 function setEnv(rnd,now){_rnd=rnd||Math.random;_now=now||Date.now;}
 
-const CAP=400, BAG=30, BANK=80;
+const CAP=400, BAG=30, BANK=80, BANK_ADD=40, BANK_ADD_MAX=3, bankCap=A=>BANK+BANK_ADD*Math.min(BANK_ADD_MAX,(A&&A.bankX)|0);
 // Maps. The main road has twenty-four: the eight original regions, each followed by two more. Eight reset maps follow.
 // [name, monster, lowest level, sprite, recolor (client only), kind, color, sky top, sky bottom, silhouette, light]
 const ZRAW=[
@@ -84,7 +84,7 @@ const POOL={w:['dmg','crit','cdmg','aspd','xp','gold','drop'],a:['hp','def','xp'
   r:['dmg','crit','cdmg','aspd','xp'],q:['hp','def','xp','gold','drop'],n:['crit','cdmg','aspd','drop','gold','xp'],y:['gold','drop','xp','dmg','hp','aspd']};
 // Pets come out of boxes, rarely. One walks with the character for a limited time from the first time it is worn,
 // gives a small bonus, and sells what the pickup filter would have left on the ground. An unworn pet can be traded.
-const PETN=['גור זאבים','ינשוף כסוף','שועל רפאים','דרקון צעיר','עוף החול הנצחי'],PETN2=['חתול לילה','עורב סערה','ארנב ירח','גור נמר להבה','חד קרן שמימי'],petName=it=>(it.t===2?PETN2:PETN)[it.r]||PETN[0],PET_DAYS=[2,2,4,14,90],PET_BOX=[.02,.006,.0015,.0002,.00002],
+const PETN=['גור זאבים','ינשוף כסוף','שועל רפאים','דרקון צעיר','עוף החול הנצחי'],PETN2=['חתול לילה','עורב סערה','ארנב ירח','גור נמר להבה','חד קרן שמימי'],PET_PERM='גריפון הנצח',petName=it=>it.perm?PET_PERM:(it.t===2?PETN2:PETN)[it.r]||PETN[0],PET_DAYS=[2,2,4,14,90],PET_BOX=[.02,.006,.0015,.0002,.00002],
   PET_AF=[[['gold',10]],[['gold',14],['drop',4]],[['gold',18],['drop',6],['xp',4]],[['gold',22],['drop',8],['xp',7],['dmg',5],['hp',5]],[['gold',24],['drop',9],['xp',12],['dmg',10],['hp',12],['aspd',6]]];
 function makePet(s,r){return {id:s.nid++,s:'y',t:_rnd()<.5?1:2,r:r,p:0,z:-1,af:PET_AF[r].map(f=>f.slice()),dur:PET_DAYS[r]*864e5};}
 const petOn=(s,now)=>{const p=s.eq&&s.eq.y;return p&&(!p.until||p.until>now)?p:null;};
@@ -116,7 +116,7 @@ const PASS_MAX=60,PASS_STEP=200,PASS_DAY=250;
 function passAdd(s,n){const g=Math.max(0,Math.min(n,PASS_DAY-(s.daily.pxp||0)));s.daily.pxp=(s.daily.pxp||0)+g;s.pass.xp+=g;}
 
 const AFK=.7, SKLV=[1,20,60,110,180,260], SKCD=[4,12,30,10,25,45];
-const SHARED=['gold','gems','cred','coins','boxes','sboxes','charms','bless','bonusPts','boost','inv','nid','kills','killAcc','pass','day','daily','rating','tickets','autoEq','autoSell','open','zk','login','jewels','prem','vip','shards','keys','feathers','pick','week','sq','eggs','areset','bank','anc'];
+const SHARED=['gold','gems','cred','coins','boxes','sboxes','charms','bless','bonusPts','boost','inv','nid','kills','killAcc','pass','day','daily','rating','tickets','autoEq','autoSell','open','zk','login','jewels','prem','vip','shards','keys','feathers','pick','week','sq','eggs','areset','bank','bankX','anc'];
 function newAccount(){
   return {v:2,gold:0,gems:3,cred:0,coins:0,boxes:1,sboxes:0,charms:0,bless:0,bonusPts:0,boost:0,inv:[],nid:1,kills:0,killAcc:0,
     pass:{key:seasonKey(),xp:0,claimed:0},day:dayKey(),daily:{kills:0,resets:0,wins:0,ups:0,boss:0,ev:0,done:{}},rating:1000,tickets:5,
@@ -787,7 +787,10 @@ const CITY_SHOP=[{k:'cbox',t:'תיבה עתיקה',d:'פריט אגדי או ע�
 const PACKS=[{k:'p1',credits:100,ils:10,note:''},{k:'p2',credits:550,ils:50,note:'10% תוספת'},{k:'p3',credits:1200,ils:100,note:'20% תוספת'},{k:'p4',credits:2600,ils:200,note:'30% תוספת'}];
 const PREM_SHOP=[{k:'vip7',t:'מעמד נצח לשבוע',d:'15% יותר ניסיון ו-15% יותר שלל, 7 ימים',cost:300},{k:'scroll3',t:'3 מגילות ניסיון',d:'שעה וחצי של 50% יותר ניסיון',cost:60},
  {k:'sbox',t:'תיבת עונה',d:'נדיר 55%, אגדי 30%, חלק סט עתיק 15%. מתוכם 8% אקסלנט',cost:80},{k:'abox',t:'תיבה עתיקה',d:'אגדי 75%, עתיק 25%. מתוכם 20% אקסלנט',cost:150},
- {k:'jewel',t:'אבן שלמות',d:'מוסיפה אופציה חסרה לפריט אקסלנט',cost:120},{k:'charm',t:'3 קמעות הגנה',d:'שדרוג שנכשל לא מוריד דרגה',cost:70}];
+ {k:'jewel',t:'אבן שלמות',d:'מוסיפה אופציה חסרה לפריט אקסלנט',cost:120},{k:'charm',t:'3 קמעות הגנה',d:'שדרוג שנכשל לא מוריד דרגה',cost:70},
+ // only here, never found in the game: a friend that stays, a new name, more room. None of them is the strongest of its kind.
+ {k:'ppet',t:'גריפון הנצח',d:'חיית מחמד שנשארת לתמיד. 18% יותר זהב, 6% יותר שלל, 4% יותר ניסיון. לא נמכרת ולא עוברת לשחקן אחר',cost:600},
+ {k:'rename',t:'שינוי שם לדמות',d:'שם חדש לדמות שאתה משחק בה עכשיו',cost:150},{k:'bankx',t:'הרחבת בנק',d:'40 מקומות נוספים בבנק, עד 3 הרחבות',cost:200}];
 const SEASON_SHOP=[{k:'feather',t:'נוצת נצח',d:'מפתחת כנפיים +15 לדרגה הבאה',cost:40},{k:'sbox',t:'תיבת עונה',d:'15% לחלק סט עתיק, אחרת נדיר או אגדי',cost:60},{k:'jewel',t:'אבן שלמות',d:'מוסיפה אופציה חסרה לפריט אקסלנט',cost:45},{k:'box',t:'תיבת אוצר',d:'',cost:30},{k:'gem5',t:'5 אבני נשמה',d:'',cost:20},{k:'ticket',t:'כרטיס זירה',d:'',cost:10}];
 const totalResets=A=>A.chars.reduce((n,c)=>n+c.resets,0);
 const slotsOpen=A=>1+((A.maxLvl||1)>=50?1:0)+(totalResets(A)>=1?1:0);
@@ -956,7 +959,7 @@ function apply(A,kind,args,ctx){
   if(!A.chars.length)return fail('אין דמות');
   let S=A.chars[A.cur];ensureDay(S);
   { // a worn pet starts its time the first time it is worn, and leaves when the time is up, worn or in the bag
-    const p=S.eq.y;if(p&&!p.until)p.until=now+(p.dur||PET_DAYS[0]*864e5);if(p&&p.until<=now){S.eq.y=null;r.petGone=petName(p);}
+    const p=S.eq.y;if(p&&!p.until&&!p.perm)p.until=now+(p.dur||PET_DAYS[0]*864e5);if(p&&p.until<=now){S.eq.y=null;r.petGone=petName(p);}
     if(A.inv.some(it=>it.s==='y'&&it.until&&it.until<=now))A.inv=A.inv.filter(it=>!(it.s==='y'&&it.until&&it.until<=now));
     if(A.bank&&A.bank.some(it=>it.s==='y'&&it.until&&it.until<=now))A.bank=A.bank.filter(it=>!(it.s==='y'&&it.until&&it.until<=now));}
   // Time since the previous call decides how many kills may be claimed (token bucket) or, after a long gap, AFK progress.
@@ -1046,7 +1049,7 @@ function apply(A,kind,args,ctx){
     case 'reset':{if(!canReset(S))return fail('צריך רמה 400');r.gain=resetGain(S);doReset(S);S.evIn=null;for(const w of evWindows(now,0))if(w.e.tiered)evRec(A,w.key).no=1;{const kg=keepGate(now);if(kg)evRec(A,kg.key).no=1;}A.bossAt=null;A.allow=0;r.resets=S.resets;break;}
     case 'equip':{const f=findIt(A,S,int(args.id,0,1e12));if(!f||f.i==null)return fail('הפריט לא בתיק');if(!canWear(S,f.it))return fail('חסר לך: '+lacks(S,f.it));A.inv.splice(f.i,1);const old=S.eq[f.it.s];S.eq[f.it.s]=f.it;if(old)A.inv.push(old);break;}
     case 'unequip':{const f=findIt(A,S,int(args.id,0,1e12));if(!f||!f.eq)return fail('הפריט לא לבוש');if(A.inv.length>=BAG)return fail('התיק מלא');S.eq[f.eq]=null;A.inv.push(f.it);break;}
-    case 'sell':{const f=findIt(A,S,int(args.id,0,1e12));if(!f||f.i==null)return fail('הפריט לא בתיק');A.inv.splice(f.i,1);A.gold+=sellVal(f.it);break;}
+    case 'sell':{const f=findIt(A,S,int(args.id,0,1e12));if(!f||f.i==null)return fail('הפריט לא בתיק');if(f.it.perm)return fail('חיית מחמד מחנות הקרדיטים לא נמכרת');A.inv.splice(f.i,1);A.gold+=sellVal(f.it);break;}
     case 'craftKey':{if((A.shards||0)<KEY_SHARDS)return fail('צריך '+KEY_SHARDS+' שברי ארגמן. יש לך '+(A.shards||0));if(A.gold<KEY_GOLD)return fail('צריך '+KEY_GOLD+' זהב');
       A.shards-=KEY_SHARDS;A.gold-=KEY_GOLD;A.keys=(A.keys||0)+1;r.keys=A.keys;break;}
     case 'evEnter':{let w=keepGate(now);
@@ -1070,7 +1073,7 @@ function apply(A,kind,args,ctx){
       const n=wingFeathers(it.t);if((A.feathers||0)<n)return fail('צריך '+n+' נוצות נצח. יש לך '+(A.feathers||0));
       A.feathers-=n;r.need=n;if(_rnd()<wingChance(it.t)){it.t++;it.p=0;r.evolved=true;r.t=it.t;}else r.evolved=false;break;} // the wing itself is never lost; the new rank starts at +0 and is upgraded again
     // The bank: a second, larger store shared by the account's characters. Nothing in it is worn, sold or traded.
-    case 'bankPut':{const id=int(args.id,0,1e12),i=A.inv.findIndex(x=>x.id===id);if(i<0)return fail('הפריט לא בתיק');A.bank=A.bank||[];if(A.bank.length>=BANK)return fail('הבנק מלא');A.bank.push(A.inv.splice(i,1)[0]);break;}
+    case 'bankPut':{const id=int(args.id,0,1e12),i=A.inv.findIndex(x=>x.id===id);if(i<0)return fail('הפריט לא בתיק');A.bank=A.bank||[];if(A.bank.length>=bankCap(A))return fail('הבנק מלא');A.bank.push(A.inv.splice(i,1)[0]);break;}
     case 'bankTake':{const id=int(args.id,0,1e12);A.bank=A.bank||[];const i=A.bank.findIndex(x=>x.id===id);if(i<0)return fail('הפריט לא בבנק');if(A.inv.length>=BAG)return fail('התיק מלא');A.inv.push(A.bank.splice(i,1)[0]);break;}
     case 'upgrade':{const f=findIt(A,S,int(args.id,0,1e12));if(!f)return fail('הפריט לא נמצא');if(f.it.s==='y')return fail('חיית מחמד לא משדרגים');r.code=upgrade(S,f.it);r.p=f.it.p;r.r=f.it.r;break;}
     case 'openBox':{const sk=args.k==='s';if((sk?A.sboxes:A.boxes)<1)return fail('אין תיבות');if(A.inv.length>=BAG)return fail('התיק מלא. פנה מקום כדי לפתוח תיבה');if(sk)A.sboxes--;else A.boxes--;r.box=openBox(S,sk?'s':'');break;}
@@ -1085,7 +1088,10 @@ function apply(A,kind,args,ctx){
         if(k==='cpet2'||k==='cpet3')it=makePet(S,k==='cpet2'?2:3);else if(k==='cjew')it=makeItem(S,pickOne(JEW),CITY_TIER,4,zi);
         else if(k==='carm')it=makeItem(S,pickOne(['h','a','p','l','b']),CITY_TIER,4,zi);else{it=makeItem(S,'w',CITY_TIER,4,zi);makeExcellent(it);}
         A.anc-=o.cost;S.inv.push(it);r.bought=o.t;r.item=it;break;}
-      if(k==='abox'){A[cur]-=o.cost;r.box=openBox(S,'a');}
+      if(k==='ppet'){if(S.inv.length>=BAG)return fail('התיק מלא. פנה מקום כדי לקנות');A[cur]-=o.cost;const it={id:S.nid++,s:'y',t:3,r:2,p:0,z:-1,af:PET_AF[2].map(f=>f.slice()),dur:0,perm:1};S.inv.push(it);r.bought=o.t;r.item=it;}
+      else if(k==='rename'){const nm=String(args.name||'').replace(/[<>&"'\u2605\u0000-\u001f]/g,'').trim().slice(0,14);if([...nm].length<NAME_MIN)return fail('שם דמות: לפחות 4 תווים');if(nameBad(nm))return fail('השם הזה שמור. בחר שם אחר');if(nm===S.name)return fail('זה כבר השם של הדמות');A[cur]-=o.cost;S.name=nm;r.bought=o.t;}
+      else if(k==='bankx'){if((A.bankX|0)>=BANK_ADD_MAX)return fail('הגעת למקסימום');A[cur]-=o.cost;A.bankX=(A.bankX|0)+1;r.bought=o.t;}
+      else if(k==='abox'){A[cur]-=o.cost;r.box=openBox(S,'a');}
       else{
         if(k==='bless'&&A.bless>=10)return fail('הגעת למקסימום');if(k==='areset'&&(A.areset|0)+ARESET_PACK>ARESET_MAX)return fail('הגעת למקסימום');
         A[cur]-=o.cost;
@@ -1174,4 +1180,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {nameBad,NAME_MIN,PETN2,petName,sgShield,sgBot,sgRoute,sgNear,LIVE_SURV,CLEAN_DAY,livePlausible,CITY_SHOP,CITY_WEEK,CITY_RATE,CITY_TIER,CITY_RAR,CITY_PERFECT,BANK,sgBuff,sgSees,EXB,exCount,SIEGE_MIN,RESET_RAR,keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {bankCap,PET_PERM,nameBad,NAME_MIN,PETN2,petName,sgShield,sgBot,sgRoute,sgNear,LIVE_SURV,CLEAN_DAY,livePlausible,CITY_SHOP,CITY_WEEK,CITY_RATE,CITY_TIER,CITY_RAR,CITY_PERFECT,BANK,sgBuff,sgSees,EXB,exCount,SIEGE_MIN,RESET_RAR,keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
