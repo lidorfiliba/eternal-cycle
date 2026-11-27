@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261127204404';
+const BUILD='20261127235307';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,wskinOn,CAPEN,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -935,7 +935,20 @@ function cast(i,auto){
     for(const m of ts){burst(m.x,gy()-40,col,14);SC.fx.push({k:'flash',x:m.x,y:gy()-36,r:60,life:.35,d:.35,c:col});strike(m,6,col,true);}
     SC.nums.push({x:h.x,y:gy()-150,txt:CLS[S.cls].sk[5]+'!',c:'#ffd75e',s:21,life:1.2});}
   else{snd('fury');h.buff=8;SC.fx.push({k:'ring',x:h.x,y:gy()-20,life:.4,c:'#ffd75e',r:120});SC.fx.push({k:'rune',x:h.x,y:gy()-2,r:90,life:1,d:1,c:'#ffd75e'});SC.fx.push({k:'pillar',x:h.x,y:gy(),life:.6,d:.6,c:'#ffd75e'});SC.fx.push({k:'star',x:h.x,y:gy()-70,r:40,rot:0,life:.5,d:.5,c:'#ffd75e'});burst(h.x,gy()-50,'#ffd75e',24);SC.nums.push({x:h.x,y:gy()-135,txt:CLS[S.cls].sk[2]+'!',c:'#ffd75e',s:18,life:1});}
-  h.cds[i]=SKCD[i];if(!auto)pend.casts++;return true;
+  h.cds[i]=SKCD[i];if(!auto){pend.casts++;comboStep(i,col);}return true;
+}
+// A combo against monsters, in the same order as against players: a plain blow, the first skill, then the pulling one,
+// each within a short moment of the last. Only by hand; the pulling skill's wait is what keeps it from being cheap.
+const CBW=1.6,CBM=6,CBS=2.5;
+function comboStep(i,col){
+  const h=SC.hero,ok=SC.t-(h.cbT||-9)<=CBW;
+  if(i===0&&h.cb===1&&ok){h.cb=2;h.cbT=SC.t;SC.nums.push({x:h.x,y:gy()-160,txt:'2/3',c:'#ffd75e',s:15,life:.8});return;}
+  if(i===1&&h.cb===2&&ok){h.cb=0;const live=alive();let m=h.cbM&&live.indexOf(h.cbM)>=0?h.cbM:null;if(!m){let bd=420;for(const o of live){const d=Math.abs(o.x-h.x);if(d<bd){bd=d;m=o;}}}
+    if(!m)return;snd('ult');snd('slam');SC.nums.push({x:h.x,y:gy()-165,txt:'קומבו!',c:'#ff5c7a',s:W<560?24:32,life:1.2});
+    const hit=(o,k)=>{SC.fx.push({k:'star',x:o.x,y:gy()-40,r:k>3?64:36,rot:0,life:.45,d:.45,c:'#ff5c7a'});SC.fx.push({k:'pillar',x:o.x,y:gy(),life:.4,d:.4,c:'#ffd75e'});burst(o.x,gy()-40,'#ffb23e',k>3?30:12);strike(o,k,col,true);};
+    SC.fx.push({k:'ring',x:m.x,y:gy()-10,life:.5,c:'#ffd75e',r:110});hit(m,CBM);
+    for(const o of live.filter(o=>o!==m&&!o.boss&&Math.abs(o.x-h.x)<380).slice(0,4))hit(o,CBS);return;}
+  h.cb=0;
 }
 function portalState(dir){ // what stands at the left (-1) or right (+1) end of the current floor
   const zi=SC.zi,fl=SC.fl;
@@ -1019,7 +1032,7 @@ function updateWorld(dt){
     else if(Math.abs(dx)>r){h.x+=Math.sign(dx)*spd*dt;h.mv=true;}
     else{
       if(S.auto&&h.autoSk<=0&&h.cds[0]<=0&&S.lvl>=SKLV[0]&&cast(0,true))h.autoSk=8;
-      if(h.atkT<=0){h.atkT=1/(C.aspd*(h.buff>0?2:1));h.anim=1;h.lastAtk=SC.t;const col=gearColor(lookOf(S).w,SC.t,CLS[S.cls].c);h.chain=SC.t-(h.chainT||0)>2.5?1:(h.chain||0)+1;h.chainT=SC.t;const step=h.chain%4; // the ordinary attack is a four-beat chain: jab, cross, jab, finisher
+      if(h.atkT<=0){h.atkT=1/(C.aspd*(h.buff>0?2:1));h.anim=1;h.lastAtk=SC.t;const col=gearColor(lookOf(S).w,SC.t,CLS[S.cls].c);h.chain=SC.t-(h.chainT||0)>2.5?1:(h.chain||0)+1;h.chainT=SC.t;if(!(h.cb===2&&SC.t-h.cbT<=CBW)){h.cb=1;h.cbT=SC.t;h.cbM=m;}const step=h.chain%4; // the ordinary attack is a four-beat chain: jab, cross, jab, finisher
         if(step===0){attackFx(S.cls,h.x,hY(),h.face,[m],true,col);h.skA=.25;
           if(S.cls==='blade'||S.cls==='lord'){SC.fx.push({k:'cres',x:m.x,y:gy()-38,R:50,rot:h.face<0?3.14:0,sp:1.4*h.face,life:.28,d:.28,c:col});SC.fx.push({k:'wave',x:h.x+h.face*20,y:gy(),dir:h.face,dist:150,h:64,life:.3,d:.3,c:col});}
           else if(S.cls==='storm'){SC.fx.push({k:'pillar',x:m.x,y:gy(),life:.35,d:.35,c:col});SC.fx.push({k:'rune',x:m.x,y:gy()-2,r:44,life:.5,d:.5,c:col});}
