@@ -512,10 +512,10 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
     const X=G.sgNew(rnd,{}),q=G.sgAdd(X,P('w'),5,'',rnd),f=X.f[q];f.x=400;f.y=-400;G.sgMove(X,f,400,-800);assert.ok(f.y>-576,'the inner wall stops him: '+f.y);f.x=0;f.y=-400;G.sgMove(X,f,0,-800);assert.ok(f.y>-576&&G.sgShield(X),'while a guardian stone stands a shield bars the door to outsiders: '+f.y);X.sg.holder=5;G.sgMove(X,f,0,-800);assert.ok(f.y<-790,'but not to the castle\'s own');X.sg.holder=0;f.y=-400;for(const q of G.SG.stat)X.sg.gate[q]=0;G.sgMove(X,f,0,-800);assert.ok(f.y<-790,'the door in its middle lets him through');}
   fe.pool=25000;fe.hp=.0001;B.t+=30;fa.at.s3=0;fe.x=fa.x+20;fe.y=fa.y;const k=G.sgAct(B,a,'s3',rnd);assert.ok(k.dead&&!fe.alive&&fe.resp>B.t);
   for(let i=0;i<60;i++)G.sgStep(B,.2,rnd);assert.ok(fe.alive&&fe.hp===1&&fe.y>1700,'the fallen return at their far camp');
-  fe.pots=0;fe.x=G.SG.shops[0][0];fe.y=G.SG.shops[0][1];for(let i=0;i<100;i++)G.sgStep(B,.2,rnd);assert.ok(fe.pots>=30&&fe.bought===fe.pots,'a great many potions can be carried: '+fe.pots);
+  fe.pots=0;fe.x=G.SG.shops[0][0];fe.y=G.SG.shops[0][1];for(let i=0;i<100;i++)G.sgStep(B,.2,rnd);assert.ok(fe.pots===G.SG.potMax&&fe.bought===fe.pots,'they come by the ten, up to a great many: '+fe.pots);
   fe.hp=.1;B.t+=10;fe.wound=0;assert.ok(G.sgAct(B,e,'pot',rnd));B.t+=G.SG.potCd+.1;assert.ok(G.sgAct(B,e,'pot',rnd),'and drunk every few seconds');
   B.sg.time=B.t+1;for(let i=0;i<10;i++)G.sgStep(B,.2,rnd);assert.ok(B.over);
-  const A=G.newAccount();G.apply(A,'create',{name:'Sggg',cls:'blade'},{});A.gold=1200;const c0=A.coins;G.sgReward(A,true,2);assert.equal(A.coins,c0+30);assert.equal(A.gold,200);G.sgReward(A,false,5);assert.equal(A.gold,0,'never below nothing');assert.equal(A.coins,c0+40);
+  const A=G.newAccount();G.apply(A,'create',{name:'Sggg',cls:'blade'},{});A.gold=1200;const c0=A.coins;G.sgReward(A,true,20);assert.equal(A.coins,c0+30);assert.equal(A.gold,1200-20*G.SG.potPrice,'potions cost next to nothing');assert.ok(G.SG.potPack===10&&G.SG.potPrice*G.SG.potPack<=300);G.sgReward(A,false,500);assert.equal(A.gold,0,'never below nothing');assert.equal(A.coins,c0+40);
   G.setEnv(Math.random,Date.now);
 });
 

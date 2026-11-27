@@ -587,7 +587,7 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:4,respIn:15,respSafe:3,fwd:[[0,1150],[0,550],[0,330]],lsHit:.02,lsBack:60,botStone:1100,back:[0,-60],crownKeep:0,crownPen:1,pots:60,potMax:250,potCd:.25,heal:.06,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
+const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:4,respIn:15,respSafe:3,fwd:[[0,1150],[0,550],[0,330]],lsHit:.02,lsBack:60,botStone:1100,back:[0,-60],crownKeep:0,crownPen:1,pots:60,potMax:250,potCd:.25,heal:.06,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:20,potPack:10,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.012,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   // a wide castle: room to fight in the yard and in the throne room without everyone standing on everyone
@@ -738,7 +738,7 @@ function sgStep(B,dt,rnd){
   const ev=[];if(B.over)return ev;B.t+=dt;if(B.t<0)return ev;const t=B.t,S=B.sg;
   for(const q of SG.stat)if(S.gate[q]>0){const g=SG.gates[q],c=[(g[0]+g[2])/2,(g[1]+g[3])/2];for(const f of B.f)if(f.alive&&f.g===S.holder&&S.holder!==0&&f.hp<1&&!(f.wound>t)&&sgNear(f,c,SG.statR))f.hp=Math.min(1,f.hp+SG.statHeal*dt);}
   B.f.forEach((f,i)=>{if(!f.alive){if(f.resp&&t>=f.resp&&!(f.g===0&&S.holder!==0)){sgSpawn(B,f,rnd,true);ev.push({k:'up',to:i});}return;}
-    for(const sh of SG.shops)if(!f.bot&&f.pots<SG.potMax&&sgNear(f,sh,SG.shopR)){if((f.shopT+=dt)>=.4){f.shopT=0;f.pots++;f.bought++;ev.push({k:'buy',by:i});}}});
+    for(const sh of SG.shops)if(!f.bot&&f.pots<SG.potMax&&sgNear(f,sh,SG.shopR)){if((f.shopT+=dt)>=.4){f.shopT=0;const n=Math.min(SG.potPack,SG.potMax-f.pots);f.pots+=n;f.bought+=n;ev.push({k:'buy',by:i,n:n});}}});
   // Switches: a player who stands on one presses it; a bar loads; when it is full the switch is his for exactly as long
   // as he stays on it alive. So one player holds one switch and nothing else.
   SG.sw.forEach((p,q)=>{const by=S.swBy[q];
