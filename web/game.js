@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261127185224';
+const BUILD='20261127191602';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -978,7 +978,7 @@ window.addEventListener('keydown',e=>{if(!SC.duel||e.target&&e.target.tagName===
 window.addEventListener('keyup',e=>{if((evKey(e)==='ArrowUp'||evKey(e)==='w')&&SC.hero.dz<0||(evKey(e)==='ArrowDown'||evKey(e)==='s')&&SC.hero.dz>0)SC.hero.dz=0;});
 {const bar=$('duelBar');bar.addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||b.disabled||!SC.duel)return;e.preventDefault();initAudio();if(b.dataset.a==='atk')SC.duel.holdAtk=true;duelAct(b.dataset.a);});
   for(const ev of ['pointerup','pointercancel','pointerleave'])bar.addEventListener(ev,()=>{if(SC.duel)SC.duel.holdAtk=false;});bar.addEventListener('contextmenu',e=>e.preventDefault());
-  window.addEventListener('keydown',e=>{if(!SC.duel||e.target&&e.target.tagName==='INPUT')return;const k=keyAct(KEYS_FIGHT,evKey(e).toLowerCase());if(!k)return;e.preventDefault();if(k==='use'){const u=$('useBtn');if(u&&u.style.display!=='none')u.click();return;}if(k==='pot'&&e.repeat)return;if(k==='atk')SC.duel.holdAtk=true;duelAct(k);});
+  window.addEventListener('keydown',e=>{if(!SC.duel||e.target&&e.target.tagName==='INPUT')return;if(e.key==='Tab'&&SC.duel.br){e.preventDefault();selNext();return;}const k=keyAct(KEYS_FIGHT,evKey(e).toLowerCase());if(!k)return;e.preventDefault();if(k==='use'){const u=$('useBtn');if(u&&u.style.display!=='none')u.click();return;}if(k==='pot'&&e.repeat)return;if(k==='atk')SC.duel.holdAtk=true;duelAct(k);});
   window.addEventListener('keyup',e=>{if(SC.duel&&evKey(e).toLowerCase()===keyOf('atk'))SC.duel.holdAtk=false;});}
 window.addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT')return;const k=evKey(e);if(k==='ArrowLeft'||(k==='a'&&!keyTaken('a')))SC.hero.dir=-1;else if(k==='ArrowRight'||(k==='d'&&!keyTaken('d')))SC.hero.dir=1;else if(S&&!demo&&!SC.duel){const fk=keyAct(KEYS_FARM,k.length===1?k.toLowerCase():k);if(fk)cast(+fk[1],false);}});
 window.addEventListener('keyup',e=>{const k=evKey(e);if((k==='ArrowLeft'||k==='a')&&SC.hero.dir<0||(k==='ArrowRight'||k==='d')&&SC.hero.dir>0)SC.hero.dir=0;});
@@ -1112,7 +1112,7 @@ function brEnter(n,left){
   SC.mode='duel';SC.fx=[];SC.nums=[];SC.drops=[];SC.hero.dir=0;SC.hero.dz=0;closeModal();renderDuelBar();toast('הגעת לזירת המעגל האחרון. הקרב מתחיל כשההרשמה נסגרת',4);
 }
 function brBegin(m){
-  const d=SC.duel;if(!d||!d.br)return;const b=d.br,fs=Array.isArray(m.f)?m.f:[];d.me=m.me|0;b.phase='fight';b.looks=[];b.hpv=[];b.names=[];b.bot=[];b.tg=[];b.deadT=[];d.v=[];d.D.f=[];b.go=null;
+  const d=SC.duel;if(!d||!d.br)return;const b=d.br,fs=Array.isArray(m.f)?m.f:[];d.me=m.me|0;b.phase='fight';d.sel=-1;if(!brBegin.told){brBegin.told=1;toast(DESK?'לחיצה על יריב או מקש Tab מסמנים אותו, והמכות שלך הולכות אליו':'לחיצה על יריב מסמנת אותו, והמכות שלך הולכות אליו',5);}b.looks=[];b.hpv=[];b.names=[];b.bot=[];b.tg=[];b.deadT=[];d.v=[];d.D.f=[];b.go=null;
   b.g=[];b.tag=[];
   fs.forEach((raw,i)=>{const p=G.cleanPlayer('f'+i,raw),xy=m.xy&&m.xy[i]||[0,0];b.g.push(raw.g|0);b.tag.push(String(raw.tag||''));b.looks.push(i===d.me?lookOf(S):p);b.hpv.push(p.h);b.names.push(p.n);b.bot.push(raw.bot?1:0);b.tg.push(null);b.deadT.push(0);
     const f=brF(+xy[0],+xy[1]);f.cls=p.c;f.at={atk:0,s0:1,s1:3,s2:0,s3:8,dash:0,pot:0};d.D.f.push(f);d.v.push({anim:0,face:1,mv:false,hitT:0});});
@@ -1178,9 +1178,11 @@ function brExit(msg){const d=SC.duel;if(!d||!d.br)return;$('useBtn').style.displ
   if(m&&m.sg){toast((m.test?'מצור הידידות נגמר. ':m.won?'הגילדה שלך מחזיקה בטירה. ':'המצור נגמר. ')+'קיבלת '+String(m.rt||''),7);send('sync',{});loadGuild&&loadGuild();}
   else if(m){toast((m.place===0?'ניצחת במעגל האחרון. קיבלת ':'מקום '+((m.place|0)+1)+' במעגל האחרון. קיבלת ')+String(m.rt||''),7);send('sync',{});}else if(msg)toast(msg);touch();}
 function selMark(d,tgt,rng){const q=d.sel,f=q>=0?d.D.f[q]:null,me=d.D.f[d.me];if(!f||!f.alive){d.sel=-1;return tgt;}const p=bP(f.x,f.y),a=SC.t*3;ctx.save();ctx.strokeStyle='#ffd75e';ctx.lineWidth=2.5;ctx.setLineDash([7,5]);ctx.lineDashOffset=-a*6;ctx.beginPath();ctx.ellipse(p[0],p[1]+2,34*BRS(),11*BRS(),0,0,7);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#ffd75e';ctx.beginPath();ctx.moveTo(p[0],p[1]-128+Math.sin(a)*3);ctx.lineTo(p[0]-7,p[1]-140+Math.sin(a)*3);ctx.lineTo(p[0]+7,p[1]-140+Math.sin(a)*3);ctx.fill();ctx.restore();return Math.hypot(f.x-me.x,f.y-me.y)<=rng?q:tgt;}
+// The next enemy, nearest first: for the Tab key on a computer.
+function selNext(){const d=SC.duel;if(!d||!d.br||d.br.phase!=='fight')return;const b=d.br,me=d.D.f[d.me],L=[];d.D.f.forEach((f,i)=>{if(i===d.me||!f.alive||(b.sg&&b.g[i]===b.g[d.me]))return;const q=Math.hypot(f.x-me.x,f.y-me.y);if(q<520)L.push([q,i]);});if(!L.length){d.sel=-1;return;}L.sort((x,y)=>x[0]-y[0]);const at=L.findIndex(x=>x[1]===d.sel);d.sel=L[(at+1)%L.length][1];snd('click');}
 function brTap(px,py){ // a tap on an enemy chooses him as the one to strike; a tap on the field walks there
   const d=SC.duel,b=d.br,k=BRS();
-  if(b.phase==='fight'){let hit=-1,bd=38;d.D.f.forEach((f,i)=>{if(i===d.me||!f.alive||(b.sg&&b.g[i]===b.g[d.me]))return;const p=bP(f.x,f.y),q=Math.hypot(px-p[0],py-(p[1]-40));if(q<bd){bd=q;hit=i;}});
+  if(b.phase==='fight'){let hit=-1,bd=58;d.D.f.forEach((f,i)=>{if(i===d.me||!f.alive||(b.sg&&b.g[i]===b.g[d.me]))return;const p=bP(f.x,f.y),q=Math.hypot(px-p[0],py-(p[1]-40));if(q<bd){bd=q;hit=i;}});
     if(hit>=0){d.sel=d.sel===hit?-1:hit;snd('click');const p=bP(d.D.f[hit].x,d.D.f[hit].y);SC.fx.push({k:'ring',x:p[0],y:p[1],life:.3,c:'#ffd75e',r:40});return;}}b.go=[b.cam[0]+(px-W/2)/k,b.cam[1]+(py-(gy()-70))/(k*.55)];SC.fx.push({k:'ring',x:px,y:py,life:.3,c:'#7df9ff',r:26});
 }
 function updateBr(dt){
