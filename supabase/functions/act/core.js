@@ -116,7 +116,7 @@ const PASS_MAX=60,PASS_STEP=200,PASS_DAY=250;
 function passAdd(s,n){const g=Math.max(0,Math.min(n,PASS_DAY-(s.daily.pxp||0)));s.daily.pxp=(s.daily.pxp||0)+g;s.pass.xp+=g;}
 
 const AFK=.7, SKLV=[1,20,60,110,180,260], SKCD=[4,12,30,10,25,45];
-const SHARED=['gold','gems','cred','coins','boxes','sboxes','charms','bless','bonusPts','boost','inv','nid','kills','killAcc','pass','day','daily','rating','tickets','autoEq','autoSell','open','zk','login','jewels','prem','vip','shards','keys','feathers','pick','week','sq','eggs','areset','bank','bankX','anc'];
+const SHARED=['gold','gems','cred','coins','boxes','sboxes','charms','bless','bonusPts','boost','inv','nid','kills','killAcc','pass','day','daily','rating','tickets','autoEq','autoSell','open','zk','login','jewels','prem','vip','shards','keys','feathers','pick','week','sq','eggs','areset','bank','bankX','wsk','wskOn','anc'];
 function newAccount(){
   return {v:2,gold:0,gems:3,cred:0,coins:0,boxes:1,sboxes:0,charms:0,bless:0,bonusPts:0,boost:0,inv:[],nid:1,kills:0,killAcc:0,
     pass:{key:seasonKey(),xp:0,claimed:0},day:dayKey(),daily:{kills:0,resets:0,wins:0,ups:0,boss:0,ev:0,done:{}},rating:1000,tickets:5,
@@ -423,8 +423,10 @@ function sideAdd(A,k,zi,n,now,r){const q=A.sq;if(!q||q.done||n<=0)return;if(now>
 // Hidden finds. Each pays once per account; the game never lists them.
 const EGGS={moon:{rw:{gems:7},t:'הירח קרץ לך. 7 אבני נשמה'},dawn:{rw:{coins:15},t:'מי שקם בארבע בבוקר מקבל 15 מטבעות עונה'},circle:{rw:{gold:7777},t:'אמרת את מילת המעגל. 7,777 זהב'},
   lucky:{rw:{sboxes:1},t:'7,777 חיסולים בדיוק ביד. תיבת עונה'},still:{rw:{gems:5},t:'עמדת בשקט בכפר והקשבת. 5 אבני נשמה'}};
+// Wing looks bought with credits: a look only, never strength. One may be worn at a time, over whatever wings the character has.
+const WSKIN=[null,'כנפי אור הבריאה','כנפי ליל התהום'],wskinOn=s=>{const on=s.wskOn|0;return on>0&&Array.isArray(s.wsk)&&s.wsk.indexOf(on)>=0?on:0;};
 function fighter(s){const c=calc(s);const g=it=>it?[it.t,it.r,it.p,it.season?1:0,it.ex?(isFull(it)?2:1):0]:null;let mn=99,sum=0;for(const k in ARM){const p=s.eq[k]?s.eq[k].p|0:0;sum+=p;if(p<mn)mn=p;}
-  return {n:s.name,c:s.cls,l:s.lvl,r:s.resets,p:c.power,d:Math.round(c.dmg),a:Math.round(c.aspd*100)/100,h:Math.round(c.hp),f:Math.round(c.def),cr:Math.round(c.crit*100)/100,cd:Math.round(c.cdmg*100)/100,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g),rt:s.rating,sp:[mn===99?0:mn,Math.round(sum/5)],pf:SLOTS.reduce((n,k)=>n+(s.eq[k]&&s.eq[k].pf?1:0),0)};} // sp: lowest and average armor upgrade, for the glow others see
+  return {n:s.name,c:s.cls,l:s.lvl,r:s.resets,p:c.power,d:Math.round(c.dmg),a:Math.round(c.aspd*100)/100,h:Math.round(c.hp),f:Math.round(c.def),cr:Math.round(c.crit*100)/100,cd:Math.round(c.cdmg*100)/100,w:g(s.eq.w),ar:g(s.eq.a),g:s.eq.g?g(s.eq.g).concat([wskinOn(s)]):null,rt:s.rating,sp:[mn===99?0:mn,Math.round(sum/5)],pf:SLOTS.reduce((n,k)=>n+(s.eq[k]&&s.eq[k].pf?1:0),0)};} // sp: lowest and average armor upgrade, for the glow others see
 function simDuel(A,B){
   const f=[{hp:A.h*5,n:0,t:.2,o:A},{hp:B.h*5,n:0,t:.35,o:B}],ev=[];let guard=0;
   while(f[0].hp>0&&f[1].hp>0&&guard++<600){
@@ -829,6 +831,7 @@ const PREM_SHOP=[{k:'vip7',t:'מעמד נצח לשבוע',d:'15% יותר ניס
  {k:'jewel',t:'אבן שלמות',d:'מוסיפה אופציה חסרה לפריט אקסלנט',cost:120},{k:'charm',t:'3 קמעות הגנה',d:'שדרוג שנכשל לא מוריד דרגה',cost:70},
  // only here, never found in the game: a friend that stays, a new name, more room. None of them is the strongest of its kind.
  {k:'ppet',t:'גריפון הנצח',d:'חיית מחמד שנשארת לתמיד. 18% יותר זהב, 6% יותר שלל, 4% יותר ניסיון. לא נמכרת ולא עוברת לשחקן אחר',cost:600},
+ {k:'wsk1',t:'מראה כנפיים: אור הבריאה',d:'מראה בלעדי לכנפיים שלך, בלי שינוי בכוח. לבן וזהב זוהר. אפשר להסיר ולהחזיר בלי תשלום',cost:400},{k:'wsk2',t:'מראה כנפיים: ליל התהום',d:'מראה בלעדי לכנפיים שלך, בלי שינוי בכוח. ארגמן כהה ואדום בוער. אפשר להסיר ולהחזיר בלי תשלום',cost:400},
  {k:'rename',t:'שינוי שם לדמות',d:'שם חדש לדמות שאתה משחק בה עכשיו',cost:150},{k:'bankx',t:'הרחבת בנק',d:'40 מקומות נוספים בבנק, עד 3 הרחבות',cost:200}];
 const SEASON_SHOP=[{k:'feather',t:'נוצת נצח',d:'מפתחת כנפיים +15 לדרגה הבאה',cost:40},{k:'sbox',t:'תיבת עונה',d:'15% לחלק סט עתיק, אחרת נדיר או אגדי',cost:60},{k:'jewel',t:'אבן שלמות',d:'מוסיפה אופציה חסרה לפריט אקסלנט',cost:45},{k:'box',t:'תיבת אוצר',d:'',cost:30},{k:'gem5',t:'5 אבני נשמה',d:'',cost:20},{k:'ticket',t:'כרטיס זירה',d:'',cost:10}];
 const totalResets=A=>A.chars.reduce((n,c)=>n+c.resets,0);
@@ -934,7 +937,7 @@ function evAdd(A,now,f,n,inEv){if(n>0)for(const w of evWindows(now,0))if(w.e.obj
 /* ---------- state helpers ---------- */
 const numOr=(v,d,lo,hi)=>{v=Number(v);return isFinite(v)?clamp(v,lo,hi):d;};
 const int=(v,lo,hi)=>{v=Math.floor(Number(v));return isFinite(v)?clamp(v,lo,hi):lo;};
-const gearOr=g=>Array.isArray(g)?[numOr(g[0],1,1,50)|0,numOr(g[1],0,0,4)|0,numOr(g[2],0,0,15)|0,g[3]?1:0,numOr(g[4],0,0,2)|0]:null;
+const gearOr=g=>Array.isArray(g)?[numOr(g[0],1,1,50)|0,numOr(g[1],0,0,4)|0,numOr(g[2],0,0,15)|0,g[3]?1:0,numOr(g[4],0,0,2)|0,numOr(g[5],0,0,WSKIN.length-1)|0]:null;
 function cleanPlayer(id,o){
   o=o||{};
   return {id:String(id),n:String(o.n||'אלמוני').slice(0,14),c:CLS[o.c]?o.c:'blade',l:numOr(o.l,1,1,CAP)|0,r:numOr(o.r,0,0,99999)|0,p:numOr(o.p,1,1,1e9)|0,
@@ -1119,7 +1122,9 @@ function apply(A,kind,args,ctx){
     case 'buy':{
       const shop=String(args.shop),k=String(args.k),list=shop==='gold'?GOLD_SHOP:shop==='reset'?RESET_SHOP:shop==='season'?SEASON_SHOP:shop==='prem'?PREM_SHOP:shop==='city'?CITY_SHOP:null,cur=shop==='gold'?'gold':shop==='reset'?'cred':shop==='prem'?'prem':shop==='city'?'anc':'coins';
       if(shop==='city'&&!_castle)return fail('החנות פתוחה רק לגילדה שמחזיקה בטירה');
-      const o=list&&list.find(x=>x.k===k);if(!o)return fail('המוצר לא קיים');if(!((A[cur]||0)>=o.cost))return fail('אין מספיק');
+      const o=list&&list.find(x=>x.k===k);if(!o)return fail('המוצר לא קיים');
+      if(shop==='prem'&&(k==='wsk1'||k==='wsk2')){const id=k==='wsk1'?1:2;A.wsk=Array.isArray(A.wsk)?A.wsk:[];if(A.wsk.indexOf(id)>=0){A.wskOn=(A.wskOn|0)===id?0:id;r.bought=o.t;r.free=true;break;}if(!((A.prem||0)>=o.cost))return fail('אין מספיק');A.prem-=o.cost;A.wsk.push(id);A.wskOn=id;r.bought=o.t;break;} // owned: wearing it or taking it off costs nothing
+      if(!((A[cur]||0)>=o.cost))return fail('אין מספיק');
       if(shop==='city'){
         if(S.inv.length>=BAG)return fail('התיק מלא. פנה מקום כדי לקנות');
         if(k==='cbox'){A.anc-=o.cost;r.box=openBox(S,'a');break;}
@@ -1219,4 +1224,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {bankCap,PET_PERM,nameBad,NAME_MIN,PETN2,petName,sgCamp,areaOf,sgShield,sgBot,sgRoute,sgNear,LIVE_SURV,CLEAN_DAY,livePlausible,CITY_SHOP,CITY_WEEK,CITY_RATE,CITY_TIER,CITY_RAR,CITY_PERFECT,BANK,sgBuff,sgSees,EXB,exCount,SIEGE_MIN,RESET_RAR,keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {WSKIN,wskinOn,bankCap,PET_PERM,nameBad,NAME_MIN,PETN2,petName,sgCamp,areaOf,sgShield,sgBot,sgRoute,sgNear,LIVE_SURV,CLEAN_DAY,livePlausible,CITY_SHOP,CITY_WEEK,CITY_RATE,CITY_TIER,CITY_RAR,CITY_PERFECT,BANK,sgBuff,sgSees,EXB,exCount,SIEGE_MIN,RESET_RAR,keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

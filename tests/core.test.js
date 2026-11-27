@@ -660,3 +660,12 @@ test('a duel between players is the same fight: one beat, potions by the press, 
   D.t+=1;const lone=G.liveAct(D,0,'s1',rnd);assert.ok(lone&&!lone.stun,'the skill alone does not stun');
   const O=G.liveNew(P('a'),P('b'));assert.ok(!O.pvp&&O.f[0].pots===G.DUEL_LIVE.pots,'fights against the game itself are as they were');
 });
+
+test('wing looks from the credits shop: a look only, bought once, worn or taken off freely, seen by others',()=>{
+  let t=1.8e12;G.setEnv(()=>.5,()=>t);const A=G.newAccount();G.apply(A,'create',{name:'Looker',cls:'blade'},{});const s=A.chars[0];A.prem=500;
+  const before=G.calc(s).power;assert.ok(G.apply(A,'buy',{shop:'prem',k:'wsk1'}).ok);assert.equal(A.prem,100);assert.equal(A.wskOn,1);assert.equal(G.calc(s).power,before,'no strength in it');
+  const off=G.apply(A,'buy',{shop:'prem',k:'wsk1'});assert.ok(off.ok&&off.free);assert.equal(A.wskOn,0);assert.equal(A.prem,100,'taking it off costs nothing');assert.ok(G.apply(A,'buy',{shop:'prem',k:'wsk1'}).ok);assert.equal(A.wskOn,1);assert.equal(A.prem,100);
+  assert.equal(G.apply(A,'buy',{shop:'prem',k:'wsk2'}).ok,false,'the other one is not his');
+  assert.equal(G.fighter(s).g,null,'without wings there is nothing to show');s.eq.g={id:99,s:'g',t:3,r:1,p:0,z:1,af:[]};const f=G.fighter(s);assert.equal(f.g[5],1);assert.equal(G.cleanPlayer('x',f).g[5],1,'and it reaches the others');
+  assert.equal(G.cleanPlayer('x',Object.assign({},f,{g:[3,1,0,0,0,77]})).g[5],G.WSKIN.length-1,'a made-up look is cut down to a real one');
+});
