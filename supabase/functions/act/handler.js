@@ -295,7 +295,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
         else if (kind === "reset" && r.ok) feat = nm + " השלים ריסט " + r.resets;
         else if (kind === "exAdd" && r.full) feat = nm + " השלים פריט אקסלנט מלא";
         else if (kind === "tick" && rep.notable) { const it = rep.notable.find((x) => x.pf) || rep.notable.find((x) => x.ex || x.r >= 4); if (it) feat = nm + " מצא " + G.itemName(it, ch.cls); }
-        else if (kind === "openBox" && r.box && r.box.pet && r.box.it.r >= 2) feat = nm + " מצא בתיבה חיית מחמד: " + G.PETN[r.box.it.r];
+        else if (kind === "openBox" && r.box && r.box.pet && r.box.it.r >= 2) feat = nm + " מצא בתיבה חיית מחמד: " + G.petName(r.box.it);
         else if (kind === "towerEnd" && r.perfect && r.notable) feat = nm + " מצא " + G.itemName(r.notable[0], ch.cls) + " במגדל הנצח";
         else if (kind === "duelAct" && r.win === true && A.rating >= 1200) feat = nm + " ניצח בזירה והגיע לדירוג " + A.rating;
         if (feat && nm) { try { await admin.from("chat").insert({ ch: "w", user_id: null, name: "\u2605", tag: "", msg: feat.slice(0, 160) }); } catch (_e) { /* not worth failing for */ } }

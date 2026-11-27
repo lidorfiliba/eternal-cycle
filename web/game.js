@@ -1,6 +1,6 @@
 import * as G from './core.js';
-const BUILD='20261127144021';
-const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
+const BUILD='20261127144651';
+const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,EXB,exCount,keepStart,keepGate,SG,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
@@ -126,7 +126,7 @@ const SC={t:0,cam:0,mons:[],boss:null,hero:{x:110,face:1,dir:0,hp:1,atkT:0,anim:
 const amb=[];for(let i=0;i<26;i++)amb.push({x:Math.random(),y:Math.random(),s:.5+Math.random()*1.5,v:.02+Math.random()*.05});
 const mapW=()=>SC.zi<0?TW:MW, gy=()=>Math.min(H*.8,H-112);
 function lookOf(s){const g=it=>it?[it.t,it.r,it.p,it.season?1:0,it.ex?(isFull(it)?2:1):0]:null,o={c:s.cls,w:g(s.eq.w),ar:g(s.eq.a),g:g(s.eq.g),sp:armorPlus(s),r:s.resets|0};
-  const sc=setCounts(s);let bz=-1,bn=0,bk='';for(const z in sc)if(sc[z]>bn){bn=sc[z];bz=parseInt(z);bk=z;}if(bn>=4)o.set=[bn,(String(bk).slice(-1)==='b'?TCOL2:TCOL)[clamp(bz,0,TCOL.length-1)],String(bk).slice(-1)==='b'?1:0];{const p=petOn(s,Date.now());if(p)o.pet=p.r+1;}let pf=0;for(const k in s.eq)if(s.eq[k]&&s.eq[k].pf)pf++;if(pf)o.pf=pf;return o;}
+  const sc=setCounts(s);let bz=-1,bn=0,bk='';for(const z in sc)if(sc[z]>bn){bn=sc[z];bz=parseInt(z);bk=z;}if(bn>=4)o.set=[bn,(String(bk).slice(-1)==='b'?TCOL2:TCOL)[clamp(bz,0,TCOL.length-1)],String(bk).slice(-1)==='b'?1:0];{const p=petOn(s,Date.now());if(p)o.pet=p.r+1+(p.t===2?10:0);}let pf=0;for(const k in s.eq)if(s.eq[k]&&s.eq[k].pf)pf++;if(pf)o.pf=pf;return o;}
 function glowAmt(p,r,t){let g=p>=13?24:p>=11?16+5*Math.sin(t*6):p>=9?12:p>=7?7:0;if(r>=3)g=Math.max(g,6);return g;}
 function gearColor(g,t,fallback){if(!g)return fallback;if(g[2]>=15)return 'hsl('+((t*90)%360)+',95%,68%)';return RAR[g[1]].c;}
 const WPAL={1:['#2f7a45','#b6ef86'],2:['#2260c9','#a8e8ff'],3:['#c42d18','#ffbe55'],4:['#caa02e','#fff8d2'],5:['#35106b','#d596ff'],6:['#1b6ea8','#effcff'],7:['#a8740a','#fff1a8'],8:['#ff4fa3','#7df9ff'],s:['#a637ee','#62f3e2']};
@@ -260,6 +260,43 @@ function drawSetAura(x,y,sc,set,t){
 // A companion that follows the hero. Which one depends on how many resets the player has done.
 const PETS=[[15,'עוף החול'],[7,'דרקונון'],[3,'פיית המעגל'],[1,'רוח קטנה']];
 const petTier=r=>r>=15?4:r>=7?3:r>=3?2:r>=1?1:0;
+// The player's own animals, ten of them, two in each rank: 0 wolf cub, 1 silver owl, 2 ghost fox, 3 young dragon, 4 phoenix,
+// 5 night cat, 6 storm raven, 7 moon rabbit, 8 flame tiger cub, 9 heavenly unicorn. Four-legged ones trot at the heel, the winged hover at the shoulder.
+function drawBeast(x,y,sc,kind,t,flip,mv){
+  if(kind===3||kind===4){drawPet(x,y-34*sc,sc*1.2,kind,t,flip);return;}
+  const k=sc*1.25,f=flip?-1:1,run=mv?Math.sin(t*13):Math.sin(t*2.2)*.25,E=(cx,cy,rx,ry,r)=>{ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,r||0,0,7);ctx.fill();},eye=(ex,ey,c,r)=>{ctx.shadowBlur=0;ctx.fillStyle=c||'#fff';E(ex,ey,r||1.6,r||1.6);ctx.fillStyle='#000';E(ex+.4,ey,(r||1.6)*.5,(r||1.6)*.5);};
+  ctx.save();ctx.lineJoin='round';ctx.lineCap='round';
+  if(kind===1||kind===6){ // birds: a round owl with great eyes, a lean raven with sparks
+    const fl=Math.sin(t*(kind===6?11:8)),raven=kind===6,c0=raven?'#2a3350':'#cfd6e6',c1=raven?'#151a2e':'#8f9bb8';
+    ctx.translate(x,y-(40+Math.sin(t*2.6)*4)*sc);ctx.scale(f*k,k);ctx.shadowColor=raven?'#7db8ff':'#fff';ctx.shadowBlur=8;
+    ctx.fillStyle=c1;for(const s of [-1,1]){ctx.save();ctx.translate(-1,-1);ctx.rotate(s*(.5+fl*.55));ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(-6,-s*10,-15,-s*(raven?13:9));ctx.quadraticCurveTo(-9,-s*3,-11,-s*1);ctx.quadraticCurveTo(-5,-s*1,0,2*s);ctx.fill();ctx.restore();}
+    ctx.fillStyle=c0;if(raven){E(0,0,8,4.6,-.15);E(7,-3,4,3.6);ctx.fillStyle='#e8b23e';ctx.beginPath();ctx.moveTo(10,-4.5);ctx.lineTo(16,-2.5);ctx.lineTo(10,-1);ctx.fill();ctx.fillStyle=c1;ctx.beginPath();ctx.moveTo(-6,0);ctx.lineTo(-16,3);ctx.lineTo(-15,-1);ctx.lineTo(-6,-2);ctx.fill();eye(8,-3.6,'#9fd0ff',1.4);
+      if(!calm&&Math.random()<.1)SC.parts.push({x:x-f*10*k,y:y-40*sc,vx:(Math.random()-.5)*40,vy:20,life:.3,c:'#bfe0ff',s:2});}
+    else{E(0,0,7,7.5);ctx.fillStyle='#f4f6fb';E(1.5,1.5,4.2,5);ctx.fillStyle=c1;ctx.beginPath();ctx.moveTo(-5,-6);ctx.lineTo(-6,-11);ctx.lineTo(-2,-7);ctx.fill();ctx.beginPath();ctx.moveTo(4,-6.5);ctx.lineTo(6,-11);ctx.lineTo(7,-6);ctx.fill();eye(-1,-2.5,'#ffe27a',2.4);eye(4.5,-2.5,'#ffe27a',2.4);ctx.fillStyle='#e8b23e';ctx.beginPath();ctx.moveTo(1.2,-.5);ctx.lineTo(2.4,2);ctx.lineTo(3.4,-.5);ctx.fill();}
+    ctx.restore();return;}
+  // four-legged: one body, told apart by ears, tail, coat and what shines on them
+  const Q={0:['#8d93a6','#c9cede','#5d6274'],5:['#2b2440','#3b3158','#191428'],2:['#8fe9ff','#e6fbff','#4fb8d8'],7:['#f4f1ff','#ffffff','#c9c2ea'],8:['#ff8a2e','#ffd09a','#c44a12'],9:['#ffffff','#fff6fb','#d9d2f2']}[kind],hop=kind===7?Math.abs(Math.sin(t*(mv?9:3)))*(mv?7:2):0;
+  ctx.translate(x,y-(9+hop)*sc);ctx.scale(f*k,k);
+  if(kind===2){ctx.globalAlpha=.82;ctx.shadowColor='#8fe9ff';ctx.shadowBlur=12;}else if(kind===9){ctx.shadowColor='#ffd9f6';ctx.shadowBlur=12;}else if(kind===8){ctx.shadowColor='#ff8a2e';ctx.shadowBlur=8;}
+  ctx.strokeStyle=Q[2];ctx.lineWidth=2.6;for(const [lx,ph] of [[-6,0],[-3,1],[5,1],[8,0]]){const a=run*(ph?1:-1)*(mv?.7:.2);ctx.beginPath();ctx.moveTo(lx,3);ctx.lineTo(lx+Math.sin(a)*4,9);ctx.stroke();}
+  // tail
+  if(kind===0||kind===2){ctx.fillStyle=kind===2?Q[1]:Q[0];ctx.save();ctx.translate(-9,0);ctx.rotate(-.5+Math.sin(t*5)*.25);E(-6,0,kind===2?9:6.5,kind===2?4.2:3.2);ctx.fillStyle='#fff';E(-11,0,3,2.2);ctx.restore();}
+  else if(kind===5||kind===8){ctx.strokeStyle=Q[0];ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(-9,0);ctx.quadraticCurveTo(-18,-2+Math.sin(t*4)*3,-17,-11);ctx.stroke();if(kind===8){const g=ctx.createRadialGradient(-17,-12,0,-17,-12,6);g.addColorStop(0,'#fff6c2');g.addColorStop(.5,'#ffae42');g.addColorStop(1,'transparent');ctx.fillStyle=g;E(-17,-12-Math.abs(Math.sin(t*9)),5,6.5);}}
+  else if(kind===7){ctx.fillStyle='#fff';E(-10,0,3,3);}
+  else{for(let i=0;i<4;i++){ctx.strokeStyle='hsl('+((t*80+i*70)%360)+',95%,72%)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-9,-1);ctx.quadraticCurveTo(-15,2+i*2+Math.sin(t*4+i)*2,-19,6+i*1.5);ctx.stroke();}}
+  ctx.fillStyle=Q[0];E(0,0,10,5.6);ctx.fillStyle=Q[1];E(1,2,7,3);
+  if(kind===8){ctx.strokeStyle=Q[2];ctx.lineWidth=1.5;for(const sx of [-5,-1,3]){ctx.beginPath();ctx.moveTo(sx,-5);ctx.lineTo(sx+1.5,-.5);ctx.stroke();}}
+  // head
+  const hx=11,hy=kind===9?-7:-4;ctx.fillStyle=Q[0];if(kind===9){ctx.beginPath();ctx.moveTo(6,-2);ctx.lineTo(9,-8);ctx.lineTo(13,-6);ctx.lineTo(9,1);ctx.fill();E(hx+1,hy,5.5,3.6,.35);}else E(hx,hy,5.4,4.8);
+  if(kind===0||kind===2||kind===8||kind===5){ctx.beginPath();ctx.moveTo(hx-4,hy-3);ctx.lineTo(hx-3.5,hy-(kind===2?11:9));ctx.lineTo(hx-.5,hy-4);ctx.fill();ctx.beginPath();ctx.moveTo(hx+.5,hy-4);ctx.lineTo(hx+2.5,hy-(kind===2?11:9));ctx.lineTo(hx+4,hy-3);ctx.fill();if(kind!==5){ctx.fillStyle=Q[1];E(hx+3.6,hy+1.6,2.6,2);}ctx.fillStyle='#1a1426';E(hx+5.6,hy+.8,1,1);}
+  else if(kind===7){ctx.save();ctx.translate(hx-1,hy-3);ctx.rotate(-.25+Math.sin(t*3)*.08);E(0,-7,1.9,7);ctx.fillStyle='#ffc9e6';E(0,-7,.8,5);ctx.restore();ctx.fillStyle=Q[0];ctx.save();ctx.translate(hx+2,hy-3);ctx.rotate(.2);E(0,-6.5,1.9,6.5);ctx.restore();ctx.fillStyle='#ff9ac8';E(hx+5.2,hy+.8,.9,.8);
+    ctx.shadowColor='#fff3b0';ctx.shadowBlur=10;ctx.strokeStyle='#fff3b0';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(-1,-13+Math.sin(t*2)*1.5,4,.6,3.9);ctx.stroke();}
+  else{ctx.fillStyle=Q[0];ctx.beginPath();ctx.moveTo(hx-2,hy-3);ctx.lineTo(hx-1,hy-8);ctx.lineTo(hx+1,hy-3);ctx.fill();const g=ctx.createLinearGradient(hx+2,hy-3,hx+7,hy-15);g.addColorStop(0,'#ffe27a');g.addColorStop(1,'#fff');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(hx+1.5,hy-3);ctx.lineTo(hx+7,hy-15);ctx.lineTo(hx+4,hy-2.5);ctx.fill();
+    for(let i=0;i<4;i++){ctx.strokeStyle='hsl('+((t*80+i*70)%360)+',95%,72%)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(8-i*1.2,-7+i*1.6);ctx.quadraticCurveTo(3-i,-5+i*2+Math.sin(t*4+i),1-i,1+i*.8);ctx.stroke();}}
+  eye(hx+2,hy-.8,kind===5?'#ffe27a':kind===2?'#fff':'#fff',kind===5?1.9:1.6);
+  ctx.restore();
+  if(!calm&&(kind===2||kind===8||kind===9)&&Math.random()<.14)SC.parts.push({x:x-f*14*k+(Math.random()-.5)*10,y:y-12*sc,vx:-f*14,vy:-16,life:.6,c:kind===8?'#ffae42':kind===9?'hsl('+((t*80)%360)+',95%,75%)':'#bff4ff',s:2});
+}
 function drawPet(x,y,sc,tier,t,flip){
   const k=sc*1.15,f=flip?-1:1,bob=Math.sin(t*3.1)*4*k,fl=Math.sin(t*14)*.5;
   ctx.save();ctx.translate(x,y+bob);ctx.scale(f*k,k);ctx.lineJoin='round';
@@ -406,7 +443,7 @@ function drawHero(x,y,sc,look,t,anim,flip,dead,mv,fury){
     ctx.save();ctx.translate(x,y);ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.4+.15*Math.sin(t*5);ctx.scale(1,.3);ctx.fillStyle=gr;ctx.beginPath();ctx.arc(0,0,50,0,7);ctx.fill();ctx.restore();}
   ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(x,y+1,20*sc,5*sc,0,0,7);ctx.fill();
   if(look.set&&!dead&&!LITE)drawSetAura(x,y,sc,look.set,t);
-  if(!dead&&!look.spr&&look.pet&&!LITE){const px=x+(flip?-1:1)*30*sc,py=y-14*sc,pc=RAR[clamp(look.pet-1,0,4)].c;ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.35+.15*Math.sin(t*4);ctx.fillStyle=pc;ctx.beginPath();ctx.ellipse(px,y+1,12*sc,4*sc,0,0,7);ctx.fill();ctx.restore();drawPet(px,py,sc*(look.pet>=4?1.15:.9),[1,1,2,3,4][clamp(look.pet-1,0,4)],t+2.3,!flip);}
+  if(!dead&&!look.spr&&look.pet&&!LITE){const pr=clamp((look.pet-1)%10,0,4),pk=pr+(look.pet>10?5:0),px=x+(flip?-1:1)*(pk===1||pk===6||pk===3||pk===4?30:40)*sc,pc=RAR[pr].c;ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.35+.15*Math.sin(t*4);ctx.fillStyle=pc;ctx.beginPath();ctx.ellipse(px,y+1,12*sc,4*sc,0,0,7);ctx.fill();ctx.restore();drawBeast(px,y,sc,pk,t+2.3,!flip,mv);}
   if(!dead&&!look.spr&&!LITE&&petTier(look.r|0))drawPet(x-(flip?-1:1)*38*sc,y-m.bh*k*.92,sc,petTier(look.r|0),t+(look.c==='storm'?1:0),flip);
   let an='idle',fi=Math.floor(t*8);
   if(dead){an='die';fi=Math.min(frames(key,'die')-1,Math.floor((dead===true?9:dead)*8));}
@@ -1542,7 +1579,7 @@ function renderGear(){
   h+='<div class="card" style="display:flex;flex-direction:column;gap:8px">'+tog('לבש אוטומטית ציוד חזק יותר',A.autoEq,'autoEq')+
     '<div><span style="font-size:13px">מה להרים מהרצפה</span><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:5px">'+[['0','רגיל'],['1','קסום'],['2','נדיר'],['3','אגדי'],['4','עתיק'],['set','חלקי סט'],['g','כנפיים'],['ex','אקסלנט']].map(x=>'<button class="btn sm pk'+(pickOf(A)[x[0]]?' on':'')+'" data-act="pickup" data-k="'+x[0]+'">'+(pickOf(A)[x[0]]?'\u2713 ':'\u2715 ')+x[1]+'</button>').join('')+'</div><p class="hint" style="margin-top:4px">ירוק עם \u2713: הדמות מרימה. אפור עם \u2715: נשאר על הרצפה. זהב, אבני נשמה, תיבות ושברים נאספים תמיד.</p></div>'+
     '<div class="tog"><span>מכירה אוטומטית</span><button class="btn sm" data-act="autoSell">'+['כבויה','רגיל','רגיל וקסום'][A.autoSell]+'</button></div>'+
-    '<p class="hint">בכל תיבה יש סיכוי קטן לחיית מחמד: '+PETN.map((n,i)=>'<span style="color:'+RAR[i].c+'">'+n+' '+L((PET_BOX[i]*100)+'%')+' · '+L(PET_DAYS[i])+' ימים</span>').join(' · ')+'. בתיבת עונה הסיכוי כפול.</p>'+
+    '<p class="hint">בכל תיבה יש סיכוי קטן לחיית מחמד: '+PETN.map((n,i)=>'<span style="color:'+RAR[i].c+'">'+n+' או '+PETN2[i]+' '+L((PET_BOX[i]*100)+'%')+' · '+L(PET_DAYS[i])+' ימים</span>').join(' · ')+'. בתיבת עונה הסיכוי כפול.</p>'+
     '<div class="tog"><span>תיבות אוצר: '+L(A.boxes)+'</span><button class="btn sm pri" data-act="openBox" data-k=""'+(A.boxes?'':' disabled')+'>פתח תיבה</button></div>'+
     '<div class="tog"><span>תיבות עונה: '+L(A.sboxes)+' · 15% לחלק סט עתיק</span><button class="btn sm pri" data-act="openBox" data-k="s"'+(A.sboxes?'':' disabled')+'>פתח תיבה</button></div>'+
     '<div class="kv"><span>קמעות הגנה</span><b>'+L(A.charms)+'</b></div></div>';
