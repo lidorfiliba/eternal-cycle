@@ -573,7 +573,7 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:4,respIn:25,respSafe:3,fwd:[[0,1150],[0,550],[0,330]],lsHit:.02,lsBack:60,back:[0,-60],crownKeep:0,crownPen:1,pots:60,potMax:250,potCd:.25,heal:.06,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
+const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:4,respIn:15,respSafe:3,fwd:[[0,1150],[0,550],[0,330]],lsHit:.02,lsBack:60,botStone:1100,back:[0,-60],crownKeep:0,crownPen:1,pots:60,potMax:250,potCd:.25,heal:.06,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.012,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   // a wide castle: room to fight in the yard and in the throne room without everyone standing on everyone
@@ -631,6 +631,7 @@ function sgBot(B,i,dt,rnd,ev){
   else if(role==='lead'){dest=mine?[0,-775]:(ready||S.crown[2]===i?SG.crown:[0,-744]);spot=!mine&&ready&&sgNear(f,SG.crown,SG.zone-8);}
   else dest=[(i%3-1)*140,mine?-695:-754];
   if(mine&&role!=='lead'&&sgShield(B)){const alive=SG.stat.filter(q=>S.gate[q]>0),g=SG.gates[alive[i%alive.length]];dest=[(g[0]+g[2])/2*.8,(g[1]+g[3])/2+70];spot=false;}
+  let stone=null;if(mine&&role==='fight'&&SG.botStone&&!(S.lsDown>t)){const c=sgCamp(B);if(c!==SG.camp&&!(e&&bd<260)&&Math.hypot(c[0]-f.x,c[1]-f.y)<SG.botStone){stone=c;dest=[c[0],c[1]-30];spot=false;}}
   if(!mine&&f.y<SG.hall[3]+40&&sgShield(B)){let bs=-1,bq=1e9;for(const q of SG.stat){if(S.gate[q]<=0)continue;const g=SG.gates[q],d=Math.hypot((g[0]+g[2])/2-f.x,(g[1]+g[3])/2-f.y);if(d<bq){bq=d;bs=q;}}if(bs>=0){const g=SG.gates[bs];dest=[(g[0]+g[2])/2,(g[1]+g[3])/2];spot=false;}}
   // walking: the one on his spot stays in its middle; the others meet an enemy who comes near, or go on their way
   const chase=e&&!spot&&bd<(q>=0||role==='lead'?(mine?200:90):280);let tx,ty,stop;
@@ -645,7 +646,7 @@ function sgBot(B,i,dt,rnd,ev){
   if(e&&bd<rng+70&&can('s2')&&(f.hp<.7||spot))act('s2');
   if(!e||bd>rng+14){ // nobody in reach: a far enemy to leap on, or a gate to break
     f.cs=0;if(e&&!spot&&bd<=SG.leap&&bd>rng+30&&can('s3')&&rnd()<.6){act('s3');return;}
-    if(!mine&&!e)for(const k of ['s1','s0','atk'])if(can(k)&&act(k))return;
+    if((!mine||stone)&&!e)for(const k of ['s1','s0','atk'])if(can(k)&&act(k))return;
     return;}
   if(e.inv>t)return;
   // an enemy who stands on a switch or on the crown is shoved off it
