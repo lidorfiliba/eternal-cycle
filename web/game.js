@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261127191602';
+const BUILD='20261127192137';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -1921,7 +1921,7 @@ function accountHtml2(){
   if(!ONLINE)return '<h2>העברה בין מכשירים</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">מצב מקומי: ההתקדמות שמורה במכשיר הזה. קוד השמירה מעביר אותה למכשיר אחר, וטעינה מחליפה את מה שיש כאן.</p><button class="btn" data-act="expSave">העתק קוד שמירה</button><input type="text" id="impCode" placeholder="הדבק כאן קוד שמירה" autocomplete="off"><button class="btn" data-act="impSave">טען קוד שמירה</button></div>';
   return '<h2>שפה · Language</h2>'+'<div class="seg notr" style="justify-content:center"><button class="btn sm'+(getLang()==='he'?' pri':'')+'" data-act="lang" data-l="he">עברית</button><button class="btn sm'+(getLang()==='en'?' pri':'')+'" data-act="lang" data-l="en">English</button></div>'+'<h2>חשבון</h2><div class="card" style="display:flex;flex-direction:column;gap:8px"><p class="hint">מחובר כ-<b dir="auto">'+esc(session&&session.user||'')+'</b>. אפשר להיכנס עם אותו שם וסיסמה מכל מכשיר.</p>'+
     (me.secret?'':'<p class="hint" style="color:var(--bad)">עוד לא הוגדרה שאלת שחזור. בלעדיה אי אפשר לשחזר סיסמה שנשכחה.</p>')+
-    '<button class="btn'+(me.secret?'':' pri')+'" data-act="acct" data-k="secret">שאלת שחזור</button><button class="btn" data-act="acct" data-k="pass">שינוי סיסמה</button><button class="btn" data-act="settings">הגדרות שליטה: מקשים וגודל כפתורים</button>'+
+    '<button class="btn'+(me.secret?'':' pri')+'" data-act="acct" data-k="secret">שאלת שחזור</button><button class="btn" data-act="acct" data-k="pass">שינוי סיסמה</button><button class="btn" data-act="tfa">אימות דו-שלבי: '+(me.tfa?'פעיל':'כבוי')+'</button><button class="btn" data-act="settings">הגדרות שליטה: מקשים וגודל כפתורים</button>'+
     (me.admin?'<a class="btn" href="admin.html" style="text-align:center;text-decoration:none;color:inherit">מסך ניהול</a>':'')+
     (me.admin?'<div class="card" style="display:flex;flex-direction:column;gap:6px;border-color:var(--gold)"><b style="color:var(--gold)">כלי מנהל המשחק</b><p class="hint">שיגור: בלשונית מפה כל המפות פתוחות לך, בכל רמה, כולל העיר העתיקה והחנות שלה.</p><p class="hint">רק החשבון שלך רואה את זה, והשרת בודק את ההרשאה מחדש בכל לחיצה. כל פעולה מוכרזת בצ׳אט העולמי.</p>'+
       '<button class="btn pri" data-act="gm" data-a="br" data-sec="90">פתח את המעגל האחרון עכשיו · הרשמה 90 שניות</button><button class="btn sm" data-act="gm" data-a="br" data-sec="30">פתח לבדיקה מהירה · 30 שניות</button><button class="btn sm" data-act="gm" data-a="brStop">בטל הרשמה פתוחה</button>'+
@@ -1944,15 +1944,19 @@ function showAuth(msg){
     '<button class="btn sm" data-act="authSwap">'+(reg?'יש לי כבר חשבון':'אין לי חשבון, הרשמה')+'</button>'+(reg?'':' <button class="btn sm" data-act="forgot">שכחתי סיסמה</button>')+
     '<p class="hint" style="margin-top:8px">'+(reg?'בהרשמה אתה מאשר את ':'')+'<a href="'+PG('terms')+'" target="_blank" rel="noopener">התקנון</a> '+(reg?'ואת ':'· ')+'<a href="'+PG('privacy')+'" target="_blank" rel="noopener">מדיניות הפרטיות</a></p>');
 }
+let authKeep=null;
+function showCode(msg){openModal('<h3>אימות דו-שלבי</h3><p class="hint">הקלד את הקוד בן 6 הספרות מאפליקציית האימות, או אחד מקודי הגיבוי.</p><input type="text" id="auCode" maxlength="16" inputmode="numeric" autocomplete="one-time-code" placeholder="קוד" dir="ltr">'+(msg?'<p class="hint" style="color:var(--bad)">'+esc(msg)+'</p>':'')+'<div class="acts"><button class="btn" data-act="authBack">חזרה</button><button class="btn pri" data-act="authGo">כניסה</button></div>');}
 async function authGo(){
-  const user=($('auUser').value||'').trim(),pass=$('auPass').value||'';
+  if(authKeep&&$('auCode')){const k=authKeep,code=($('auCode').value||'').trim();if(code.length<6){showCode('הקלד את הקוד');return;}openModal('<h3>מעגל הנצח</h3><p class="hint">מתחבר...</p>');let r=null;try{r=await post({kind:'login',args:{user:k.user,pass:k.pass,code:code}});}catch(e){}
+    if(!r||!r.j){showCode('אין חיבור לשרת. נסה שוב');return;}if(!r.j.ok){if(r.j.tfa)showCode(r.j.msg);else{authKeep=null;showAuth(r.j.msg||'הפעולה נכשלה');}return;}authKeep=null;setSession({token:r.j.token,user:r.j.user});await startOnline();return;}
+  authKeep=null;const user=($('auUser').value||'').trim(),pass=$('auPass').value||'';
   if(user.length<3){showAuth('שם משתמש קצר מדי');return;}if(pass.length<8){showAuth('הסיסמה צריכה לפחות 8 תווים');return;}
   const reg=authMode==='register',q=reg?+$('auQ').value:0,ans=reg?($('auA').value||'').trim():'';
   if(reg&&ans.length<2){showAuth('כתוב תשובה לשאלת השחזור');return;}
   openModal('<h3>מעגל הנצח</h3><p class="hint">מתחבר...</p>');
   let r=null;try{r=await post({kind:authMode,args:{user:user,pass:pass,q:q,a:ans}});}catch(e){}
   if(!r||!r.j){showAuth('אין חיבור לשרת. נסה שוב');return;}
-  if(!r.j.ok){showAuth(r.j.msg||'הפעולה נכשלה');return;}
+  if(!r.j.ok){if(r.j.tfa&&!reg){authKeep={user:user,pass:pass};showCode();return;}showAuth(r.j.msg||'הפעולה נכשלה');return;}
   setSession({token:r.j.token,user:r.j.user});await startOnline();
 }
 async function startOnline(){
@@ -1978,6 +1982,8 @@ document.addEventListener('click',async e=>{
   if(a==='forgotGo'){forgotGo();return;}
   if(a==='authBack'){showAuth();return;}
   if(a==='acct'){acctModal(b.dataset.k);return;}
+  if(a==='tfa'){tfaModal(b.dataset.s||'',null);return;}
+  if(a==='tfaGo'){tfaGo(b.dataset.s);return;}
   if(a==='acctGo'){acctGo(b.dataset.k);return;}
   if(a==='tut'){tutNext();return;}
   if(a==='keepGo'){enterKeep();return;}
@@ -2335,6 +2341,23 @@ function acctModal(kind,msg){
     :'<h3>מחיקת חשבון</h3><p class="hint" style="color:var(--bad)">המחיקה סופית. הדמויות, הציוד וההתקדמות נמחקים מהשרת ואי אפשר לשחזר אותם.</p>'+pwInput('acP','הסיסמה, לאישור','current-password');
   openModal(h+(msg?'<p class="hint" style="color:var(--bad)">'+esc(msg)+'</p>':'')+'<div class="acts"><button class="btn" data-act="closeModal">ביטול</button><button class="btn pri" data-act="acctGo" data-k="'+kind+'">'+(kind==='del'?'מחק לצמיתות':'שמור')+'</button></div>');
 }
+// Two-step sign-in: optional. Switched on with an authenticator app; eight backup codes are shown once.
+let tfaSec=null;
+function tfaModal(step,msg,codes){
+  const bad=msg?'<p class="hint" style="color:var(--bad)">'+esc(msg)+'</p>':'',stop='<button class="btn" data-act="closeModal">ביטול</button>';
+  if(codes){openModal('<h3>האימות הדו-שלבי פעיל</h3><p class="hint" style="color:var(--bad)">שמור את קודי הגיבוי במקום בטוח. כל קוד עובד פעם אחת, והם לא יוצגו שוב. בלי הטלפון ובלי הקודים אי אפשר להיכנס לחשבון.</p><p dir="ltr" style="font-family:monospace;font-size:15px;line-height:1.9;text-align:center;user-select:all">'+codes.map(esc).join('<br>')+'</p><div class="acts"><button class="btn pri" data-act="closeModal">שמרתי</button></div>');return;}
+  if(me.tfa){openModal('<h3>כיבוי אימות דו-שלבי</h3><p class="hint">אחרי הכיבוי הכניסה לחשבון היא בסיסמה בלבד.</p>'+pwInput('tfP','הסיסמה הנוכחית','current-password')+'<input type="text" id="tfC" maxlength="16" autocomplete="one-time-code" placeholder="קוד מהאפליקציה או קוד גיבוי" dir="ltr">'+bad+'<div class="acts">'+stop+'<button class="btn pri" data-act="tfaGo" data-s="off">כבה</button></div>');return;}
+  if(step==='code'&&tfaSec){openModal('<h3>אימות דו-שלבי</h3><p class="hint">1. פתח אפליקציית אימות בטלפון (למשל Google Authenticator או Authy) והוסף חשבון עם המפתח הזה:</p><p dir="ltr" style="font-family:monospace;font-size:14px;text-align:center;word-break:break-all;user-select:all">'+esc(tfaSec.secret)+'</p><a class="btn sm" href="'+esc(tfaSec.uri)+'" style="text-align:center;text-decoration:none;color:inherit">פתח באפליקציית האימות שבמכשיר הזה</a><p class="hint">2. הקלד את הקוד בן 6 הספרות שהאפליקציה מציגה:</p><input type="text" id="tfC" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="קוד" dir="ltr">'+bad+'<div class="acts">'+stop+'<button class="btn pri" data-act="tfaGo" data-s="on">הפעל</button></div>');return;}
+  openModal('<h3>אימות דו-שלבי</h3><p class="hint">לא חובה. כשהוא פעיל, כניסה לחשבון דורשת גם קוד מאפליקציית אימות בטלפון, כך שסיסמה שדלפה לא מספיקה. צריך טלפון עם אפליקציית אימות.</p>'+pwInput('tfP','הסיסמה הנוכחית','current-password')+bad+'<div class="acts">'+stop+'<button class="btn pri" data-act="tfaGo" data-s="start">המשך</button></div>');
+}
+async function tfaGo(step){
+  const v=id=>$(id)?($(id).value||'').trim():'',kind=step==='start'?'tfaStart':step==='on'?'tfaOn':'tfaOff',args=step==='start'?{pass:$('tfP')?$('tfP').value:''}:step==='on'?{code:v('tfC')}:{pass:$('tfP')?$('tfP').value:'',code:v('tfC')};
+  let r=null;try{r=await post({kind:kind,args:args},session&&session.token);}catch(e){}
+  const j=r&&r.j;if(!j||!j.ok){tfaModal(step==='on'?'code':'',j&&j.msg||'אין חיבור לשרת');return;}
+  if(step==='start'){tfaSec={secret:j.secret,uri:j.uri};tfaModal('code');return;}
+  if(step==='on'){tfaSec=null;me.tfa=true;panelDirty=true;tfaModal('',null,j.codes);return;}
+  me.tfa=false;panelDirty=true;closeModal();toast('האימות הדו-שלבי כובה');
+}
 async function acctGo(kind){
   const v=id=>$(id)?$(id).value:'',args=kind==='secret'?{pass:v('acP'),q:+v('acQ'),a:v('acA')}:kind==='pass'?{pass:v('acP'),next:v('acN')}:{pass:v('acP')};
   let r=null;try{r=await post({kind:kind==='secret'?'setsecret':kind==='pass'?'chpass':'delacct',args:args},session&&session.token);}catch(e){}
@@ -2346,7 +2369,7 @@ async function acctGo(kind){
 let fg={user:'',q:null};
 function showForgot(msg){
   openModal('<h3>שחזור סיסמה</h3>'+(fg.q==null?'<p class="hint">כתוב את שם המשתמש, ותוצג שאלת השחזור שנבחרה בהרשמה.</p><input type="text" id="fgUser" maxlength="16" autocomplete="username" autocapitalize="none" placeholder="שם משתמש">'
-    :'<p class="hint">ענה על השאלה כדי לקבוע סיסמה חדשה:</p><p><b>'+esc(SECRET_Q[fg.q]||'')+'</b></p><input type="text" id="fgA" maxlength="60" placeholder="התשובה שלך" autocomplete="off">'+pwInput('fgP','סיסמה חדשה, לפחות 8 תווים','new-password'))+
+    :'<p class="hint">ענה על השאלה כדי לקבוע סיסמה חדשה:</p><p><b>'+esc(SECRET_Q[fg.q]||'')+'</b></p><input type="text" id="fgA" maxlength="60" placeholder="התשובה שלך" autocomplete="off">'+pwInput('fgP','סיסמה חדשה, לפחות 8 תווים','new-password')+(fg.tfa?'<input type="text" id="fgC" maxlength="16" autocomplete="one-time-code" placeholder="קוד אימות או קוד גיבוי" dir="ltr">':''))+
     (msg?'<p class="hint" style="color:var(--bad)">'+esc(msg)+'</p>':'')+'<div class="acts"><button class="btn" data-act="authBack">חזרה</button><button class="btn pri" data-act="forgotGo">המשך</button></div>');
 }
 async function forgotGo(){
@@ -2355,14 +2378,14 @@ async function forgotGo(){
     try{r=await post({kind:'forgot',args:{user:u}});}catch(e){}
     if(!r||!r.j||!r.j.ok){showForgot('אין חיבור לשרת. נסה שוב');return;}fg={user:u,q:r.j.q};showForgot();return;}
   const a=$('fgA').value||'',p=$('fgP').value||'';if(p.length<8){showForgot('הסיסמה צריכה לפחות 8 תווים');return;}
-  try{r=await post({kind:'recover',args:{user:fg.user,a:a,pass:p}});}catch(e){}
-  if(!r||!r.j){showForgot('אין חיבור לשרת. נסה שוב');return;}if(!r.j.ok){showForgot(r.j.msg||'הפעולה נכשלה');return;}
+  try{r=await post({kind:'recover',args:{user:fg.user,a:a,pass:p,code:$('fgC')?($('fgC').value||'').trim():undefined}});}catch(e){}
+  if(!r||!r.j){showForgot('אין חיבור לשרת. נסה שוב');return;}if(!r.j.ok){if(r.j.tfa)fg.tfa=true;showForgot(r.j.msg||'הפעולה נכשלה');return;}
   setSession({token:r.j.token,user:r.j.user});fg={user:'',q:null};openModal('<h3>מעגל הנצח</h3><p class="hint">מתחבר...</p>');await startOnline();
 }
 function loadMe(){
   if(!ONLINE||window.EC_MOCK||!session)return;
   pushLoad();
-  post({kind:'whoami',args:{}},session.token).then(r=>{if(r.j&&r.j.ok){me={secret:!!r.j.secret,admin:!!r.j.admin};panelDirty=true;}}).catch(()=>{});
+  post({kind:'whoami',args:{}},session.token).then(r=>{if(r.j&&r.j.ok){me={secret:!!r.j.secret,admin:!!r.j.admin,tfa:!!r.j.tfa};panelDirty=true;}}).catch(()=>{});
 }
 
 /* ---------- event announcements in the middle of the screen ---------- */

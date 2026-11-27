@@ -571,3 +571,22 @@ test('castle siege over the socket: guild members join a running siege, the serv
     const row=(await db.query("select * from castle where siege='s-test-key'")).rows[0];assert.equal(String(row.guild_id),String(gid),'the castle is theirs for the week');assert.equal((await db.query('select state from accounts where user_id=$1',[a.uid])).rows[0].state.coins,30);assert.equal(srv.live.sgNow(),null);
   }finally{for(const u of [a,b,c,c2])if(u&&u.ws)u.ws.close();srv.live.close();srv.close();}
 });
+
+test('two-step sign-in, for whoever wants it: a time code or a backup code after the password, also to recover',async()=>{
+  const {auth,clock}=await world();const {createHmac}=await import('node:crypto');
+  const B32='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567',unb32=t=>{let bits=0,v=0;const out=[];for(const c of t){v=(v<<5)|B32.indexOf(c);bits+=5;if(bits>=8){out.push((v>>>(bits-8))&255);bits-=8;v&=(1<<bits)-1;}}return Buffer.from(out);};
+  const code=(sec,at)=>{const m=Buffer.alloc(8);m.writeBigUInt64BE(BigInt(Math.floor(at/30000)));const h=createHmac('sha1',unb32(sec)).update(m).digest(),o=h[19]&15;return String(((h[o]&127)<<24|h[o+1]<<16|h[o+2]<<8|h[o+3])%1e6).padStart(6,'0');};
+  const now=()=>typeof clock==='function'?clock():clock.now();
+  const r=await auth.register('twostep','correct horse 1','3.3.3.3',1,'Herzl');assert.ok(r.ok,r.msg);const uid=await auth.verify(r.token);
+  assert.ok((await auth.login('twostep','correct horse 1','3.3.3.3')).ok,'without it, sign-in is as before');assert.equal((await auth.whoami(uid)).tfa,false);
+  assert.equal((await auth.tfaStart(uid,'wrong password')).ok,false);const st=await auth.tfaStart(uid,'correct horse 1');assert.ok(st.ok&&/^[A-Z2-7]{32}$/.test(st.secret)&&st.uri.startsWith('otpauth://totp/'));
+  assert.ok((await auth.login('twostep','correct horse 1','3.3.3.3')).ok,'nothing is asked until it is switched on');
+  assert.equal((await auth.tfaOn(uid,'000000')).ok,false);const on=await auth.tfaOn(uid,code(st.secret,now()));assert.ok(on.ok&&on.codes.length===8,on.msg);assert.equal((await auth.whoami(uid)).tfa,true);
+  const l0=await auth.login('twostep','correct horse 1','3.3.3.3');assert.ok(!l0.ok&&l0.tfa&&!l0.token,'the password alone is no longer enough');
+  assert.equal((await auth.login('twostep','wrong password 9','3.3.3.3','123456')).tfa,undefined,'a wrong password never learns that a code is asked');
+  assert.equal((await auth.login('twostep','correct horse 1','3.3.3.3',code(st.secret,now()))).ok,false,'the code that switched it on cannot be used again');
+  const later=now()+60000;const l1=await auth.login('twostep','correct horse 1','3.3.3.3',code(st.secret,later+30000));assert.ok(!l1.ok,'a code from another minute is refused');
+  assert.ok((await auth.login('twostep','correct horse 1','3.3.3.3',on.codes[0])).ok,'a backup code opens it');assert.equal((await auth.login('twostep','correct horse 1','3.3.3.3',on.codes[0])).ok,false,'once');
+  const rc=await auth.recover('twostep','Herzl','brand new pass 2','3.3.3.3');assert.ok(!rc.ok&&rc.tfa,'the recovery question alone does not open it');assert.ok((await auth.recover('twostep','Herzl','brand new pass 2','3.3.3.3',on.codes[1])).ok);
+  assert.equal((await auth.tfaOff(uid,'brand new pass 2','000000')).ok,false);assert.ok((await auth.tfaOff(uid,'brand new pass 2',on.codes[2])).ok);assert.ok((await auth.login('twostep','brand new pass 2','3.3.3.3')).ok,'and off again, the password is enough');
+});

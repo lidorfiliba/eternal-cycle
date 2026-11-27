@@ -29,13 +29,16 @@ export function makeServer(admin, secret, origin = '*', opts = {}) {
       const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
       if (kind === 'register') return send(res, await auth.register(args.user, args.pass, ip, args.q, args.a));
       if (kind === 'forgot') return send(res, await auth.forgot(args.user));
-      if (kind === 'recover') return send(res, await auth.recover(args.user, args.a, args.pass, ip));
-      if (kind === 'login') { const r = await auth.login(args.user, args.pass, ip); admin.from('audit').insert({ user_id: null, kind: 'log', detail: { k: r && r.token ? 'login' : 'loginFail', a: { user: String(args.user || '').slice(0, 40) } } }).then(() => {}, () => {}); return send(res, r); }
+      if (kind === 'recover') return send(res, await auth.recover(args.user, args.a, args.pass, ip, args.code));
+      if (kind === 'login') { const r = await auth.login(args.user, args.pass, ip, args.code); admin.from('audit').insert({ user_id: null, kind: 'log', detail: { k: r && r.token ? 'login' : 'loginFail', a: { user: String(args.user || '').slice(0, 40) } } }).then(() => {}, () => {}); return send(res, r); }
       const ses = await auth.session(String(req.headers['x-ec-token'] || ''));
       if (!ses) return send(res, { error: 'auth' }, 401);
       const uid = ses.uid;
       if (kind === 'whoami') return send(res, await auth.whoami(uid));
       if (kind === 'setsecret') return send(res, await auth.setSecret(uid, args.pass, args.q, args.a));
+      if (kind === 'tfaStart') return send(res, await auth.tfaStart(uid, args.pass));
+      if (kind === 'tfaOn') return send(res, await auth.tfaOn(uid, args.code));
+      if (kind === 'tfaOff') return send(res, await auth.tfaOff(uid, args.pass, args.code));
       if (kind === 'chpass') return send(res, await auth.chpass(uid, args.pass, args.next));
       if (kind === 'delacct') { const r = await auth.delacct(uid, args.pass); if (r && r.ok) await push.off(uid); return send(res, r); }
       if (kind === 'pushget') return send(res, await push.status(uid));
