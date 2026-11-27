@@ -552,7 +552,7 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:1500,Y0:-500,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:10,respIn:25,crownKeep:0,crownPen:1,pots:5,potMax:60,potCd:3,heal:.25,potPrice:500,hit:.045,gam:.3,hitMin:.02,hitMax:.06,critMax:1.6,comboM:1.5,comboFlat:.28,wound:2.5,cbMin:.3,cbMax:1.1,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s0:2.5,s1:4,s3:12},leap:230,bashCd:7,bashM:.3,bashPush:34,
+const SG={W:1500,Y0:-500,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:10,respIn:35,crownKeep:0,crownPen:1,pots:5,potMax:60,potCd:2.5,heal:.25,stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:500,hit:.045,gam:.3,hitMin:.02,hitMax:.06,critMax:1.6,comboM:1.5,comboFlat:.28,wound:1.8,cbMin:.3,cbMax:1.1,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s0:2.5,s1:4,s3:12},leap:230,bashCd:7,bashM:.3,bashPush:34,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.012,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   walls:[[-462,-432,462,-408],[-462,108,-50,132],[50,108,462,132],[-462,-432,-438,-200],[-462,-110,-438,132],[438,-432,462,-200],[438,-110,462,132],
@@ -658,7 +658,11 @@ function sgAct(B,i,k,rnd){
   if(e.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}
   // one burst at a time: an enemy still wounded by a combo takes the next one as a plain strong blow, so three players cannot erase one in a breath
   if(o.combo){if(e.wound>t)o.again=true;else{dm=dm*SG.comboM+SG.comboFlat*(o.guard?1-K.sk[2].cut:1);if(!o.guard)e.wound=t+SG.wound;}}
-  e.hp-=dm;o.dm=dm;if((k==='s1'||o.combo)&&!o.guard){e.stun=t+K.sk[1].stun;o.stun=true;}
+  // Many on one: each more attacker who struck the same enemy in the last two seconds makes every blow on him weaker.
+  // A crowd still wins, but not in a breath, and the one in the middle has time to drink and to be helped.
+  {const hb=e.hb||(e.hb={});let n=0;for(const k in hb){if(t-hb[k]>SG.gangT)delete hb[k];else if(+k!==i)n++;}hb[i]=t;if(n>0){dm*=SG.gang[Math.min(n,SG.gang.length)-1];o.gang=n+1;}}
+  // and nobody is kept stunned without end: after a stun wears off, a moment passes before the next can land
+  e.hp-=dm;o.dm=dm;if((k==='s1'||o.combo)&&!o.guard&&!(e.stunI>t)){e.stun=t+K.sk[1].stun;e.stunI=t+K.sk[1].stun+SG.stunGap;o.stun=true;}
   // blows that move: the quick skill and the combo throw the enemy back a little, unless he stands behind his shield
   // The shove is the move for it: little harm, a long throw, and it does not wait for the last push to wear off.
   if((k==='s0'||k==='bash'||o.combo)&&!o.guard&&(o.combo||k==='bash'||!(e.pushI>t))){e.pushI=t+SG.pushI;const dx=e.x-me.x,dy=e.y-me.y,d=Math.hypot(dx,dy)||1,ps=k==='bash'?SG.bashPush:o.combo?SG.pushC:SG.push;sgMove(B,e,e.x+dx/d*ps,e.y+dy/d*ps);e.pushT=t+SG.pushT;o.px=[Math.round(e.x),Math.round(e.y)];}

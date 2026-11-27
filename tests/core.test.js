@@ -615,3 +615,13 @@ test('the practice siege: the server\'s own players walk the road, break the gat
   const X=G.sgNew(rnd,{}),a=G.sgAdd(X,P('l','blade'),1,'A',rnd,true);X.t=5;X.sg.crown=[1,20,a];G.sgDown(X,a,-1);assert.equal(X.f[a].cacc,0,'a leader who falls loses all his time on the crown, as in the old sieges');
   assert.ok(G.SG.respIn>G.SG.resp,'a defender waits longer to return than an attacker');
 });
+test('many on one: a crowd\'s blows weaken, a stun is not chained without end, and potions keep pace',()=>{
+  const rnd=()=>.5,P=(id)=>({id,n:id,c:'blade',d:400,a:1.5,h:2700,f:70,cr:0,cd:2});
+  const X=G.sgNew(rnd,{}),a=G.sgAdd(X,P('a'),1,'',rnd),b=G.sgAdd(X,P('b'),1,'',rnd),c=G.sgAdd(X,P('c'),1,'',rnd),e=G.sgAdd(X,P('e'),2,'',rnd),fe=X.f[e];X.t=30;
+  X.f.forEach(f=>{f.x=0;f.y=1900;});fe.x=20;fe.pool=1e9;
+  const h1=G.sgAct(X,a,'atk',rnd),h2=G.sgAct(X,b,'atk',rnd),h3=G.sgAct(X,c,'atk',rnd);assert.ok(!h1.gang&&h2.gang===2&&h3.gang===3);
+  assert.ok(Math.abs(h2.dm/h1.dm-G.SG.gang[0])<.02&&Math.abs(h3.dm/h1.dm-G.SG.gang[1])<.02,'the second and third hit for less: '+h2.dm/h1.dm+' '+h3.dm/h1.dm);
+  X.t+=G.SG.gangT+.5;X.f[b].at.atk=0;const h4=G.sgAct(X,b,'atk',rnd);assert.ok(!h4.gang,'alone again, a full blow');
+  X.t+=20;X.f[a].at.s1=0;X.f[b].at.s1=0;const s1=G.sgAct(X,a,'s1',rnd);assert.ok(s1.stun);X.t+=1;const s2=G.sgAct(X,b,'s1',rnd);assert.ok(!s2.stun,'a second stun right after the first does not land');
+  assert.ok(G.SG.heal/G.SG.potCd>=.1,'a potion gives back a tenth of life a second');assert.ok(G.SG.wound<G.SG.potCd);
+});
