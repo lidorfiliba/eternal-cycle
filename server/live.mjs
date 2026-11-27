@@ -235,8 +235,9 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
       const key = z + ':' + f; ws.sroom = key; let r = rooms.get(key); if (!r) { r = { z, f, max: G.zs(z, f).hp, mons: [] }; rooms.set(key, r); } roomFit(r, key);
       const p = await snap(uid); ws.sp = p ? { d: p.d, a: p.a, cr: p.cr, cd: p.cd } : null; ws.spAt = now; ws.sb = 6; ws.sbT = now; return roomSend(key, roomView(r));
     }
+    // his strength is read again after anything he does that may have changed it (a level, a piece of gear), and at least every half minute
+    if (now - (ws.spAt || 0) > (ws.sp && !ws.spOld ? 30000 : 1200)) { ws.spAt = now; ws.spOld = false; snap(uid).then((q) => { if (q) ws.sp = { d: q.d, a: q.a, cr: q.cr, cd: q.cd }; }).catch(() => {}); }
     const key = ws.sroom, r = key && rooms.get(key), p = ws.sp; if (!r || !p) return; const i = Math.floor(Number(m.i)), mon = r.mons[i]; if (!mon || !mon.alive) return;
-    if (now - (ws.spAt || 0) > 30000) { ws.spAt = now; snap(uid).then((q) => { if (q) ws.sp = { d: q.d, a: q.a, cr: q.cr, cd: q.cd }; }).catch(() => {}); } // new gear shows within half a minute
     // his own pace: so many blows' worth a second, a short burst allowed; whatever he asks beyond it is cut down to it
     ws.sb = Math.min(12, (ws.sb || 0) + (now - (ws.sbT || now)) / 1000 * Math.max(.3, p.a) * 2.8); ws.sbT = now; if (ws.sb < .2) return;
     let mult = Math.max(.2, Math.min(6, Number(m.m) || 1)); if (mult > ws.sb) mult = ws.sb; ws.sb -= mult;
@@ -248,6 +249,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     mon.dm = new Map(); const s = JSON.stringify({ t: 'sd', i, d, k: ws.key, cr: crit ? 1 : 0 }); for (const [u, o] of socks) if (o.sroom === key && !told.has(u) && o.readyState === 1) o.send(s);
   }
   const roomClock = setInterval(() => { const now = clock(); for (const [key, r] of rooms) { if (!roomSize(key)) { rooms.delete(key); continue; } r.mons.forEach((x, i) => { if (!x.alive && now >= x.at) { x.alive = true; x.hp = r.max; roomSend(key, { t: 'sr', i }); } }); } if (credit.size > 5000) credit.clear(); }, 400); roomClock.unref();
+  const stale = (uid) => { const o = socks.get(uid); if (o) o.spOld = true; };
   const takeKills = (uid, z, f) => { const c = credit.get(uid); if (!c || c.key !== z + ':' + f) return 0; const n = Math.floor(c.n + 1e-9); c.n -= n; return n; };
   // Party invitations: by clicking a player or typing a name. The invited player is asked, and joins only on a yes.
   // The party itself lives in the database as before; this only carries the question and the answer.
@@ -373,5 +375,5 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
       ws.on('error', () => {});
     });
   });
-  return { socks, duels, takeKills, rooms, sgNow: () => sg, sgOpen, brNow: () => br, brOpen: (ms) => (br = { key: 'manual', phase: 'sign', joined: new Map(), end: clock() + ms, idx: new Map() }), brBegin: () => { if (br && br.phase === 'sign') brStart(br); }, close: () => { clearInterval(roomClock); for (const d of duels.values()) clearInterval(d.timer); clearInterval(brClock); if (br && br.timer) clearInterval(br.timer); if (sg) clearInterval(sg.timer); wss.close(); } };
+  return { socks, duels, takeKills, stale, rooms, sgNow: () => sg, sgOpen, brNow: () => br, brOpen: (ms) => (br = { key: 'manual', phase: 'sign', joined: new Map(), end: clock() + ms, idx: new Map() }), brBegin: () => { if (br && br.phase === 'sign') brStart(br); }, close: () => { clearInterval(roomClock); for (const d of duels.values()) clearInterval(d.timer); clearInterval(brClock); if (br && br.timer) clearInterval(br.timer); if (sg) clearInterval(sg.timer); wss.close(); } };
 }

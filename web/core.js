@@ -54,11 +54,11 @@ const RESET_TOUGH={1:[4,4,3],2:[4.5,6,2.7],3:[5,8,2.4],4:[5.5,11,2.2],5:[6.5,14,
 const SIGS=['xp','gold','hp','crit','aspd','cdmg','drop','dmg'],RSIGS=['xp','dmg','gold','cdmg','aspd','crit'];
 const ZONES=ZRAW.map((q,i)=>{
   const min=q[2],req=q[11]||0,base=i<BASEZ,j=i-BASEZ,z={n:q[0],m:q[1],min:min,spr:q[3],tint:q[4],kind:q[5],c:q[6],sky:[q[7],q[8]],sil:q[9],amb:q[10],fly:q[3].indexOf('eye')===0};
+  z.shared=1; // on every map the monsters are the server's, shared by everyone who stands on the floor (where the game has a live server)
   z.sig=base?SIGS[Math.floor(i/REGION)]:RSIGS[Math.floor(j/2)]||'drop';
   z.hp=Math.round(90+9*min+.018*min*min);z.atk=Math.round(13+.84*min);z.xp=Math.round(10*Math.pow(1+min/50,1.6));z.gold=Math.round(3+.19*min);
   if(base){const w=[0,0,1,0,2,0,3,4][Math.floor(i/REGION)];if(w)z.wing=w;}
-  else{const t=q[12]?RESET_TOUGH[10]:RESET_TOUGH[req]||[4,2.2];if(q[12])z.castle=1;else z.req=req;if(j===0)z.shared=1; // the pilot: on this map the monsters are the server's, shared by everyone who stands on it
-  z.wing=q[12]?8:5+Math.floor(j/2);z.xp=Math.round(z.xp*1.7);z.gold=Math.round(48+(min-100)*.314);z.hp=Math.round(z.hp*1.55*t[0]);z.atk=Math.round(z.atk*1.4*t[1]);}
+  else{const t=q[12]?RESET_TOUGH[10]:RESET_TOUGH[req]||[4,2.2];if(q[12])z.castle=1;else z.req=req;z.wing=q[12]?8:5+Math.floor(j/2);z.xp=Math.round(z.xp*1.7);z.gold=Math.round(48+(min-100)*.314);z.hp=Math.round(z.hp*1.55*t[0]);z.atk=Math.round(z.atk*1.4*t[1]);}
   return z;});
 // Gear tier of what a map drops: the main road climbs one tier per region (1 to 8), reset maps hold tiers 9 to 12.
 const tierOf=zi=>zi<BASEZ?1+Math.floor(zi/REGION):ZONES[zi]&&ZONES[zi].castle?CITY_TIER:9+Math.floor((zi-BASEZ)/2);
