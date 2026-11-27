@@ -1,5 +1,22 @@
 // Request handling for the game, independent of the runtime so it can be tested with a stand-in database.
 // `admin` is a Supabase service-role client; `G` is the shared rules module.
+// The game's log, for the admin screen. Every action that changes something worth knowing is written with the
+// character and what came of it. Kills are far too many to list one by one: a kill report enters the log only when
+// something notable came with it. Nothing here is trusted from the browser beyond the name of the action.
+const LOG_KINDS = new Set(["create", "switch", "reset", "buy", "wingEvolve", "craftKey", "evEnter", "evLeave", "openBox", "respec", "claimEvent", "claimWorld", "claimWeek", "claimPass", "claimLogin", "towerEnd", "trialEnd", "duelEnd", "gcreate", "exAdd", "egg", "upgrade", "sellRar", "sellJunk", "bankPut", "bankTake"]);
+const itemBrief = (it) => it && typeof it === "object" ? { s: it.s, t: it.t, r: it.r, p: it.p | 0, ex: it.ex ? 1 : 0, pf: it.pf ? 1 : 0 } : null;
+export function logLine(kind, args, r, A) {
+  const S = (A.chars || [])[A.cur] || {}, base = { k: kind, c: String(S.name || ""), l: S.lvl | 0, rs: S.resets | 0 };
+  if (kind === "tick") {
+    const n = []; if (r.elite) n.push("elite"); if (r.perfect) n.push("perfect"); if (r.resets) n.push("autoReset x" + r.resets); if (r.anc) n.push("ancient points +" + r.anc);
+    const items = (r.notable || []).filter((it) => it && (it.r >= 4 || it.pf || it.s === "y")).slice(0, 6).map(itemBrief);
+    if (!n.length && !items.length) return null; if (n.length) base.n = n; if (items.length) base.items = items; base.z = args && args.ev ? "keep" : Math.floor(Number(args && args.z)); return base;
+  }
+  if (!LOG_KINDS.has(kind)) return null;
+  const a = {}; for (const k of ["shop", "k", "id", "z", "f", "win", "name", "cls", "i"]) if (args && args[k] != null && typeof args[k] !== "object") a[k] = String(args[k]).slice(0, 24); base.a = a;
+  const o = {}; let c = 0; for (const k in r) { const v = r[k]; if (k === "ok" || c >= 10) continue; if (typeof v === "number" || typeof v === "boolean") { o[k] = v; c++; } else if (typeof v === "string") { o[k] = v.slice(0, 40); c++; } }
+  if (r.item) o.item = itemBrief(r.item); if (r.box && r.box.it) o.item = itemBrief(r.box.it); base.r = o; return base;
+}
 const gmSeen = new Map(); // who was last confirmed, or refused, as game master, and when
 export function makeHandler(admin, G, rnd, clock = Date.now) {
   const plain = (o) => JSON.parse(JSON.stringify(o));
@@ -97,10 +114,51 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
     if (kind === "aview") { const r = await admin.rpc("admin_view", { p_user: uid }); if (r.error) return { result: { ok: false, msg: errMsg(r) } };
       const rp = await admin.from("chat").select("id,name,msg,at").eq("ch", "r").order("id", { ascending: false }).limit(40); // players' reports, newest first
       return { result: { ok: true }, admin: Object.assign({}, r.data, { reports: rp.data || [] }) }; }
+    if (kind === "alog") { // the game's log, newest first; optionally one user's, or one kind
+      const ok = await admin.rpc("is_admin", { p_user: uid }); if (ok.data !== true) return { result: { ok: false, msg: MARKET_MSG.forbidden } };
+      const us = (await admin.from("users").select("user_id,username").limit(5000)).data || [], nameOf = new Map(us.map((u) => [u.user_id, u.username]));
+      let q = admin.from("audit").select("id,user_id,kind,detail,at");
+      const who = String(args.user || "").trim().toLowerCase().slice(0, 64); if (who) { const u = us.find((x) => x.username === who); if (!u) return { result: { ok: false, msg: "המשתמש לא נמצא" } }; q = q.eq("user_id", u.user_id); }
+      const kd = String(args.kind || "").slice(0, 12); if (kd) q = q.eq("kind", kd);
+      const rows = (await q.order("id", { ascending: false }).limit(300)).data || [];
+      return { result: { ok: true }, log: rows.map((x) => ({ id: x.id, u: nameOf.get(x.user_id) || "", kind: x.kind, d: x.detail, at: x.at })) };
+    }
     if (kind === "aact") {
       const r = await admin.rpc("admin_act", { p_user: uid, p_action: String(args.action || "").slice(0, 12), p_target: String(args.target || "").slice(0, 64), p_hours: Math.floor(Number(args.hours)) || 24 });
       if (r.error) return { result: { ok: false, msg: errMsg(r) } };
       return { result: { ok: true }, admin: (await admin.rpc("admin_view", { p_user: uid })).data };
+    }
+    // The admin gives to, or takes from, one account: a small fixed list of things, each with a ceiling, never below
+    // zero. The right is the is_admin flag, asked from the database on every call. A first call only shows who would
+    // be changed and how; the change itself needs a second call, and is written to the audit table with who did it.
+    if (kind === "agrant") {
+      const ok = await admin.rpc("is_admin", { p_user: uid }); if (ok.data !== true) return { result: { ok: false, msg: MARKET_MSG.forbidden } };
+      const no = (msg) => ({ result: { ok: false, msg } }), now = clock();
+      const WHAT = { gold: [1e7, "זהב"], gems: [1e4, "אבני נשמה"], boxes: [100, "תיבות אוצר"], cred: [500, "אותות ריסט"], keys: [20, "מפתחות מצודה"], coins: [5000, "מטבעות עונה"], tickets: [50, "כרטיסי זירה"], boost: [240, "דקות של 50% ניסיון"] };
+      const what = String(args.what || ""), lim = Object.prototype.hasOwnProperty.call(WHAT, what) ? WHAT[what] : null, n = Math.trunc(Number(args.n) || 0), name = String(args.user || "").trim().slice(0, 64);
+      if (!lim || !n || !name) return no("חסר שם, סוג או כמות");
+      if (Math.abs(n) > lim[0] || (what === "boost" && n < 0)) return no("כמות לא תקינה. המרב בפעולה אחת: " + lim[0]);
+      let tid = null, uname = "";
+      { const u = (await admin.from("users").select("user_id,username").eq("username", name.toLowerCase()).maybeSingle()).data; if (u) { tid = u.user_id; uname = u.username; } }
+      if (!tid) { // not a user name: perhaps a character's name
+        const { data } = await admin.from("arena").select("user_id,snap").order("seen_at", { ascending: false }).limit(500);
+        const hit = (data || []).filter((r) => r.snap && String(r.snap.n) === name);
+        if (hit.length > 1) return no("יש כמה דמויות בשם הזה. הקלד את שם המשתמש");
+        if (hit[0]) { tid = hit[0].user_id; const u = (await admin.from("users").select("username").eq("user_id", tid).maybeSingle()).data; uname = u ? u.username : ""; }
+      }
+      if (!tid) return no("המשתמש לא נמצא");
+      for (let i = 0; i < 4; i++) {
+        const row = (await admin.from("accounts").select("state,version").eq("user_id", tid).maybeSingle()).data; if (!row || !row.state) return no("לחשבון הזה עוד אין דמות");
+        const st = row.state, before = what === "boost" ? Math.max(0, Math.round(((Number(st.boost) || 0) - now) / 60000)) : Math.floor(Number(st[what]) || 0), after = before + n;
+        if (after < 0) return no("אין לו מספיק. יש לו " + before);
+        const view = { user: uname, chars: (st.chars || []).map((c) => String(c.name)), what: lim[1], n, before, after };
+        if (args.go !== true) return { result: { ok: true }, grant: view };
+        const ns = Object.assign({}, st); if (what === "boost") ns.boost = Math.max(Number(st.boost) || 0, now) + n * 60000; else ns[what] = after;
+        const up = await admin.from("accounts").update({ state: ns, version: row.version + 1, updated_at: new Date(now).toISOString() }).eq("user_id", tid).eq("version", row.version).select("version");
+        if (up.error) return no("השמירה נכשלה");
+        if (up.data && up.data.length) { await admin.from("audit").insert({ user_id: tid, kind: "grant", detail: { by: uid, what, n, before, after } }); return { result: { ok: true }, grant: Object.assign(view, { done: true }) }; }
+      }
+      return no("החשבון עסוק. נסה שוב");
     }
     let guildMade = false, shareXp = 0, wclaim = null;
     for (let attempt = 0; attempt < 4; attempt++) {
@@ -120,6 +178,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
         const ins = await admin.from("accounts").insert({ user_id: uid, state: plain(A) });
         if (ins.error) continue; // created by a parallel request; reload and go on
         await saveArena(uid, A);
+        try { const lg = logLine(kind, args, r, A); if (lg) await admin.from("audit").insert({ user_id: uid, kind: "log", detail: lg }); } catch (_e) { /* the log never stops the game */ }
         return { result: r, state: plain(A) };
       }
 
@@ -227,6 +286,7 @@ export function makeHandler(admin, G, rnd, clock = Date.now) {
       if (!upd.data || !upd.data.length) continue; // another request saved first; redo on fresh state
 
       if (ARENA_KINDS.has(kind)) await saveArena(uid, A);
+      try { const lg = logLine(kind, args, r, A); if (lg) await admin.from("audit").insert({ user_id: uid, kind: "log", detail: lg }); } catch (_e) { /* the log never stops the game */ }
       if (kind === "report" && r.report) { try { const ch = A.chars[A.cur]; await admin.from("chat").insert({ ch: "r", user_id: uid, name: ch ? String(ch.name).slice(0, 14) : "?", tag: "", msg: ("על " + r.report.n + " [" + r.report.k + "]: " + r.report.why).slice(0, 160) }); } catch (_e) { /* the report is best effort */ } }
       { // feats the whole server hears about; a failure here never fails the action
         const ch = A.chars[A.cur], nm = ch ? String(ch.name).slice(0, 14) : "", rep = r.rep || {}; let feat = "";

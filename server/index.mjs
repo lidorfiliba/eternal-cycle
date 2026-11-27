@@ -12,6 +12,7 @@ import { makePush } from './push.mjs';
 const crypto = globalThis.crypto || webcrypto;
 const rnd = () => { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; };
 
+const LOGGED = new Set(['mlist', 'mbuy', 'mcancel', 'gcreate', 'gjoin', 'gleave', 'gkick', 'pcreate', 'pjoin', 'pleave', 'onew', 'aact', 'aset', 'abackup', 'arestore', 'aodecide', 'agrant']);
 export function makeServer(admin, secret, origin = '*', opts = {}) {
   const handle = makeHandler(admin, G, rnd), auth = makeAuth(admin, secret), push = makePush(admin, secret, G, rnd, opts.push);
   const cors = { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info, x-ec-token', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Max-Age': '86400' };
@@ -29,7 +30,7 @@ export function makeServer(admin, secret, origin = '*', opts = {}) {
       if (kind === 'register') return send(res, await auth.register(args.user, args.pass, ip, args.q, args.a));
       if (kind === 'forgot') return send(res, await auth.forgot(args.user));
       if (kind === 'recover') return send(res, await auth.recover(args.user, args.a, args.pass, ip));
-      if (kind === 'login') return send(res, await auth.login(args.user, args.pass, ip));
+      if (kind === 'login') { const r = await auth.login(args.user, args.pass, ip); admin.from('audit').insert({ user_id: null, kind: 'log', detail: { k: r && r.token ? 'login' : 'loginFail', a: { user: String(args.user || '').slice(0, 40) } } }).then(() => {}, () => {}); return send(res, r); }
       const ses = await auth.session(String(req.headers['x-ec-token'] || ''));
       if (!ses) return send(res, { error: 'auth' }, 401);
       const uid = ses.uid;
@@ -42,6 +43,8 @@ export function makeServer(admin, secret, origin = '*', opts = {}) {
       if (kind === 'pushoff') return send(res, await push.off(uid));
       if (kind === 'aresetpw') return send(res, await auth.adminReset(uid, args.user));
       const out = await handle(uid, kind, args, { ip, iat: ses.iat });
+      // the game's log also keeps what does not pass through the rules module: the market, guilds, parties and what the admin does
+      if (LOGGED.has(kind) && out && out.result && out.result.ok && !(kind === 'agrant' && !(args && args.go === true))) { const a = {}; for (const k of ['id', 'code', 'name', 'k', 'price', 'to', 'action', 'target', 'hours', 'user', 'what', 'n', 'day', 'key']) if (args && args[k] != null && typeof args[k] !== 'object') a[k] = String(args[k]).slice(0, 40); admin.from('audit').insert({ user_id: uid, kind: 'log', detail: { k: kind, a } }).then(() => {}, () => {}); }
       if (out && out.expired) return send(res, { error: 'auth' }, 401);
       return send(res, out);
     } catch (e) { console.error(e); return send(res, { error: 'server' }, 500); }

@@ -61,6 +61,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
   async function brFinish(b) {
     if (b.done) return; b.done = true; clearInterval(b.timer); if (br === b) br = null;
     const rank = G.brRank(b.B), humans = b.idx.size, win = b.B.f[rank[0]];
+    admin.from('audit').insert({ user_id: null, kind: 'log', detail: { k: 'lastCircleEnd', a: { players: humans, winner: String(win && win.n || '').slice(0, 20) } } }).then(() => {}, () => {});
     for (const [uid, i] of b.idx) {
       const place = rank.indexOf(i), rt = await mutate(uid, (A) => G.brReward(A, place, humans));
       send(uid, { t: 'brEnd', place, n: b.B.f.length, rt: typeof rt === 'string' ? rt : '', win: win.n });
@@ -93,7 +94,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     const uid = ws.uid, now = clock(); if (now - (ws.lastGm || 0) < 1000) return; ws.lastGm = now;
     if (!(await isGm(uid))) { console.warn('gm command refused for', uid, String(m.a).slice(0, 12)); return; }
     const a = String(m.a), ok = (msg) => send(uid, { t: 'gmRes', ok: true, msg }), no = (msg) => send(uid, { t: 'gmRes', ok: false, msg });
-    console.log('gm', uid, a);
+    console.log('gm', uid, a); admin.from('audit').insert({ user_id: uid, kind: 'log', detail: { k: 'gm', a: { a: a.slice(0, 12), min: m.min == null ? '' : String(m.min).slice(0, 6), sec: m.sec == null ? '' : String(m.sec).slice(0, 6) } } }).then(() => {}, () => {});
     if (a === 'br') {
       if (br) return no('כבר יש מעגל פתוח או קרב שרץ');
       const sec = Math.max(30, Math.min(300, Math.floor(Number(m.sec)) || 90));
@@ -155,6 +156,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
   const sgPub = (B, i, x) => { const f = B.f[i], p = x.prof[i] || {}; return Object.assign(pub(p), { n: f.n, c: f.c, bot: f.bot ? 1 : 0, g: f.g, tag: f.tag }); };
   async function sgFinish(x) {
     if (x.done) return; x.done = true; clearInterval(x.timer); if (sg === x) sg = null; const B = x.B, holder = B.sg.holder, hn = holder > 0 ? (x.names.get(holder) || '') : '';
+    admin.from('audit').insert({ user_id: null, kind: 'log', detail: { k: 'siegeEnd', a: { players: x.idx.size, holder: String(hn).slice(0, 20), test: x.test ? 1 : 0, captures: B.sg.caps | 0 } } }).then(() => {}, () => {});
     for (const [uid, i] of x.idx) { const f = B.f[i], won = holder > 0 && f.g === holder, rt = await mutate(uid, (A) => G.sgReward(A, won && !x.test, f.bought)); send(uid, { t: 'brEnd', sg: 1, won: won ? 1 : 0, test: x.test ? 1 : 0, rt: typeof rt === 'string' ? rt : '', win: hn }); }
     all({ t: 'sgOpen', left: 0 });
     try {

@@ -405,7 +405,20 @@ test('friends, blocking, reports and private messages',async()=>{
       await db.query('update users set is_admin=true where user_id=$1',[u2.uid]);
       assert.equal((await post({kind:'travel',args:{z:zi,f:0,gm:1}},a.tok)).result.ok,false,'a player who claims to be game master gets nothing');
       const t=await post({kind:'travel',args:{z:zi,f:0,gm:1}},u2.tok);assert.equal(t.result.ok,true,t.result.msg);assert.equal(t.state.chars[0].zone,zi);
-      assert.equal((await post({kind:'travel',args:{z:zi,f:0}},u2.tok)).result.ok,false,'and even he, only when he asks as game master');}
+      assert.equal((await post({kind:'travel',args:{z:zi,f:0}},u2.tok)).result.ok,false,'and even he, only when he asks as game master');
+      // the admin gives and takes: only he, first shown then done, within ceilings, never below zero, and written down
+      const gold=async()=>Number((await db.query("select state->>'gold' g from accounts where user_id=$1",[a.uid])).rows[0].g);const g0=await gold();
+      assert.equal((await post({kind:'agrant',args:{user:'dana',what:'gold',n:5000,go:true}},a.tok)).result.ok,false,'a player cannot give to himself');assert.equal(await gold(),g0);
+      const dry=await post({kind:'agrant',args:{user:'dana',what:'gold',n:5000}},u2.tok);assert.ok(dry.result.ok&&!dry.grant.done&&dry.grant.after===g0+5000&&dry.grant.user==='dana');assert.equal(await gold(),g0,'looking changes nothing');
+      const go=await post({kind:'agrant',args:{user:'dana',what:'gold',n:5000,go:true}},u2.tok);assert.ok(go.grant.done);assert.equal(await gold(),g0+5000);
+      assert.equal((await post({kind:'agrant',args:{user:'dana',what:'gold',n:-1e6,go:true}},u2.tok)).result.ok,false,'not below zero');assert.equal((await post({kind:'agrant',args:{user:'dana',what:'gold',n:2e7,go:true}},u2.tok)).result.ok,false,'not above the ceiling');
+      assert.equal((await post({kind:'agrant',args:{user:'dana',what:'state',n:1,go:true}},u2.tok)).result.ok,false,'only what is on the list');assert.equal((await post({kind:'agrant',args:{user:'dana',what:'constructor',n:1,go:true}},u2.tok)).result.ok,false);
+      const bo=await post({kind:'agrant',args:{user:'dana',what:'boost',n:30,go:true}},u2.tok);assert.ok(bo.grant.done&&bo.grant.after===30);
+      assert.ok(Number((await db.query("select state->>'boost' b from accounts where user_id=$1",[a.uid])).rows[0].b)>Date.now()+29*60000);
+      await new Promise(r=>setTimeout(r,200));assert.equal((await post({kind:'alog',args:{}},a.tok)).result.ok,false,'the log is the admin\'s alone');
+      const lg=(await post({kind:'alog',args:{}},u2.tok)).log;assert.ok(lg.some(x=>x.kind==='grant'&&x.u==='dana'&&x.d.what==='gold'&&x.d.n===5000&&x.d.by===u2.uid),'who gave what to whom');
+      assert.ok(lg.some(x=>x.kind==='log'&&x.d.k==='create'&&x.u==='ziva'),'and what players do');assert.ok(lg.some(x=>x.kind==='log'&&x.d.k==='agrant'&&x.u==='ziva'));
+      const one=(await post({kind:'alog',args:{user:'dana',kind:'grant'}},u2.tok)).log;assert.ok(one.length>=2&&one.every(x=>x.u==='dana'&&x.kind==='grant'));}
     { // party invitations: asked, and joined only on a yes
       const c=a,e=b;if(!c.ws||c.ws.readyState!==1)await open(c);if(!e.ws||e.ws.readyState!==1)await open(e);c.q.length=0;e.q.length=0;await new Promise(r=>setTimeout(r,300));
       c.send({t:'pInv',n:'nobody'});assert.equal((await c.wait('pRes')).why,'off','an unknown name');await new Promise(r=>setTimeout(r,2600));
