@@ -640,6 +640,14 @@ test('health potions for the maps: bought with gold at a price that follows the 
   assert.ok(b(0)<.004&&b(zr(30))>.02&&b(zr(50))<=.03,'from next to nothing to a real share of life');assert.equal(b(G.ZONES.findIndex(z=>z.x)),0,'the void maps bite by their own numbers');
   assert.deepEqual([G.SKCD[0],G.SKCD[3]],[0,0],'the two fighting skills wait for nothing in the maps, as in the siege');
 });
+test('gear from the reset maps asks for resets to wear: a young character on an old account cannot put on what his elder found',()=>{
+  G.setEnv(Math.random,()=>1.8e12);const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'elder'},{});const S=A.chars[0];S.stats={str:9e4,agi:9e4,vit:9e4,ene:9e4};
+  const zr=r=>G.ZONES.findIndex(z=>z.req===r),it=(z,id)=>({id:id,s:'w',t:5,r:3,p:0,z:z,af:[]});
+  assert.equal(G.wearResets(it(0,1)),0,'gear of the story maps asks for nothing');assert.equal(G.wearResets(it(zr(30),1)),15,'half of what the map asks');assert.equal(G.wearResets(it(zr(1),1)),1);assert.equal(G.wearResets(it(G.ZONES.findIndex(z=>z.castle),1)),5);assert.equal(G.wearResets({id:1,s:'y',z:-1}),0);
+  const w=it(zr(30),901);A.inv.push(w);S.resets=14;assert.equal(G.apply(A,'equip',{id:901},{}).ok,false);assert.ok(G.lacks(S,w).length>0);S.resets=15;assert.equal(G.apply(A,'equip',{id:901},{}).ok,true);assert.equal(S.eq.w.id,901);
+  S.resets=3;const r=G.apply(A,'tick',{z:-1,f:0},{});assert.ok(!S.eq.w&&A.inv.some(x=>x.id===901)&&r.stripped===1,'what he may no longer wear goes back to the bag');
+  S.autoEq=true;A.inv=A.inv.filter(x=>x.id!==901);const g=G.gainItem(S,it(zr(30),902),null);assert.notEqual(g,'eq','and nothing puts it on him by itself');
+});
 test('the game master walks anywhere; nobody else does',()=>{
   G.setEnv(Math.random,()=>1.8e12);const zi=G.ZONES.findIndex(z=>z.castle),far=G.ZONES.length-2;
   const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'xxxx'},{});
