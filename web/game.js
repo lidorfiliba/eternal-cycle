@@ -1,7 +1,7 @@
-import * as G from './core.js?v=20261128191029';
-const BUILD='20261128191029';
+import * as G from './core.js?v=20261128191546';
+const BUILD='20261128191546';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,wskinOn,CAPEN,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
-import {tr,getLang,setLang,startLang} from './i18n.js?v=20261128191029';
+import {tr,getLang,setLang,startLang} from './i18n.js?v=20261128191546';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -28,6 +28,7 @@ function settingsHtml(){
   const row=x=>'<div class="kv" style="margin:4px 0"><span>'+x[1]+'</span><button class="btn sm'+(bindWait===x[0]?' pri':'')+'" data-act="bindKey" data-k="'+x[0]+'" style="min-width:86px">'+(bindWait===x[0]?'לחץ על מקש':keyName(keyOf(x[0])))+'</button></div>';
   return '<h2>הגדרות שליטה</h2><p class="hint">גודל הכפתורים במסך מגע</p>'+
     '<button class="btn'+(fastOn()?' pri':'')+'" data-act="fastGfx" style="width:100%;margin-bottom:6px">'+(fastOn()?'גרפיקה מהירה: פעילה':'גרפיקה מהירה: כבויה')+'</button><p class="hint" style="margin-bottom:10px">גרפיקה מהירה מוותרת על הזוהר הרך סביב כנפיים, סטים ואפקטים, והמשחק רץ חלק הרבה יותר. מומלץ בטלפון.</p>'+
+    '<button class="btn'+(prefs.noSgMusic?'':' pri')+'" data-act="sgMusic" style="width:100%;margin-bottom:10px">'+(prefs.noSgMusic?'מוזיקת המצור: כבויה':'מוזיקת המצור: פעילה')+'</button>'+
     '<div class="kv"><span>כפתורי תנועה</span><b class="num" id="szMvV">'+clampN(prefs.mvS,70,160)+'%</b></div><input type="range" id="szMv" min="70" max="160" step="5" value="'+clampN(prefs.mvS,70,160)+'" style="width:100%">'+
     '<div class="kv"><span>כפתורי תקיפה</span><b class="num" id="szAtV">'+clampN(prefs.atS,70,160)+'%</b></div><input type="range" id="szAt" min="70" max="160" step="5" value="'+clampN(prefs.atS,70,160)+'" style="width:100%">'+
     '<h2 style="margin-top:12px">מקשים במקלדת</h2><p class="hint">לוחצים על שורה ואז על המקש הרצוי. הליכה תמיד בחצים, וגם באותיות שלא נבחרו למשהו אחר.</p><p class="hint"><b>בקרב: זירה, מגדל, מצור והמעגל האחרון</b></p>'+KEYS_FIGHT.map(row).join('')+
@@ -823,6 +824,15 @@ function noise(d,v,hp){if(!noiseBuf){noiseBuf=AC.createBuffer(1,AC.sampleRate*.4
   const t=AC.currentTime,n=AC.createBufferSource(),g=AC.createGain(),f=AC.createBiquadFilter();n.buffer=noiseBuf;f.type='highpass';f.frequency.value=hp||800;
   g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);n.connect(f);f.connect(g);g.connect(MG);n.start(t);n.stop(t+d);}
 const SNDGAP={hit:.06,crit:.08,kill:.09,coin:.12,hurt:.3,click:.04};
+// The siege has a tune of its own, quiet under the fight, for as long as the player stands on that field. It is one
+// file, sfx/siege.mp3; without the file nothing plays and nothing breaks. The sound switch silences it, and so does its own switch.
+let sgAud=null;
+function sgMusic(){
+  const on=!!(SC.duel&&SC.duel.br&&SC.duel.br.sg)&&!prefs.mute&&!prefs.noSgMusic&&!document.hidden;
+  try{if(on){if(!sgAud){sgAud=new Audio('sfx/siege.mp3');sgAud.loop=true;sgAud.volume=.16;sgAud.addEventListener('error',()=>{sgAud.dead=true;});}if(!sgAud.dead&&sgAud.paused)sgAud.play().catch(()=>{});}
+    else if(sgAud&&!sgAud.paused)sgAud.pause();}catch(e){}
+}
+if(typeof window!=='undefined')setInterval(sgMusic,1000);
 function snd(n){
   if(!AC||AC.state!=='running'||!A||prefs.mute||demo)return;const now=AC.currentTime;if(now-(sndLast[n]||-9)<(SNDGAP[n]||.05))return;sndLast[n]=now;
   try{
@@ -1783,7 +1793,7 @@ function renderHud(){
   {const up=!duel&&S&&!demo&&ws&&ws.readyState===1,sgo=up&&sgLive>Date.now()&&(guild.mine||me.admin),se=up&&!sgo?brSign():0,bb=$('brBtn');bb.style.display=se||sgo?'':'none';const act=sgo?'sgJoin':'brJoin';if(bb.dataset.act!==act)bb.dataset.act=act;if(se||sgo){const t=sgo?(sgTest?'מצור ידידות':'מצור הטירה')+' · הצטרף · '+mmss((sgLive-Date.now())/1000):'המעגל האחרון נפתח · השתגר לזירה · '+mmss((se-Date.now())/1000);if(bb.textContent!==t)bb.textContent=t;}}
   $('resetNow').style.display=canReset(S)&&!duel?'block':'none';
   $('autoBtn').style.display=$('skills').style.display=duel||zi<0?'none':'';$('paceTag').style.visibility=$('bigBtn').style.visibility=$('setBtn').style.visibility=$('sndBtn').style.visibility=$('fsBtn').style.visibility=duel?'hidden':'';if(duel)renderDuelBar();{const brm=duel&&SC.duel&&!SC.duel.spec;$('joy').style.display=brm&&!DESK?'':'none';$('mv').style.display=brm?'none':'';if(!brm&&(joy.v[0]||joy.v[1]))joy.v=[0,0];}$('mvU').style.display=$('mvD').style.display='none';$('stage').classList.toggle('duel',duel);
-  $('sndBtn').textContent=prefs.mute?'צליל כבוי':'צליל פעיל';$('sndBtn').classList.toggle('on',!prefs.mute);
+  sgMusic();$('sndBtn').textContent=prefs.mute?'צליל כבוי':'צליל פעיל';$('sndBtn').classList.toggle('on',!prefs.mute);
   $('autoBtn').textContent='אוטומטי: '+(S.auto?'פעיל':'כבוי');$('autoBtn').classList.toggle('on',!!S.auto);
   const bs=$('skills').children,h=SC.hero;
   {const cq=G.COMBO[S.cls]||G.COMBO.blade,cn={s0:cq.indexOf('s0')+1,s1:cq.indexOf('s1')+1},pots=A.pots==null?G.POT_START:A.pots;
@@ -2239,10 +2249,11 @@ document.addEventListener('click',async e=>{
     closeModal();enterGame(r);saveLocal();toast('בהצלחה, '+S.name);return;}
   if(!S||demo)return;
   if(a==='sk'){cast(+b.dataset.i,false);renderHud();return;}
+  if(a==='sgMusic'){prefs.noSgMusic=!prefs.noSgMusic;savePrefs();sgMusic();openSettings();return;}
   if(a==='fastGfx'){prefs.fast=!fastOn();savePrefs();applyFast();openSettings();return;}
   if(a==='potAuto'){const L2=[0,30,50,70,85],v=prefs.autoPot==null?50:prefs.autoPot;prefs.autoPot=L2[(L2.indexOf(v)+1)%L2.length];savePrefs();renderHud();return;}
   if(a==='auto'){S.auto=!S.auto;SC.hero.tgt=null;renderHud();send('setAuto',{on:S.auto});return;}
-  if(a==='mute'){prefs.mute=!prefs.mute;savePrefs();renderHud();return;}
+  if(a==='mute'){prefs.mute=!prefs.mute;savePrefs();sgMusic();renderHud();return;}
   if(a==='settings'){openSettings();return;}
   if(a==='ptyWin'){ptyWin();return;}
   if(a==='pfollow'){const n=b.dataset.n||'';follow=follow===n?'':n;followNo='';ptyWin();return;}
