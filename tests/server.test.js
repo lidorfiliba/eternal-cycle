@@ -566,7 +566,6 @@ test('castle siege over the socket: guild members join a running siege, the serv
     const gid=(await db.query("insert into guilds (name,tag,leader) values ('אריות','AR',$1) returning id",[a.uid])).rows[0].id;await db.query('insert into guild_members (user_id,guild_id) values ($1,$2),($3,$2)',[a.uid,gid,b.uid]);
     await open(a);await open(b);await open(c);a.send({t:'sgJoin'});assert.equal((await a.wait('sgNo')).why,'closed');
     const x=srv.live.sgOpen(600,false,'s-test-key');assert.equal((await a.wait('sgOpen')).left,600000);
-    c.send({t:'sgJoin'});assert.equal((await c.wait('sgNo')).why,'guild','no guild, no siege');
     a.send({t:'sgJoin'});const sa=await a.wait('brStart');assert.ok(sa.sg&&sa.f.length===1,'no guards: only players');assert.equal(sa.f[sa.me].tag,'AR');assert.equal(sa.guilds[0][1],'אריות');
     b.send({t:'sgJoin'});const sb=await b.wait('brStart'),add=await a.wait('sgAdd');assert.equal(add.i,sb.me);assert.equal(add.f.g,Number(gid));
     const B=x.B;B.t=1;const fa=B.f[sa.me],fb=B.f[sb.me];assert.ok(fa.y>1700,'the camp is far from the castle');fa.x=0;fa.y=185;a.send({t:'sgPos',x:0,y:-300,f:1});await new Promise(r=>setTimeout(r,300));a.send({t:'sgPos',x:0,y:-300,f:1});await new Promise(r=>setTimeout(r,150));assert.ok(fa.y>130&&fa.y<185,'he walks, and the gate stops him: '+fa.y);
@@ -620,8 +619,15 @@ test('siege gathering over the socket: the field opens early, a fighter walks on
     fa.x=fa.px+G.SG.prepR-2;fa.y=fa.py;a.send({t:'sgPos',x:fa.x+20,y:fa.y,f:1});await new Promise(r=>setTimeout(r,150));assert.ok(Math.hypot(fa.x-fa.px,fa.y-fa.py)<=G.SG.prepR,'and not past the edge of the gathering ground');
     fb.x=fa.x+20;fb.y=fa.y;a.send({t:'sgAct',k:'atk',to:sb.me,f:1});await new Promise(r=>setTimeout(r,200));assert.equal(fb.hp,1,'no blow before the hour');
     B.t=0;a.send({t:'sgAct',k:'atk',to:sb.me,f:1});await new Promise(r=>setTimeout(r,250));assert.ok(fb.hp<1,'and from the hour on, blows land');
+    // one with no guild walks the field as a watcher: seen, untouched, unable to strike; when he joins a guild he is sent out to come in from the start
+    const w=await mkUser('gatherw','hunter');await open(w);w.send({t:'sgJoin'});const sw=await w.wait('brStart'),fw=B.f[sw.me];assert.equal(sw.f[sw.me].g,-1);assert.equal(fw.alive,false,'the rules do not see him');assert.equal(fw.spec,true);
+    const wx=fw.x;w.send({t:'sgPos',x:wx+15,y:fw.y,f:1});await new Promise(r=>setTimeout(r,150));assert.ok(fw.x>wx+5,'he walks');
+    fb.hp=1;fb.x=fw.x+20;fb.y=fw.y;w.send({t:'sgAct',k:'atk',to:sb.me,f:1});await new Promise(r=>setTimeout(r,200));assert.equal(fb.hp,1,'he cannot strike');
+    fa.x=fw.x-20;fa.y=fw.y;fa.face=1;fa.at.atk=0;a.send({t:'sgAct',k:'atk',to:sw.me,f:1});await new Promise(r=>setTimeout(r,250));assert.equal(fw.hp,1,'and cannot be struck');
+    await db.query('insert into guild_members (user_id,guild_id) values ($1,$2)',[w.uid,g1]);await srv.live.sgGuilds();await w.wait('sgOut');assert.equal(x.idx.has(w.uid),false);
+    w.send({t:'sgJoin'});const sw2=await w.wait('brStart');assert.equal(sw2.f[sw2.me].g,Number(g1));assert.equal(B.f[sw2.me].alive,true);assert.ok(Math.hypot(B.f[sw2.me].x-G.SG.camp[0],B.f[sw2.me].y-G.SG.camp[1])<200,'from the start point');w.ws.close();
     // leaving and coming back: the same fighter, the same potions, and not within a blink
     fa.pots=77;a.send({t:'sgLeave'});await new Promise(r=>setTimeout(r,100));assert.equal(fa.alive,false);a.send({t:'sgJoin'});assert.equal((await a.wait('sgNo')).why,'wait');
-    x.gone.get(a.uid)[1]-=60000;a.send({t:'sgJoin'});const sa2=await a.wait('brStart');assert.equal(sa2.me,sa.me,'the same fighter');assert.equal(B.f[sa2.me].pots,77);assert.equal(B.f[sa2.me].alive,true);assert.equal(B.f.length,2,'no second body');
+    x.gone.get(a.uid)[1]-=60000;a.send({t:'sgJoin'});const sa2=await a.wait('brStart');assert.equal(sa2.me,sa.me,'the same fighter');assert.equal(B.f[sa2.me].pots,77);assert.equal(B.f[sa2.me].alive,true);assert.equal(B.f.filter(f=>f.g===Number(g1)&&f.id===B.f[sa.me].id).length,1,'no second body');
   }finally{for(const u of [a,b])if(u&&u.ws)u.ws.close();srv.live.close();srv.close();}
 });

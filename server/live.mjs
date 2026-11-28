@@ -161,12 +161,13 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
   const sgAll = (m) => { if (!sg) return; const s = JSON.stringify(m); for (const uid of sg.idx.keys()) { const o = socks.get(uid); if (o && o.readyState === 1) o.send(s); } };
   const who = (B, i) => (i >= 0 && B.f[i] ? [B.f[i].n, B.f[i].tag] : null);
   const sgView = (B) => ({ ls: [r3(B.sg.lsHp == null ? 1 : B.sg.lsHp), B.sg.lsDown > B.t ? Math.ceil(B.sg.lsDown - B.t) : 0], gate: B.sg.gate.map(r3), sw: B.sg.sw, swn: B.sg.swBy.map((i) => who(B, i)), swp: B.sg.swp.map((p) => [p[0], r3(p[1]), p[2]]), crown: [B.sg.crown[0], r3(B.sg.crown[1]), B.sg.crown[2]], holder: B.sg.holder, left: Math.max(0, Math.round((B.sg.time || G.SG.TIME) - B.t)) });
-  const sgState = (B) => ({ t: 'brS', T: B.t, sg: sgView(B), s: B.f.map((f) => [Math.round(f.x), Math.round(f.y), r3(f.hp), f.alive ? 1 : 0, f.sh > B.t ? 1 : 0, f.stun > B.t ? 1 : 0, f.face < 0 ? -1 : 1, f.kills, f.inv > B.t ? 1 : 0, 0, 0, 0, f.pots, G.sgBuff(f, B.t).n, f.wound > B.t ? 1 : 0, f.alive || !f.resp ? 0 : Math.max(1, Math.ceil(f.resp - B.t))]) });
+  const sgState = (B) => ({ t: 'brS', T: B.t, sg: sgView(B), s: B.f.map((f) => [Math.round(f.x), Math.round(f.y), r3(f.hp), f.alive || f.spec ? 1 : 0, f.sh > B.t ? 1 : 0, f.stun > B.t ? 1 : 0, f.face < 0 ? -1 : 1, f.kills, f.inv > B.t ? 1 : 0, 0, 0, 0, f.pots, G.sgBuff(f, B.t).n, f.wound > B.t ? 1 : 0, f.alive || !f.resp ? 0 : Math.max(1, Math.ceil(f.resp - B.t))]) });
   const sgPub = (B, i, x) => { const f = B.f[i], p = x.prof[i] || {}; return Object.assign(pub(p), { n: f.n, c: f.c, bot: f.bot ? 1 : 0, g: f.g, tag: f.tag }); };
   async function sgFinish(x) {
     if (x.done) return; x.done = true; clearInterval(x.timer); if (sg === x) sg = null; const B = x.B, holder = B.sg.holder, hn = holder > 0 ? (x.names.get(holder) || '') : '';
     admin.from('audit').insert({ user_id: null, kind: 'log', detail: { k: 'siegeEnd', a: { players: x.idx.size, holder: String(hn).slice(0, 20), test: x.test ? 1 : 0, captures: B.sg.caps | 0 } } }).then(() => {}, () => {});
-    for (const [uid, i] of x.idx) { const f = B.f[i], won = holder > 0 && f.g === holder, rt = await mutate(uid, (A) => G.sgReward(A, won && !x.test, f.bought)); send(uid, { t: 'brEnd', sg: 1, won: won ? 1 : 0, test: x.test ? 1 : 0, rt: typeof rt === 'string' ? rt : '', win: hn }); }
+    for (const [uid, i] of x.idx) { const f = B.f[i]; if (f.spec) { send(uid, { t: 'brEnd', sg: 1, won: 0, test: x.test ? 1 : 0, rt: '', win: hn }); continue; } // a watcher is owed nothing and owes nothing
+      const won = holder > 0 && f.g === holder, rt = await mutate(uid, (A) => G.sgReward(A, won && !x.test, f.bought)); send(uid, { t: 'brEnd', sg: 1, won: won ? 1 : 0, test: x.test ? 1 : 0, rt: typeof rt === 'string' ? rt : '', win: hn }); }
     all({ t: 'sgOpen', left: 0 });
     try {
       if (!x.test) { const prev = (await admin.from('castle').select('guild_id,at').order('at', { ascending: false }).limit(1)).data; await admin.from('castle').insert({ siege: x.key, guild_id: holder > 0 ? holder : (prev && prev[0] ? prev[0].guild_id : null), pts: B.sg.caps }); }
@@ -183,6 +184,15 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     x.timer = setInterval(() => { const now = clock(), dt = Math.max(0, Math.min(.5, (now - x.last) / 1000)); x.last = now; const ev = G.sgStep(B, dt, rnd), m = sgState(B); if (ev.length) m.ev = ev; sgAll(m); if (B.over) sgFinish(x); }, 200); x.timer.unref();
     all({ t: 'sgOpen', left: (secs + prep) * 1000, prep: prep * 1000, test: test ? 1 : 0 }); return x;
   }
+  // A guild was joined, left or founded while the siege runs: whoever now stands under the wrong colours, or under none, is sent
+  // out and comes back in from the start point. Nobody turns from watcher to fighter in the middle of the castle.
+  async function sgGuilds() {
+    const x = sg; if (!x || x.done) return;
+    for (const [uid, i] of [...x.idx]) { if (x.bots && x.bots.by === uid) continue; const f = x.B.f[i];
+      const gm = (await admin.from('guild_members').select('guild_id').eq('user_id', uid).maybeSingle()).data, gid = gm ? Number(gm.guild_id) : -1;
+      if (gid === f.g || sg !== x || x.done || x.idx.get(uid) !== i) continue;
+      x.idx.delete(uid); f.alive = false; f.resp = 0; f.spec = false; (x.gone || (x.gone = new Map())).set(uid, [i, 0]); send(uid, { t: 'sgOut' }); }
+  }
   async function sgMsg(ws, m) {
     const uid = ws.uid, x = sg;
     if (m.t === 'sgJoin') {
@@ -192,14 +202,15 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
       if (old && clock() - old[1] < G.SG.respIn * 1000) return send(uid, { t: 'sgNo', why: 'wait', s: Math.ceil(G.SG.respIn - (clock() - old[1]) / 1000) }); // no stepping out and in to cross the field in a blink
       if (i == null) {
         const boss = !!(x.bots && x.bots.by === uid); // the one who opened a practice siege needs no guild for it, and leads
-        const gm = (await admin.from('guild_members').select('guild_id').eq('user_id', uid).maybeSingle()).data; if (!gm && !boss) return send(uid, { t: 'sgNo', why: 'guild' });
-        const g = gm ? (await admin.from('guilds').select('id,name,tag,leader').eq('id', gm.guild_id).maybeSingle()).data : { id: 900001, name: 'הצד שלך', tag: 'YOU', leader: uid }, p = await snap(uid); if (!g || !p || sg !== x || x.done) return send(uid, { t: 'sgNo', why: 'closed' });
+        const gm = (await admin.from('guild_members').select('guild_id').eq('user_id', uid).maybeSingle()).data; const spec = !gm && !boss; // no guild: he walks the field as a watcher, seen by all and part of nothing
+        const g = gm ? (await admin.from('guilds').select('id,name,tag,leader').eq('id', gm.guild_id).maybeSingle()).data : spec ? { id: -1, name: '', tag: '', leader: null } : { id: 900001, name: 'הצד שלך', tag: 'YOU', leader: uid }, p = await snap(uid); if (!g || !p || sg !== x || x.done) return send(uid, { t: 'sgNo', why: 'closed' });
         if (boss) g.leader = uid;
-        if (x.idx.has(uid)) return; const gid = Number(g.id); x.names.set(gid, String(g.name));
-        if (old && x.B.f[old[0]] && x.B.f[old[0]].g === gid) { i = old[0]; x.gone.delete(uid); const f = x.B.f[i]; f.post = null; G.sgSpawn(x.B, f, rnd); f.inv = x.B.t + G.SG.respSafe; x.idx.set(uid, i); x.prof[i] = p; }
+        if (x.idx.has(uid)) return; const gid = Number(g.id); if (!spec) x.names.set(gid, String(g.name));
+        const watch = (f) => { if (spec) { f.spec = true; f.alive = false; f.resp = 0; f.lead = false; } };
+        if (old && x.B.f[old[0]] && x.B.f[old[0]].g === gid) { i = old[0]; x.gone.delete(uid); const f = x.B.f[i]; f.post = null; G.sgSpawn(x.B, f, rnd); f.inv = x.B.t + G.SG.respSafe; watch(f); x.idx.set(uid, i); x.prof[i] = p; }
         else {
         if (!x.scaled) { x.scaled = true; for (const f of x.B.f) if (f.g === 0) { f.d = p.d * .8; f.pool = Math.max(1, p.h * 5 * .9); f.def = p.f * .8; } } // the guards measure up to the first to arrive
-        i = G.sgAdd(x.B, p, gid, g.tag, rnd, String(g.leader) === String(uid)); x.idx.set(uid, i); x.prof[i] = p;
+        i = G.sgAdd(x.B, p, gid, g.tag, rnd, String(g.leader) === String(uid)); x.idx.set(uid, i); x.prof[i] = p; watch(x.B.f[i]);
         if (old && x.B.f[old[0]]) { const o = x.B.f[old[0]]; x.B.f[i].pots = o.pots; x.B.f[i].bought = o.bought; x.gone.delete(uid); } // he changed guild while away: a new fighter, the same purse
         if (boss && !x.botsIn) { // his side and the other, built from his own strength so the fight is even, each with a role
           x.botsIn = true; const B = x.B, n = x.bots.n, eg = 999001, cls = ['lord', 'blade', 'storm', 'hunter'], names = G.BOTN || []; // every class fights in the practice, the warlord on both sides x.names.set(eg, 'שומרי הכתר');
@@ -217,8 +228,8 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     }
     if (!x || x.done) return; const i = x.idx.get(uid); if (i == null) return; const B = x.B, f = B.f[i];
     // Leaving is free and so is coming back: the same fighter returns, with the potions he had left and what he owes for them.
-    if (m.t === 'sgLeave') { x.idx.delete(uid); f.alive = false; f.resp = 0; (x.gone || (x.gone = new Map())).set(uid, [i, clock()]); return; }
-    if (!f.alive || (B.t < 0 && m.t !== 'sgPos')) return;
+    if (m.t === 'sgLeave') { x.idx.delete(uid); f.alive = false; f.resp = 0; f.spec = false; (x.gone || (x.gone = new Map())).set(uid, [i, clock()]); return; }
+    if (f.spec ? m.t !== 'sgPos' : (!f.alive || (B.t < 0 && m.t !== 'sgPos'))) return;
     if (m.t === 'sgPos') {
       const ox = f.x, oy = f.y; if (B.t < 0 && f.px === undefined) { f.px = f.x; f.py = f.y; }
       if (B.t >= 0 && (f.stun > B.t || f.pushT > B.t)) return; const now = clock(), el = Math.min(1, (now - (ws.brT || now)) / 1000); ws.brT = now; // a thrown player's old position is not taken back
@@ -412,5 +423,5 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     });
   });
   const gm = async (uid, m) => { let out = { ok: false, msg: 'הפעולה לא מוכרת' }; await gmMsg({ uid, lastGm: 0, res: (r) => { out = r; } }, m || {}); return out; }; // the same actions, asked from the management screen
-  return { gm, socks, duels, ownDump, ownLoad, takeKills, takeFlag, stale, rooms, sgNow: () => sg, sgOpen, brNow: () => br, brOpen: (ms) => (br = { key: 'manual', phase: 'sign', joined: new Map(), end: clock() + ms, idx: new Map() }), brBegin: () => { if (br && br.phase === 'sign') brStart(br); }, close: () => { clearInterval(roomClock); for (const d of duels.values()) clearInterval(d.timer); clearInterval(brClock); if (br && br.timer) clearInterval(br.timer); if (sg) clearInterval(sg.timer); wss.close(); } };
+  return { gm, socks, duels, ownDump, ownLoad, takeKills, takeFlag, stale, rooms, sgNow: () => sg, sgOpen, sgGuilds, brNow: () => br, brOpen: (ms) => (br = { key: 'manual', phase: 'sign', joined: new Map(), end: clock() + ms, idx: new Map() }), brBegin: () => { if (br && br.phase === 'sign') brStart(br); }, close: () => { clearInterval(roomClock); for (const d of duels.values()) clearInterval(d.timer); clearInterval(brClock); if (br && br.timer) clearInterval(br.timer); if (sg) clearInterval(sg.timer); wss.close(); } };
 }
