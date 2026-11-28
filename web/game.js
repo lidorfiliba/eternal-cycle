@@ -1,7 +1,7 @@
-import * as G from './core.js';
-const BUILD='20261128185446';
+import * as G from './core.js?v=20261128185715';
+const BUILD='20261128185715';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,wskinOn,CAPEN,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
-import {tr,getLang,setLang,startLang} from './i18n.js';
+import {tr,getLang,setLang,startLang} from './i18n.js?v=20261128185715';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -82,7 +82,7 @@ function send(kind,args){
     setNet(true);return j.result||{ok:false,msg:j.error||''};
   };
   const p=chain.then(run);chain=p.catch(()=>{});
-  return p.catch(()=>{setNet(false);return {ok:false,msg:'net'};});
+  return p.catch(e=>{try{console.error('send',kind,e);}catch(_e){}setNet(false);return {ok:false,msg:'net'};});
 }
 const pend={kills:0,casts:0,pots:0,boss:false,clean:false,elite:false,t:0};
 // The party at the side of the screen, as in the old games: each member's name and life. A press opens the party window.
@@ -2041,6 +2041,9 @@ function showCreate(extra){
 /* ---------- picking up a new version without being asked ---------- */
 // BUILD is stamped on every commit, together with version.txt. When the two differ, a newer client is out:
 // refresh the cached files and reload. One attempt per version, so a slow deploy cannot cause a reload loop.
+// Every file the page is made of is asked for by name and build id (see tools/stamp.sh), so a browser can never pair a
+// new file with an old one it kept. The page itself has no id in its name: it is fetched again here, past the cache.
+async function freshFiles(){try{await Promise.all(['./','index.html'].map(u=>fetch(u,{cache:'reload'}).catch(()=>null)));}catch(e){}}
 async function checkVersion(){
   if(!S||demo||SC.mode!=='farm'||document.hidden)return;
   let v='';try{const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;v=(await r.text()).trim();}catch(e){return;}
@@ -2048,7 +2051,7 @@ async function checkVersion(){
   try{if(sessionStorage.getItem('ec-upd')===v)return;sessionStorage.setItem('ec-upd',v);}catch(e){}
   toast('גרסה חדשה, מתעדכן...');
   try{await flushTick();if(!ONLINE)saveLocal();}catch(e){}
-  try{await Promise.all(['./','index.html','game.js','core.js','config.js'].map(u=>fetch(u,{cache:'reload'}).catch(()=>null)));}catch(e){}
+  await freshFiles();
   location.reload();
 }
 setInterval(paceTick,5000);setInterval(()=>{if(ONLINE&&S&&!demo){netOpen();askWho();if(tab==='arena')netSend({t:'duels'});}},6000);setInterval(()=>{if(worldWin()||(tab==='pass'&&evWindows(Date.now(),60).some(w=>w.e.world)))loadWorld();},10000);setInterval(checkVersion,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(checkVersion,1500);});setTimeout(checkVersion,8000);
@@ -2181,7 +2184,7 @@ document.addEventListener('click',async e=>{
   if(a==='pick'){pickCls=b.dataset.k;showCreate(!!b.dataset.x);return;}
   if(a==='closeModal'){closeModal();return;}
   if(a==='closeSheet'){closeSheet();return;}
-  if(a==='retry'){location.reload();return;}
+  if(a==='retry'){b.disabled=true;await freshFiles();location.reload();return;}
   if(a==='authSwap'){authMode=authMode==='login'?'register':'login';showAuth();return;}
   if(a==='authGo'){authGo();return;}
   if(a==='forgot'){fg={user:'',q:null};showForgot();return;}

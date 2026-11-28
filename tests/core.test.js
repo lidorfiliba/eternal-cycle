@@ -799,3 +799,8 @@ test('wearing the strongest: judged by the whole character, so a set is kept whe
   // the widest auto-sell settings never sell wings or jewelry
   {const [A,s]=mk();A.autoSell=4;const before=A.inv.length;for(const k of ['autoSell'])void k;assert.equal(G.apply(A,'autoSell',{}).ok,true);assert.equal(A.autoSell,0,'five settings, then off again');}
 });
+test('every file the page loads carries the build id in its address, so a browser cannot pair a new file with an old one',()=>{
+  const v=fs.readFileSync('web/version.txt','utf8').trim(),g=fs.readFileSync('web/game.js','utf8'),h=fs.readFileSync('web/index.html','utf8'),i=fs.readFileSync('web/i18n.js','utf8');
+  for(const [s,f] of [[g,"./core.js"],[g,"./i18n.js"],[i,"./en.js"]])assert.ok(s.includes("from '"+f+"?v="+v+"'"),f);
+  for(const f of ['config.js','game.js'])assert.ok(h.includes('src="'+f+'?v='+v+'"'),f);
+});
