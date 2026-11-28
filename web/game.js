@@ -1,7 +1,7 @@
-import * as G from './core.js?v=20261128192947';
-const BUILD='20261128192947';
+import * as G from './core.js?v=20261128194456';
+const BUILD='20261128194456';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,wskinOn,CAPEN,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
-import {tr,getLang,setLang,startLang} from './i18n.js?v=20261128192947';
+import {tr,getLang,setLang,startLang} from './i18n.js?v=20261128194456';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -19,6 +19,7 @@ const KEYS_FARM=[['k0','מיומנות ראשונה'],['k3','מיומנות חז
 // A key is known by where it sits on the keyboard, not by the letter the current language puts on it: E is E in Hebrew too.
 const evKey=e=>{const c=e.code||'';if(/^Key[A-Z]$/.test(c))return c[3].toLowerCase();if(/^Digit[0-9]$/.test(c))return c[5];if(/^Numpad[0-9]$/.test(c))return c[6];if(c==='Space')return ' ';return e.key||'';};
 const keyOf=a=>(prefs.keys&&prefs.keys[a])||KEYDEF[a],keyName=k=>k===' '?'רווח':k.length===1?k.toUpperCase():k;
+const potKeys=a=>a.map(x=>keyName(keyOf(x))).filter((v,i,l)=>v&&l.indexOf(v)===i).join(' '); // every key that drinks, as the player set them
 const keyAct=(list,k)=>{for(const x of list)if(keyOf(x[0])===k)return x[0];return '';};
 const keyTaken=k=>!!(keyAct(KEYS_FIGHT,k)||keyAct(KEYS_FARM,k));
 function applySizes(){const st=document.documentElement.style;st.setProperty('--mvS',clampN(prefs.mvS,70,160)/100);st.setProperty('--atS',clampN(prefs.atS,70,160)/100);}
@@ -324,7 +325,45 @@ const PETS=[[15,'עוף החול'],[7,'דרקונון'],[3,'פיית המעגל'
 const petTier=r=>r>=15?4:r>=7?3:r>=3?2:r>=1?1:0;
 // The player's own animals, ten of them, two in each rank: 0 wolf cub, 1 silver owl, 2 ghost fox, 3 young dragon, 4 phoenix,
 // 5 night cat, 6 storm raven, 7 moon rabbit, 8 flame tiger cub, 9 heavenly unicorn. Four-legged ones trot at the heel, the winged hover at the shoulder.
+// Every animal has a life of its own beside its master: most of the time it keeps its place, and every few seconds it
+// does its own thing. The winged ones circle him, the four-legged hop, the fox fades out and back, the tiger cub
+// pounces, and the young dragon walks, takes off, circles and breathes fire. All of it follows the clock alone, so
+// every player sees the same animal do the same thing.
 function drawBeast(x,y,sc,kind,t,flip,mv){
+  const P=kind===3?12:9,u=((t%P)+P)%P/P,f=flip?-1:1,fly=kind===1||kind===6||kind===3||kind===4,D=(fly?30:40)*sc;let ox=0,oy=0,fl2=flip,al=1;
+  if(kind===3){ // on foot, up, around, fire, down
+    const alt=(u<.3?0:u<.4?(u-.3)/.1:u<.93?1:(1-u)/.07)*38*sc,orb=u>.5&&u<.8;if(orb){const a=(u-.5)/.3*Math.PI*2;ox=f*D*(Math.cos(a)-1);oy=-Math.sin(a)*12*sc;fl2=Math.sin(a)>0?!flip:flip;}
+    drawDragon(x+ox,y+oy,sc,t,fl2,alt,(u>.41&&u<.48)||(u>.83&&u<.91),mv);return;}
+  if(fly){if(u>.55&&u<.85){const a=(u-.55)/.3*Math.PI*2;ox=f*D*(Math.cos(a)-1);oy=-Math.sin(a)*12*sc;fl2=Math.sin(a)>0?!flip:flip;if(kind===4&&!calm&&Math.random()<.5)SC.parts.push({x:x+ox,y:y+oy-34*sc,vx:0,vy:10,life:.5,c:'#ffae42',s:2.4});}}
+  else if(u>.6&&u<.78){const v=(u-.6)/.18;
+    if(kind===2)al=Math.abs(Math.cos(v*Math.PI)); // the ghost fox fades away and returns
+    else if(kind===8){ox=f*Math.sin(v*Math.PI)*30*sc;oy=-Math.sin(v*Math.PI)*16*sc;} // the tiger cub pounces ahead
+    else oy=-Math.abs(Math.sin(v*Math.PI*(kind===7?3:2)))*(kind===7?30:kind===5?26:18)*sc; // the others hop; the rabbit most of all
+    if(kind===9&&!calm&&Math.random()<.5)SC.parts.push({x:x+(Math.random()-.5)*30*sc,y:y+oy-20*sc,vx:(Math.random()-.5)*40,vy:-30,life:.6,c:'hsl('+((t*200)%360)+',95%,75%)',s:2.2});}
+  if(al<1){ctx.save();ctx.globalAlpha*=Math.max(.08,al);drawBeast0(x+ox,y+oy,sc,kind,t,fl2,mv||ox!==0);ctx.restore();}else drawBeast0(x+ox,y+oy,sc,kind,t,fl2,mv||ox!==0);
+}
+// The young dragon: small, red, horned, with a bat's wings. alt is how high it flies (0: it walks on its legs).
+function drawDragon(x,y,sc,t,flip,alt,fire,mv){
+  const k=sc*1.3,f=flip?-1:1,air=alt>2*sc,fl=air?Math.sin(t*13):0,run=!air&&mv?Math.sin(t*14):0,sw=Math.sin(t*3.2)*2,by=y-alt-(air?Math.sin(t*3)*3*sc:0);
+  ctx.save();ctx.translate(x,by);ctx.scale(f*k,k);ctx.lineJoin='round';ctx.lineCap='round';
+  const wing=(col,da)=>{ctx.save();ctx.translate(-1,-10);ctx.rotate(air?-.35+fl*.75+da:1.05+da);ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-2,-17);ctx.quadraticCurveTo(-6,-11,-10,-13);ctx.quadraticCurveTo(-11,-8,-15,-8);ctx.quadraticCurveTo(-13,-3,-17,-1);ctx.quadraticCurveTo(-8,1,0,0);ctx.fill();
+    ctx.strokeStyle='#5a0f12';ctx.lineWidth=.9;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-2,-17);ctx.moveTo(0,0);ctx.lineTo(-10,-13);ctx.moveTo(0,0);ctx.lineTo(-15,-8);ctx.stroke();ctx.restore();};
+  wing('#7a161b',.25);
+  ctx.strokeStyle='#c22a26';ctx.lineWidth=3.2;ctx.beginPath();ctx.moveTo(-6,-5);ctx.quadraticCurveTo(-15,-1+sw,-20,-8+sw);ctx.stroke();ctx.fillStyle='#ffb347';ctx.beginPath();ctx.moveTo(-20,-8+sw);ctx.lineTo(-25,-9+sw);ctx.lineTo(-21,-13+sw);ctx.fill(); // tail and its tip
+  ctx.strokeStyle='#8e1c1c';ctx.lineWidth=2.4;if(air){ctx.beginPath();ctx.moveTo(-3,-2);ctx.lineTo(-5,2);ctx.moveTo(4,-2);ctx.lineTo(3,2);ctx.stroke();}else{ctx.beginPath();ctx.moveTo(-3,-3);ctx.lineTo(-3+run*2.5,0);ctx.moveTo(4,-3);ctx.lineTo(4-run*2.5,0);ctx.stroke();}
+  const g=ctx.createLinearGradient(0,-13,0,0);g.addColorStop(0,'#ff5a45');g.addColorStop(1,'#b81f24');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(0,-6.5,9,5.8,-.08,0,7);ctx.fill();
+  ctx.fillStyle='#ffc27a';ctx.beginPath();ctx.ellipse(1.5,-4,6,2.6,0,0,7);ctx.fill(); // belly
+  ctx.fillStyle='#ffb347';for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(-6+i*3.2,-11.4);ctx.lineTo(-4.6+i*3.2,-15);ctx.lineTo(-3.4+i*3.2,-11.6);ctx.fill();} // spikes down the back
+  ctx.strokeStyle='#d93a30';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(6,-8);ctx.quadraticCurveTo(9,-12,11,-14);ctx.stroke(); // neck
+  ctx.fillStyle='#e8402f';ctx.beginPath();ctx.ellipse(12,-15,4.6,4,0,0,7);ctx.fill();ctx.beginPath();ctx.ellipse(16.5,-13.6,3.4,2.3,.1,0,7);ctx.fill(); // head and snout
+  ctx.fillStyle='#ffe9b0';ctx.beginPath();ctx.moveTo(10,-18);ctx.lineTo(6.5,-24);ctx.lineTo(12,-19);ctx.fill();ctx.beginPath();ctx.moveTo(13,-18.6);ctx.lineTo(11,-24);ctx.lineTo(15,-18);ctx.fill(); // horns
+  ctx.fillStyle='#ffe27a';ctx.beginPath();ctx.ellipse(13.2,-15.6,1.5,1.7,0,0,7);ctx.fill();ctx.fillStyle='#200';ctx.beginPath();ctx.ellipse(13.6,-15.6,.55,1.3,0,0,7);ctx.fill();ctx.fillStyle='#5a0f12';ctx.beginPath();ctx.arc(18.6,-14.2,.5,0,7);ctx.fill();
+  wing('#a81f22',0);
+  if(fire){const L=24+Math.sin(t*37)*4+Math.sin(t*61)*3;ctx.globalCompositeOperation='lighter';for(const [w,c,l] of [[7,'rgba(255,90,30,.55)',1],[4.5,'rgba(255,170,50,.75)',.8],[2.2,'rgba(255,245,190,.9)',.55]]){ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(19,-13);ctx.quadraticCurveTo(19+L*l*.5,-13-w,19+L*l,-13+Math.sin(t*23)*2);ctx.quadraticCurveTo(19+L*l*.5,-13+w,19,-13);ctx.fill();}}
+  ctx.restore();
+  if(fire&&!calm&&Math.random()<.6)SC.parts.push({x:x+f*(40+Math.random()*26)*k*.8,y:by-13*k+(Math.random()-.5)*8,vx:f*(60+Math.random()*60),vy:-20-Math.random()*30,life:.45,c:Math.random()<.5?'#ffae42':'#ff5a2e',s:2.4});
+}
+function drawBeast0(x,y,sc,kind,t,flip,mv){
   if(kind===3||kind===4){drawPet(x,y-34*sc,sc*1.2,kind,t,flip);return;}
   const k=sc*1.25,f=flip?-1:1,run=mv?Math.sin(t*13):Math.sin(t*2.2)*.25,E=(cx,cy,rx,ry,r)=>{ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,r||0,0,7);ctx.fill();},eye=(ex,ey,c,r)=>{ctx.shadowBlur=0;ctx.fillStyle=c||'#fff';E(ex,ey,r||1.6,r||1.6);ctx.fillStyle='#000';E(ex+.4,ey,(r||1.6)*.5,(r||1.6)*.5);};
   ctx.save();ctx.lineJoin='round';ctx.lineCap='round';
@@ -1554,7 +1593,7 @@ function renderDuelBar(){
   const desk=DESK&&$('stage').clientWidth>=640;bar.classList.toggle('desk',desk);hpb.style.display='';hpb.classList.toggle('mob',!desk);duelHpTick();
   const sgOn=!!(d.br&&d.br.sg),brOn=!!d.br||!!(d.D&&d.D.pvp),cg=brOn&&d.cbN?d.D.t-d.cbAt:-1,cbQ=G.COMBO[S.cls]||G.COMBO.blade,noMark=!!d.br&&!(d.sel>=0),cbK=!noMark&&cg>=SG.cbMin&&cg<=SG.cbMax?cbQ[d.cbN]:'';
   bar.querySelectorAll('button').forEach((b,i)=>{const k=DBTN[i];if(k==='buf'||k==='bash'){b.style.display=sgOn?'':'none';if(!sgOn)return;}const cd=k==='atk'?0:Math.max(0,(me.at[k]||0)-d.D.t),nm=k==='atk'?'תקיפה':k==='dash'?'צעד':k==='bash'?'הדיפה':k==='buf'?BUFN[S.cls][0]:k==='pot'?'שיקוי ×'+me.pots:CLS[S.cls].sk[k==='s0'?0:k==='s1'?3:k==='s2'?4:5],
-    t=(desk?'<kbd>'+keyName(keyOf(k))+'</kbd>':'')+nm+'<small>'+(cd>.6?Math.ceil(cd)+' שנ׳':k==='pot'&&!me.pots?'נגמר':k==='buf'?BUFN[S.cls][1]:k==='bash'?'זורק יריב ממתג':k===cbK?'קומבו עכשיו':noMark&&cbQ.indexOf(k)>=0?(k===cbQ[0]?'סמן יריב לקומבו':'&nbsp;'):brOn&&k===cbQ[0]?'קומבו 1':brOn&&k===cbQ[1]?'קומבו 2':brOn&&k===cbQ[2]?'קומבו 3':k==='s3'&&d.br?(S.cls==='blade'?'זינוק':S.cls==='lord'?'מושך יריב':S.cls==='storm'?'פוגע באזור':'חודר מגן'):k==='s2'?(S.cls==='hunter'?'נעלם לרגע':S.cls==='lord'&&sgOn?'מגן לך ולחברים':'מגן'):k==='s3'?'מכה סופית':k==='s1'?'מהמם':k==='dash'?'חמיקה':'&nbsp;')+'</small>';
+    t=(desk?'<kbd>'+(k==='pot'?potKeys(['pot','pot2','pot3']):keyName(keyOf(k)))+'</kbd>':'')+nm+'<small>'+(cd>.6?Math.ceil(cd)+' שנ׳':k==='pot'&&!me.pots?'נגמר':k==='buf'?BUFN[S.cls][1]:k==='bash'?'זורק יריב ממתג':k===cbK?'קומבו עכשיו':noMark&&cbQ.indexOf(k)>=0?(k===cbQ[0]?'סמן יריב לקומבו':'&nbsp;'):brOn&&k===cbQ[0]?'קומבו 1':brOn&&k===cbQ[1]?'קומבו 2':brOn&&k===cbQ[2]?'קומבו 3':k==='s3'&&d.br?(S.cls==='blade'?'זינוק':S.cls==='lord'?'מושך יריב':S.cls==='storm'?'פוגע באזור':'חודר מגן'):k==='s2'?(S.cls==='hunter'?'נעלם לרגע':S.cls==='lord'&&sgOn?'מגן לך ולחברים':'מגן'):k==='s3'?'מכה סופית':k==='s1'?'מהמם':k==='dash'?'חמיקה':'&nbsp;')+'</small>';
     if(desk){const mx=d.cdMax||(d.cdMax={});if(cd>(mx[k]||0))mx[k]=cd;if(cd<=0)mx[k]=0;const pc=cd>0&&mx[k]?Math.round(cd/mx[k]*100)+'%':'0%';if(b.dataset.cd!==pc){b.dataset.cd=pc;b.style.setProperty('--cd',pc);}}
     if(b.dataset.h!==t){b.dataset.h=t;b.innerHTML=t;}const dis=off||cd>0||(k==='pot'&&!me.pots);if(b.disabled!==dis)b.disabled=dis;b.classList.toggle('rdy',!dis&&(cbK?k===cbK:k==='s3'&&!sgOn));});
 }
@@ -1801,7 +1840,7 @@ function renderHud(){
   const bs=$('skills').children,h=SC.hero;
   {const cq=G.COMBO[S.cls]||G.COMBO.blade,cn={s0:cq.indexOf('s0')+1,s1:cq.indexOf('s1')+1},pots=A.pots==null?G.POT_START:A.pots;
   for(const b of bs){const i=+b.dataset.i,lock=i<6&&!skOpen(i),cd=i===6?h.dashT||0:i===7?0:h.cds[i],nm=i===6?'צעד':i===7?'שיקוי ×'+pots:CLS[S.cls].sk[i];b.className=lock?'lock':cd>0||(i===7&&pots<1)?'cd':'';
-    const txt=lock?'רמה '+SKLV[i]:cd>.6?Math.ceil(cd)+' שנ׳':i===7?(pots<1?'נגמר':'&nbsp;'):i===0?'קומבו '+cn.s0:i===3?'קומבו '+cn.s1:'מוכן',kb=DESK?'<kbd>'+keyName(keyOf('k'+i))+'</kbd>':'';if(b.dataset.s!==txt+S.cls+nm){b.dataset.s=txt+S.cls+nm;b.innerHTML=kb+esc(nm)+'<b>'+txt+'</b>';}}}
+    const txt=lock?'רמה '+SKLV[i]:cd>.6?Math.ceil(cd)+' שנ׳':i===7?(pots<1?'נגמר':'&nbsp;'):i===0?'קומבו '+cn.s0:i===3?'קומבו '+cn.s1:'מוכן',kb=DESK?'<kbd>'+(i===7?potKeys(['k7','k8','k9']):keyName(keyOf('k'+i)))+'</kbd>':'';if(b.dataset.s!==txt+S.cls+nm){b.dataset.s=txt+S.cls+nm;b.innerHTML=kb+esc(nm)+'<b>'+txt+'</b>';}}}
   {const pb=$('potBtn'),v=prefs.autoPot==null?50:prefs.autoPot;pb.style.display=$('autoBtn').style.display;const t=v?'שיקוי אוטומטי: '+v+'%':'שיקוי אוטומטי: כבוי';if(pb.textContent!==t)pb.textContent=t;pb.classList.toggle('on',!!v);}
   const q=QUESTS[A.q],qe=$('quest');
   if(!q||duel){qe.style.display='none';}else{const p=q.p(A,S),done=p[0]>=p[1];qe.style.display='';qe.classList.toggle('done',done);

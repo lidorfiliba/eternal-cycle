@@ -241,7 +241,10 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     if (m.t === 'sgAct') { if (m.f !== undefined && B.f[i]) B.f[i].face = Number(m.f) < 0 ? -1 : 1; const o = G.sgAct(B, i, String(m.k), rnd, Number.isInteger(m.to) ? m.to : -1);
       // A blow that arrives a hair before its time is not thrown away: it lands when its time comes. A browser whose clock runs a little
       // ahead of the server's would otherwise lose every other blow and wait a full beat for each. Further off than that, he is told his true times.
-      if (!o) { const k = String(m.k), rem = f.alive && B.t >= 0 && !(f.stun > B.t) && k in f.at ? f.at[k] - B.t : 0; if (rem > 0 && (k === 'atk' || k === 's0' || k === 's1')) { if (rem <= .25 && !m.again) setTimeout(() => { if (sg === x && !x.done && x.idx.get(uid) === i) sgMsg(ws, Object.assign({}, m, { again: 1 })).catch(() => {}); }, rem * 1000 + 15).unref(); else send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t }); } return; }
+      if (!o && !m.again) { const k = String(m.k), rem0 = f.alive && B.t >= 0 && !(f.stun > B.t) && k in f.at ? f.at[k] - B.t : 0, now = clock(), lag = Math.max(0, Math.min(.5, (now - x.last) / 1000));
+        // the field's clock moves in steps; a blow due by the real clock within the current step is not made to wait for the next one
+        if (rem0 > 0 && rem0 <= lag + .03) { x.last = now; const ev = G.sgStep(B, lag, rnd); if (ev.length) { const st = sgState(B); st.ev = ev; sgAll(st); } if (B.over) { sgFinish(x); return; } return sgMsg(ws, Object.assign({}, m, { again: 2 })); } }
+      if (!o) { const k = String(m.k), rem = f.alive && B.t >= 0 && !(f.stun > B.t) && k in f.at ? f.at[k] - B.t : 0; if (rem > 0 && (k === 'atk' || k === 's0' || k === 's1')) { if (rem <= .25 && m.again !== 1) setTimeout(() => { if (sg === x && !x.done && x.idx.get(uid) === i) sgMsg(ws, Object.assign({}, m, { again: 1 })).catch(() => {}); }, rem * 1000 + 15).unref(); else send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t }); } return; }
       if (o.no) return send(uid, { t: 'sgHint', no: o.no }); const out = sgState(B); out.ev = [o]; out.s = out.s.map((q, k) => (k === i || k === o.to || (o.more && o.more.some((x) => x[0] === k)) ? q : null)); sgAll(out); return send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t }); }
   }
 
