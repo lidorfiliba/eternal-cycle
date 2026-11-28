@@ -1,7 +1,7 @@
-import * as G from './core.js?v=20261128201708';
-const BUILD='20261128201708';
+import * as G from './core.js?v=20261128202625';
+const BUILD='20261128202625';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,wskinOn,CAPEN,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
-import {tr,getLang,setLang,startLang} from './i18n.js?v=20261128201708';
+import {tr,getLang,setLang,startLang} from './i18n.js?v=20261128202625';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -663,7 +663,7 @@ function drawWorldBoss(dt){
 }
 // The colossus cannot be reached, but its heart can: while the boss lives, the heart stands in the middle of every map,
 // and that is what the players strike. It never falls here; its health is the boss's own, kept by the server.
-function syncWb(){const cur=SC.mons.find(m=>m.wb),on=wbOn();if(on&&!cur){const m=newMon(clamp(mapW()*.5,320,mapW()-320),SC.zi);m.wb=true;m.hp=m.max=1e18;SC.mons.push(m);for(let q=-1;q<=1;q++)SC.fx.push({k:'pillar',x:m.x+q*30,y:gy(),life:.9,d:.9,c:'#c56bff'});toast('לב בוס העולם הופיע במרכז המפה. תקפו אותו!',4);}else if(!on&&cur)SC.mons.splice(SC.mons.indexOf(cur),1);}
+function syncWb(){const cur=SC.mons.find(m=>m.wb),on=wbOn();if(on&&!cur){const m=newMon(clamp(mapW()*.5,320,mapW()-320),SC.zi);m.wb=true;m.hp=m.max=1e18;SC.mons.push(m);for(let q=-1;q<=1;q++)SC.fx.push({k:'pillar',x:m.x+q*30,y:gy(),life:.9,d:.9,c:'#c56bff'});toast('לב בוס העולם הופיע במרכז המפה. מי שתוקף אותו, הבוס מכה בו בחזרה',5);}else if(!on&&cur)SC.mons.splice(SC.mons.indexOf(cur),1);}
 function drawWbHeart(m,g0,sc){
   const t=SC.t,low=world&&world.hp<world.max*.3,c=low?'#ff5c7a':'#c56bff',pu=1+Math.sin(t*(low?7:3.5))*.05+m.hit*.08,y=g0-78*sc+Math.sin(t*1.6)*6,R=46*sc*pu;
   ctx.save();ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(m.x,g0+2,44*sc,9*sc,0,0,7);ctx.fill();
@@ -677,6 +677,10 @@ function drawWbHeart(m,g0,sc){
 }
 function worldBossStrike(dt,g0){ // in map coordinates: mark the ground, then strike it
   if(!wbOn())return;const h=SC.hero,low=world.hp<world.max*.3;
+  // The boss strikes only those who strike it: whoever leaves the heart alone is left alone, so a weak or new player can go on
+  // hunting beside it. A blow already marked on the ground still falls. After a death it waits before marking him again.
+  if(h.dead>0)WB.rest=SC.t+12;
+  if(!WB.zone&&(!(SC.t-(WB.eng||-99)<10)||SC.t<(WB.rest||0))){WB.t=Math.max(WB.t,2.5);return;}
   if(!WB.zone){if((WB.t-=dt)<=0){WB.t=(low?5:8)+Math.random()*3;WB.zone={x:clamp(h.x+(Math.random()-.5)*260,160,mapW()-160),t:1.5,w:low?230:180};snd('growl');}return;}
   const z=WB.zone,u=1-clamp(z.t/1.5,0,1);ctx.save();ctx.globalAlpha=.2+.45*u;ctx.fillStyle='#c56bff';ctx.beginPath();ctx.ellipse(z.x,g0,z.w,22,0,0,7);ctx.fill();ctx.globalAlpha=.9;ctx.strokeStyle='#f0d0ff';ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(z.x,g0,z.w*u,22*u,0,0,7);ctx.stroke();
   ctx.globalAlpha=.25+.4*u;ctx.fillStyle='#c56bff';ctx.fillRect(z.x-z.w*.5*u,0,z.w*u,g0);ctx.restore();label('בוס העולם מכה!',z.x,g0-150,'#f0d0ff',13);
@@ -1026,7 +1030,7 @@ function shMsg(m){
 }
 function strike(m,mult,col,big){
   if(m.wb){ // the world boss's heart: the blow is counted, and the server turns the count into damage
-    const u=mult*(m.weak>0?1.5:1),d=Math.round(u*Math.sqrt(Math.max(1,C.power||1))*(.9+Math.random()*.2));pend.wb+=u;m.hit=1;WB.hurt=1;snd('hit');addNum(m.x,m.y-150,fmt(d),big?col:'#f0d0ff',big);
+    const u=mult*(m.weak>0?1.5:1),d=Math.round(u*Math.sqrt(Math.max(1,C.power||1))*(.9+Math.random()*.2));pend.wb+=u;m.hit=1;WB.hurt=1;WB.eng=SC.t;snd('hit');addNum(m.x,m.y-150,fmt(d),big?col:'#f0d0ff',big);
     if(world&&world.hp>d)world.hp-=d;const bx=SC.cam+wbX(),by=gy()*.42;if(!calm)SC.fx.push({k:'line',x1:m.x,y1:m.y-90,x2:bx,y2:by,life:.2,c:'#f0d0ff',w:1.5});return;}
   if(SC.sh&&m.sid!=null){if(ws&&ws.readyState===1){netSend({t:'sh',i:m.sid,m:Math.round(mult*(m.weak>0?1.5:1)*100)/100});m.ag=true;}else if(!(SC.shWarn>SC.t-6)){SC.shWarn=SC.t;toast('אין חיבור חי לשרת. במפה הזו החיסולים נספרים רק דרך השרת',4);}return;}
   const crit=Math.random()<C.crit,d=Math.round(C.dmg*(crit?C.cdmg:1)*mult*(m.weak>0?1.5:1)*(.9+Math.random()*.2));

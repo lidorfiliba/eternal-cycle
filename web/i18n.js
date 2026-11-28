@@ -2,7 +2,7 @@
 // Text is cut into Hebrew phrases (digits, Latin text and sentence punctuation end a phrase), and each phrase is
 // looked up in en.js: whole first, then as the longest known pieces from left to right, so a sentence built in code
 // around a name or a number still comes out in English. What is not known stays as it was.
-import {EN,SENTENCES} from './en.js?v=20261128201708';
+import {EN,SENTENCES} from './en.js?v=20261128202625';
 const RUN=/[֐-׿][֐-׿ "'׳״\-]*[֐-׿]|[֐-׿]/g,HE=/[֐-׿]/;
 const PRE={'ו':'and ','ה':'the ','ב':'in ','ל':'to ','מ':'from ','ש':'that ','כ':'as '};
 // The language is the player's saved choice; with none saved, Hebrew for a Hebrew browser and English for any other.
