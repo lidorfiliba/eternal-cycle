@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261128130211';
+const BUILD='20261128135843';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,wskinOn,CAPEN,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -980,9 +980,13 @@ function cast(i,auto){
   if(i===7)return drinkPot(false);
   if(i===6){if(h.dashT>0)return false;h.dashT=DUEL_LIVE.dash.cd;h.inv=DUEL_LIVE.dash.inv;const d=h.dir||h.face||1,x0=h.x;h.x=clamp(h.x+d*DUEL_LIVE.dash.d,30,mapW()-30);h.tgt=null;h.manual=.4;snd('click');SC.fx.push({k:'line',x1:x0,y1:gy()-50,x2:h.x,y2:gy()-50,life:.2,c:'#9fe8ff',w:6});burst(x0,gy()-40,'#9fe8ff',10);return true;}
   if(!skOpen(i)||h.cds[i]>0)return false;
-  const beat=i===0||i===3;if(beat&&h.beat>0){if(!auto)h.q={i:i,until:SC.t+.5};return false;} // pressed a breath early: it goes off on the beat, as in a fight
+  const beat=i===0||i===3;if(beat&&h.beat>0){if(!auto)h.q={i:i,until:h.qKeep||SC.t+.5,seek:h.qKeep?1:0};return false;} // pressed a breath early: it goes off on the beat, as in a fight
+  // A fighting skill pressed with nothing in its reach is not wasted on the air: the hero goes for the nearest monster and lets it go when he gets there.
+  if(beat&&!auto){const rg=CLS[S.cls].range,reach=i===3?rg*1.4+40:S.cls==='blade'?120:rg+80,live=alive();let nm=null,bd=1e9;for(const o of live){const d=Math.abs(o.x-h.x)-(o.boss?40:0);if(d<bd){bd=d;nm=o;}}
+    if(nm&&bd>reach){if(bd>1100){toast('אין מטרה בטווח');return false;}h.tgt=nm;h.tx=null;h.goal=null;h.manual=0;h.q={i:i,until:h.qKeep||SC.t+3,seek:1};return false;}
+    if(nm&&!(h.tgt&&live.indexOf(h.tgt)>=0&&Math.abs(h.tgt.x-h.x)<=reach+(h.tgt.boss?40:0))){h.tgt=nm;h.face=nm.x>=h.x?1:-1;}}
   const col=gearColor(lookOf(S).w,SC.t,CLS[S.cls].c),melee=S.cls==='blade',loud=SC.t-(h.saidT||0)>1.6;if(beat){h.beat=SG.skT;h.atkT=Math.max(h.atkT||0,SG.skT);}
-  if(i===0){const cx=melee||!h.tgt?h.x+(melee?0:h.face*120):h.tgt.x,R=melee?135:120,ts=alive().filter(m=>Math.abs(m.x-cx)<R*(m.boss?1.4:1));
+  if(i===0){const tg0=h.tgt&&h.tgt.die<=0&&!(h.tgt.resp>0)?h.tgt:null,cx=melee||!tg0?h.x+(melee?0:h.face*120):tg0.x,R=melee?135:120,ts=alive().filter(m=>Math.abs(m.x-cx)<R*(m.boss?1.4:1));
     if(!ts.length&&auto)return false;snd('skill');h.anim=1;h.skA=.3;attackFx(S.cls,h.x,hY(),h.face,ts,loud,col);if(loud)SC.fx.push({k:'rune',x:h.x,y:gy()-2,r:70,life:.6,d:.6,c:col});if(melee)for(const d of [-1,1])SC.fx.push({k:'wave',x:h.x+d*20,y:gy(),dir:d,dist:120,h:loud?70:44,life:.26,d:.26,c:col});if(!ts.length)SC.fx.push({k:'ring',x:cx,y:gy()-20,life:.4,c:col});
     if(loud){h.saidT=SC.t;SC.nums.push({x:h.x,y:gy()-135,txt:CLS[S.cls].sk[0]+'!',c:col,s:18,life:1});}for(const m of ts)strike(m,PVE_SK[0],col,true);}
   else if(i===1){snd('pull');for(const m of alive()){if(m.boss||Math.abs(m.x-h.x)>380)continue;m.pull=h.x+(m.x>h.x?1:-1)*(34+Math.random()*44);m.stun=1.8;m.ag=true;}
@@ -1059,7 +1063,7 @@ function updateWorld(dt){
     if(cl.t<=0){if(cl.ph==='out'){cl.ph='wait';cl.t=4;cl.go();}else h.climb=null;}
     return;}
   for(let i=0;i<6;i++)h.cds[i]=Math.max(0,h.cds[i]-dt);h.shield=Math.max(0,(h.shield||0)-dt);h.beat=Math.max(0,(h.beat||0)-dt);h.potT=Math.max(0,(h.potT||0)-dt);h.dashT=Math.max(0,(h.dashT||0)-dt);h.inv=Math.max(0,(h.inv||0)-dt);
-  if(h.q&&h.beat<=0){const q=h.q;h.q=null;if(SC.t<=q.until)cast(q.i,false);}
+  if(h.q&&h.beat<=0){const q=h.q;h.q=null;if(SC.t<=q.until){h.qKeep=q.seek?q.until:0;cast(q.i,false);h.qKeep=0;}}
   if(S.auto&&(prefs.autoPot==null?50:prefs.autoPot)>0&&h.dead<=0&&h.hp<C.hp*(prefs.autoPot==null?50:prefs.autoPot)/100)drinkPot(true);
   h.buff=Math.max(0,h.buff-dt);h.manual=Math.max(0,h.manual-dt);h.autoSk=Math.max(0,h.autoSk-dt);h.anim=Math.max(0,h.anim-dt*4);h.skA=Math.max(0,(h.skA||0)-dt);h.atkT-=dt;h.mv=false;
   // monsters
