@@ -804,3 +804,11 @@ test('every file the page loads carries the build id in its address, so a browse
   for(const [s,f] of [[g,"./core.js"],[g,"./i18n.js"],[i,"./en.js"]])assert.ok(s.includes("from '"+f+"?v="+v+"'"),f);
   for(const f of ['config.js','game.js'])assert.ok(h.includes('src="'+f+'?v='+v+'"'),f);
 });
+test('siege gathering: before the fight begins a fighter can stock up at a shop, and no blow lands',()=>{
+  const rnd=()=>.5,B=G.sgNew(rnd,{d:300,a:1.2,h:4000,f:150}),p={id:'a',n:'a',c:'blade',d:300,h:4000,f:150,a:1.2};
+  const i=G.sgAdd(B,p,5,'T',rnd,true),j=G.sgAdd(B,Object.assign({},p,{id:'b'}),6,'U',rnd,true);B.t=-600;
+  const f=B.f[i];f.x=G.SG.shops[0][0];f.y=G.SG.shops[0][1];const p0=f.pots;
+  for(let k=0;k<10;k++)G.sgStep(B,.2,rnd);
+  assert.ok(f.pots>p0,'bought');assert.ok(B.t<0);
+  B.f[j].x=f.x+20;B.f[j].y=f.y;assert.equal(G.sgAct(B,i,'atk',rnd,j),null);assert.equal(B.f[j].hp,1);
+});

@@ -1,7 +1,7 @@
-import * as G from './core.js?v=20261128190057';
-const BUILD='20261128190057';
+import * as G from './core.js?v=20261128190801';
+const BUILD='20261128190801';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,wskinOn,CAPEN,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
-import {tr,getLang,setLang,startLang} from './i18n.js?v=20261128190057';
+import {tr,getLang,setLang,startLang} from './i18n.js?v=20261128190801';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -1382,9 +1382,9 @@ function updateBr(dt){
   if(b.phase==='end'){if((d.end-=dt)<=0)brExit();return;}
   if(b.phase==='fight'){D.t+=dt;if(d.go>0&&D.t>=0){d.go=0;renderDuelBar();snd('boss');}if(b.arena)arenaTick(dt);if(b.phase!=='fight')return;}
   vm.mv=false;
-  if(me.alive&&me.stun<=D.t&&(b.phase==='lobby'||D.t>=0)){
+  if(me.alive&&(me.stun<=D.t||(b.sg&&D.t<0))&&(b.phase==='lobby'||D.t>=0||b.sg)){
     let vx=SC.hero.dir,vy=SC.hero.dz;if(joy.v[0]||joy.v[1]){vx=joy.v[0];vy=joy.v[1];}if(vx||vy)b.go=null;else if(b.go){const gx=b.go[0]-me.x,gy2=b.go[1]-me.y,gd=Math.hypot(gx,gy2);if(gd<8)b.go=null;else{vx=gx/gd;vy=gy2/gd;}}
-    if(vx||vy){const n=Math.hypot(vx,vy),sp=BR.spd*(1+.12*(me.bt|0))*dt;if(b.sg){me.g=b.g[d.me];sgMove({sg:b.sg},me,me.x+vx/n*sp,me.y+vy/n*sp);}else{me.x+=vx/n*sp;me.y+=vy/n*sp;const r=Math.hypot(me.x,me.y),lim=b.arena?BR.DR:b.phase==='lobby'?240:BR.R;if(r>lim){me.x*=lim/r;me.y*=lim/r;}}vm.mv=true;if(Math.abs(vx)>.15)vm.face=vx>0?1:-1;}}
+    if(vx||vy){const n=Math.hypot(vx,vy),sp=BR.spd*(1+.12*(me.bt|0))*dt;if(b.sg){me.g=b.g[d.me];const ox=me.x,oy=me.y;if(D.t<0&&!d.prep0)d.prep0=[ox,oy];sgMove({sg:b.sg},me,me.x+vx/n*sp,me.y+vy/n*sp);if(D.t<0&&Math.hypot(me.x-d.prep0[0],me.y-d.prep0[1])>SG.prepR){me.x=ox;me.y=oy;}}else{me.x+=vx/n*sp;me.y+=vy/n*sp;const r=Math.hypot(me.x,me.y),lim=b.arena?BR.DR:b.phase==='lobby'?240:BR.R;if(r>lim){me.x*=lim/r;me.y*=lim/r;}}vm.mv=true;if(Math.abs(vx)>.15)vm.face=vx>0?1:-1;}}
   if(b.phase==='fight'){
     if(d.q){if(D.t>d.q.until||!me.alive)d.q=null;else if(me.at[d.q.k]<=D.t){const k=d.q.k;d.q=null;duelAct(k);}}
     else if(d.holdAtk||b.auto)duelAct('atk');
@@ -1436,6 +1436,7 @@ function drawSg(dt){
   if(W>=560){const n=D.f[d.me].bfN|0,bf=[n&1?'חיים':'',n&2?'הגנה':'',n&4?'כוח':'',n===7?'מהירות':''].filter(Boolean);label(bf.length?'באפים עליך: '+bf.join(' · '):'אין עליך באפים. עמדו קרוב זה לזה והפעילו אותם',W/2,82,bf.length?'#9fe8ff':'#b9b3d6',10);}
   SG.sw.forEach((s,q)=>{const pr=S2.swp[q];if(pr[1]>0&&S2.crown[1]<=0){const bw=W*.5,bx=W/2-bw/2,by=H*.24+q*30;label((pr[0]===myG?'משתלטים על המתג ה':'האויב משתלט על המתג ה')+(q?'ימני':'שמאלי'),W/2,by-4,gc(pr[0]),13);ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(bx,by,bw,8);ctx.fillStyle=gc(pr[0]);ctx.fillRect(bx,by,bw*clamp(pr[1]/SG.swT,0,1),8);}});
   if(S2.crown[1]>0){const bw=W*.6,bx=W/2-bw/2,by=H*.26+8;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(bx,by,bw,10);ctx.fillStyle=gc(S2.crown[0]);ctx.fillRect(bx,by,bw*clamp(S2.crown[1]/SG.crownT,0,1),10);}
+  if(D.t<0){label('מצור הטירה · הקרב מתחיל בעוד '+mmss(-D.t),W/2,30,'#ffd75e',13);label('זמן להתארגן: שיקויים קונים ליד החנות, ואי אפשר לתקוף או להתרחק עד שהקרב מתחיל',W/2,H*.2,'#9fe8ff',11);}else
   label((b.test?'מצור ידידות':'מצור הטירה')+' · '+mmss(S2.left),W/2,30,'#ffd75e',13);label('מחזיקים בטירה: '+hn,W/2,48,gc(S2.holder),11);
   if(S2.crown[1]>0)label('הכתר נכבש: '+Math.ceil(SG.crownT-S2.crown[1])+' שניות',W/2,H*.26,gc(S2.crown[0]),15);
   else if(W<560&&D.t>20){}
@@ -1713,7 +1714,7 @@ function netMsg(m){
   else if(m.t==='brNo'){brAsk=false;toast('ההרשמה למעגל האחרון סגורה כרגע');}
   else if(m.t==='brStart'){if(m.sg){if(!(d&&d.br)){if(SC.mode!=='farm')return;brEnter(0,0);}const b=SC.duel.br;b.sg=m.sg;b.lead=!!m.lead;b.test=!!m.test;b.gn={};for(const g of m.guilds||[])b.gn[g[0]]=String(g[1]);}brBegin(m);}
   else if(m.t==='sgAdd'){if(d&&d.br&&d.br.sg&&m.f&&m.i===d.D.f.length){const b=d.br,p=G.cleanPlayer('f'+m.i,m.f),f=brF(+m.xy[0],+m.xy[1]);f.cls=p.c;f.pots=SG.pots;(b.hpv=b.hpv||[])[m.i]=p.h;d.D.f.push(f);d.v.push({anim:0,face:1,mv:false,hitT:0});b.looks.push(p);b.names.push(p.n);b.bot.push(0);b.tg.push(null);b.deadT.push(0);b.g.push(m.f.g|0);b.tag.push(String(m.f.tag||''));addNum(W/2,H*.3,p.n+' הצטרף למצור','#c9c2ea',false);}}
-  else if(m.t==='sgOpen'){const left=+m.left||0;sgLive=left>0?Date.now()+left:0;sgTest=!!m.test;if(left>0&&!m.quiet){snd('boss');announce((m.test?'מצור ידידות נפתח':'מצור הטירה התחיל')+'! מצטרפים מלשונית הגילדה',true);}panelDirty=true;}
+  else if(m.t==='sgOpen'){const left=+m.left||0;sgLive=left>0?Date.now()+left:0;sgTest=!!m.test;if(left>0&&!m.quiet){snd('boss');announce((m.test?'מצור ידידות נפתח':+m.prep>0?'שדה המצור נפתח להתארגנות, והקרב מתחיל בשעה העגולה':'מצור הטירה התחיל')+'! מצטרפים מלשונית הגילדה',true);}panelDirty=true;}
   else if(m.t==='sgHint'){toast({held:'המתג תפוס. קודם צריך להפיל את מי שמחזיק בו',lead:'רק מנהל הגילדה יכול לקחת את הכתר',own:'הטירה כבר שלכם',sw:'צריך ששני חברי גילדה אחרים יחזיקו את שני המתגים',wound:'פצוע מקומבו: אי אפשר לשתות עוד רגע'}[m.no]||'אי אפשר כרגע',4);}
   else if(m.t==='sgNo'){toast(m.why==='guild'?'רק חברי גילדה יכולים להצטרף למצור':'אין מצור פתוח כרגע');}
   else if(m.t==='brS')brState(m);

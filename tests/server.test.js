@@ -600,3 +600,25 @@ test('two-step sign-in, for whoever wants it: a time code or a backup code after
   assert.equal((await auth.tfaCodes(uid,'000000')).ok,false);clock.add(120);const nc=await auth.tfaCodes(uid,code(st.secret,now()));assert.ok(nc.ok&&nc.codes.length===8&&nc.codes[0]!==on.codes[2],nc.msg);assert.equal((await auth.login('twostep','brand new pass 2','3.3.3.3',on.codes[3])).ok,false,'an old code no longer opens it');assert.ok((await auth.login('twostep','brand new pass 2','3.3.3.3',nc.codes[0])).ok);on.codes[2]=nc.codes[1];
   assert.equal((await auth.tfaOff(uid,'brand new pass 2','000000')).ok,false);assert.ok((await auth.tfaOff(uid,'brand new pass 2',on.codes[2])).ok);assert.ok((await auth.login('twostep','brand new pass 2','3.3.3.3')).ok,'and off again, the password is enough');
 });
+
+test('siege gathering over the socket: the field opens early, a fighter walks only near where he arrived, and no blow is taken',async()=>{
+  const {makeServer}=await import('../server/index.mjs');const {WebSocket}=await import('ws');const {db}=await world();
+  const srv=makeServer(fakeAdmin(db),'test-secret');await new Promise(r=>srv.listen(0,r));const port=srv.address().port,base='http://127.0.0.1:'+port;
+  const post=async(body,tok)=>(await (await fetch(base,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},tok?{'x-ec-token':tok}:{}),body:JSON.stringify(body)})).json());
+  const mkUser=async(n,cls)=>{const r=await post({kind:'register',args:{user:n,pass:'correct-horse-9',q:0,a:'rex'}});await post({kind:'create',args:{name:n,cls:cls}},r.token);await post({kind:'travel',args:{z:0}},r.token);
+    const uid=(await db.query('select user_id from users where username=$1',[n])).rows[0].user_id;return {tok:r.token,uid};};
+  const open=async u=>{const ws=new WebSocket('ws://127.0.0.1:'+port+'/ws');u.q=[];u.wait=t=>new Promise((res,rej)=>{const go=()=>{const i=u.q.findIndex(m=>m.t===t);if(i>=0)return res(u.q.splice(i,1)[0]);setTimeout(go,10);};go();setTimeout(()=>rej(new Error('no '+t+' message')),4000);});
+    ws.on('message',d=>u.q.push(JSON.parse(String(d))));await new Promise(r=>ws.on('open',r));ws.send(JSON.stringify({t:'hello',token:u.tok}));await u.wait('hi');u.ws=ws;u.send=m=>ws.send(JSON.stringify(m));};
+  const a=await mkUser('gathera','blade'),b=await mkUser('gatherb','storm');const G=await import('../supabase/functions/act/core.js');
+  try{
+    const g1=(await db.query("insert into guilds (name,tag,leader) values ('נמרים','NM',$1) returning id",[a.uid])).rows[0].id,g2=(await db.query("insert into guilds (name,tag,leader) values ('זאבים','ZV',$1) returning id",[b.uid])).rows[0].id;
+    await db.query('insert into guild_members (user_id,guild_id) values ($1,$2),($3,$4)',[a.uid,g1,b.uid,g2]);
+    await open(a);await open(b);const x=srv.live.sgOpen(600,false,'s-prep-key',120);const om=await a.wait('sgOpen');assert.equal(om.left,720000);assert.equal(om.prep,120000);
+    a.send({t:'sgJoin'});const sa=await a.wait('brStart');assert.ok(sa.T<0,'the clock stands before zero');b.send({t:'sgJoin'});const sb=await b.wait('brStart');
+    const B=x.B,fa=B.f[sa.me],fb=B.f[sb.me],x0=fa.x,y0=fa.y;
+    a.send({t:'sgPos',x:x0+15,y:y0,f:1});await new Promise(r=>setTimeout(r,150));assert.ok(fa.x>x0+5,'he walks');
+    fa.x=fa.px+G.SG.prepR-2;fa.y=fa.py;a.send({t:'sgPos',x:fa.x+20,y:fa.y,f:1});await new Promise(r=>setTimeout(r,150));assert.ok(Math.hypot(fa.x-fa.px,fa.y-fa.py)<=G.SG.prepR,'and not past the edge of the gathering ground');
+    fb.x=fa.x+20;fb.y=fa.y;a.send({t:'sgAct',k:'atk',to:sb.me,f:1});await new Promise(r=>setTimeout(r,200));assert.equal(fb.hp,1,'no blow before the hour');
+    B.t=0;a.send({t:'sgAct',k:'atk',to:sb.me,f:1});await new Promise(r=>setTimeout(r,250));assert.ok(fb.hp<1,'and from the hour on, blows land');
+  }finally{for(const u of [a,b])if(u&&u.ws)u.ws.close();srv.live.close();srv.close();}
+});

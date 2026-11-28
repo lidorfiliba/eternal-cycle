@@ -84,6 +84,9 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     if (!br && w && w.phase === 'sign' && w.key !== lastKey) { lastKey = w.key; br = { key: w.key, phase: 'sign', joined: new Map(), end: w.signEnd, idx: new Map() }; all({ t: 'brOpen', left: Math.max(0, br.end - clock()) }); }
     else if (br && br.phase === 'sign' && clock() >= br.end) brStart(br);
     const si = G.siegeInfo(clock());
+    if (!sg && !si.on && si.next > 0 && si.next <= G.SG.prep / 60) { // the gathering: the field opens ten minutes early, and nobody strikes until the hour
+      const key = G.siegeInfo(clock() + (si.next + G.SIEGE_MIN + 1) * 60000).key, wait = si.next * 60 - new Date(clock()).getUTCSeconds();
+      if (key !== sgDone && wait > 5) { sgDone = key; sgOpen((G.SIEGE_MIN - 1) * 60, false, key, wait); } }
     if (!sg && si.on && si.left > 2) { const key = G.siegeInfo(clock() + (si.left + 1) * 60000).key; if (key !== sgDone) { sgDone = key; sgOpen((si.left - 1) * 60, false, key); } }
   }, 1000); brClock.unref();
   // Game-master tools. The right to use them is the is_admin flag on the account in the database, read again on
@@ -170,15 +173,15 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
       await admin.from('chat').insert({ ch: 'w', user_id: null, name: '★', tag: '', msg: (x.test ? 'מצור הידידות נגמר. ' : 'מצור הטירה נגמר. ') + (hn ? 'הטירה בידי ' + hn : 'אף גילדה לא כבשה את הטירה') });
     } catch (e) { console.error(e); }
   }
-  function sgOpen(secs, test, key) {
-    const B = G.sgNew(rnd, { d: 300, a: 1.2, h: 4000, f: 150 }); B.sg.time = secs;
+  function sgOpen(secs, test, key, prep = 0) {
+    const B = G.sgNew(rnd, { d: 300, a: 1.2, h: 4000, f: 150 }); B.sg.time = secs; if (prep > 0) B.t = -prep;
     const x = { key: key || 'test', test: !!test, B, idx: new Map(), names: new Map(), prof: [], last: clock(), done: false, scaled: true }; sg = x;
     if (!test) (async () => { // Saturday's siege begins with the castle in the hands of whoever holds it now
       const prev = (await admin.from('castle').select('guild_id,at').order('at', { ascending: false }).limit(1)).data, gid = prev && prev[0] && prev[0].guild_id != null ? Number(prev[0].guild_id) : 0; if (!gid || x.done || B.sg.caps) return;
       const g = (await admin.from('guilds').select('id,name').eq('id', gid).maybeSingle()).data; if (!g) return; x.names.set(gid, String(g.name)); B.sg.holder = gid; for (const f of B.f) if (f.g === gid && f.alive) G.sgSpawn(B, f, rnd);
     })().catch((e) => console.error(e));
     x.timer = setInterval(() => { const now = clock(), dt = Math.max(0, Math.min(.5, (now - x.last) / 1000)); x.last = now; const ev = G.sgStep(B, dt, rnd), m = sgState(B); if (ev.length) m.ev = ev; sgAll(m); if (B.over) sgFinish(x); }, 200); x.timer.unref();
-    all({ t: 'sgOpen', left: secs * 1000, test: test ? 1 : 0 }); return x;
+    all({ t: 'sgOpen', left: (secs + prep) * 1000, prep: prep * 1000, test: test ? 1 : 0 }); return x;
   }
   async function sgMsg(ws, m) {
     const uid = ws.uid, x = sg;
@@ -208,11 +211,13 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     }
     if (!x || x.done) return; const i = x.idx.get(uid); if (i == null) return; const B = x.B, f = B.f[i];
     if (m.t === 'sgLeave') { x.idx.delete(uid); f.alive = false; f.resp = 0; return; }
-    if (!f.alive || B.t < 0) return;
+    if (!f.alive || (B.t < 0 && m.t !== 'sgPos')) return;
     if (m.t === 'sgPos') {
-      if (f.stun > B.t || f.pushT > B.t) return; const now = clock(), el = Math.min(1, (now - (ws.brT || now)) / 1000); ws.brT = now; // a thrown player's old position is not taken back
+      const ox = f.x, oy = f.y; if (B.t < 0 && f.px === undefined) { f.px = f.x; f.py = f.y; }
+      if (B.t >= 0 && (f.stun > B.t || f.pushT > B.t)) return; const now = clock(), el = Math.min(1, (now - (ws.brT || now)) / 1000); ws.brT = now; // a thrown player's old position is not taken back
       const lim = G.BR.spd * 1.3 * el + (f.inv > B.t ? 190 : 24), dx = (Number(m.x) || 0) - f.x, dy = (Number(m.y) || 0) - f.y, d = Math.hypot(dx, dy) || 1, st = Math.min(d, lim);
-      G.sgMove(B, f, f.x + dx / d * st, f.y + dy / d * st); f.face = Number(m.f) < 0 ? -1 : 1; return;
+      G.sgMove(B, f, f.x + dx / d * st, f.y + dy / d * st); f.face = Number(m.f) < 0 ? -1 : 1;
+      if (B.t < 0 && Math.hypot(f.x - f.px, f.y - f.py) > G.SG.prepR) { f.x = ox; f.y = oy; } return;
     }
     // An action is told to everyone with only the two fighters it touched: with thirty players, a whole picture of everyone on every blow would flood the phones.
     if (m.t === 'sgAct') { if (m.f !== undefined && B.f[i]) B.f[i].face = Number(m.f) < 0 ? -1 : 1; const o = G.sgAct(B, i, String(m.k), rnd, Number.isInteger(m.to) ? m.to : -1); if (!o) return; if (o.no) return send(uid, { t: 'sgHint', no: o.no }); const out = sgState(B); out.ev = [o]; out.s = out.s.map((q, k) => (k === i || k === o.to || (o.more && o.more.some((x) => x[0] === k)) ? q : null)); sgAll(out); return send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t }); }
