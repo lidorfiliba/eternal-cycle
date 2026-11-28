@@ -628,6 +628,17 @@ test('the great skill and the guard are each class\'s own',()=>{
     S.f[l].x=0;S.f[l].y=1900;S.f[m].x=60;S.f[m].y=1900;S.f[far].x=600;S.f[far].y=1900;const o=G.sgAct(S,l,'s2',rnd);assert.ok(S.f[l].sh>S.t&&S.f[m].sh>S.t&&S.f[m].sh<S.f[l].sh&&!(S.f[far].sh>S.t)&&o.wall.length===1,'the warlord\'s wall covers the guildmate beside him, for half the time');}
   assert.ok(G.LIVE_RNG.lord>=140&&G.CLS.lord.range>=130,'and he no longer fights at arm\'s length');
 });
+test('health potions for the maps: bought with gold at a price that follows the character, spent by the tick, and deeper maps bite harder',()=>{
+  G.setEnv(Math.random,()=>1.8e12);const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'drink'},{});const S=A.chars[0];
+  assert.equal(A.pots,G.POT_START,'a new account starts with some');const c0=G.potCost(S);A.gold=c0-1;assert.equal(G.apply(A,'buy',{shop:'gold',k:'pots'},{}).ok,false);A.gold=c0;assert.equal(G.apply(A,'buy',{shop:'gold',k:'pots'},{}).ok,true);assert.equal(A.pots,G.POT_START+G.POT_PACK);assert.equal(A.gold,0);
+  G.apply(A,'tick',{z:0,f:0,kills:0,casts:0,pots:30},{});assert.equal(A.pots,G.POT_START+G.POT_PACK-30,'what was drunk is taken off');G.apply(A,'tick',{z:0,f:0,kills:0,casts:0,pots:1e9},{});assert.ok(A.pots>=0,'never below nothing');
+  A.pots=G.POT_MAX-10;A.gold=1e12;assert.equal(G.apply(A,'buy',{shop:'gold',k:'pots'},{}).ok,false,'the bag holds only so many');
+  delete A.pots;G.apply(A,'tick',{z:0,f:0,kills:0,casts:0},{});assert.equal(A.pots,G.POT_START,'an old account is given its first potions');
+  S.lvl=400;A.open=G.BASEZ-1;S.resets=30;assert.ok(G.potCost(S)>c0*5,'a rich character pays more: '+G.potCost(S)+' vs '+c0);
+  const b=i=>G.liveBite(i),zr=r=>G.ZONES.findIndex(z=>z.req===r);assert.ok(b(0)<b(10)&&b(10)<b(G.BASEZ-1)&&b(G.BASEZ-1)<b(zr(1))&&b(zr(1))<b(zr(30)),'the bite grows with the map');
+  assert.ok(b(0)<.004&&b(zr(30))>.02&&b(zr(50))<=.03,'from next to nothing to a real share of life');assert.equal(b(G.ZONES.findIndex(z=>z.x)),0,'the void maps bite by their own numbers');
+  assert.deepEqual([G.SKCD[0],G.SKCD[3]],[0,0],'the two fighting skills wait for nothing in the maps, as in the siege');
+});
 test('the game master walks anywhere; nobody else does',()=>{
   G.setEnv(Math.random,()=>1.8e12);const zi=G.ZONES.findIndex(z=>z.castle),far=G.ZONES.length-2;
   const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'xxxx'},{});
