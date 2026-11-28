@@ -5,7 +5,7 @@ from playwright.async_api import async_playwright
 ROOT=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','web')
 MOCK='''window.EC_CONFIG={url:"http://mock.invalid",anon:"x"};
 window.EC_SERVER={db:null,calls:[]};
-window.EC_MOCK=async(kind,args)=>{const G=await import('./core.js');await new Promise(r=>setTimeout(r,60));const sv=window.EC_SERVER;sv.calls.push(kind);
+window.EC_MOCK=async(kind,args)=>{const G=await import(document.querySelector('script[type=module]').src.replace('game.js','core.js'));await new Promise(r=>setTimeout(r,60));const sv=window.EC_SERVER;sv.calls.push(kind);
   if(kind==='mget')return {result:{ok:true},market:[]};
   if(kind==='beat')return {beat:{peers:[{k:'abc123',s:{n:'שחקן אחר',c:'storm',l:44,r:2,w:[5,3,11,0]},x:520,f:-1,a:true,g:'AB'}],chat:(args.s?[]:[{i:1,c:'w',n:'דנה',g:'AB',m:'מישהו בא לבוס?',me:false}]),online:7}};
   if(kind==='say')return {result:{ok:true}};
@@ -17,7 +17,7 @@ window.EC_MOCK=async(kind,args)=>{const G=await import('./core.js');await new Pr
 '''
 async def run(pg,online):
     errs=[];pg.on('pageerror',lambda e:errs.append(str(e)))
-    await pg.route('**/config.js',lambda r:r.fulfill(body=MOCK if online else 'window.EC_CONFIG={};',content_type='application/javascript'))
+    await pg.route('**/config.js*',lambda r:r.fulfill(body=MOCK if online else 'window.EC_CONFIG={};',content_type='application/javascript'))
     await pg.goto('http://127.0.0.1:8765/index.html');await pg.wait_for_timeout(900)
     await pg.fill('#nm','בודק');await pg.click('[data-act=create]');await pg.wait_for_timeout(600)
     login=await pg.evaluate("()=>{const b=document.querySelector('#modal.on [data-act=claimLogin]');if(b)b.click();return !!b}");await pg.wait_for_timeout(400)
