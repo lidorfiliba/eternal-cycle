@@ -476,7 +476,7 @@ function simDuel(A,B){
    against an absent player (the server picks his actions) and one between two players who are both present. */
 // The live duel: what each move does, in units of a fighter's `base` (the share of the enemy's health one
 // second and a half of ordinary attacking removes). The device runs the fight; the server knows these numbers too.
-const DUEL_LIVE={time:75,pots:3,heal:.3,sk:[{m:.9,cd:5},{m:1.6,cd:9,stun:.8},{cd:14,dur:3,cut:.6},{m:2.8,cd:22}],dash:{cd:4,inv:.45,d:150},potCd:5,pvpPots:40,pvpM:.46,maxRate:(1.5/1.5)+.9/5+1.6/9+2.8/22};
+const DUEL_LIVE={time:75,pots:3,heal:.3,sk:[{m:.9,cd:5},{m:1.6,cd:9,stun:.8},{cd:14,dur:3,cut:.6},{m:2.8,cd:22}],dash:{cd:4,inv:.45,d:150},potCd:5,pvpPots:300,arenaM:.9,pvpHeal:.15,pvpM:.46,maxRate:(1.5/1.5)+.9/5+1.6/9+2.8/22};
 // One set of rules for the live duel, used by the browser (against a fighter the game plays) and by the server
 // (between two players who are both connected, where the server alone decides what a move did).
 // Positions are in arena units: LIVE_W across, depth z from 0 to 1. Times are seconds on the duel's own clock D.t.
@@ -526,7 +526,7 @@ function liveOver(D){if(!D.over&&(D.f[0].hp<=0||D.f[1].hp<=0||D.t>=DUEL_LIVE.tim
 // they wear outside: strength comes from what is found on the ground (weapons, armor, boots, potions). The field is
 // a wide round plain; a circle closes on its middle and burns whoever is outside. Positions are x,y from the middle.
 const BR={leap:220,push:30,R:700,MAX:8,FILL:6,TIME:150,HOLD:20,END:60,SIGN:2,pots:10,potN:6,ring:.1,hit:.021,T:.6,spd:150,pick:30,loot0:24,every:6,drop:40,
-  rng:110,wMax:3,aMax:3,bMax:2,pMax:40,DR:380,DT:90}; // DR, DT: the round field of a fight of two, and how long it may last
+  rng:110,wMax:3,aMax:3,bMax:2,pMax:40,DR:380,DT:120,botPot:.35}; // DR, DT: the round field of a fight of two, and how long it may last
 const brDist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const brSpeed=f=>BR.spd*(1+.12*(f.bt|0));
 function brSpot(B,rnd,rad){const a=rnd()*6.2832,r=Math.sqrt(rnd())*rad;return [Math.round(Math.cos(a)*r),Math.round(Math.sin(a)*r)];}
@@ -555,7 +555,7 @@ function brAct(B,i,k,rnd,want){
   const o={by:i,k:k,to:-1,dm:0,crit:false,miss:false,stun:false,dead:false,heal:0};
   if(k==='s2'){me.at.s2=t+K.sk[2].cd;if(me.c==='hunter'){me.inv=t+SG.shadow;o.shadow=1;}else me.sh=t+K.sk[2].dur;return o;}
   if(k==='dash'){me.at.dash=t+K.dash.cd;me.inv=t+K.dash.inv;return o;}
-  if(k==='pot'){if(me.pots<1)return null;me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+SG.heal);o.heal=SG.heal;return o;}
+  if(k==='pot'){if(me.pots<1)return null;const hl=B.duel?K.pvpHeal:SG.heal;me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+hl);o.heal=hl;return o;}
   const r0=B.duel?LIVE_RNG[me.c]:BR.rng,rng=k==='s3'?(B.duel?Math.max(BR.leap,r0+60):BR.leap):r0+(k==='atk'?14:k==='s0'?40:20);let j=-1,bd=1e9;
   B.f.forEach((e,q)=>{if(q===i||!e.alive||!inFront(me,e))return;const d=brDist(e,me);if(d<=rng&&d<bd){bd=d;j=q;}});
   if(want>=0&&want!==i&&want!==j){const w=B.f[want|0];if(w&&w.alive&&brDist(w,me)<=rng)j=want|0;}
@@ -567,7 +567,7 @@ function brAct(B,i,k,rnd,want){
   if(e.inv>t){o.miss=true;me.cb=0;return o;}
   if(k==='s3'&&me.c==='lord'&&!(e.sh>t)){const d=brDist(e,me);if(d>SG.pull+10){e.x=me.x+(e.x-me.x)/d*SG.pull;e.y=me.y+(e.y-me.y)/d*SG.pull;e.pushT=t+.3;o.px=[Math.round(e.x),Math.round(e.y)];o.pull=1;}}
   const marked=want>=0&&(want|0)===j,pierce=k==='s3'&&me.c==='hunter';if(!marked)o.loose=1;
-  const gear=B.duel?(a,x)=>B.duel.b[B.f.indexOf(a)]*K.pvpM:(a,x)=>BR.hit*(1+.35*a.w)*(1-.15*x.ar);
+  const gear=B.duel?(a,x)=>B.duel.b[B.f.indexOf(a)]*K.arenaM:(a,x)=>BR.hit*(1+.35*a.w)*(1-.15*x.ar);
   o.crit=rnd()<(B.duel?B.duel.cr[i]:.1);let dm=gear(me,e)*mult*(marked?1:SG.loose)*pvpTake(e.c,k)*(o.crit?1.5:1)*(.9+rnd()*.2);if(e.sh>t&&!pierce){dm*=1-K.sk[2].cut;o.guard=true;}
   {const ok=t-me.cbT<=SG.cbMax&&me.cbTo===j;if(k==='s3'||!marked)me.cb=0;else if(comboAdv(me,me.c,k,ok))o.combo=true;me.cbT=t;me.cbTo=j;o.cb=me.cb;}
   if(o.combo){if(e.wound>t)o.again=true;else{dm=dm*SG.comboM+SG.comboFlat*gear(me,e)/SG.hit*(o.guard?1-K.sk[2].cut:1);if(!o.guard)e.wound=t+SG.wound;}}
@@ -584,7 +584,10 @@ function brStep(B,dt,rnd){
   B.f.forEach((f,i)=>{if(!f.alive)return;
     for(let q=B.loot.length-1;q>=0;q--){const it=B.loot[q];if(Math.abs(it.x-f.x)<BR.pick&&Math.abs(it.y-f.y)<BR.pick&&brCan(f,it.k)){brTake(f,it.k);B.loot.splice(q,1);ev.push({k:'pick',by:i,id:it.id,it:it.k});}}
     if(Math.hypot(f.x,f.y)>R){f.hp-=BR.ring*dt;if(f.hp<=0){brKill(B,i,-1);ev.push({by:-1,k:'ring',to:i,dead:true});}}});
-  B.f.forEach((f,i)=>{if(!f.alive||!f.bot||B.over||f.stun>t)return;let j=-1,bd=1e9;B.f.forEach((e,q)=>{if(q===i||!e.alive)return;const d=brDist(e,f);if(d<bd){bd=d;j=q;}});if(j<0)return;
+  B.f.forEach((f,i)=>{if(!f.alive||!f.bot||B.over)return;
+    // in a fight of two the one played here drinks as a good player does, stunned or not, but not as a perfect one: a hand that keeps its combos going still gets ahead of him
+    if(B.duel&&f.hp<.9&&f.pots>0&&f.at.pot<=t&&rnd()<BR.botPot){const o=brAct(B,i,'pot',rnd);if(o)ev.push(o);}
+    if(f.stun>t)return;let j=-1,bd=1e9;B.f.forEach((e,q)=>{if(q===i||!e.alive)return;const d=brDist(e,f);if(d<bd){bd=d;j=q;}});if(j<0)return;
     const e=B.f[j],rng=B.duel?LIVE_RNG[f.c]:BR.rng,sp=brSpeed(f)*.9*dt,far=Math.hypot(f.x,f.y);let tx=e.x,ty=e.y,go=bd>rng*.85,back=false;
     let li=null,ld=1e9;for(const it of B.loot){if(!brCan(f,it.k)||Math.hypot(it.x,it.y)>R)continue;const d=brDist(it,f);if(d<ld){ld=d;li=it;}}
     if(far>R-30){tx=0;ty=0;go=true;}                                            // first of all, stay inside
@@ -594,7 +597,7 @@ function brStep(B,dt,rnd){
     if(go){const dx=tx-f.x,dy=ty-f.y,d=Math.hypot(dx,dy)||1,st=Math.min(d,sp);f.x+=dx/d*st;f.y+=dy/d*st;if(Math.abs(dx)>4)f.face=(back?-dx:dx)>=0?1:-1;const fr=Math.hypot(f.x,f.y),lim=B.duel?BR.DR:BR.R;if(fr>lim){f.x*=lim/fr;f.y*=lim/fr;}}
     if((f.think-=dt)>0)return;f.think=.2+rnd()*.3;
     const tryK=k=>{const o=brAct(B,i,k,rnd,j);if(o)ev.push(o);return !!o;},sq=COMBO[f.c]||COMBO.blade;
-    if(f.hp<.6&&f.pots>0&&!(f.wound>t)&&tryK('pot')){f.think=.1;return;}if(f.hp<.5&&bd<rng&&rnd()<.25&&tryK('s2'))return;
+    if(!B.duel&&f.hp<.6&&f.pots>0&&tryK('pot')){f.think=.1;return;}if(f.hp<.5&&bd<rng&&rnd()<.25&&tryK('s2'))return;
     if(f.cs>0){const o=brAct(B,i,sq[f.cs],rnd,j);if(o){ev.push(o);f.cs=o.cb===2?2:0;}else f.cs=0;f.think=SG.skT+.05;return;}
     if(bd<=rng&&rnd()<.35){const o=brAct(B,i,sq[0],rnd,j);if(o){ev.push(o);if(!o.miss){f.cs=1;f.think=SG.skT+.05;}}return;}
     if(rnd()<.3&&(tryK('s3')||tryK('s1')||tryK('s0')))return;tryK('atk');});

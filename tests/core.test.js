@@ -655,6 +655,7 @@ test('an arena fight of two is the circle\'s fight on its own field: each one\'s
   const C=mk('blade','hunter');C.t=1;C.f[1].x=C.f[0].x+200;assert.equal(G.brAct(C,0,'atk',rnd,1),null,'and a blade does not');
   const S=mk('blade','blade',[.09,.03]),W=mk('blade','blade',[.03,.09]);for(const X of [S,W]){X.t=1;X.f[1].x=X.f[0].x+30;}const hs=G.brAct(S,0,'s0',rnd,1).dm,hw=G.brAct(W,0,'s0',rnd,1).dm;assert.ok(Math.abs(hs/hw-3)<.01,'each one strikes with his own strength: '+hs/hw);
   const T=mk('blade','blade');let n=0;while(!T.over&&n++<5000)G.brStep(T,.1,rnd);assert.ok(T.over&&T.loot.length===0&&T.t<=G.BR.DT+.2,'it ends by a fall or by the clock: '+T.t);
+  {const D=mk('blade','blade');D.t=1;D.f[1].hp=.5;const h=G.brAct(D,1,'pot',rnd);assert.equal(h.heal,G.DUEL_LIVE.pvpHeal);assert.ok(G.DUEL_LIVE.pvpHeal/G.SG.potCd>G.DUEL_LIVE.arenaM*.09*6,'a hand that never stops drinking outlasts the blows of an equal: the fight is decided by who slips');assert.ok(G.DUEL_LIVE.pvpPots>=250&&G.BR.DT>=120,'potions for two whole minutes');}
 });
 test('the game master walks anywhere; nobody else does',()=>{
   G.setEnv(Math.random,()=>1.8e12);const zi=G.ZONES.findIndex(z=>z.castle),far=G.ZONES.length-2;
