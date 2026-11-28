@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261128103210';
+const BUILD='20261128112056';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,wskinOn,CAPEN,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -73,7 +73,7 @@ async function rpc(kind,args){
 if(typeof window!=='undefined'&&window.EC_MOCK)rpc=window.EC_MOCK; // test hook: an in-page stand-in for the server
 // Every state change goes through send(), one at a time and in order.
 function send(kind,args){
-  if(ONLINE&&me.admin&&(kind==='tick'||kind==='travel'||kind==='buy'))args=Object.assign({gm:1},args); // the server checks the right itself
+  if(gmWalk()&&(kind==='tick'||kind==='travel'||kind==='buy'))args=Object.assign({gm:1},args); // the server checks the right itself
   const run=async()=>{
     if(!ONLINE){const r=apply(A,kind,args,{});S=A.chars[A.cur]||S;touch();localDirty=true;return r;}
     const j=await rpc(kind,args);
@@ -158,6 +158,8 @@ function gearColor(g,t,fallback){if(!g)return fallback;if(g[2]>=15)return 'hsl('
 const WPAL={1:['#2f7a45','#b6ef86'],2:['#2260c9','#a8e8ff'],3:['#c42d18','#ffbe55'],4:['#caa02e','#fff8d2'],5:['#35106b','#d596ff'],6:['#1b6ea8','#effcff'],7:['#a8740a','#fff1a8'],8:['#ff4fa3','#7df9ff'],s:['#a637ee','#62f3e2']};
 const SPR={"mh":{"w":128,"h":69,"ax":28,"ay":69,"bh":52,"a":{"idle":[0,8],"run":[1,8],"atk":[2,6],"atk2":[3,6],"hit":[4,4],"die":[5,6]}},"ew":{"w":94,"h":69,"ax":26,"ay":69,"bh":58,"a":{"idle":[0,8],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,5]}},"hu":{"w":91,"h":66,"ax":42,"ay":66,"bh":42,"a":{"idle":[0,8],"run":[1,8],"atk":[2,7],"atk2":[3,5],"hit":[4,3],"die":[5,8]}},"mush":{"w":71,"h":45,"ax":32,"ay":45,"bh":37,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"gob":{"w":88,"h":46,"ax":44,"ay":46,"bh":36,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"skel":{"w":98,"h":59,"ax":32,"ay":57,"bh":51,"a":{"idle":[0,4],"run":[1,4],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"eye":{"w":56,"h":41,"ax":27,"ay":33,"bh":33,"a":{"idle":[0,8],"atk":[1,8],"hit":[2,4],"die":[3,4]}},"worm":{"w":77,"h":54,"ax":30,"ay":54,"bh":45,"a":{"idle":[0,9],"run":[1,9],"atk":[2,16],"hit":[3,3],"die":[4,8]}},"skel_f":{"w":98,"h":59,"ax":32,"ay":57,"bh":51,"a":{"idle":[0,4],"run":[1,4],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"gob_r":{"w":88,"h":46,"ax":44,"ay":46,"bh":36,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"eye_p":{"w":56,"h":41,"ax":27,"ay":33,"bh":33,"a":{"idle":[0,8],"atk":[1,8],"hit":[2,4],"die":[3,4]}},"skel_g":{"w":98,"h":59,"ax":32,"ay":57,"bh":51,"a":{"idle":[0,4],"run":[1,4],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"n_smith":{"w":128,"h":69,"ax":28,"ay":69,"bh":52,"a":{"idle":[0,8]}},"n_merch":{"w":91,"h":66,"ax":42,"ay":66,"bh":42,"a":{"idle":[0,8]}},"n_guard":{"w":94,"h":69,"ax":26,"ay":69,"bh":58,"a":{"idle":[0,8]}},"n_herald":{"w":91,"h":66,"ax":42,"ay":66,"bh":42,"a":{"idle":[0,8]}},"n_arena":{"w":128,"h":69,"ax":28,"ay":69,"bh":52,"a":{"idle":[0,8]}},"mush_d":{"w":71,"h":45,"ax":32,"ay":45,"bh":37,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"worm_i":{"w":77,"h":54,"ax":30,"ay":54,"bh":45,"a":{"idle":[0,9],"run":[1,9],"atk":[2,16],"hit":[3,3],"die":[4,8]}},"gob_g":{"w":88,"h":46,"ax":44,"ay":46,"bh":36,"a":{"idle":[0,4],"run":[1,8],"atk":[2,8],"hit":[3,4],"die":[4,4]}},"skel_d":{"w":98,"h":59,"ax":32,"ay":57,"bh":51,"a":{"idle":[0,4],"run":[1,4],"atk":[2,8],"hit":[3,4],"die":[4,4]}}};
 const IMG={},CLSSPR={blade:'mh',storm:'ew',hunter:'hu',lord:'lord'};SPR.lord={w:160,h:105,ax:80,ay:105,bh:54,a:{idle:[0,8],run:[1,8],atk:[2,4],atk2:[3,4],hit:[4,4],die:[5,6]}}; // the warlord is his own figure: a crowned king, sword and cape
+// The game master may walk into any map, to test. It is a switch he turns on, and off by default, so his own characters play by the rules like everyone's.
+function gmWalk(){try{return !!(ONLINE&&me.admin&&localStorage.getItem('ec-gmwalk')==='1');}catch(e){return false;}}
 function loadSprites(){for(const k in SPR){const im=new Image();if(k==='mh'||k==='ew'||k==='hu'||k==='lord')im.onload=()=>measureBody(k);im.src='assets/'+k+'.png';IMG[k]=im;}}
 // Where the hero's body is in every animation frame, so wings and the weapon on the back move with it.
 // Thin parts (the weapon in the hand) are worn away first; what is left is the body. Stored as [middle x, top y] in sprite pixels.
@@ -894,7 +896,8 @@ function syncBoss(){
   else if(!want&&SC.boss){const b=SC.boss;SC.boss=null;SC.mons=SC.mons.filter(m=>m!==b);if(SC.hero.tgt===b)SC.hero.tgt=null;}
 }
 function afterTick(r,m,l0){
-  if(!r||!r.ok){bossPending=false;if(r&&r.msg&&r.msg!=='net')send('sync',{}).then(()=>syncBoss());return;}
+  if(!r||!r.ok){bossPending=false;if(r&&r.msg==='המפה נעולה'&&SC.zi>=0&&!afterTick.out){afterTick.out=1;toast('המפה הזאת נעולה לדמות שלך. חזרת לכפר');send('travel',{z:-1,f:0}).then(()=>{afterTick.out=0;enterZone(-1,'L',0);});return;} // a character standing where it may not: back to the village
+    if(r&&r.msg&&r.msg!=='net')send('sync',{}).then(()=>syncBoss());return;}
   if(r.petGone)toast(r.petGone+' עזב אותך. הזמן שלו נגמר',5);
   if(r.afk)showOffline(r.afk);
   if(r.evOver&&SC.ev){leaveKeep(true);return;}
@@ -1808,7 +1811,7 @@ function renderGear(){
 function renderZones(){
   let h='<p class="hint">בכל מפה שלוש קומות: בכל קומה המפלצות חזקות יותר, ויש יותר ניסיון, זהב וסיכוי לשלל. עוברים בין קומות ומפות דרך השערים שבקצוות, או בקפיצה מכאן. שער חדש נפתח אחרי ניצחון על הבוס של המפה. הבוס מופיע אחרי '+L(BOSSN)+' חיסולים כשאתה משחק בעצמך.</p>';
   h+='<div class="card zone'+(SC.zi<0?' cur':'')+'"><div class="sw" style="background:linear-gradient('+TOWN.sky[0]+','+TOWN.sky[1]+')"></div><div class="z"><b>'+TOWN.n+'</b><small>נפח, סוחרת, שומר המעגל, כרוז העונה, שער הזירה</small></div><button class="btn sm" data-act="zone" data-i="-1"'+(SC.zi<0?' disabled':'')+'>'+(SC.zi<0?'כאן':'קפוץ')+'</button></div>';
-  ZONES.forEach((z,i)=>{const opened=(ONLINE&&me.admin)||(z.castle?!!(guild.mine&&guild.mine.castle):z.req?S.resets>=z.req:i<=A.open),lv=z.min<=S.lvl,zf=zoneInfo(i,C,AFK),cur=SC.zi===i;
+  ZONES.forEach((z,i)=>{const opened=gmWalk()||(z.castle?!!(guild.mine&&guild.mine.castle):z.req?S.resets>=z.req:i<=A.open),lv=z.min<=S.lvl,zf=zoneInfo(i,C,AFK),cur=SC.zi===i;
     if(i<BASEZ&&i%REGION===0)h+='<h2>אזור '+L(i/REGION+1)+' · ציוד '+TIERN[tierOf(i)-1]+'</h2>';
     if(z.castle)h+='<h2>העיר העתיקה</h2><p class="hint">הפרס של הגילדה שמחזיקה בטירה. מפלצות קשות, ציוד בדרגת '+TIERN[tierOf(i)-1]+', וחלקי סט עתיק נופלים כאן מעט יותר מאשר במפות הריסט. מי שהגילדה שלו מאבדת את הטירה יוצא מהעיר.</p>';
     if(z.x===1)h+='<h2 style="color:#b79cff">ארצות הריק</h2><p class="hint">מעבר לסוף הדרך. המפלצות כאן הורגות במכה את מי שלא סיים לבנות את הדמות שלו. רק כאן נופל ציוד הריק, החזק ביותר במשחק, ושני הסטים שלו נותנים פי אחד וחצי מכל סט אחר. חלקי הסט העתיק נופלים כאן באקראי ולעיתים רחוקות מאוד: סט שלם הוא עבודה של חודשים.</p>';
@@ -1833,7 +1836,7 @@ function shopList(name,list,have,curName){
 }
 function renderShop(){
   let h=renderCredits()+renderMarket()+'<h2>חנות אותות ריסט</h2><p class="hint">אותות מקבלים רק מריסט. יש לך '+L(A.cred)+'. המדפים נפתחים לפי מספר הריסטים של הדמות הכי מתקדמת שלך ('+L(G.topResets(A))+'), וחלק מהמוצרים מוגבלים בכמות לשבוע.'+((A.areset|0)>0?' ריסטים אוטומטיים שנותרו: '+L(A.areset|0)+'.':'')+'</p>'+shopList('reset',RESET_SHOP,A.cred,'אותות');
-  {const cas=!!(guild.mine&&guild.mine.castle)||(ONLINE&&me.admin);h+='<h2>חנות העיר העתיקה</h2><p class="hint">נקודות עתיקות נופלות רק ממפלצות בעיר העתיקה, כשמשחקים שם בעצמך, ועד '+CITY_WEEK+' בשבוע. יש לך '+L(A.anc|0)+'. השבוע אספת '+L((A.week&&A.week.anc)|0)+' מתוך '+CITY_WEEK+'.'+(cas?'':' החנות פתוחה רק לגילדה שמחזיקה בטירה.')+'</p>'+shopList('city',CITY_SHOP,cas?A.anc|0:-1,'נקודות');}
+  {const cas=!!(guild.mine&&guild.mine.castle)||gmWalk();h+='<h2>חנות העיר העתיקה</h2><p class="hint">נקודות עתיקות נופלות רק ממפלצות בעיר העתיקה, כשמשחקים שם בעצמך, ועד '+CITY_WEEK+' בשבוע. יש לך '+L(A.anc|0)+'. השבוע אספת '+L((A.week&&A.week.anc)|0)+' מתוך '+CITY_WEEK+'.'+(cas?'':' החנות פתוחה רק לגילדה שמחזיקה בטירה.')+'</p>'+shopList('city',CITY_SHOP,cas?A.anc|0:-1,'נקודות');}
   h+='<h2>חנות זהב</h2>'+(A.boost>Date.now()?'<p class="hint">מגילת ניסיון פעילה עוד '+fmtT((A.boost-Date.now())/1000)+'.</p>':'')+shopList('gold',GOLD_SHOP,A.gold,'זהב');
   h+='<h2>חנות העונה</h2><p class="hint">מטבעות עונה מקבלים מהפס, מריסטים ומהזירה.</p>'+shopList('season',SEASON_SHOP,A.coins,'מטבעות');
   return h;
@@ -2073,7 +2076,7 @@ function accountHtml2(){
     (me.secret?'':'<p class="hint" style="color:var(--bad)">עוד לא הוגדרה שאלת שחזור. בלעדיה אי אפשר לשחזר סיסמה שנשכחה.</p>')+
     '<button class="btn'+(me.secret?'':' pri')+'" data-act="acct" data-k="secret">שאלת שחזור</button><button class="btn" data-act="acct" data-k="pass">שינוי סיסמה</button><button class="btn" data-act="tfa">אימות דו-שלבי: '+(me.tfa?'פעיל':'כבוי')+'</button><button class="btn" data-act="settings">הגדרות שליטה: מקשים וגודל כפתורים</button>'+
     (me.admin?'<a class="btn" href="admin.html" style="text-align:center;text-decoration:none;color:inherit">מסך ניהול</a>':'')+
-    (me.admin?'<div class="card" style="display:flex;flex-direction:column;gap:6px;border-color:var(--gold)"><b style="color:var(--gold)">כלי מנהל המשחק</b><p class="hint">שיגור: בלשונית מפה כל המפות פתוחות לך, בכל רמה, כולל העיר העתיקה והחנות שלה.</p><p class="hint">רק החשבון שלך רואה את זה, והשרת בודק את ההרשאה מחדש בכל לחיצה. כל פעולה מוכרזת בצ׳אט העולמי.</p>'+
+    (me.admin?'<div class="card" style="display:flex;flex-direction:column;gap:6px;border-color:var(--gold)"><b style="color:var(--gold)">כלי מנהל המשחק</b><button class="btn'+(gmWalk()?' pri':'')+'" data-act="gmWalk">'+(gmWalk()?'מעבר חופשי בכל המפות: פעיל':'מעבר חופשי בכל המפות: כבוי')+'</button><p class="hint">כשהמעבר החופשי פעיל, בלשונית מפה כל המפות פתוחות לך, בכל רמה, כולל העיר העתיקה והחנות שלה. כשהוא כבוי הדמויות שלך משחקות לפי החוקים, כמו כל שחקן.</p><p class="hint">רק החשבון שלך רואה את זה, והשרת בודק את ההרשאה מחדש בכל לחיצה. כל פעולה מוכרזת בצ׳אט העולמי.</p>'+
       '<button class="btn pri" data-act="gm" data-a="br" data-sec="90">פתח את המעגל האחרון עכשיו · הרשמה 90 שניות</button><button class="btn sm" data-act="gm" data-a="br" data-sec="30">פתח לבדיקה מהירה · 30 שניות</button><button class="btn sm" data-act="gm" data-a="brStop">בטל הרשמה פתוחה</button>'+
       '<button class="btn pri" data-act="gm" data-a="siegeBots" data-min="12" data-n="4">מצור אימון מול בוטים · 4 מול 4 · 12 דקות</button><button class="btn" data-act="gm" data-a="siegeBots" data-min="15" data-n="6">מצור אימון גדול · 6 מול 6 · 15 דקות</button><p class="hint">הבוטים מחזיקים בטירה ומשחקים כמו שחקנים: מתגים, כתר, קומבו, הדיפה, שיקויים ובאפים. אתה מנהל הצד שלך ורק אתה לוקח את הכתר. שני בוטים שלך הולכים למתגים. המצור לא משנה כלום במשחק.</p>'+
       '<button class="btn pri" data-act="gm" data-a="siege" data-min="10">פתח מצור ידידות ל-10 דקות</button><button class="btn sm" data-act="gm" data-a="siegeStop">סגור מצור שרץ</button>'+
@@ -2149,6 +2152,7 @@ document.addEventListener('click',async e=>{
   if(a==='respecAsk'){openModal('<h3>לאפס את נקודות הסטט?</h3><p class="hint">כל הנקודות שחילקת חוזרות אליך ואפשר לחלק אותן מחדש. המחיר: '+L(RESPEC_COST)+' אותות ריסט. יש לך '+L(A.cred)+'. ציוד שכבר לבוש נשאר עליך.'+(S.autoPts?' החלוקה האוטומטית פעילה ותחלק אותן מיד מחדש. כבה אותה קודם אם אתה רוצה לחלק לבד.':'')+'</p><div class="acts"><button class="btn" data-act="closeModal">ביטול</button><button class="btn pri" data-act="respec">אפס נקודות</button></div>');return;}
   if(a==='lang'){if(b.dataset.l!==getLang())setLang(b.dataset.l);return;}
   if(a==='emote'){const i=+b.dataset.i;if(EMO[i]){SC.hero.say={m:EMO[i],t:SC.t+3.5};netSend({t:'emote',z:SC.zi,fl:SC.fl,e:i});}return;}
+  if(a==='gmWalk'){try{localStorage.setItem('ec-gmwalk',gmWalk()?'0':'1');}catch(e){}toast(gmWalk()?'מעבר חופשי פעיל: כל המפות פתוחות לך':'מעבר חופשי כבוי: הדמות שלך כפופה לחוקים כמו כל שחקן');renderPanel();return;}
   if(a==='gm'){if(!netUp())toast('אין חיבור חי לשרת');else netSend({t:'gm',a:b.dataset.a,sec:+b.dataset.sec||0,xp:+b.dataset.xp||1,drop:+b.dataset.drop||1,min:+b.dataset.min||0,n:+b.dataset.n||0,m:b.dataset.a==='say'&&$('gmText')?$('gmText').value:''});return;}
   if(a==='toBank'){const e=$('bankSec');if(e)e.scrollIntoView({behavior:'smooth',block:'start'});return;}
   if(a==='sgUse'){netSend({t:'sgAct',k:'use'});return;}
