@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261128153808';
+const BUILD='20261128155902';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,wskinOn,CAPEN,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -688,8 +688,10 @@ function comboFx(cls,x,g,big){
   SC.fx.push({k:'flash',x:x,y:g-40,r:150*n,life:.3,d:.3,c:'#fff'});for(let q=0;q<3;q++)SC.fx.push({k:'ring',x:x,y:g-10,life:.45+q*.18,c:q===1?'#fff':C[0],r:(70+q*55)*n});burst(x,g-40,C[0],big?46:24);burst(x,g-40,'#fff',big?18:8);
   if(cls==='storm'){for(let b=0;b<(big?5:3);b++){const pts=[];let px=x+(b-2)*34+(Math.random()-.5)*20,py=0;while(py<g-24){pts.push([px,py]);px+=(Math.random()-.5)*34;py+=20;}pts.push([x+(b-2)*16,g-12]);SC.fx.push({k:'bolt',pts:pts,life:.3+b*.05,c:b%2?C[1]:C[0]});}
     SC.fx.push({k:'rune',x:x,y:g-2,r:96*n,life:.8,d:.8,c:C[0]});SC.fx.push({k:'star',x:x,y:g-50,r:60*n,rot:0,life:.45,d:.45,c:C[1]});}
-  else if(cls==='hunter'){for(let q=0;q<(big?11:6);q++){const tx=x+(q-(big?5:2.5))*20;SC.fx.push({k:'line',x1:tx-70+Math.random()*20,y1:g-300-Math.random()*60,x2:tx,y2:g-8,life:.22+q*.03,c:q%2?C[1]:C[0],w:3});SC.fx.push({k:'flash',x:tx,y:g-8,r:16,life:.25+q*.03,d:.3,c:C[0]});}
-    SC.fx.push({k:'star',x:x,y:g-40,r:64*n,rot:.4,life:.5,d:.5,c:C[0]});}
+  else if(cls==='hunter'){ // a rain of spears: thick shafts of light fall in a fan, each one bursts where it lands, and pillars rise between them
+    for(let q=0;q<(big?11:6);q++){const tx=x+(q-(big?5:2.5))*22,d=.34+q*.035,x0=tx-80+Math.random()*20,y0=g-320-Math.random()*60;SC.fx.push({k:'line',x1:x0,y1:y0,x2:tx,y2:g-8,life:d,c:q%2?C[1]:C[0],w:6});SC.fx.push({k:'line',x1:x0,y1:y0,x2:tx,y2:g-8,life:d*.7,c:'#fff',w:2});SC.fx.push({k:'flash',x:tx,y:g-10,r:30,life:d,d:d,c:C[0]});}
+    for(let q=-3;q<=3;q++)SC.fx.push({k:'pillar',x:x+q*26,y:g,life:.4+Math.abs(q)*.06,d:.6,c:q%2?C[1]:C[0]});
+    SC.fx.push({k:'rune',x:x,y:g-2,r:100*n,life:.8,d:.8,c:C[0]});SC.fx.push({k:'star',x:x,y:g-44,r:76*n,rot:.4,life:.55,d:.55,c:C[1]});SC.fx.push({k:'ring',x:x,y:g-10,life:.7,c:C[1],r:150*n});}
   else if(cls==='lord'){for(let q=0;q<(big?4:2);q++){const a=q*Math.PI/2+.5;SC.fx.push({k:'chain',x1:x+Math.cos(a)*150,y1:g-260,x2:x+Math.cos(a)*26,y2:g-14+Math.sin(a)*6,life:.42+q*.03,d:.5});}
     for(const q of [-1,1])SC.fx.push({k:'wave',x:x,y:g,dir:q,dist:130*n,h:70,life:.34,d:.34,c:C[0]});for(let q=-1;q<=1;q++)SC.fx.push({k:'pillar',x:x+q*30,y:g,life:.4+Math.abs(q)*.06,d:.6,c:q%2?C[1]:C[0]});}
   else{for(let q=0;q<(big?9:5);q++){const a=q*.7,r=30+q*7;SC.fx.push({k:'slash',x:x+Math.cos(a)*r*.6,y:g-44+Math.sin(a)*r*.45,rot:a+1.2,life:.2+q*.035,c:q%3===0?'#fff':q%3===1?C[0]:C[1],big:true});}
@@ -1030,8 +1032,8 @@ function comboStep(i,col,hitM){
   else{if(k===q[0]){h.cb=1;h.cbT=SC.t;}else if(k!=='atk')h.cb=0;return;} // plain blows fall by themselves here, so they never break the order
   {h.cb=0;const live=alive();let m=h.cbM&&live.indexOf(h.cbM)>=0?h.cbM:null;if(!m){let bd=420;for(const o of live){const d=Math.abs(o.x-h.x);if(d<bd){bd=d;m=o;}}}
     if(!m)return;snd('ult');snd('slam');SC.nums.push({x:h.x,y:gy()-165,txt:'קומבו!',c:'#ff5c7a',s:W<560?24:32,life:1.2});
-    const hit=(o,k)=>{comboFx(S.cls,o.x,gy(),k>3);strike(o,k,col,true);};
-    hit(m,CBM);
+    const hit=(o,k,big)=>{comboFx(S.cls,o.x,gy(),big);strike(o,k,col,true);};
+    hit(m,CBM,true);if(!calm)SC.shake=.3;
     for(const o of live.filter(o=>o!==m&&!o.boss&&Math.abs(o.x-h.x)<380).slice(0,4))hit(o,CBS);return;}
   h.cb=0;
 }
