@@ -476,7 +476,7 @@ function simDuel(A,B){
    against an absent player (the server picks his actions) and one between two players who are both present. */
 // The live duel: what each move does, in units of a fighter's `base` (the share of the enemy's health one
 // second and a half of ordinary attacking removes). The device runs the fight; the server knows these numbers too.
-const DUEL_LIVE={time:75,pots:3,heal:.3,sk:[{m:.9,cd:5},{m:1.6,cd:9,stun:.8},{cd:14,dur:3,cut:.6},{m:2.8,cd:22}],dash:{cd:4,inv:.45,d:150},potCd:5,pvpPots:300,arenaM:.9,pvpHeal:.15,pvpM:.46,maxRate:(1.5/1.5)+.9/5+1.6/9+2.8/22};
+const DUEL_LIVE={time:75,pots:3,heal:.3,sk:[{m:.9,cd:5},{m:1.6,cd:9,stun:.8},{cd:14,dur:3,cut:.6},{m:2.8,cd:22}],dash:{cd:4,inv:.45,d:150},potCd:5,pvpPots:300,arenaM:.9,pvpHeal:.12,pvpM:.46,maxRate:(1.5/1.5)+.9/5+1.6/9+2.8/22};
 // One set of rules for the live duel, used by the browser (against a fighter the game plays) and by the server
 // (between two players who are both connected, where the server alone decides what a move did).
 // Positions are in arena units: LIVE_W across, depth z from 0 to 1. Times are seconds on the duel's own clock D.t.
@@ -615,7 +615,7 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
 // prep: the gathering time before the fight, in seconds; nobody strikes, everyone may walk prepR around where he arrived and stock up.
-const SG={prep:600,prepR:450,W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:4,respIn:15,respSafe:3,fwd:[[0,1150],[0,550],[0,330]],lsHit:.02,lsBack:60,botStone:1100,back:[0,-60],crownKeep:0,crownPen:1,pots:120,potMax:250,potCd:.25,heal:.08,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.8,.68,.6,.56],potPrice:20,potPack:10,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,ff:.2,ffN:4,loose:.7,pull:46,shadow:1.1,wallR:130,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:90,
+const SG={prep:600,prepR:450,W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:4,respIn:15,respSafe:3,fwd:[[0,1150],[0,550],[0,330]],lsHit:.02,lsBack:60,botStone:1100,back:[0,-60],crownKeep:0,crownPen:1,pots:120,potMax:250,potCd:.2,heal:.064,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.8,.68,.6,.56],potPrice:20,potPack:10,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,ff:.2,ffN:4,loose:.7,pull:46,shadow:1.1,wallR:130,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:90,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.012,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   // a wide castle: room to fight in the yard and in the throne room without everyone standing on everyone
