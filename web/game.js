@@ -1,7 +1,7 @@
-import * as G from './core.js?v=20261128201318';
-const BUILD='20261128201318';
+import * as G from './core.js?v=20261128201708';
+const BUILD='20261128201708';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,wskinOn,CAPEN,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
-import {tr,getLang,setLang,startLang} from './i18n.js?v=20261128201318';
+import {tr,getLang,setLang,startLang} from './i18n.js?v=20261128201708';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
 const CFG=window.EC_CONFIG||{},ONLINE=!!CFG.url;
 
@@ -29,7 +29,7 @@ let bindWait='';
 function settingsHtml(){
   const row=x=>'<div class="kv" style="margin:4px 0"><span>'+x[1]+'</span><button class="btn sm'+(bindWait===x[0]?' pri':'')+'" data-act="bindKey" data-k="'+x[0]+'" style="min-width:86px">'+(bindWait===x[0]?'לחץ על מקש':keyName(keyOf(x[0])))+'</button></div>';
   return '<h2>הגדרות שליטה</h2><p class="hint">גודל הכפתורים במסך מגע</p>'+
-    '<button class="btn'+(fastOn()?' pri':'')+'" data-act="fastGfx" style="width:100%;margin-bottom:6px">'+(fastOn()?'גרפיקה מהירה: פעילה':'גרפיקה מהירה: כבויה')+'</button><p class="hint" style="margin-bottom:10px">גרפיקה מהירה מוותרת על הזוהר הרך סביב כנפיים, סטים ואפקטים, והמשחק רץ חלק הרבה יותר. מומלץ בטלפון.</p>'+
+    '<button class="btn pri" data-act="fastGfx" style="width:100%;margin-bottom:6px">'+(gfxMode()==='auto'?'גרפיקה: אוטומטית':gfxMode()==='fast'?'גרפיקה: מהירה':'גרפיקה: מלאה תמיד')+'</button><p class="hint" style="margin-bottom:10px">אוטומטית: כל האורות והזוהר כמו שהם, והמשחק מוריד אותם לבד רק כשהמחשב מתקשה, ומחזיר אותם כשהוא מתאושש. מהירה: בלי הזוהר הרך, מומלץ בטלפון. מלאה תמיד: לא מוריד אף פעם.</p>'+
     '<button class="btn'+(prefs.noSgMusic?'':' pri')+'" data-act="sgMusic" style="width:100%;margin-bottom:10px">'+(prefs.noSgMusic?'מוזיקת המצור: כבויה':'מוזיקת המצור: פעילה')+'</button>'+
     '<div class="kv"><span>כפתורי תנועה</span><b class="num" id="szMvV">'+clampN(prefs.mvS,70,160)+'%</b></div><input type="range" id="szMv" min="70" max="160" step="5" value="'+clampN(prefs.mvS,70,160)+'" style="width:100%">'+
     '<div class="kv"><span>כפתורי תקיפה</span><b class="num" id="szAtV">'+clampN(prefs.atS,70,160)+'%</b></div><input type="range" id="szAt" min="70" max="160" step="5" value="'+clampN(prefs.atS,70,160)+'" style="width:100%">'+
@@ -1604,8 +1604,21 @@ function startDuel(pd,net){
 const DESK=!!(window.matchMedia&&window.matchMedia('(hover:hover) and (pointer:fine)').matches);
 // Soft glows (the canvas's shadow blur) are by far the dearest thing drawn: on a phone they are what makes a fight stutter.
 // Fast graphics turns them off everywhere at once and leaves every shape and colour as it is. On by default on a phone.
-const fastOn=()=>prefs.fast==null?!DESK:!!prefs.fast;
-function applyFast(){const on=fastOn();for(const c of [ctx,wctx]){if(on)Object.defineProperty(c,'shadowBlur',{set(){},get(){return 0},configurable:true});else delete c.shadowBlur;}for(const k in WCACHE)delete WCACHE[k];}
+// On a computer the default is automatic: everything glows as drawn for as long as the machine keeps up. When frames
+// start to drag (a combo with many lights on a weak machine) the glows are first drawn at half their spread, and if that
+// is not enough they are dropped, as in fast graphics. When the machine has kept up again for a while, they return.
+let gq=0,gqAvg=16,gqHold=0,gqCalm=0;
+const gfxMode=()=>prefs.fast===true?'fast':prefs.fast===false?'full':prefs.fast==='auto'?'auto':DESK?'auto':'fast';
+const fastOn=()=>gfxMode()==='fast'||(gfxMode()==='auto'&&gq>=2);
+function applyFast(){const on=fastOn(),half=!on&&gfxMode()==='auto'&&gq===1;
+  for(const c of [ctx,wctx]){delete c.shadowBlur;if(on)Object.defineProperty(c,'shadowBlur',{set(){},get(){return 0},configurable:true});
+    else if(half){const d=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(c),'shadowBlur');if(d&&d.set)Object.defineProperty(c,'shadowBlur',{set(v){d.set.call(this,v*.45);},get(){return d.get.call(this);},configurable:true});}}
+  for(const k in WCACHE)delete WCACHE[k];}
+function gfxTick(dt){
+  if(gfxMode()!=='auto'||document.hidden||!(dt>0)||dt>.5)return;gqAvg+=(dt*1000-gqAvg)*.08;if((gqHold-=dt)>0)return;
+  if(gqAvg>30&&gq<2){gq++;gqHold=4;gqAvg=20;gqCalm=0;applyFast();return;}
+  if(gq>0&&gqAvg<17.5){if((gqCalm+=dt)>25){gq--;gqCalm=0;gqHold=40;applyFast();}}else gqCalm=0;
+}
 applyFast();
 // The life bar under the fight: the same in every fight against players, on a phone and on a computer, and never behind the fighter's own.
 let duelHpV=-1;
@@ -2319,7 +2332,7 @@ document.addEventListener('click',async e=>{
   if(!S||demo)return;
   if(a==='sk'){cast(+b.dataset.i,false);renderHud();return;}
   if(a==='sgMusic'){prefs.noSgMusic=!prefs.noSgMusic;savePrefs();sgMusic();openSettings();return;}
-  if(a==='fastGfx'){prefs.fast=!fastOn();savePrefs();applyFast();openSettings();return;}
+  if(a==='fastGfx'){const m=gfxMode();prefs.fast=m==='auto'?true:m==='fast'?false:'auto';gq=0;savePrefs();applyFast();openSettings();return;}
   if(a==='potAuto'){const L2=[0,30,50,70,85],v=prefs.autoPot==null?50:prefs.autoPot;prefs.autoPot=L2[(L2.indexOf(v)+1)%L2.length];savePrefs();renderHud();return;}
   if(a==='auto'){S.auto=!S.auto;SC.hero.tgt=null;renderHud();send('setAuto',{on:S.auto});return;}
   if(a==='mute'){prefs.mute=!prefs.mute;savePrefs();sgMusic();renderHud();return;}
@@ -2744,7 +2757,7 @@ function loop(ts){
     if(!resyncing){resyncing=true;send('sync',{}).then(r=>{resyncing=false;if(!r.ok||SC.mode!=='farm')return;if(SC.ev&&!S.evIn)leaveKeep(true);else if(!SC.ev&&(S.zone!==SC.zi||(S.floor|0)!==SC.fl))enterZone(S.zone,'L',S.floor);C=calc(S,auras);SC.hero.hp=C.hp;syncBoss();if(r.afk)showOffline(r.afk);saveLocal();});}
     return;
   }
-  dt=Math.min(dt,.1);
+  gfxTick(dt);dt=Math.min(dt,.1);
   frame(dt);
   if((hudT+=dt)>.2){hudT=0;renderHud();const ae=document.activeElement;if(panelDirty&&!$('sheet').classList.contains('on')&&!(ae&&ae.tagName==='INPUT'&&$('panel').contains(ae)))renderPanel();}
   if(tab==='pass'&&(evT+=dt)>1){evT=0;panelDirty=true;}
