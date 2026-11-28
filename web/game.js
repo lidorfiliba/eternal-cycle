@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261128101730';
+const BUILD='20261128103210';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,wskinOn,CAPEN,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -679,6 +679,21 @@ function castArt(m,col){
   if(!calm)SC.shake=Math.max(SC.shake||0,.2+i*.04);
   for(const q of ts){SC.fx.push({k:'flash',x:q.x,y:q.y-26,r:40,life:.22,d:.22,c:col});if(q.die<=0)strike(q,mult,col,true);}
 }
+// The combo's burst is each class's own: the same great light, in its own shape and colour.
+// The blade's is a storm of crossing steel, the witch's a strike of lightning, the hunter's a rain of spears, the warlord's falling chains of fire.
+function comboFx(cls,x,g,big){
+  const n=big?1:.6,C=cls==='storm'?['#6fd3ff','#b9a2ff']:cls==='hunter'?['#8be28b','#d8ff7a']:cls==='lord'?['#ff7a2e','#ffd75e']:['#ff8a4d','#ffe1a8'];
+  SC.fx.push({k:'flash',x:x,y:g-40,r:150*n,life:.3,d:.3,c:'#fff'});for(let q=0;q<3;q++)SC.fx.push({k:'ring',x:x,y:g-10,life:.45+q*.18,c:q===1?'#fff':C[0],r:(70+q*55)*n});burst(x,g-40,C[0],big?46:24);burst(x,g-40,'#fff',big?18:8);
+  if(cls==='storm'){for(let b=0;b<(big?5:3);b++){const pts=[];let px=x+(b-2)*34+(Math.random()-.5)*20,py=0;while(py<g-24){pts.push([px,py]);px+=(Math.random()-.5)*34;py+=20;}pts.push([x+(b-2)*16,g-12]);SC.fx.push({k:'bolt',pts:pts,life:.3+b*.05,c:b%2?C[1]:C[0]});}
+    SC.fx.push({k:'rune',x:x,y:g-2,r:96*n,life:.8,d:.8,c:C[0]});SC.fx.push({k:'star',x:x,y:g-50,r:60*n,rot:0,life:.45,d:.45,c:C[1]});}
+  else if(cls==='hunter'){for(let q=0;q<(big?11:6);q++){const tx=x+(q-(big?5:2.5))*20;SC.fx.push({k:'line',x1:tx-70+Math.random()*20,y1:g-300-Math.random()*60,x2:tx,y2:g-8,life:.22+q*.03,c:q%2?C[1]:C[0],w:3});SC.fx.push({k:'flash',x:tx,y:g-8,r:16,life:.25+q*.03,d:.3,c:C[0]});}
+    SC.fx.push({k:'star',x:x,y:g-40,r:64*n,rot:.4,life:.5,d:.5,c:C[0]});}
+  else if(cls==='lord'){for(let q=0;q<(big?6:4);q++){const a=q*Math.PI/3;SC.fx.push({k:'chain',x1:x+Math.cos(a)*150,y1:g-260,x2:x+Math.cos(a)*26,y2:g-14+Math.sin(a)*6,life:.42+q*.03,d:.5});}
+    for(const q of [-1,1])SC.fx.push({k:'wave',x:x,y:g,dir:q,dist:130*n,h:70,life:.34,d:.34,c:C[0]});for(let q=-2;q<=2;q++)SC.fx.push({k:'pillar',x:x+q*28,y:g,life:.4+Math.abs(q)*.06,d:.6,c:q%2?C[1]:C[0]});}
+  else{for(let q=0;q<(big?9:5);q++){const a=q*.7,r=30+q*7;SC.fx.push({k:'slash',x:x+Math.cos(a)*r*.6,y:g-44+Math.sin(a)*r*.45,rot:a+1.2,life:.2+q*.035,c:q%3===0?'#fff':q%3===1?C[0]:C[1],big:true});}
+    for(const q of [-1,1]){SC.fx.push({k:'cres',x:x,y:g-40,R:44*n,rot:q>0?0:3.14,sp:q*2.4,life:.34,d:.34,c:C[0]});SC.fx.push({k:'wave',x:x,y:g,dir:q,dist:110*n,h:56,life:.3,d:.3,c:C[1]});}}
+  if(big&&!calm)SC.fx.push({k:'screen',life:.22,d:.22,c:C[0]});
+}
 // Each class's two fighting skills have a look of their own. In a crowd only the blows that touch me are drawn in full.
 function skillFx(cls,k,ax,g,vx,ge,face,c,full){
   if(cls==='lord'&&full){
@@ -994,8 +1009,8 @@ function comboStep(i,col,hitM){
   else{if(k===q[0]){h.cb=1;h.cbT=SC.t;}else if(k!=='atk')h.cb=0;return;} // plain blows fall by themselves here, so they never break the order
   {h.cb=0;const live=alive();let m=h.cbM&&live.indexOf(h.cbM)>=0?h.cbM:null;if(!m){let bd=420;for(const o of live){const d=Math.abs(o.x-h.x);if(d<bd){bd=d;m=o;}}}
     if(!m)return;snd('ult');snd('slam');SC.nums.push({x:h.x,y:gy()-165,txt:'קומבו!',c:'#ff5c7a',s:W<560?24:32,life:1.2});
-    const hit=(o,k)=>{SC.fx.push({k:'star',x:o.x,y:gy()-40,r:k>3?64:36,rot:0,life:.45,d:.45,c:'#ff5c7a'});SC.fx.push({k:'pillar',x:o.x,y:gy(),life:.4,d:.4,c:'#ffd75e'});burst(o.x,gy()-40,'#ffb23e',k>3?30:12);strike(o,k,col,true);};
-    SC.fx.push({k:'ring',x:m.x,y:gy()-10,life:.5,c:'#ffd75e',r:110});hit(m,CBM);
+    const hit=(o,k)=>{comboFx(S.cls,o.x,gy(),k>3);strike(o,k,col,true);};
+    hit(m,CBM);
     for(const o of live.filter(o=>o!==m&&!o.boss&&Math.abs(o.x-h.x)<380).slice(0,4))hit(o,CBS);return;}
   h.cb=0;
 }
@@ -1291,7 +1306,7 @@ function brShow(d,o){
   d.v[o.to].hitT=.18;if(o.by===d.me||o.to===d.me)snd(o.crit?'crit':big?'skill':'hit');if(o.by===d.me||o.to===d.me||D.f.length<=3)addNum(vx,ge-92,fmt(Math.max(1,Math.round(o.dm*(b.sg?(b.hpv&&b.hpv[o.to]||2000)*5:10000)))),o.to===d.me?'#ff5c7a':o.crit?'#ffd75e':'#fff',o.crit||big);
   if(o.stun&&(o.by===d.me||o.to===d.me||D.f.length<=3))addNum(vx,ge-128,'הלם','#ffd75e',false);
   if(o.combo&&!(o.by===d.me||o.to===d.me)&&D.f.length>3){SC.nums.push({x:vx,y:ge-130,txt:'קומבו!',c:'#ff5c7a',s:15,life:.8});SC.fx.push({k:'ring',x:vx,y:ge-10,life:.4,c:'#ffd75e',r:60});}
-  else if(o.combo){snd('ult');SC.nums.push({x:vx,y:ge-150,txt:'קומבו!',c:'#ff5c7a',s:W<560?26:36,life:1.2});SC.fx.push({k:'star',x:vx,y:ge-40,r:70,rot:0,life:.5,d:.5,c:'#ff5c7a'});SC.fx.push({k:'ring',x:vx,y:ge-10,life:.5,c:'#ffd75e',r:90});snd('slam');burst(vx,ge-40,'#ffb23e',46);burst(vx,ge-40,'#fff',18);for(let q=0;q<3;q++)SC.fx.push({k:'ring',x:vx,y:ge-10,life:.45+q*.18,c:q===1?'#fff':'#ff5c7a',r:70+q*55});for(let q=-3;q<=3;q++)SC.fx.push({k:'pillar',x:vx+q*24,y:ge,life:.4+Math.abs(q)*.06,d:.6,c:q%2?'#ffd75e':'#ff5c7a'});SC.fx.push({k:'flash',x:vx,y:ge-40,r:150,life:.3,d:.3,c:'#fff'});if(!calm)SC.fx.push({k:'screen',life:.22,d:.22,c:'#ffb23e'});if(!calm)SC.shake=o.by===d.me||o.to===d.me?.7:.3;}
+  else if(o.combo){snd('ult');SC.nums.push({x:vx,y:ge-150,txt:'קומבו!',c:'#ff5c7a',s:W<560?26:36,life:1.2});snd('slam');comboFx((D.f[o.by]||{}).cls,vx,ge,true);if(!calm)SC.shake=o.by===d.me||o.to===d.me?.7:.3;}
   else if(b.sg&&o.cb===2&&o.by===d.me)addNum(ax,g-150,'קומבו 2/3','#ffb23e',false);
   if(o.more)for(const x of o.more){const f=D.f[x[0]];if(!f)continue;const p=bP(f.x,f.y);d.v[x[0]].hitT=.18;SC.fx.push({k:'flash',x:p[0],y:p[1]-30,r:26,life:.2,d:.2,c:cc});if(o.by===d.me||x[0]===d.me||D.f.length<=3)addNum(p[0],p[1]-92,fmt(Math.max(1,Math.round(x[1]*(b.sg?(b.hpv&&b.hpv[x[0]]||2000)*5:10000)))),x[3]?'#9fb0c8':x[0]===d.me?'#ff5c7a':'#fff',false);}
   if(o.dead&&!(b.sg&&o.by!==d.me&&o.to!==d.me))addNum(vx,ge-140,b.names[o.by]+' חיסל את '+b.names[o.to],'#ffd75e',true);
@@ -1490,7 +1505,7 @@ function dShow(d,o){ // play what a move did; o comes from liveAct, here or on t
   if(o.guard)SC.fx.push({k:'ring',x:vx,y:ge-40,life:.3,c:'#9fe8ff',r:50});
   d.v[1-i].hitT=.18;snd(o.crit?'crit':big?'skill':'hit');addNum(vx,ge-92,fmt(Math.round(o.dm*pool)),o.crit?'#ffd75e':big?col:'#fff',o.crit||big);if(big&&!calm&&!D.pvp)SC.shake=Math.max(SC.shake,.18);
   if(o.stun)addNum(vx,ge-128,'הלם','#ffd75e',false);
-  if(o.combo){snd('ult');SC.nums.push({x:vx,y:ge-150,txt:'קומבו!',c:'#ff5c7a',s:W<560?26:36,life:1.2});SC.fx.push({k:'star',x:vx,y:ge-40,r:70,rot:0,life:.5,d:.5,c:'#ff5c7a'});SC.fx.push({k:'ring',x:vx,y:ge-10,life:.5,c:'#ffd75e',r:90});burst(vx,ge-40,'#ffb23e',30);if(!calm)SC.shake=.4;}
+  if(o.combo){snd('ult');SC.nums.push({x:vx,y:ge-150,txt:'קומבו!',c:'#ff5c7a',s:W<560?26:36,life:1.2});comboFx((D.f[o.by]||{}).cls,vx,ge,true);if(!calm)SC.shake=.4;}
 }
 // The step goes where the player aims (joystick, arrows or keys). With no aim it goes a random way. The server's own
 // fighter keeps its habits: the blade steps in, the others step away or aside.
