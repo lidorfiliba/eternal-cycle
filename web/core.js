@@ -483,7 +483,7 @@ function liveNew(A,B,pvp){const D=duelNew(A,B),T=x=>clamp(1/Math.max(.3,x.a),.3,
 // One move by side i. Returns what happened, or null if the move was not possible right now.
 function liveAct(D,i,k,rnd){
   if(D.over)return null;const me=D.f[i],en=D.f[1-i],t=D.t,K=DUEL_LIVE,dist=Math.abs(en.x-me.x),rng=LIVE_RNG[me.cls],lane=Math.abs(en.z-me.z)<=LIVE_LANE;
-  if(me.stun>t||!(k in me.at)||me.at[k]>t)return null;
+  if((me.stun>t&&!(D.pvp&&k==='pot'))||!(k in me.at)||me.at[k]>t)return null;
   const o={by:i,k:k,dm:0,crit:false,miss:null,stun:false,fin:false,heal:0};
   const hit=mult=>{if(!lane){o.miss='lane';return;}if(en.inv>t){o.miss='inv';return;}o.crit=rnd()<D.cr[i];let dm=D.b[i]*mult*(o.crit?1.5:1)*(.9+rnd()*.2);if(en.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}en.hp-=dm;o.dm=dm;};
   // A duel between two players is the same fight as the siege and the circle: one short beat between blows, potions by
@@ -494,7 +494,7 @@ function liveAct(D,i,k,rnd){
     const ok=t-me.cbT<=SG.cbMax;if(o.miss)me.cb=0;else if(k==='atk')me.cb=1;else if(k==='s0'&&me.cb===1&&ok)me.cb=2;else if(k==='s1'&&me.cb===2&&ok){me.cb=0;o.combo=true;}else me.cb=0;me.cbT=t;o.cb=me.cb;
     if(o.combo){if(en.wound>t)o.again=true;else{const ex=D.b[i]*K.pvpM*SG.comboFlat/SG.hit*(o.guard?1-K.sk[2].cut:1);en.hp-=ex;o.dm+=ex;if(!o.guard){en.wound=t+SG.wound;if(!(en.stunI>t)){en.stun=t+K.sk[1].stun;en.stunI=t+K.sk[1].stun+SG.stunGap;o.stun=true;}}}}
     o.hp=[D.f[0].hp,D.f[1].hp];liveOver(D);return o;}
-  if(D.pvp&&k==='pot'){if(me.pots<1||me.wound>t)return null;me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+SG.heal);o.heal=SG.heal;o.hp=[D.f[0].hp,D.f[1].hp];return o;}
+  if(D.pvp&&k==='pot'){if(me.pots<1)return null;me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+SG.heal);o.heal=SG.heal;o.hp=[D.f[0].hp,D.f[1].hp];return o;}
   if(k==='atk'){if(dist>rng+14)return null;const T=D.T[i];me.at.atk=t+T;me.chain=(me.chain+1)%4;o.fin=me.chain===0;hit(T/1.5*(o.fin?1.5:.84));}
   else if(k==='s0'){if(dist>rng+40)return null;me.at.s0=t+K.sk[0].cd;hit(K.sk[0].m);}
   else if(k==='s1'){if(dist>rng+20)return null;me.at.s1=t+K.sk[1].cd;hit(K.sk[1].m);if(!o.miss&&!o.guard){en.stun=t+K.sk[1].stun;o.stun=true;}}
@@ -532,11 +532,11 @@ function brTake(f,k){if(k==='w')f.w++;else if(k==='W'){f.w=BR.wMax;f.ar=Math.min
 // The fight itself is the siege's fight, blow for blow: skills on one short beat, potions by the press, the combo in its
 // order, one skill of each class that strikes several, the enemy you chose. Only the numbers differ: here all are equal.
 function brAct(B,i,k,rnd,want){
-  const me=B.f[i],t=B.t,K=DUEL_LIVE;if(B.over||t<0||!me||!me.alive||me.stun>t||!(k in me.at)||me.at[k]>t)return null;
+  const me=B.f[i],t=B.t,K=DUEL_LIVE;if(B.over||t<0||!me||!me.alive||(me.stun>t&&k!=='pot')||!(k in me.at)||me.at[k]>t)return null;
   const o={by:i,k:k,to:-1,dm:0,crit:false,miss:false,stun:false,dead:false,heal:0};
   if(k==='s2'){me.at.s2=t+K.sk[2].cd;me.sh=t+K.sk[2].dur;return o;}
   if(k==='dash'){me.at.dash=t+K.dash.cd;me.inv=t+K.dash.inv;return o;}
-  if(k==='pot'){if(me.pots<1)return null;if(me.wound>t){o.no='wound';return o;}me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+SG.heal);o.heal=SG.heal;return o;}
+  if(k==='pot'){if(me.pots<1)return null;me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+SG.heal);o.heal=SG.heal;return o;}
   const rng=k==='s3'?BR.leap:BR.rng+(k==='atk'?14:k==='s0'?40:20);let j=-1,bd=1e9;
   B.f.forEach((e,q)=>{if(q===i||!e.alive)return;const d=brDist(e,me);if(d<=rng&&d<bd){bd=d;j=q;}});
   if(want>=0&&want!==i&&want!==j){const w=B.f[want|0];if(w&&w.alive&&brDist(w,me)<=rng)j=want|0;}
@@ -590,7 +590,7 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:4,respIn:15,respSafe:3,fwd:[[0,1150],[0,550],[0,330]],lsHit:.02,lsBack:60,botStone:1100,back:[0,-60],crownKeep:0,crownPen:1,pots:60,potMax:250,potCd:.25,heal:.06,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.6,.42,.32],potPrice:20,potPack:10,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
+const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:4,respIn:15,respSafe:3,fwd:[[0,1150],[0,550],[0,330]],lsHit:.02,lsBack:60,botStone:1100,back:[0,-60],crownKeep:0,crownPen:1,pots:120,potMax:250,potCd:.25,heal:.08,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.8,.68,.6,.56],potPrice:20,potPack:10,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.012,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   // a wide castle: room to fight in the yard and in the throne room without everyone standing on everyone
@@ -684,7 +684,7 @@ function areaList(B,i,j,k,rng,sees){const me=B.f[i],e=B.f[j],t=B.t,L=[];B.f.forE
     const d=atFoe(me.c)?brDist(x,e):brDist(x,me),lim=atFoe(me.c)?(me.c==='lord'?SG.areaR*.75:SG.areaR):me.c==='blade'?Math.min(rng,LIVE_RNG.blade+SG.areaB+14):rng;if(d<=lim&&(!sees||sees(x)))L.push([d,q]);});
   return L.sort((a,b)=>a[0]-b[0]).slice(0,me.c==='hunter'?2:SG.areaN).map(x=>x[1]);}
 function sgAct(B,i,k,rnd,want){
-  const me=B.f[i],t=B.t,K=DUEL_LIVE;if(B.over||t<0||!me||!me.alive||me.stun>t||!(k in me.at)||me.at[k]>t)return null;
+  const me=B.f[i],t=B.t,K=DUEL_LIVE;if(B.over||t<0||!me||!me.alive||(me.stun>t&&k!=='pot')||!(k in me.at)||me.at[k]>t)return null;
   const o={by:i,k:k,to:-1,dm:0,crit:false,miss:false,stun:false,dead:false,heal:0};
   if(k==='use'){me.at.use=t+1;const S=B.sg; // press what I stand on
     for(let q=0;q<2;q++)if(sgNear(me,SG.sw[q],SG.zone)){if(S.swBy[q]===i)return null;if(S.swBy[q]>=0){o.no='held';return o;}S.swp[q]=[me.g,.0001,i];o.q=q;o.g=me.g;return o;}
@@ -693,7 +693,7 @@ function sgAct(B,i,k,rnd,want){
   if(k==='buf'){me.at.buf=t+SG.buf.cd;const key=me.c==='blade'||me.c==='lord'?'b':me.c==='storm'?'s':'h';o.bk=key;o.n=0;for(const f of B.f)if(f.alive&&f.g===me.g&&brDist(f,me)<=SG.buf.r){f.bf[key]=t+SG.buf.dur;o.n++;}return o;}
   if(k==='s2'){me.at.s2=t+K.sk[2].cd;me.sh=t+K.sk[2].dur;return o;}
   if(k==='dash'){me.at.dash=t+K.dash.cd;me.inv=t+K.dash.inv;return o;}
-  if(k==='pot'){if(me.pots<1)return null;if(me.wound>t){o.no='wound';return o;}me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+SG.heal);o.heal=SG.heal;return o;}
+  if(k==='pot'){if(me.pots<1)return null;me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+SG.heal);o.heal=SG.heal;return o;}
   // the great skill is a leap: it reaches far, and carries the attacker onto his enemy
   const rng=k==='s3'?Math.max(SG.leap,LIVE_RNG[me.c]+60):LIVE_RNG[me.c]+(k==='atk'?14:k==='bash'?30:k==='s0'?40:20),au=sgBuff(me,t);let j=-1,bd=1e9;
   B.f.forEach((e,q)=>{if(q===i||!e.alive||e.g===me.g)return;const d=brDist(e,me);if(d<=rng&&d<bd&&sgSees(B,me,e)){bd=d;j=q;}});

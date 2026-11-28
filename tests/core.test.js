@@ -489,7 +489,7 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
   { // a combo: one order, one rhythm, one enemy
     const fresh=()=>{fe.alive=true;fe.hp=1;fe.x=fa.x+20;fe.y=fa.y;fe.pool=1e9;fe.stun=0;fe.sh=0;fe.wound=0;B.t+=40;fa.at={atk:0,s0:0,s1:0,s2:0,s3:0,dash:0,pot:0,use:0,buf:0};};
     fresh();const h1=G.sgAct(B,a,'atk',rnd);B.t+=.5;const x0=fe.x,h2=G.sgAct(B,a,'s0',rnd);assert.ok(!h2.px&&fe.x===x0,'a plain skill moves nobody: only the shove and the combo do');B.t+=.5;fe.stun=0;const h3=G.sgAct(B,a,'s1',rnd);assert.ok(!h1.combo&&h2.cb===2&&h3.combo&&h3.stun,'blow, quick skill, stunning skill: combo');
-    assert.ok(fe.wound>B.t&&G.sgAct(B,e,'pot',rnd)===null,'stunned');fe.stun=0;fe.pots=5;assert.equal(G.sgAct(B,e,'pot',rnd).no,'wound','and no potion for a moment after a combo');
+    fe.pots=5;{const h9=fe.hp;assert.ok(fe.wound>B.t&&fe.stun>B.t&&G.sgAct(B,e,'pot',rnd).heal===G.SG.heal&&fe.hp>h9,'a potion is drunk even stunned and wounded: drinking well is how one survives a crowd');assert.equal(G.sgAct(B,e,'atk',rnd),null,'but a stunned player does not strike');}fe.stun=0;B.t+=G.SG.potCd+.01;
     fresh();const base=G.sgAct(B,a,'s1',rnd);assert.ok(!base.combo&&h3.dm>base.dm*3,'the last blow of a combo takes a good part of anyone: '+h3.dm+' vs '+base.dm);
     fresh();G.sgAct(B,a,'atk',rnd);B.t+=5;assert.equal(G.sgAct(B,a,'s0',rnd).cb,0,'too slow breaks it');
     fresh();G.sgAct(B,a,'atk',rnd);B.t+=.05;assert.equal(G.sgAct(B,a,'s0',rnd),null,'between blows there is one short beat');B.t+=.37;assert.equal(G.sgAct(B,a,'s0',rnd).cb,2);B.t+=.42;assert.ok(G.sgAct(B,a,'s1',rnd).combo,'the order decides, and the fastest hand that keeps it wins');
@@ -585,7 +585,7 @@ test('moves that move: the leap carries the attacker onto a far enemy, the shove
   { // the last circle: the same leap, and the quick skill throws back
     const B=G.brNew([{id:'p',n:'p',c:'blade'},{id:'q',n:'q',c:'storm'}],rnd);B.t=5;const p=B.f[0],q=B.f[1];p.x=0;p.y=0;q.x=170;q.y=0;p.at.s3=0;p.at.s0=0;
     const l=G.brAct(B,0,'s3',rnd);assert.ok(l&&l.jx&&Math.abs(p.x-q.x)<40);B.t+=1;G.brAct(B,0,'atk',rnd);B.t+=.45;const s=G.brAct(B,0,'s0',rnd);assert.ok(!s.px&&s.cb===2);B.t+=.45;const qx=q.x,c3=G.brAct(B,0,'s1',rnd);assert.ok(c3.combo&&c3.px&&q.x>qx+20&&c3.stun&&q.wound>B.t,'the circle fights as the siege does: the combo bursts, stuns and throws back');
-    q.pots=5;q.stun=0;assert.equal(G.brAct(B,1,'pot',rnd).no,'wound');q.wound=0;const h0=q.hp;assert.ok(G.brAct(B,1,'pot',rnd).heal===G.SG.heal&&q.hp>h0);B.t+=G.SG.potCd+.01;assert.ok(G.brAct(B,1,'pot',rnd),'a potion by the press');}
+    q.pots=5;const h0=q.hp;assert.ok(G.brAct(B,1,'pot',rnd).heal===G.SG.heal&&q.hp>h0);B.t+=G.SG.potCd+.01;assert.ok(G.brAct(B,1,'pot',rnd),'a potion by the press');}
   { // one skill of each class strikes several, and the enemy he chose comes first
     const B=G.brNew([{id:'p',n:'p',c:'blade'},{id:'q',n:'q',c:'storm'},{id:'r',n:'r',c:'hunter'},{id:'z',n:'z',c:'hunter'}],rnd);B.t=5;const f=B.f;f[0].x=0;f[0].y=0;f[1].x=40;f[1].y=0;f[2].x=-60;f[2].y=0;f[3].x=600;f[3].y=0;
     const near=G.brAct(B,0,'atk',rnd);assert.equal(near.to,1);B.t+=1;const ch=G.brAct(B,0,'atk',rnd,2);assert.equal(ch.to,2,'the chosen enemy is struck, not the nearest');B.t+=1;assert.equal(G.brAct(B,0,'atk',rnd,3).to,1,'one out of reach cannot be chosen');
@@ -656,7 +656,7 @@ test('a duel between players is the same fight: one beat, potions by the press, 
   const D=G.liveNew(P('a'),P('b'),true);assert.ok(D.pvp);D.t=5;D.f[1].x=D.f[0].x+30;D.f[1].z=D.f[0].z;
   const a1=G.liveAct(D,0,'atk',rnd);assert.ok(a1&&a1.cb===1);assert.equal(G.liveAct(D,0,'s0',rnd),null,'one beat between blows');
   D.t+=G.SG.skT+.02;const a2=G.liveAct(D,0,'s0',rnd);assert.equal(a2.cb,2);D.t+=G.SG.skT+.02;const a3=G.liveAct(D,0,'s1',rnd);assert.ok(a3.combo&&a3.stun&&a3.dm>a2.dm*3,'the combo bursts: '+a3.dm+' '+a2.dm);
-  D.f[1].stun=0;assert.equal(G.liveAct(D,1,'pot',rnd),null,'no potion for a moment after it');D.t+=G.SG.wound+.01;const h=D.f[1].hp;assert.ok(G.liveAct(D,1,'pot',rnd)&&D.f[1].hp>h);D.t+=G.SG.potCd+.01;assert.ok(G.liveAct(D,1,'pot',rnd),'and again at once');
+  const h=D.f[1].hp;assert.ok(G.liveAct(D,1,'pot',rnd)&&D.f[1].hp>h);D.t+=G.SG.potCd+.01;assert.ok(G.liveAct(D,1,'pot',rnd),'and again at once');
   D.t+=1;const lone=G.liveAct(D,0,'s1',rnd);assert.ok(lone&&!lone.stun,'the skill alone does not stun');
   const O=G.liveNew(P('a'),P('b'));assert.ok(!O.pvp&&O.f[0].pots===G.DUEL_LIVE.pots,'fights against the game itself are as they were');
 });
