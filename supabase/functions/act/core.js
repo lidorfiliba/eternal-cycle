@@ -75,7 +75,7 @@ const CLS={
  storm:{n:'מכשפת סער',main:'ene',coef:1.5,combo:'ברק שרשרת',c:'#6fd3ff',wn:'מטה',range:175,sk:['ברק שרשרת','מערבולת','הארת סער','כדור אש','מגן קסם','מטר מטאורים'],al:{ene:.6,agi:.15,vit:.25}},
  // the warlord leads from the middle of the line: he hits less hard than the blade and stands far longer, at every
  // stage of a character's life, with all stats full as much as on the way there, and those who fight beside him stand longer too. He wears a cape where others wear wings.
- lord:{n:'אדון מלחמה',main:'str',coef:1.3,hpMul:1.3,combo:'שלשלאות אש',c:'#f2c14e',wn:'שרביט',range:95,sk:['שלשלאות אש','כבלי להבה','דגל המצביא','נשיפת החיה','חומת מגינים','סערת שלשלאות'],al:{str:.45,vit:.4,agi:.15}},
+ lord:{n:'אדון מלחמה',main:'str',coef:1.3,hpMul:1.3,combo:'שלשלאות אש',c:'#f2c14e',wn:'שרביט',range:140,sk:['שלשלאות אש','כבלי להבה','דגל המצביא','נשיפת החיה','חומת מגינים','סערת שלשלאות'],al:{str:.45,vit:.4,agi:.15}},
  hunter:{n:'צייד צללים',main:'agi',coef:0.62,combo:'מטר חניתות',c:'#8be28b',wn:'חנית',range:235,sk:['מטר חניתות','רשת צללים','עין הנץ','חנית חודרת','צעד צל','מטח הציידים'],al:{agi:.7,vit:.3}}
 };
 const STATN={str:['כוח','נזק ללוחם להב ולאדון מלחמה'],agi:['זריזות','מהירות, קריטי, הגנה'],vit:['חיוניות','חיים והגנה'],ene:['אנרגיה','נזק למכשפת סער']};
@@ -472,7 +472,7 @@ const DUEL_LIVE={time:75,pots:3,heal:.3,sk:[{m:.9,cd:5},{m:1.6,cd:9,stun:.8},{cd
 // One set of rules for the live duel, used by the browser (against a fighter the game plays) and by the server
 // (between two players who are both connected, where the server alone decides what a move did).
 // Positions are in arena units: LIVE_W across, depth z from 0 to 1. Times are seconds on the duel's own clock D.t.
-const LIVE_W=400,LIVE_RNG={blade:62,storm:185,hunter:235,lord:105},LIVE_LANE=.3;
+const LIVE_W=400,LIVE_RNG={blade:62,storm:185,hunter:235,lord:150},LIVE_LANE=.3;
 const LIVE_SURV=20,CLEAN_DAY=10;
 function livePlausible(L,el){const minT=1/(Math.max(1e-6,L.b[0])*DUEL_LIVE.maxRate);return el>=minT*.8&&L.b[1]*minT<=LIVE_SURV;}
 function liveFrom(L,ca,cb){
@@ -542,7 +542,7 @@ function brTake(f,k){if(k==='w')f.w++;else if(k==='W'){f.w=BR.wMax;f.ar=Math.min
 function brAct(B,i,k,rnd,want){
   const me=B.f[i],t=B.t,K=DUEL_LIVE;if(B.over||t<0||!me||!me.alive||(me.stun>t&&k!=='pot')||!(k in me.at)||me.at[k]>t)return null;
   const o={by:i,k:k,to:-1,dm:0,crit:false,miss:false,stun:false,dead:false,heal:0};
-  if(k==='s2'){me.at.s2=t+K.sk[2].cd;me.sh=t+K.sk[2].dur;return o;}
+  if(k==='s2'){me.at.s2=t+K.sk[2].cd;if(me.c==='hunter'){me.inv=t+SG.shadow;o.shadow=1;}else me.sh=t+K.sk[2].dur;return o;}
   if(k==='dash'){me.at.dash=t+K.dash.cd;me.inv=t+K.dash.inv;return o;}
   if(k==='pot'){if(me.pots<1)return null;me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+SG.heal);o.heal=SG.heal;return o;}
   const rng=k==='s3'?BR.leap:BR.rng+(k==='atk'?14:k==='s0'?40:20);let j=-1,bd=1e9;
@@ -552,14 +552,16 @@ function brAct(B,i,k,rnd,want){
   const e=B.f[j];let mult;if(k==='s3'){me.at.s3=t+SG.cd.s3;mult=K.sk[3].m;}else if(k==='atk'){me.chain=(me.chain+1)%4;mult=PVP_ATK[me.chain===0?0:1];}else mult=SG.skM[k];
   if(k!=='s3'){const n=t+SG.skT;for(const q of ['atk','s0','s1'])if(me.at[q]<n)me.at[q]=n;}
   o.to=j;if(Math.abs(e.x-me.x)>4)me.face=e.x>=me.x?1:-1;
-  if(k==='s3'){const d=brDist(e,me);if(d>44){me.x=e.x-(e.x-me.x)/d*26;me.y=e.y-(e.y-me.y)/d*26;me.pushT=t+.3;o.jx=[Math.round(me.x),Math.round(me.y)];}} // the great skill leaps onto the enemy
+  if(k==='s3'&&me.c==='blade'){const d=brDist(e,me);if(d>44){me.x=e.x-(e.x-me.x)/d*26;me.y=e.y-(e.y-me.y)/d*26;me.pushT=t+.3;o.jx=[Math.round(me.x),Math.round(me.y)];}} // the blade's great skill leaps onto the enemy
   if(e.inv>t){o.miss=true;me.cb=0;return o;}
+  if(k==='s3'&&me.c==='lord'&&!(e.sh>t)){const d=brDist(e,me);if(d>SG.pull+10){e.x=me.x+(e.x-me.x)/d*SG.pull;e.y=me.y+(e.y-me.y)/d*SG.pull;e.pushT=t+.3;o.px=[Math.round(e.x),Math.round(e.y)];o.pull=1;}}
+  const marked=want>=0&&(want|0)===j,pierce=k==='s3'&&me.c==='hunter';if(!marked)o.loose=1;
   const gear=(a,x)=>BR.hit*(1+.35*a.w)*(1-.15*x.ar);
-  o.crit=rnd()<.1;let dm=gear(me,e)*mult*pvpTake(e.c,k)*(o.crit?1.5:1)*(.9+rnd()*.2);if(e.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}
-  {const ok=t-me.cbT<=SG.cbMax&&me.cbTo===j;if(k==='s3')me.cb=0;else if(comboAdv(me,me.c,k,ok))o.combo=true;me.cbT=t;me.cbTo=j;o.cb=me.cb;}
+  o.crit=rnd()<.1;let dm=gear(me,e)*mult*(marked?1:SG.loose)*pvpTake(e.c,k)*(o.crit?1.5:1)*(.9+rnd()*.2);if(e.sh>t&&!pierce){dm*=1-K.sk[2].cut;o.guard=true;}
+  {const ok=t-me.cbT<=SG.cbMax&&me.cbTo===j;if(k==='s3'||!marked)me.cb=0;else if(comboAdv(me,me.c,k,ok))o.combo=true;me.cbT=t;me.cbTo=j;o.cb=me.cb;}
   if(o.combo){if(e.wound>t)o.again=true;else{dm=dm*SG.comboM+SG.comboFlat*gear(me,e)/SG.hit*(o.guard?1-K.sk[2].cut:1);if(!o.guard)e.wound=t+SG.wound;}}
   e.hp-=dm;o.dm=dm;if(o.combo&&!o.guard&&!(e.stunI>t)){e.stun=t+K.sk[1].stun;e.stunI=t+K.sk[1].stun+SG.stunGap;o.stun=true;}
-  if(o.combo&&!o.guard){const dx=e.x-me.x,dy=e.y-me.y,d=Math.hypot(dx,dy)||1;e.x+=dx/d*BR.push;e.y+=dy/d*BR.push;e.pushT=t+.3;o.px=[Math.round(e.x),Math.round(e.y)];} // the combo throws back: toward the fire, if you aim well
+  if(o.combo&&!o.guard&&!o.pull){const dx=e.x-me.x,dy=e.y-me.y,d=Math.hypot(dx,dy)||1;e.x+=dx/d*BR.push;e.y+=dy/d*BR.push;e.pushT=t+.3;o.px=[Math.round(e.x),Math.round(e.y)];} // the combo throws back: toward the fire, if you aim well
   if(areaOf(me.c,k)){o.more=[];for(const q of areaList(B,i,j,k,rng,null)){const x=B.f[q],d2=gear(me,x)*mult*pvpTake(x.c,k)*SG.areaM*(x.sh>t?1-K.sk[2].cut:1)*(.9+rnd()*.2);x.hp-=d2;const dead=x.hp<=0;if(dead)brKill(B,q,i);o.more.push([q,d2,dead?1:0]);}}
   if(e.hp<=0){brKill(B,j,i);o.dead=true;}return o;
 }
@@ -598,7 +600,7 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:4,respIn:15,respSafe:3,fwd:[[0,1150],[0,550],[0,330]],lsHit:.02,lsBack:60,botStone:1100,back:[0,-60],crownKeep:0,crownPen:1,pots:120,potMax:250,potCd:.25,heal:.08,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.8,.68,.6,.56],potPrice:20,potPack:10,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,ff:.2,ffN:4,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:90,
+const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:4,respIn:15,respSafe:3,fwd:[[0,1150],[0,550],[0,330]],lsHit:.02,lsBack:60,botStone:1100,back:[0,-60],crownKeep:0,crownPen:1,pots:120,potMax:250,potCd:.25,heal:.08,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.8,.68,.6,.56],potPrice:20,potPack:10,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,ff:.2,ffN:4,loose:.7,pull:46,shadow:1.1,wallR:130,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:90,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.012,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   // a wide castle: room to fight in the yard and in the throne room without everyone standing on everyone
@@ -687,7 +689,7 @@ function sgBot(B,i,dt,rnd,ev){
 function sgGang(e,i,t){const hb=e.hb||(e.hb={});let n=0;for(const k in hb){if(t-hb[k]>SG.gangT)delete hb[k];else if(+k!==i)n++;}hb[i]=t;return n;}
 // Each class has one skill that strikes more than one: the blade sweeps all around himself, the witch's storm bursts around
 // her enemy, the hunter's volley finds the nearest few in his reach. The others take a part of the blow, and no combo.
-const areaOf=(c,k)=>(c==='blade'&&k==='s0')||((c==='storm'||c==='lord')&&k==='s1')||(c==='hunter'&&k==='s0'),atFoe=c=>c==='storm'||c==='lord'; // the warlord's judgement falls around his enemy, as the witch's storm does
+const areaOf=(c,k)=>(c==='blade'&&k==='s0')||((c==='storm'||c==='lord')&&k==='s1')||(c==='hunter'&&k==='s0')||(c==='storm'&&k==='s3'),atFoe=c=>c==='storm'||c==='lord'; // the warlord's judgement falls around his enemy, as the witch's storm does
 function areaList(B,i,j,k,rng,sees,own){const me=B.f[i],e=B.f[j],t=B.t,L=[];B.f.forEach((x,q)=>{if(q===i||q===j||!x.alive||(me.g!==undefined&&(x.g===me.g)!==!!own)||(own&&me.g===undefined)||x.inv>t)return;
     const d=atFoe(me.c)?brDist(x,e):brDist(x,me),lim=atFoe(me.c)?(me.c==='lord'?SG.areaR*.75:SG.areaR):me.c==='blade'?Math.min(rng,LIVE_RNG.blade+SG.areaB+14):rng;if(d<=lim&&(!sees||sees(x)))L.push([d,q]);});
   return L.sort((a,b)=>a[0]-b[0]).slice(0,own?SG.ffN:me.c==='hunter'?2:SG.areaN).map(x=>x[1]);}
@@ -699,7 +701,9 @@ function sgAct(B,i,k,rnd,want){
     if(sgNear(me,SG.crown,SG.zone)){if(!me.lead){o.no='lead';return o;}if(me.g===S.holder){o.no='own';return o;}if(!(S.swBy[0]>=0&&S.swBy[1]>=0&&S.sw[0]===me.g&&S.sw[1]===me.g)){o.no='sw';return o;}S.crown=[me.g,Math.max(.0001,me.cacc||0),i];o.c=1;o.g=me.g;return o;}
     return null;}
   if(k==='buf'){me.at.buf=t+SG.buf.cd;const key=me.c==='blade'||me.c==='lord'?'b':me.c==='storm'?'s':'h';o.bk=key;o.n=0;for(const f of B.f)if(f.alive&&f.g===me.g&&brDist(f,me)<=SG.buf.r){f.bf[key]=t+SG.buf.dur;o.n++;}return o;}
-  if(k==='s2'){me.at.s2=t+K.sk[2].cd;me.sh=t+K.sk[2].dur;return o;}
+  // the guard is each class's own: the blade and the witch stand behind a shield, the hunter steps into shadow and
+  // cannot be touched for a moment, the warlord's wall also covers the guildmates beside him for half the time
+  if(k==='s2'){me.at.s2=t+K.sk[2].cd;if(me.c==='hunter'){me.inv=t+SG.shadow;o.shadow=1;}else{me.sh=t+K.sk[2].dur;if(me.c==='lord'){o.wall=[];B.f.forEach((f,q)=>{if(q!==i&&f.alive&&f.g===me.g&&brDist(f,me)<=SG.wallR){f.sh=Math.max(f.sh||0,t+K.sk[2].dur/2);o.wall.push(q);}});}}return o;}
   if(k==='dash'){me.at.dash=t+K.dash.cd;me.inv=t+K.dash.inv;return o;}
   if(k==='pot'){if(me.pots<1)return null;me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+SG.heal);o.heal=SG.heal;return o;}
   // the great skill is a leap: it reaches far, and carries the attacker onto his enemy
@@ -716,19 +720,23 @@ function sgAct(B,i,k,rnd,want){
     let gi=-1;SG.gates.forEach((g,q)=>{if(B.sg.gate[q]<=0)return;const cx=(g[0]+g[2])/2,cy=(g[1]+g[3])/2,d=Math.hypot(cx-me.x,cy-me.y);if(d<=rng+50&&d<bd){bd=d;gi=q;}});if(gi<0)return null;
     cool();B.sg.gate[gi]=Math.max(0,B.sg.gate[gi]-SG.gateHit*mult);o.gate=gi;o.dm=SG.gateHit*mult;if(B.sg.gate[gi]<=0){o.broke=true;if(SG.stat.indexOf(gi)>=0){if(!sgShield(B))o.open=true;}else{B.sg.lsHp=1;B.sg.lsDown=0;}}return o;}
   const e=B.f[j];cool();o.to=j;if(Math.abs(e.x-me.x)>4)me.face=e.x>=me.x?1:-1;
-  if(k==='s3'){const d=brDist(e,me);if(d>44){sgMove(B,me,e.x-(e.x-me.x)/d*26,e.y-(e.y-me.y)/d*26);me.pushT=t+SG.pushT;o.jx=[Math.round(me.x),Math.round(me.y)];}}
+  // The great skill is each class's own. The blade leaps onto his enemy. The warlord's chain drags the enemy to him.
+  // The witch's meteor falls from where she stands and bursts around the enemy. The hunter's spear flies far and goes through a shield.
+  if(k==='s3'&&me.c==='blade'){const d=brDist(e,me);if(d>44){sgMove(B,me,e.x-(e.x-me.x)/d*26,e.y-(e.y-me.y)/d*26);me.pushT=t+SG.pushT;o.jx=[Math.round(me.x),Math.round(me.y)];}}
   if(e.inv>t){o.miss=true;me.cb=0;return o;}
+  if(k==='s3'&&me.c==='lord'&&!(e.sh>t)){const d=brDist(e,me);if(d>SG.pull+10){sgMove(B,e,me.x+(e.x-me.x)/d*SG.pull,me.y+(e.y-me.y)/d*SG.pull);e.pushT=t+SG.pushT;o.px=[Math.round(e.x),Math.round(e.y)];o.pull=1;}}
+  const marked=want>=0&&(want|0)===j,pierce=k==='s3'&&me.c==='hunter';if(!marked)o.loose=1;
   // Each character's own numbers decide, as in the old sieges: a beginner barely scratches a finished character and
   // falls to him in a few blows. Between equals nothing is decided by numbers: potions and combos decide.
   const raw=(x,y)=>x.d*300/(300+y.def)/y.pool,rel=Math.sqrt(raw(me,e)/Math.max(1e-9,raw(e,me)));
-  o.crit=rnd()<me.cr;const base=clamp(SG.hit*Math.pow(rel,SG.gam),SG.hitMin,SG.hitMax);let dm=base*mult*pvpTake(e.c,k)*au.dmg*sgBuff(e,t).def*(o.crit?Math.min(SG.critMax,1+(me.cdm-1)*.5):1)*(.9+rnd()*.2);
+  o.crit=rnd()<me.cr;const base=clamp(SG.hit*Math.pow(rel,SG.gam),SG.hitMin,SG.hitMax);let dm=base*mult*(marked?1:SG.loose)*pvpTake(e.c,k)*au.dmg*sgBuff(e,t).def*(o.crit?Math.min(SG.critMax,1+(me.cdm-1)*.5):1)*(.9+rnd()*.2);
   // A combo, as the old games had it: one fixed order on one enemy, a plain blow, then the quick skill, then the
   // stunning one, each neither too soon after the last nor too late. Anything else in between breaks it, so pressing
   // everything at once gives nothing. The last blow bursts, stuns, throws back and stops potions for a moment.
   {const gap=t-me.cbT,ok=gap>=SG.cbMin&&gap<=SG.cbMax&&me.cbTo===j;
-    if(k==='s3'||k==='bash')me.cb=0;else if(comboAdv(me,me.c,k,ok))o.combo=true;
+    if(k==='s3'||k==='bash'||!marked)me.cb=0;else if(comboAdv(me,me.c,k,ok))o.combo=true; // a blow that was not aimed at a marked enemy is a loose one: weaker, and no part of a combo
     me.cbT=t;me.cbTo=j;o.cb=me.cb;}
-  if(e.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}
+  if(e.sh>t&&!pierce){dm*=1-K.sk[2].cut;o.guard=true;}
   // one burst at a time: an enemy still wounded by a combo takes the next one as a plain strong blow, so three players cannot erase one in a breath
   if(o.combo){if(e.wound>t)o.again=true;else{dm=dm*SG.comboM+SG.comboFlat*base/SG.hit*(o.guard?1-K.sk[2].cut:1);if(!o.guard)e.wound=t+SG.wound;}}
   // Many on one: each more attacker who struck the same enemy in the last two seconds makes every blow on him weaker.
@@ -746,7 +754,7 @@ function sgAct(B,i,k,rnd,want){
   e.hp-=dm;o.dm=dm;if(o.combo&&!o.guard&&!(e.stunI>t)){e.stun=t+K.sk[1].stun;e.stunI=t+K.sk[1].stun+SG.stunGap;o.stun=true;}
   // blows that move: the quick skill and the combo throw the enemy back a little, unless he stands behind his shield
   // The shove is the move for it: little harm, a long throw, and it does not wait for the last push to wear off.
-  if((k==='bash'||o.combo)&&!o.guard){e.pushI=t+SG.pushI;const dx=e.x-me.x,dy=e.y-me.y,d=Math.hypot(dx,dy)||1,ps=k==='bash'?SG.bashPush:o.combo?SG.pushC:SG.push;sgMove(B,e,e.x+dx/d*ps,e.y+dy/d*ps);e.pushT=t+SG.pushT;o.px=[Math.round(e.x),Math.round(e.y)];}
+  if((k==='bash'||o.combo)&&!o.guard&&!o.pull){e.pushI=t+SG.pushI;const dx=e.x-me.x,dy=e.y-me.y,d=Math.hypot(dx,dy)||1,ps=k==='bash'?SG.bashPush:o.combo?SG.pushC:SG.push;sgMove(B,e,e.x+dx/d*ps,e.y+dy/d*ps);e.pushT=t+SG.pushT;o.px=[Math.round(e.x),Math.round(e.y)];}
 if(e.hp<=0){sgDown(B,j,i);o.dead=true;}return o;
 }
 const sgNear=(f,p,r)=>Math.abs(f.x-p[0])<r&&Math.abs(f.y-p[1])<r;

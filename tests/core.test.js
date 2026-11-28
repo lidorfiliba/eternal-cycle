@@ -488,20 +488,22 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
   assert.deepEqual(B.sg.gate,G.SG.gates.map(()=>G.SG.gateHp),'the gates are whole again');assert.deepEqual(B.sg.sw,[0,0]);
   { // a combo: one order, one rhythm, one enemy
     const fresh=()=>{fe.alive=true;fe.hp=1;fe.x=fa.x+20;fe.y=fa.y;fe.pool=1e9;fe.stun=0;fe.sh=0;fe.wound=0;B.t+=40;fa.at={atk:0,s0:0,s1:0,s2:0,s3:0,dash:0,pot:0,use:0,buf:0};};
-    fresh();const h1=G.sgAct(B,a,'atk',rnd);B.t+=.5;const x0=fe.x,h2=G.sgAct(B,a,'s0',rnd);assert.ok(!h2.px&&fe.x===x0,'a plain skill moves nobody: only the shove and the combo do');B.t+=.5;fe.stun=0;const h3=G.sgAct(B,a,'s1',rnd);assert.ok(!h1.combo&&h2.cb===2&&h3.combo&&h3.stun,'blow, quick skill, stunning skill: combo');
+    {fresh();const m1=G.sgAct(B,a,'atk',rnd,e);fresh();const l1=G.sgAct(B,a,'atk',rnd);assert.ok(l1.loose&&!m1.loose&&l1.dm<m1.dm*.8&&l1.dm>m1.dm*.5,'a blow at no marked enemy still lands on the one in front, but weaker: '+l1.dm/m1.dm);
+      B.t+=.5;const l2=G.sgAct(B,a,'s0',rnd);B.t+=.5;fe.stun=0;const l3=G.sgAct(B,a,'s1',rnd);assert.ok(!l2.cb&&!l3.combo&&!l3.stun,'and there is no combo without a marked enemy');}
+    fresh();const h1=G.sgAct(B,a,'atk',rnd,e);B.t+=.5;const x0=fe.x,h2=G.sgAct(B,a,'s0',rnd,e);assert.ok(!h2.px&&fe.x===x0,'a plain skill moves nobody: only the shove and the combo do');B.t+=.5;fe.stun=0;const h3=G.sgAct(B,a,'s1',rnd,e);assert.ok(!h1.combo&&h2.cb===2&&h3.combo&&h3.stun,'blow, quick skill, stunning skill: combo');
     fe.pots=5;{const h9=fe.hp;assert.ok(fe.wound>B.t&&fe.stun>B.t&&G.sgAct(B,e,'pot',rnd).heal===G.SG.heal&&fe.hp>h9,'a potion is drunk even stunned and wounded: drinking well is how one survives a crowd');assert.equal(G.sgAct(B,e,'atk',rnd),null,'but a stunned player does not strike');}fe.stun=0;B.t+=G.SG.potCd+.01;
     fresh();const base=G.sgAct(B,a,'s1',rnd);assert.ok(!base.combo&&h3.dm>base.dm*3,'the last blow of a combo takes a good part of anyone: '+h3.dm+' vs '+base.dm);
-    fresh();G.sgAct(B,a,'atk',rnd);B.t+=5;assert.equal(G.sgAct(B,a,'s0',rnd).cb,0,'too slow breaks it');
-    fresh();G.sgAct(B,a,'atk',rnd);B.t+=.05;assert.equal(G.sgAct(B,a,'s0',rnd),null,'between blows there is one short beat');B.t+=.37;assert.equal(G.sgAct(B,a,'s0',rnd).cb,2);B.t+=.42;assert.ok(G.sgAct(B,a,'s1',rnd).combo,'the order decides, and the fastest hand that keeps it wins');
-    fresh();G.sgAct(B,a,'atk',rnd);B.t+=.5;assert.ok(!G.sgAct(B,a,'s1',rnd).combo,'the wrong order is no combo');
-    fresh();G.sgAct(B,a,'atk',rnd);B.t+=.5;G.sgAct(B,a,'s0',rnd);B.t+=.5;fa.at.atk=0;G.sgAct(B,a,'atk',rnd);B.t+=.5;fe.x=fa.x+20;assert.ok(!G.sgAct(B,a,'s1',rnd).combo,'a blow in the middle breaks it');
-    fresh();fe.sh=B.t+9;const y0=fe.x;G.sgAct(B,a,'atk',rnd);B.t+=.5;const g2=G.sgAct(B,a,'s0',rnd);assert.ok(g2.guard&&!g2.px&&fe.x===y0,'a shield stands firm');fe.sh=0;}
+    fresh();G.sgAct(B,a,'atk',rnd,e);B.t+=5;assert.equal(G.sgAct(B,a,'s0',rnd,e).cb,0,'too slow breaks it');
+    fresh();G.sgAct(B,a,'atk',rnd,e);B.t+=.05;assert.equal(G.sgAct(B,a,'s0',rnd,e),null,'between blows there is one short beat');B.t+=.37;assert.equal(G.sgAct(B,a,'s0',rnd,e).cb,2);B.t+=.42;assert.ok(G.sgAct(B,a,'s1',rnd,e).combo,'the order decides, and the fastest hand that keeps it wins');
+    fresh();G.sgAct(B,a,'atk',rnd,e);B.t+=.5;assert.ok(!G.sgAct(B,a,'s1',rnd,e).combo,'the wrong order is no combo');
+    fresh();G.sgAct(B,a,'atk',rnd,e);B.t+=.5;G.sgAct(B,a,'s0',rnd,e);B.t+=.5;fa.at.atk=0;G.sgAct(B,a,'atk',rnd,e);B.t+=.5;fe.x=fa.x+20;assert.ok(!G.sgAct(B,a,'s1',rnd,e).combo,'a blow in the middle breaks it');
+    fresh();fe.sh=B.t+9;const y0=fe.x;G.sgAct(B,a,'atk',rnd,e);B.t+=.5;const g2=G.sgAct(B,a,'s0',rnd,e);assert.ok(g2.guard&&!g2.px&&fe.x===y0,'a shield stands firm');fe.sh=0;}
   { // pushes do not pile up, and neither do combo bursts
     const X=G.sgNew(rnd,{}),q1=G.sgAdd(X,P('p1',1),5,'',rnd),q2=G.sgAdd(X,P('p2',1),5,'',rnd),qe=G.sgAdd(X,P('pe',1),6,'',rnd),f1=X.f[q1],f2=X.f[q2],fe=X.f[qe];X.t=50;
     f1.x=0;f1.y=1900;f2.x=0;f2.y=1900;fe.x=20;fe.y=1900;fe.pool=1e9;f1.at.s0=0;f2.at.s0=0;
     f1.at.bash=0;const o1=G.sgAct(X,q1,'bash',rnd),x1=fe.x;assert.ok(o1.px&&x1>20+G.SG.zone-10,'the shove throws an enemy off a switch: '+x1);fe.x=20;const o2=G.sgAct(X,q2,'s0',rnd);assert.ok(!o2.px&&fe.x===20,'a plain skill moves nobody');
     assert.ok(G.SG.pushC<=G.SG.zone,'one whole combo does not throw a player standing in the middle off a switch');
-    const cmb=q=>{const f=X.f[q];f.at={atk:0,s0:0,s1:0,s2:0,s3:0,dash:0,pot:0,use:0,buf:0};f.x=fe.x-20;f.y=fe.y;fe.stun=0;G.sgAct(X,q,'atk',rnd);X.t+=.5;f.x=fe.x-20;G.sgAct(X,q,'s0',rnd);X.t+=.5;f.x=fe.x-20;fe.stun=0;return G.sgAct(X,q,'s1',rnd);};
+    const cmb=q=>{const f=X.f[q];f.at={atk:0,s0:0,s1:0,s2:0,s3:0,dash:0,pot:0,use:0,buf:0};f.x=fe.x-20;f.y=fe.y;fe.stun=0;G.sgAct(X,q,'atk',rnd,qe);X.t+=.5;f.x=fe.x-20;G.sgAct(X,q,'s0',rnd,qe);X.t+=.5;f.x=fe.x-20;fe.stun=0;return G.sgAct(X,q,'s1',rnd,qe);};
     X.t+=20;fe.hp=1;const c1=cmb(q1);fe.wound=X.t+9;const c2=cmb(q2);assert.ok(c1.combo&&c2.combo&&c2.again&&c1.dm>c2.dm*3,'a second combo on a wounded enemy is a plain blow: '+c1.dm+' '+c2.dm);}
   { // party buffs are cast on those who stand near, and run out
     const X=G.sgNew(rnd,{}),q1=G.sgAdd(X,P('b1',1,'blade'),5,'',rnd),q2=G.sgAdd(X,P('s1',1,'storm'),5,'',rnd),q3=G.sgAdd(X,P('h1',1,'hunter'),5,'',rnd),q4=G.sgAdd(X,P('far',1,'blade'),5,'',rnd);X.t=1;X.f.forEach(f=>{f.x=0;f.y=1900;});X.f[q4].x=600;
@@ -584,7 +586,7 @@ test('moves that move: the leap carries the attacker onto a far enemy, the shove
   assert.ok(g.dm>0,'but not all the harm: he must still refill his health');
   { // the last circle: the same leap, and the quick skill throws back
     const B=G.brNew([{id:'p',n:'p',c:'blade'},{id:'q',n:'q',c:'storm'}],rnd);B.t=5;const p=B.f[0],q=B.f[1];p.x=0;p.y=0;q.x=170;q.y=0;p.at.s3=0;p.at.s0=0;
-    const l=G.brAct(B,0,'s3',rnd);assert.ok(l&&l.jx&&Math.abs(p.x-q.x)<40);B.t+=1;G.brAct(B,0,'atk',rnd);B.t+=.45;const s=G.brAct(B,0,'s0',rnd);assert.ok(!s.px&&s.cb===2);B.t+=.45;const qx=q.x,c3=G.brAct(B,0,'s1',rnd);assert.ok(c3.combo&&c3.px&&q.x>qx+20&&c3.stun&&q.wound>B.t,'the circle fights as the siege does: the combo bursts, stuns and throws back');
+    const l=G.brAct(B,0,'s3',rnd);assert.ok(l&&l.jx&&Math.abs(p.x-q.x)<40);B.t+=1;G.brAct(B,0,'atk',rnd,1);B.t+=.45;const s=G.brAct(B,0,'s0',rnd,1);assert.ok(!s.px&&s.cb===2);B.t+=.45;const qx=q.x,c3=G.brAct(B,0,'s1',rnd,1);assert.ok(c3.combo&&c3.px&&q.x>qx+20&&c3.stun&&q.wound>B.t,'the circle fights as the siege does: the combo bursts, stuns and throws back');
     q.pots=5;const h0=q.hp;assert.ok(G.brAct(B,1,'pot',rnd).heal===G.SG.heal&&q.hp>h0);B.t+=G.SG.potCd+.01;assert.ok(G.brAct(B,1,'pot',rnd),'a potion by the press');}
   { // one skill of each class strikes several, and the enemy he chose comes first
     const B=G.brNew([{id:'p',n:'p',c:'blade'},{id:'q',n:'q',c:'storm'},{id:'r',n:'r',c:'hunter'},{id:'z',n:'z',c:'hunter'}],rnd);B.t=5;const f=B.f;f[0].x=0;f[0].y=0;f[1].x=40;f[1].y=0;f[2].x=-60;f[2].y=0;f[3].x=600;f[3].y=0;
@@ -596,8 +598,8 @@ test('every class has its own combo order and its own toughness against players'
   const rnd=()=>.5;
   for(const c of Object.keys(G.CLS)){const q=G.COMBO[c];assert.ok(q&&q.slice().sort().join()==='atk,s0,s1','three moves, each once: '+c);
     const B=G.brNew([{id:'p',n:'p',c:c},{id:'q',n:'q',c:'blade'}],rnd);B.t=5;const p=B.f[0],e=B.f[1];p.x=0;p.y=0;e.x=30;e.y=0;e.hp=1e6;
-    let o;for(const k of q){B.t+=G.SG.skT+.05;o=G.brAct(B,0,k,rnd);}assert.ok(o&&o.combo,'the order of '+c+' makes a combo');
-    if(c!=='blade'){p.cb=0;for(const k of G.COMBO.blade){B.t+=G.SG.skT+.05;o=G.brAct(B,0,k,rnd);}assert.ok(!o.combo,'and the blade\'s order is not the order of '+c);}}
+    let o;for(const k of q){B.t+=G.SG.skT+.05;o=G.brAct(B,0,k,rnd,1);}assert.ok(o&&o.combo,'the order of '+c+' makes a combo');
+    if(c!=='blade'){p.cb=0;for(const k of G.COMBO.blade){B.t+=G.SG.skT+.05;o=G.brAct(B,0,k,rnd,1);}assert.ok(!o.combo,'and the blade\'s order is not the order of '+c);}}
   assert.equal(new Set(Object.values(G.COMBO).map(q=>q.join())).size,Object.keys(G.CLS).length,'no two classes share an order');
   const hit=(c,k)=>{const B=G.brNew([{id:'p',n:'p',c:'blade'},{id:'q',n:'q',c:c}],rnd);B.t=5;B.f[0].x=0;B.f[0].y=0;B.f[1].x=30;B.f[1].y=0;B.f[0].chain=1;return G.brAct(B,0,k,rnd).dm;};
   assert.ok(hit('blade','atk')<hit('lord','atk')&&hit('lord','atk')<hit('hunter','atk')&&hit('hunter','atk')<hit('storm','atk'),'a plain blow barely moves a blade and falls hardest on the witch');
@@ -613,6 +615,18 @@ test('the reset shop opens shelf by shelf with resets, and some goods are counte
   assert.equal(buy('exanc').ok,false);S.resets=40;const ea=buy('exanc');assert.ok(ea.ok&&ea.box.it.r===4&&ea.box.it.ex);assert.equal(buy('exanc').ok,false,'one a week');
   A.week.key='old';assert.equal(buy('exanc').ok,true,'a new week, a new count');assert.equal(buy('pts2').ok,false,'but for ever is for ever');
   const needs=G.RESET_SHOP.map(o=>o.need);assert.deepEqual(needs,needs.slice().sort((a,b)=>a-b),'shelves in order');assert.ok(needs[needs.length-1]>=50,'and the last is far');
+});
+test('the great skill and the guard are each class\'s own',()=>{
+  const rnd=()=>.5,mk=(c,ec)=>{const B=G.brNew([{id:'p',n:'p',c:c},{id:'q',n:'q',c:ec||'blade'},{id:'r',n:'r',c:'blade'}],rnd);B.t=5;const f=B.f;f[0].x=0;f[0].y=0;f[1].x=200;f[1].y=0;f[2].x=240;f[2].y=0;f[0].at.s3=0;return B;};
+  {const B=mk('blade'),o=G.brAct(B,0,'s3',rnd,1);assert.ok(o.jx&&Math.abs(B.f[0].x-200)<40&&!o.px,'the blade leaps onto his enemy');}
+  {const B=mk('lord'),o=G.brAct(B,0,'s3',rnd,1);assert.ok(!o.jx&&o.pull&&o.px&&B.f[0].x===0&&Math.abs(B.f[1].x-G.SG.pull)<2,'the warlord\'s chain drags the enemy to him: '+B.f[1].x);
+    const C=mk('lord');C.f[1].sh=C.t+5;const g=G.brAct(C,0,'s3',rnd,1);assert.ok(!g.pull&&C.f[1].x===200,'unless he stands behind a shield');}
+  {const B=mk('storm'),o=G.brAct(B,0,'s3',rnd,1);assert.ok(!o.jx&&!o.px&&B.f[0].x===0&&o.more&&o.more.length===1&&o.more[0][0]===2,'the witch\'s meteor falls from where she stands and bursts around the enemy');}
+  {const B=mk('hunter');B.f[1].sh=B.t+5;const o=G.brAct(B,0,'s3',rnd,1),C=mk('blade');C.f[1].sh=C.t+5;const g=G.brAct(C,0,'s3',rnd,1);assert.ok(!o.jx&&!o.guard&&g.guard&&o.dm>g.dm*1.5,'the hunter\'s spear goes through a shield');}
+  {const B=mk('hunter'),o=G.brAct(B,0,'s2',rnd);assert.ok(o.shadow&&B.f[0].inv>B.t&&!(B.f[0].sh>B.t),'the hunter does not raise a shield: he steps into shadow');B.f[1].x=30;assert.ok(G.brAct(B,1,'atk',rnd,0).miss,'and a blow passes through him');}
+  {const S=G.sgNew(rnd,{}),P=(id,c)=>({id,n:id,c:c,d:400,a:1.5,h:2700,f:70,cr:0,cd:2}),l=G.sgAdd(S,P('l','lord'),1,'',rnd),m=G.sgAdd(S,P('m','blade'),1,'',rnd),far=G.sgAdd(S,P('z','blade'),1,'',rnd);S.t=5;
+    S.f[l].x=0;S.f[l].y=1900;S.f[m].x=60;S.f[m].y=1900;S.f[far].x=600;S.f[far].y=1900;const o=G.sgAct(S,l,'s2',rnd);assert.ok(S.f[l].sh>S.t&&S.f[m].sh>S.t&&S.f[m].sh<S.f[l].sh&&!(S.f[far].sh>S.t)&&o.wall.length===1,'the warlord\'s wall covers the guildmate beside him, for half the time');}
+  assert.ok(G.LIVE_RNG.lord>=140&&G.CLS.lord.range>=130,'and he no longer fights at arm\'s length');
 });
 test('the game master walks anywhere; nobody else does',()=>{
   G.setEnv(Math.random,()=>1.8e12);const zi=G.ZONES.findIndex(z=>z.castle),far=G.ZONES.length-2;
@@ -656,7 +670,7 @@ test('many on one: a crowd\'s blows weaken, a stun is not chained without end, a
   const h1=G.sgAct(X,a,'atk',rnd),h2=G.sgAct(X,b,'atk',rnd),h3=G.sgAct(X,c,'atk',rnd);assert.ok(!h1.gang&&h2.gang===2&&h3.gang===3);
   assert.ok(Math.abs(h2.dm/h1.dm-G.SG.gang[0])<.02&&Math.abs(h3.dm/h1.dm-G.SG.gang[1])<.02,'the second and third hit for less: '+h2.dm/h1.dm+' '+h3.dm/h1.dm);
   X.t+=G.SG.gangT+.5;X.f[b].at.atk=0;const h4=G.sgAct(X,b,'atk',rnd);assert.ok(!h4.gang,'alone again, a full blow');
-  X.t+=20;const combo=q=>{G.sgAct(X,q,'atk',rnd);X.t+=.6;G.sgAct(X,q,'s0',rnd);fe.x=20;X.t+=.6;const o=G.sgAct(X,q,'s1',rnd);fe.x=20;return o;};
+  X.t+=20;const combo=q=>{G.sgAct(X,q,'atk',rnd,e);X.t+=.6;G.sgAct(X,q,'s0',rnd,e);fe.x=20;X.t+=.6;const o=G.sgAct(X,q,'s1',rnd,e);fe.x=20;return o;};
   const lone=G.sgAct(X,c,'s1',rnd);assert.ok(!lone.stun,'a skill alone does not stun: only the combo does');X.t+=5;
   const s1=combo(a);assert.ok(s1.combo&&s1.stun);fe.stun=0;const s2=combo(b);assert.ok(s2.combo&&!s2.stun,'a second stun right after the first does not land');
   X.t+=1;const t0=X.t;assert.ok(G.sgAct(X,a,'s0',rnd)&&!G.sgAct(X,a,'s1',rnd),'the fighting skills share one short beat');X.t=t0+G.SG.skT+.05;assert.ok(G.sgAct(X,a,'s1',rnd),'and wait for nothing more');
