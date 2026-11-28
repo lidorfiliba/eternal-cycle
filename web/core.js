@@ -486,8 +486,8 @@ function liveFrom(L,ca,cb){
 }
 function liveNew(A,B,pvp){const D=duelNew(A,B),T=x=>clamp(1/Math.max(.3,x.a),.3,1.2);return liveFrom({pvp:!!pvp,b:[D.f[0].base,D.f[1].base],cr:[D.f[0].cr,D.f[1].cr],T:[T(A),T(B)],pool:[A.h*5,B.h*5]},A.c,B.c);}
 // One move by side i. Returns what happened, or null if the move was not possible right now.
-// Every class has its own combo: the same three moves, each class in its own order, and the last one is the blow that bursts.
-const COMBO={blade:['atk','s0','s1'],storm:['atk','s1','s0'],hunter:['s1','atk','s0'],lord:['s0','atk','s1']};
+// A combo is always a plain blow and then the two fighting skills. What differs by class is which skill comes second and which one bursts.
+const COMBO={blade:['atk','s0','s1'],lord:['atk','s0','s1'],storm:['atk','s1','s0'],hunter:['atk','s1','s0']};
 function comboAdv(me,c,k,ok){const q=COMBO[c]||COMBO.blade;if(me.cb>0&&k===q[me.cb]&&ok){if(++me.cb===3){me.cb=0;return true;}return false;}me.cb=k===q[0]?1:0;return false;}
 // How much of a blow each class takes from another player: [a plain blow, a skill]. The blade is the wall of the old games:
 // a plain blow barely moves him and it takes a combo to bring him down; the witch and the hunter fall to steady plain blows.

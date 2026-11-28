@@ -599,8 +599,9 @@ test('every class has its own combo order and its own toughness against players'
   for(const c of Object.keys(G.CLS)){const q=G.COMBO[c];assert.ok(q&&q.slice().sort().join()==='atk,s0,s1','three moves, each once: '+c);
     const B=G.brNew([{id:'p',n:'p',c:c},{id:'q',n:'q',c:'blade'}],rnd);B.t=5;const p=B.f[0],e=B.f[1];p.x=0;p.y=0;e.x=30;e.y=0;e.hp=1e6;
     let o;for(const k of q){B.t+=G.SG.skT+.05;o=G.brAct(B,0,k,rnd,1);}assert.ok(o&&o.combo,'the order of '+c+' makes a combo');
-    if(c!=='blade'){p.cb=0;for(const k of G.COMBO.blade){B.t+=G.SG.skT+.05;o=G.brAct(B,0,k,rnd,1);}assert.ok(!o.combo,'and the blade\'s order is not the order of '+c);}}
-  assert.equal(new Set(Object.values(G.COMBO).map(q=>q.join())).size,Object.keys(G.CLS).length,'no two classes share an order');
+    assert.equal(q[0],'atk','every combo opens with a plain blow, then the two skills: '+c);
+    {p.cb=0;const wrong=[q[0],q[2],q[1]];for(const k of wrong){B.t+=G.SG.skT+.05;o=G.brAct(B,0,k,rnd,1);}assert.ok(!o.combo,'the two skills the other way round are no combo for '+c);}}
+  assert.equal(new Set(Object.values(G.COMBO).map(q=>q.join())).size,2,'the skills go in one order for the close fighters and the other for the far ones');
   const hit=(c,k)=>{const B=G.brNew([{id:'p',n:'p',c:'blade'},{id:'q',n:'q',c:c}],rnd);B.t=5;B.f[0].x=0;B.f[0].y=0;B.f[1].x=30;B.f[1].y=0;B.f[0].chain=1;return G.brAct(B,0,k,rnd).dm;};
   assert.ok(hit('blade','atk')<hit('lord','atk')&&hit('lord','atk')<hit('hunter','atk')&&hit('hunter','atk')<hit('storm','atk'),'a plain blow barely moves a blade and falls hardest on the witch');
   assert.ok(hit('storm','atk')/hit('blade','atk')>1.7,'by far');assert.ok(hit('storm','s0')/hit('blade','s0')<1.25,'a skill cuts through the blade far better than a plain blow: he falls to combos');
