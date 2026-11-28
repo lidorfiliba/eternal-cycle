@@ -64,8 +64,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--arc);outline-of
 #evChip{position:absolute;top:68px;inset-inline:0;margin:auto;width:max-content;max-width:92%;font-size:12px;font-weight:700;color:var(--dim);background:rgba(10,8,24,.72);padding:3px 11px;border-radius:12px;border:1px solid rgba(255,255,255,.14)}
 #evChip.live{color:#fff;border-color:var(--ember)}
 #evChip.done{color:var(--gold);border-color:var(--gold);animation:pulse 1.2s infinite}
-#skills{position:absolute;right:8px;bottom:8px;display:grid;grid-template-columns:repeat(4,58px);gap:5px;direction:rtl}
-#skills button{width:58px;height:44px;border-radius:12px;border:1.5px solid rgba(255,255,255,.35);background:rgba(24,19,49,.82);color:#fff;font-size:11.5px;font-weight:700;line-height:1.1;padding:2px}
+#skills{position:absolute;right:8px;bottom:8px;display:grid;grid-template-columns:repeat(4,min(58px,calc((100vw - 158px)/4)));gap:5px;direction:rtl} /* on a narrow phone the bar shrinks to what the walking buttons leave */
+#skills button{width:100%;min-width:0;overflow:hidden;height:44px;border-radius:12px;border:1.5px solid rgba(255,255,255,.35);background:rgba(24,19,49,.82);color:#fff;font-size:11.5px;font-weight:700;line-height:1.1;padding:2px}
 #paceTag{position:absolute;left:50%;transform:translateX(-50%);bottom:4px;font-size:10.5px;color:#d9d3f5;background:rgba(10,8,24,.6);padding:2px 8px;border-radius:9px;white-space:nowrap;pointer-events:none;direction:rtl}
 @media (min-width:1000px) and (min-height:560px){
   html,body{overflow:hidden}
@@ -94,6 +94,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--arc);outline-of
 #duelHp i{display:block;height:100%;width:100%;background:linear-gradient(#ff6b6b,#b3182c);transition:width .08s}
 #duelHp b{position:absolute;inset:0;text-align:center;font:700 11px/16px system-ui,sans-serif;color:#fff;text-shadow:0 1px 2px #000}
 #skills button{position:relative}#skills button kbd{position:absolute;left:3px;top:2px;min-width:14px;padding:0 3px;border-radius:5px;background:rgba(255,255,255,.16);color:#ffd75e;font:700 9.5px/14px system-ui}
+@media (max-width:389px){#skills button{font-size:10px;letter-spacing:-.2px;padding:1px}#skills button b{font-size:10px;white-space:nowrap}#duelBar button{font-size:10px;letter-spacing:-.2px;padding:1px}#autoBtn{padding:0 8px;font-size:11.5px}#potBtn{font-size:10px;padding:0 7px}}
 #skills button.cd{opacity:.5;border-color:rgba(255,255,255,.12)}
 #skills button.lock{opacity:.3}
 #skills button b{display:block;font-size:13px;color:var(--gold)}
@@ -103,7 +104,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--arc);outline-of
 #potBtn.on{border-color:var(--good);color:var(--good)}
 #mv{position:absolute;left:8px;bottom:8px;display:flex;gap:6px;direction:ltr}
 #mv button{width:56px;height:50px;border-radius:12px;border:1.5px solid rgba(255,255,255,.35);background:rgba(24,19,49,.82);color:#fff;font-size:22px;line-height:1;touch-action:none}
-#stage.duel #mv button{width:42px}#stage.duel #mv .ud button{width:38px}#stage.duel #duelBar{grid-template-columns:repeat(4,50px)}
+#stage.duel #mv button{width:42px}#stage.duel #mv .ud button{width:38px}#stage.duel #duelBar{grid-template-columns:repeat(4,min(50px,calc((100vw - 162px)/4)))}#duelBar button{min-width:0;overflow:hidden}
 @media (min-width:1000px){#stage.duel #duelBar{grid-template-columns:repeat(4,64px)}#stage.duel #mv button{width:56px}}
 #mv .ud{display:flex;flex-direction:column;gap:4px}#mv .ud button{width:46px;height:23px;font-size:13px}
 #mv button.hold{background:rgba(95,212,255,.35)}
