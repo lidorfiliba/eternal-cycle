@@ -227,7 +227,11 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
       if (B.t < 0 && Math.hypot(f.x - f.px, f.y - f.py) > G.SG.prepR) { f.x = ox; f.y = oy; } return;
     }
     // An action is told to everyone with only the two fighters it touched: with thirty players, a whole picture of everyone on every blow would flood the phones.
-    if (m.t === 'sgAct') { if (m.f !== undefined && B.f[i]) B.f[i].face = Number(m.f) < 0 ? -1 : 1; const o = G.sgAct(B, i, String(m.k), rnd, Number.isInteger(m.to) ? m.to : -1); if (!o) return; if (o.no) return send(uid, { t: 'sgHint', no: o.no }); const out = sgState(B); out.ev = [o]; out.s = out.s.map((q, k) => (k === i || k === o.to || (o.more && o.more.some((x) => x[0] === k)) ? q : null)); sgAll(out); return send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t }); }
+    if (m.t === 'sgAct') { if (m.f !== undefined && B.f[i]) B.f[i].face = Number(m.f) < 0 ? -1 : 1; const o = G.sgAct(B, i, String(m.k), rnd, Number.isInteger(m.to) ? m.to : -1);
+      // A blow that arrives a hair before its time is not thrown away: it lands when its time comes. A browser whose clock runs a little
+      // ahead of the server's would otherwise lose every other blow and wait a full beat for each. Further off than that, he is told his true times.
+      if (!o) { const k = String(m.k), rem = f.alive && B.t >= 0 && !(f.stun > B.t) && k in f.at ? f.at[k] - B.t : 0; if (rem > 0 && (k === 'atk' || k === 's0' || k === 's1')) { if (rem <= .25 && !m.again) setTimeout(() => { if (sg === x && !x.done && x.idx.get(uid) === i) sgMsg(ws, Object.assign({}, m, { again: 1 })).catch(() => {}); }, rem * 1000 + 15).unref(); else send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t }); } return; }
+      if (o.no) return send(uid, { t: 'sgHint', no: o.no }); const out = sgState(B); out.ev = [o]; out.s = out.s.map((q, k) => (k === i || k === o.to || (o.more && o.more.some((x) => x[0] === k)) ? q : null)); sgAll(out); return send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t }); }
   }
 
   // ---- Shared monsters (a pilot on one map). The server holds the monsters of each floor of that map: their health,
