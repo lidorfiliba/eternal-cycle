@@ -648,6 +648,14 @@ test('gear from the reset maps asks for resets to wear: a young character on an 
   S.resets=3;const r=G.apply(A,'tick',{z:-1,f:0},{});assert.ok(!S.eq.w&&A.inv.some(x=>x.id===901)&&r.stripped===1,'what he may no longer wear goes back to the bag');
   S.autoEq=true;A.inv=A.inv.filter(x=>x.id!==901);const g=G.gainItem(S,it(zr(30),902),null);assert.notEqual(g,'eq','and nothing puts it on him by itself');
 });
+test('an arena fight of two is the circle\'s fight on its own field: each one\'s strength and reach, no gear on the ground, no closing ring',()=>{
+  const rnd=()=>.5,mk=(a,b,bb)=>G.brNew([{id:'a',n:'a',c:a},{id:'b',n:'b',c:b,bot:true}],rnd,{b:bb||[.09,.09],cr:[0,0]});
+  const B=mk('hunter','blade');assert.equal(B.loot.length,0);assert.equal(G.brRing(B),G.BR.DR);assert.ok(G.BR.DR<G.BR.R&&G.BR.DR>=360,'smaller than the circle\'s field, far wider than the old lane');assert.equal(B.f[0].pots,G.DUEL_LIVE.pvpPots);
+  B.t=1;B.f[1].x=B.f[0].x+200;const far=G.brAct(B,0,'atk',rnd,1);assert.ok(far&&far.to===1,'a hunter reaches across '+G.brDist(B.f[0],B.f[1])+': his own range, not the circle\'s');
+  const C=mk('blade','hunter');C.t=1;C.f[1].x=C.f[0].x+200;assert.equal(G.brAct(C,0,'atk',rnd,1),null,'and a blade does not');
+  const S=mk('blade','blade',[.09,.03]),W=mk('blade','blade',[.03,.09]);for(const X of [S,W]){X.t=1;X.f[1].x=X.f[0].x+30;}const hs=G.brAct(S,0,'s0',rnd,1).dm,hw=G.brAct(W,0,'s0',rnd,1).dm;assert.ok(Math.abs(hs/hw-3)<.01,'each one strikes with his own strength: '+hs/hw);
+  const T=mk('blade','blade');let n=0;while(!T.over&&n++<5000)G.brStep(T,.1,rnd);assert.ok(T.over&&T.loot.length===0&&T.t<=G.BR.DT+.2,'it ends by a fall or by the clock: '+T.t);
+});
 test('the game master walks anywhere; nobody else does',()=>{
   G.setEnv(Math.random,()=>1.8e12);const zi=G.ZONES.findIndex(z=>z.castle),far=G.ZONES.length-2;
   const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'xxxx'},{});

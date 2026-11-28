@@ -526,22 +526,25 @@ function liveOver(D){if(!D.over&&(D.f[0].hp<=0||D.f[1].hp<=0||D.t>=DUEL_LIVE.tim
 // they wear outside: strength comes from what is found on the ground (weapons, armor, boots, potions). The field is
 // a wide round plain; a circle closes on its middle and burns whoever is outside. Positions are x,y from the middle.
 const BR={leap:220,push:30,R:700,MAX:8,FILL:6,TIME:150,HOLD:20,END:60,SIGN:2,pots:10,potN:6,ring:.1,hit:.021,T:.6,spd:150,pick:30,loot0:24,every:6,drop:40,
-  rng:110,wMax:3,aMax:3,bMax:2,pMax:40};
+  rng:110,wMax:3,aMax:3,bMax:2,pMax:40,DR:380,DT:90}; // DR, DT: the round field of a fight of two, and how long it may last
 const brDist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const brSpeed=f=>BR.spd*(1+.12*(f.bt|0));
 function brSpot(B,rnd,rad){const a=rnd()*6.2832,r=Math.sqrt(rnd())*rad;return [Math.round(Math.cos(a)*r),Math.round(Math.sin(a)*r)];}
 function brLoot(B,rnd,k,x,y){const q=rnd(),it={id:B.lid++,x:x,y:y,k:k||(q<.3?'w':q<.6?'a':q<.85?'p':'b')};B.loot.push(it);return it;}
-function brNew(ps,rnd){
+// A fight of two is the same fight on a smaller round field: no gear on the ground, no closing circle, each one's own
+// strength and reach as in the siege. duel = {b:[harm of a plain blow by each],cr:[crit chance of each]}.
+function brNew(ps,rnd,duel){
   const n=ps.length,ord=ps.map((_,i)=>i);for(let i=n-1;i>0;i--){const j=Math.floor(rnd()*(i+1)),t=ord[i];ord[i]=ord[j];ord[j]=t;}
   const B={t:-4,over:0,out:[],loot:[],lid:1,nextLoot:BR.every,dropped:false,f:ps.map((p,i)=>{const a=ord[i]/n*6.2832+rnd()*.3;return {id:p.id,n:p.n,c:CLS[p.c]?p.c:'blade',bot:!!p.bot,x:Math.round(Math.cos(a)*BR.R*.78),y:Math.round(Math.sin(a)*BR.R*.78),hp:1,
     at:{atk:0,s0:0,s1:0,s2:0,s3:8,dash:0,pot:0},stun:0,stunI:0,wound:0,cb:0,cbT:-9,cbTo:-1,sh:0,inv:0,alive:true,kills:0,pots:BR.pots,chain:0,face:1,think:rnd()*.6,w:0,ar:0,bt:0};})};
+  if(duel){B.duel=duel;B.t=-3;B.f.forEach((f,i)=>{f.x=i?170:-170;f.y=0;f.face=i?-1:1;f.pots=DUEL_LIVE.pvpPots;f.at.s3=0;});return B;}
   for(let i=0;i<BR.loot0;i++){const p=brSpot(B,rnd,BR.R*.7);brLoot(B,rnd,null,p[0],p[1]);}
   return B;
 }
 const brAlive=B=>B.f.filter(f=>f.alive).length;
-function brRing(B){const u=clamp((B.t-BR.HOLD)/(BR.TIME-20-BR.HOLD),0,1);return BR.R+(BR.END-BR.R)*u;} // the circle's radius now
+function brRing(B){if(B.duel)return BR.DR;const u=clamp((B.t-BR.HOLD)/(BR.TIME-20-BR.HOLD),0,1);return BR.R+(BR.END-BR.R)*u;} // the circle's radius now
 function brKill(B,j,by){const e=B.f[j];if(!e.alive)return;e.alive=false;e.hp=0;B.out.push(j);if(by>=0&&B.f[by])B.f[by].kills++;
-  B.loot.push({id:B.lid++,x:Math.round(e.x),y:Math.round(e.y),k:e.w>0?'w':e.ar>0?'a':'p'});B.fresh=(B.fresh||[]).concat([B.loot[B.loot.length-1]]);if(brAlive(B)<=1)B.over=1;}
+  if(!B.duel){B.loot.push({id:B.lid++,x:Math.round(e.x),y:Math.round(e.y),k:e.w>0?'w':e.ar>0?'a':'p'});B.fresh=(B.fresh||[]).concat([B.loot[B.loot.length-1]]);}if(brAlive(B)<=1)B.over=1;}
 // What a fighter may take: nothing he already has at its limit, so it stays for someone else.
 const brCan=(f,k)=>k==='w'?f.w<BR.wMax:k==='W'?f.w<BR.wMax||f.ar<BR.aMax:k==='a'?f.ar<BR.aMax:k==='p'?f.pots<BR.pMax:f.bt<BR.bMax;
 function brTake(f,k){if(k==='w')f.w++;else if(k==='W'){f.w=BR.wMax;f.ar=Math.min(BR.aMax,f.ar+1);}else if(k==='a')f.ar++;else if(k==='p')f.pots=Math.min(BR.pMax,f.pots+BR.potN);else f.bt++;}
@@ -553,7 +556,7 @@ function brAct(B,i,k,rnd,want){
   if(k==='s2'){me.at.s2=t+K.sk[2].cd;if(me.c==='hunter'){me.inv=t+SG.shadow;o.shadow=1;}else me.sh=t+K.sk[2].dur;return o;}
   if(k==='dash'){me.at.dash=t+K.dash.cd;me.inv=t+K.dash.inv;return o;}
   if(k==='pot'){if(me.pots<1)return null;me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+SG.heal);o.heal=SG.heal;return o;}
-  const rng=k==='s3'?BR.leap:BR.rng+(k==='atk'?14:k==='s0'?40:20);let j=-1,bd=1e9;
+  const r0=B.duel?LIVE_RNG[me.c]:BR.rng,rng=k==='s3'?(B.duel?Math.max(BR.leap,r0+60):BR.leap):r0+(k==='atk'?14:k==='s0'?40:20);let j=-1,bd=1e9;
   B.f.forEach((e,q)=>{if(q===i||!e.alive||!inFront(me,e))return;const d=brDist(e,me);if(d<=rng&&d<bd){bd=d;j=q;}});
   if(want>=0&&want!==i&&want!==j){const w=B.f[want|0];if(w&&w.alive&&brDist(w,me)<=rng)j=want|0;}
   if(j<0)return null;
@@ -564,8 +567,8 @@ function brAct(B,i,k,rnd,want){
   if(e.inv>t){o.miss=true;me.cb=0;return o;}
   if(k==='s3'&&me.c==='lord'&&!(e.sh>t)){const d=brDist(e,me);if(d>SG.pull+10){e.x=me.x+(e.x-me.x)/d*SG.pull;e.y=me.y+(e.y-me.y)/d*SG.pull;e.pushT=t+.3;o.px=[Math.round(e.x),Math.round(e.y)];o.pull=1;}}
   const marked=want>=0&&(want|0)===j,pierce=k==='s3'&&me.c==='hunter';if(!marked)o.loose=1;
-  const gear=(a,x)=>BR.hit*(1+.35*a.w)*(1-.15*x.ar);
-  o.crit=rnd()<.1;let dm=gear(me,e)*mult*(marked?1:SG.loose)*pvpTake(e.c,k)*(o.crit?1.5:1)*(.9+rnd()*.2);if(e.sh>t&&!pierce){dm*=1-K.sk[2].cut;o.guard=true;}
+  const gear=B.duel?(a,x)=>B.duel.b[B.f.indexOf(a)]*K.pvpM:(a,x)=>BR.hit*(1+.35*a.w)*(1-.15*x.ar);
+  o.crit=rnd()<(B.duel?B.duel.cr[i]:.1);let dm=gear(me,e)*mult*(marked?1:SG.loose)*pvpTake(e.c,k)*(o.crit?1.5:1)*(.9+rnd()*.2);if(e.sh>t&&!pierce){dm*=1-K.sk[2].cut;o.guard=true;}
   {const ok=t-me.cbT<=SG.cbMax&&me.cbTo===j;if(k==='s3'||!marked)me.cb=0;else if(comboAdv(me,me.c,k,ok))o.combo=true;me.cbT=t;me.cbTo=j;o.cb=me.cb;}
   if(o.combo){if(e.wound>t)o.again=true;else{dm=dm*SG.comboM+SG.comboFlat*gear(me,e)/SG.hit*(o.guard?1-K.sk[2].cut:1);if(!o.guard)e.wound=t+SG.wound;}}
   e.hp-=dm;o.dm=dm;if(o.combo&&!o.guard&&!(e.stunI>t)){e.stun=t+K.sk[1].stun;e.stunI=t+K.sk[1].stun+SG.stunGap;o.stun=true;}
@@ -576,26 +579,26 @@ function brAct(B,i,k,rnd,want){
 function brStep(B,dt,rnd){
   const ev=[];if(B.over)return ev;B.t+=dt;if(B.t<0)return ev;const R=brRing(B),t=B.t;
   if(B.fresh){for(const it of B.fresh)ev.push({k:'spawn',l:[it.id,it.x,it.y,it.k]});B.fresh=null;}
-  if(t>=B.nextLoot){B.nextLoot=t+BR.every;const p=brSpot(B,rnd,R*.85),it=brLoot(B,rnd,null,p[0],p[1]);ev.push({k:'spawn',l:[it.id,it.x,it.y,it.k]});}
-  if(!B.dropped&&t>=BR.drop){B.dropped=true;const it=brLoot(B,rnd,'W',0,0);ev.push({k:'spawn',l:[it.id,0,0,'W'],big:1});}
+  if(!B.duel&&t>=B.nextLoot){B.nextLoot=t+BR.every;const p=brSpot(B,rnd,R*.85),it=brLoot(B,rnd,null,p[0],p[1]);ev.push({k:'spawn',l:[it.id,it.x,it.y,it.k]});}
+  if(!B.duel&&!B.dropped&&t>=BR.drop){B.dropped=true;const it=brLoot(B,rnd,'W',0,0);ev.push({k:'spawn',l:[it.id,0,0,'W'],big:1});}
   B.f.forEach((f,i)=>{if(!f.alive)return;
     for(let q=B.loot.length-1;q>=0;q--){const it=B.loot[q];if(Math.abs(it.x-f.x)<BR.pick&&Math.abs(it.y-f.y)<BR.pick&&brCan(f,it.k)){brTake(f,it.k);B.loot.splice(q,1);ev.push({k:'pick',by:i,id:it.id,it:it.k});}}
     if(Math.hypot(f.x,f.y)>R){f.hp-=BR.ring*dt;if(f.hp<=0){brKill(B,i,-1);ev.push({by:-1,k:'ring',to:i,dead:true});}}});
   B.f.forEach((f,i)=>{if(!f.alive||!f.bot||B.over||f.stun>t)return;let j=-1,bd=1e9;B.f.forEach((e,q)=>{if(q===i||!e.alive)return;const d=brDist(e,f);if(d<bd){bd=d;j=q;}});if(j<0)return;
-    const e=B.f[j],rng=BR.rng,sp=brSpeed(f)*.9*dt,far=Math.hypot(f.x,f.y);let tx=e.x,ty=e.y,go=bd>rng*.85,back=false;
+    const e=B.f[j],rng=B.duel?LIVE_RNG[f.c]:BR.rng,sp=brSpeed(f)*.9*dt,far=Math.hypot(f.x,f.y);let tx=e.x,ty=e.y,go=bd>rng*.85,back=false;
     let li=null,ld=1e9;for(const it of B.loot){if(!brCan(f,it.k)||Math.hypot(it.x,it.y)>R)continue;const d=brDist(it,f);if(d<ld){ld=d;li=it;}}
     if(far>R-30){tx=0;ty=0;go=true;}                                            // first of all, stay inside
     else if(li&&(t<30&&bd>rng||ld<260&&bd>rng*1.1||f.w<1&&ld<bd)){tx=li.x;ty=li.y;go=true;}      // gear nearby, or unarmed: fetch it
     else if(f.hp<.3&&f.pots<1&&e.w>=f.w){tx=f.x-(e.x-f.x);ty=f.y-(e.y-f.y);go=true;back=true;} // hurt and outgunned: run
     else if(bd>420&&t<70){if(li){tx=li.x;ty=li.y;go=true;}else go=false;}                 // nobody near yet: keep gearing up
-    if(go){const dx=tx-f.x,dy=ty-f.y,d=Math.hypot(dx,dy)||1,st=Math.min(d,sp);f.x+=dx/d*st;f.y+=dy/d*st;if(Math.abs(dx)>4)f.face=(back?-dx:dx)>=0?1:-1;const fr=Math.hypot(f.x,f.y);if(fr>BR.R){f.x*=BR.R/fr;f.y*=BR.R/fr;}}
+    if(go){const dx=tx-f.x,dy=ty-f.y,d=Math.hypot(dx,dy)||1,st=Math.min(d,sp);f.x+=dx/d*st;f.y+=dy/d*st;if(Math.abs(dx)>4)f.face=(back?-dx:dx)>=0?1:-1;const fr=Math.hypot(f.x,f.y),lim=B.duel?BR.DR:BR.R;if(fr>lim){f.x*=lim/fr;f.y*=lim/fr;}}
     if((f.think-=dt)>0)return;f.think=.2+rnd()*.3;
     const tryK=k=>{const o=brAct(B,i,k,rnd,j);if(o)ev.push(o);return !!o;},sq=COMBO[f.c]||COMBO.blade;
     if(f.hp<.6&&f.pots>0&&!(f.wound>t)&&tryK('pot')){f.think=.1;return;}if(f.hp<.5&&bd<rng&&rnd()<.25&&tryK('s2'))return;
     if(f.cs>0){const o=brAct(B,i,sq[f.cs],rnd,j);if(o){ev.push(o);f.cs=o.cb===2?2:0;}else f.cs=0;f.think=SG.skT+.05;return;}
     if(bd<=rng&&rnd()<.35){const o=brAct(B,i,sq[0],rnd,j);if(o){ev.push(o);if(!o.miss){f.cs=1;f.think=SG.skT+.05;}}return;}
     if(rnd()<.3&&(tryK('s3')||tryK('s1')||tryK('s0')))return;tryK('atk');});
-  if(!B.over&&B.t>=BR.TIME){B.over=1;}
+  if(!B.over&&B.t>=(B.duel?BR.DT:BR.TIME)){B.over=1;}
   return ev;
 }
 // Places, winner first: whoever still stands (most health first), then the fallen from last to first.
