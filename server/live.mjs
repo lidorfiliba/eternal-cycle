@@ -194,9 +194,9 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
         if (!x.scaled) { x.scaled = true; for (const f of x.B.f) if (f.g === 0) { f.d = p.d * .8; f.pool = Math.max(1, p.h * 5 * .9); f.def = p.f * .8; } } // the guards measure up to the first to arrive
         i = G.sgAdd(x.B, p, gid, g.tag, rnd, String(g.leader) === String(uid)); x.idx.set(uid, i); x.prof[i] = p;
         if (boss && !x.botsIn) { // his side and the other, built from his own strength so the fight is even, each with a role
-          x.botsIn = true; const B = x.B, n = x.bots.n, eg = 999001, cls = ['blade', 'storm', 'hunter'], names = G.BOTN || []; x.names.set(eg, 'שומרי הכתר');
+          x.botsIn = true; const B = x.B, n = x.bots.n, eg = 999001, cls = ['lord', 'blade', 'storm', 'hunter'], names = G.BOTN || []; // every class fights in the practice, the warlord on both sides x.names.set(eg, 'שומרי הכתר');
           const mk = (k, c) => Object.assign({}, p, { id: 'sgbot' + k, n: String(names[k % (names.length || 1)] || 'לוחם ' + (k + 1)).slice(0, 14), c, bot: true, d: p.d * (.9 + rnd() * .2), h: p.h * (.9 + rnd() * .2) });
-          const put = (k, gg, tag, role, lead) => { const bp = mk(k, cls[k % 3]), q = G.sgAdd(B, bp, gg, tag, rnd, lead); Object.assign(B.f[q], { role, sk: x.bots.sk * (.8 + rnd() * .3), side: k % 2 ? 1 : -1, pots: 40 }); x.prof[q] = bp;
+          const put = (k, gg, tag, role, lead) => { const bp = mk(k, cls[k % 4]), q = G.sgAdd(B, bp, gg, tag, rnd, lead); Object.assign(B.f[q], { role, sk: x.bots.sk * (.8 + rnd() * .3), side: k % 2 ? 1 : -1, pots: 40 }); x.prof[q] = bp;
             const add = JSON.stringify({ t: 'sgAdd', i: q, f: sgPub(B, q, x), xy: [B.f[q].x, B.f[q].y] }); for (const u of x.idx.keys()) if (u !== uid) { const o = socks.get(u); if (o && o.readyState === 1) o.send(add); } };
           const mineRoles = ['sw0', 'sw1', 'fight', 'fight', 'fight'], theirRoles = ['lead', 'sw0', 'sw1', 'fight', 'fight', 'fight'];
           for (let k = 0; k < n - 1; k++) put(k, gid, g.tag, mineRoles[k] || 'fight', false);
