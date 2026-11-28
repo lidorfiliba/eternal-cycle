@@ -812,3 +812,12 @@ test('siege gathering: before the fight begins a fighter can stock up at a shop,
   assert.ok(f.pots>p0,'bought');assert.ok(B.t<0);
   B.f[j].x=f.x+20;B.f[j].y=f.y;assert.equal(G.sgAct(B,i,'atk',rnd,j),null);assert.equal(B.f[j].hp,1);
 });
+test('the world boss is struck by the hand: blows count by the character\'s power, kills do not, and the clock caps the count',()=>{
+  let now=Date.UTC(2026,11,5,1,46,0);G.setEnv(()=>.5,()=>now); // 03:46 in Jerusalem: inside the boss's window
+  const A=G.newAccount();assert.ok(G.apply(A,'create',{name:'wbhero',cls:'blade'},{}).ok);assert.ok(G.evWindows(now,0).some(w=>w.e.world),'the boss is up');
+  assert.ok(G.apply(A,'travel',{z:0},{}).ok);now+=4000;
+  let r=G.apply(A,'tick',{z:0,f:0,kills:3,wb:0},{});assert.ok(r.ok);assert.equal(r.world,undefined,'kills alone do not touch it');
+  now+=4000;r=G.apply(A,'tick',{z:0,f:0,kills:0,wb:6},{});assert.ok(r.world&&r.world.dmg>0,'blows do');const one=r.world.dmg/6;
+  now+=1000;r=G.apply(A,'tick',{z:0,f:0,kills:0,wb:5000},{});assert.ok(r.world.dmg<=one*(G.WB_BURST+1),'a made-up count is cut to what the clock allows');
+  now+=1000;r=G.apply(A,'tick',{z:0,f:0,kills:0,wb:5000},{});assert.ok(r.world.dmg<=one*(G.WB_RATE+1)*1.01,'and after that, to the rate');
+});
