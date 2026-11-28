@@ -75,7 +75,7 @@ const CLS={
  storm:{n:'מכשפת סער',main:'ene',coef:1.5,combo:'ברק שרשרת',c:'#6fd3ff',wn:'מטה',range:175,sk:['ברק שרשרת','מערבולת','הארת סער','כדור אש','מגן קסם','מטר מטאורים'],al:{ene:.6,agi:.15,vit:.25}},
  // the warlord leads from the middle of the line: he hits less hard than the blade and stands far longer, at every
  // stage of a character's life, with all stats full as much as on the way there, and those who fight beside him stand longer too. He wears a cape where others wear wings.
- lord:{n:'אדון מלחמה',main:'str',coef:1.3,hpMul:1.3,combo:'צו מלחמה',c:'#f2c14e',wn:'שרביט',range:95,sk:['צו מלחמה','שלשלאות פיקוד','דגל המצביא','מהלומת שרביט','חומת מגינים','משפט המלך'],al:{str:.45,vit:.4,agi:.15}},
+ lord:{n:'אדון מלחמה',main:'str',coef:1.3,hpMul:1.3,combo:'שלשלאות אש',c:'#f2c14e',wn:'שרביט',range:95,sk:['שלשלאות אש','כבלי להבה','דגל המצביא','נשיפת החיה','חומת מגינים','סערת שלשלאות'],al:{str:.45,vit:.4,agi:.15}},
  hunter:{n:'צייד צללים',main:'agi',coef:0.62,combo:'מטר חניתות',c:'#8be28b',wn:'חנית',range:235,sk:['מטר חניתות','רשת צללים','עין הנץ','חנית חודרת','צעד צל','מטח הציידים'],al:{agi:.7,vit:.3}}
 };
 const STATN={str:['כוח','נזק ללוחם להב ולאדון מלחמה'],agi:['זריזות','מהירות, קריטי, הגנה'],vit:['חיוניות','חיים והגנה'],ene:['אנרגיה','נזק למכשפת סער']};
@@ -481,6 +481,14 @@ function liveFrom(L,ca,cb){
 }
 function liveNew(A,B,pvp){const D=duelNew(A,B),T=x=>clamp(1/Math.max(.3,x.a),.3,1.2);return liveFrom({pvp:!!pvp,b:[D.f[0].base,D.f[1].base],cr:[D.f[0].cr,D.f[1].cr],T:[T(A),T(B)],pool:[A.h*5,B.h*5]},A.c,B.c);}
 // One move by side i. Returns what happened, or null if the move was not possible right now.
+// Every class has its own combo: the same three moves, each class in its own order, and the last one is the blow that bursts.
+const COMBO={blade:['atk','s0','s1'],storm:['atk','s1','s0'],hunter:['s1','atk','s0'],lord:['s0','atk','s1']};
+function comboAdv(me,c,k,ok){const q=COMBO[c]||COMBO.blade;if(me.cb>0&&k===q[me.cb]&&ok){if(++me.cb===3){me.cb=0;return true;}return false;}me.cb=k===q[0]?1:0;return false;}
+// How much of a blow each class takes from another player: [a plain blow, a skill]. The blade is the wall of the old games:
+// a plain blow barely moves him and it takes a combo to bring him down; the witch and the hunter fall to steady plain blows.
+const PVP_TAKE={blade:[.55,.9],lord:[.8,.95],storm:[1.5,1.06],hunter:[1.4,1.04]},PVP_ATK=[1,.6],pvpTake=(c,k)=>{const a=PVP_TAKE[c];return a?a[k==='atk'?0:1]:1;};
+// Nothing aims for the hand: without a marked enemy a blow lands only on one who stands in front, the way the fighter faces.
+const inFront=(me,e)=>(e.x-me.x)*(me.face<0?-1:1)>=-18;
 function liveAct(D,i,k,rnd){
   if(D.over)return null;const me=D.f[i],en=D.f[1-i],t=D.t,K=DUEL_LIVE,dist=Math.abs(en.x-me.x),rng=LIVE_RNG[me.cls],lane=Math.abs(en.z-me.z)<=LIVE_LANE;
   if((me.stun>t&&!(D.pvp&&k==='pot'))||!(k in me.at)||me.at[k]>t)return null;
@@ -490,8 +498,8 @@ function liveAct(D,i,k,rnd){
   // the press, and the combo in its order bursts, stuns and stops potions for a moment.
   if(D.pvp&&(k==='atk'||k==='s0'||k==='s1')){
     if(dist>rng+(k==='atk'?14:k==='s0'?40:20))return null;const n=t+SG.skT;for(const q of ['atk','s0','s1'])if(me.at[q]<n)me.at[q]=n;
-    if(k==='atk'){me.chain=(me.chain+1)%4;o.fin=me.chain===0;hit(K.pvpM*(o.fin?1.3:.9));}else hit(K.pvpM*SG.skM[k]);
-    const ok=t-me.cbT<=SG.cbMax;if(o.miss)me.cb=0;else if(k==='atk')me.cb=1;else if(k==='s0'&&me.cb===1&&ok)me.cb=2;else if(k==='s1'&&me.cb===2&&ok){me.cb=0;o.combo=true;}else me.cb=0;me.cbT=t;o.cb=me.cb;
+    const tk=pvpTake(en.cls,k);if(k==='atk'){me.chain=(me.chain+1)%4;o.fin=me.chain===0;hit(K.pvpM*tk*PVP_ATK[o.fin?0:1]);}else hit(K.pvpM*tk*SG.skM[k]);
+    const ok=t-me.cbT<=SG.cbMax;if(o.miss)me.cb=0;else if(comboAdv(me,me.cls,k,ok))o.combo=true;me.cbT=t;o.cb=me.cb;
     if(o.combo){if(en.wound>t)o.again=true;else{const ex=D.b[i]*K.pvpM*SG.comboFlat/SG.hit*(o.guard?1-K.sk[2].cut:1);en.hp-=ex;o.dm+=ex;if(!o.guard){en.wound=t+SG.wound;if(!(en.stunI>t)){en.stun=t+K.sk[1].stun;en.stunI=t+K.sk[1].stun+SG.stunGap;o.stun=true;}}}}
     o.hp=[D.f[0].hp,D.f[1].hp];liveOver(D);return o;}
   if(D.pvp&&k==='pot'){if(me.pots<1)return null;me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+SG.heal);o.heal=SG.heal;o.hp=[D.f[0].hp,D.f[1].hp];return o;}
@@ -538,21 +546,21 @@ function brAct(B,i,k,rnd,want){
   if(k==='dash'){me.at.dash=t+K.dash.cd;me.inv=t+K.dash.inv;return o;}
   if(k==='pot'){if(me.pots<1)return null;me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+SG.heal);o.heal=SG.heal;return o;}
   const rng=k==='s3'?BR.leap:BR.rng+(k==='atk'?14:k==='s0'?40:20);let j=-1,bd=1e9;
-  B.f.forEach((e,q)=>{if(q===i||!e.alive)return;const d=brDist(e,me);if(d<=rng&&d<bd){bd=d;j=q;}});
+  B.f.forEach((e,q)=>{if(q===i||!e.alive||!inFront(me,e))return;const d=brDist(e,me);if(d<=rng&&d<bd){bd=d;j=q;}});
   if(want>=0&&want!==i&&want!==j){const w=B.f[want|0];if(w&&w.alive&&brDist(w,me)<=rng)j=want|0;}
   if(j<0)return null;
-  const e=B.f[j];let mult;if(k==='s3'){me.at.s3=t+SG.cd.s3;mult=K.sk[3].m;}else if(k==='atk'){me.chain=(me.chain+1)%4;mult=me.chain===0?1.5:1;}else mult=SG.skM[k];
+  const e=B.f[j];let mult;if(k==='s3'){me.at.s3=t+SG.cd.s3;mult=K.sk[3].m;}else if(k==='atk'){me.chain=(me.chain+1)%4;mult=PVP_ATK[me.chain===0?0:1];}else mult=SG.skM[k];
   if(k!=='s3'){const n=t+SG.skT;for(const q of ['atk','s0','s1'])if(me.at[q]<n)me.at[q]=n;}
   o.to=j;if(Math.abs(e.x-me.x)>4)me.face=e.x>=me.x?1:-1;
   if(k==='s3'){const d=brDist(e,me);if(d>44){me.x=e.x-(e.x-me.x)/d*26;me.y=e.y-(e.y-me.y)/d*26;me.pushT=t+.3;o.jx=[Math.round(me.x),Math.round(me.y)];}} // the great skill leaps onto the enemy
   if(e.inv>t){o.miss=true;me.cb=0;return o;}
   const gear=(a,x)=>BR.hit*(1+.35*a.w)*(1-.15*x.ar);
-  o.crit=rnd()<.1;let dm=gear(me,e)*mult*(o.crit?1.5:1)*(.9+rnd()*.2);if(e.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}
-  {const ok=t-me.cbT<=SG.cbMax&&me.cbTo===j;if(k==='atk')me.cb=1;else if(k==='s0'&&me.cb===1&&ok)me.cb=2;else if(k==='s1'&&me.cb===2&&ok){me.cb=0;o.combo=true;}else me.cb=0;me.cbT=t;me.cbTo=j;o.cb=me.cb;}
+  o.crit=rnd()<.1;let dm=gear(me,e)*mult*pvpTake(e.c,k)*(o.crit?1.5:1)*(.9+rnd()*.2);if(e.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}
+  {const ok=t-me.cbT<=SG.cbMax&&me.cbTo===j;if(k==='s3')me.cb=0;else if(comboAdv(me,me.c,k,ok))o.combo=true;me.cbT=t;me.cbTo=j;o.cb=me.cb;}
   if(o.combo){if(e.wound>t)o.again=true;else{dm=dm*SG.comboM+SG.comboFlat*gear(me,e)/SG.hit*(o.guard?1-K.sk[2].cut:1);if(!o.guard)e.wound=t+SG.wound;}}
   e.hp-=dm;o.dm=dm;if(o.combo&&!o.guard&&!(e.stunI>t)){e.stun=t+K.sk[1].stun;e.stunI=t+K.sk[1].stun+SG.stunGap;o.stun=true;}
   if(o.combo&&!o.guard){const dx=e.x-me.x,dy=e.y-me.y,d=Math.hypot(dx,dy)||1;e.x+=dx/d*BR.push;e.y+=dy/d*BR.push;e.pushT=t+.3;o.px=[Math.round(e.x),Math.round(e.y)];} // the combo throws back: toward the fire, if you aim well
-  if(areaOf(me.c,k)){o.more=[];for(const q of areaList(B,i,j,k,rng,null)){const x=B.f[q],d2=gear(me,x)*mult*SG.areaM*(x.sh>t?1-K.sk[2].cut:1)*(.9+rnd()*.2);x.hp-=d2;const dead=x.hp<=0;if(dead)brKill(B,q,i);o.more.push([q,d2,dead?1:0]);}}
+  if(areaOf(me.c,k)){o.more=[];for(const q of areaList(B,i,j,k,rng,null)){const x=B.f[q],d2=gear(me,x)*mult*pvpTake(x.c,k)*SG.areaM*(x.sh>t?1-K.sk[2].cut:1)*(.9+rnd()*.2);x.hp-=d2;const dead=x.hp<=0;if(dead)brKill(B,q,i);o.more.push([q,d2,dead?1:0]);}}
   if(e.hp<=0){brKill(B,j,i);o.dead=true;}return o;
 }
 function brStep(B,dt,rnd){
@@ -572,10 +580,10 @@ function brStep(B,dt,rnd){
     else if(bd>420&&t<70){if(li){tx=li.x;ty=li.y;go=true;}else go=false;}                 // nobody near yet: keep gearing up
     if(go){const dx=tx-f.x,dy=ty-f.y,d=Math.hypot(dx,dy)||1,st=Math.min(d,sp);f.x+=dx/d*st;f.y+=dy/d*st;if(Math.abs(dx)>4)f.face=(back?-dx:dx)>=0?1:-1;const fr=Math.hypot(f.x,f.y);if(fr>BR.R){f.x*=BR.R/fr;f.y*=BR.R/fr;}}
     if((f.think-=dt)>0)return;f.think=.2+rnd()*.3;
-    const tryK=k=>{const o=brAct(B,i,k,rnd);if(o)ev.push(o);return !!o;};
+    const tryK=k=>{const o=brAct(B,i,k,rnd,j);if(o)ev.push(o);return !!o;},sq=COMBO[f.c]||COMBO.blade;
     if(f.hp<.6&&f.pots>0&&!(f.wound>t)&&tryK('pot')){f.think=.1;return;}if(f.hp<.5&&bd<rng&&rnd()<.25&&tryK('s2'))return;
-    if(f.cs>0){const o=brAct(B,i,f.cs===1?'s0':'s1',rnd);if(o){ev.push(o);f.cs=o.cb===2?2:0;}else f.cs=0;f.think=SG.skT+.05;return;}
-    if(bd<=rng&&rnd()<.35){const o=brAct(B,i,'atk',rnd);if(o){ev.push(o);if(!o.miss){f.cs=1;f.think=SG.skT+.05;}}return;}
+    if(f.cs>0){const o=brAct(B,i,sq[f.cs],rnd,j);if(o){ev.push(o);f.cs=o.cb===2?2:0;}else f.cs=0;f.think=SG.skT+.05;return;}
+    if(bd<=rng&&rnd()<.35){const o=brAct(B,i,sq[0],rnd,j);if(o){ev.push(o);if(!o.miss){f.cs=1;f.think=SG.skT+.05;}}return;}
     if(rnd()<.3&&(tryK('s3')||tryK('s1')||tryK('s0')))return;tryK('atk');});
   if(!B.over&&B.t>=BR.TIME){B.over=1;}
   return ev;
@@ -590,7 +598,7 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:4,respIn:15,respSafe:3,fwd:[[0,1150],[0,550],[0,330]],lsHit:.02,lsBack:60,botStone:1100,back:[0,-60],crownKeep:0,crownPen:1,pots:120,potMax:250,potCd:.25,heal:.08,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.8,.68,.6,.56],potPrice:20,potPack:10,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
+const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:4,respIn:15,respSafe:3,fwd:[[0,1150],[0,550],[0,330]],lsHit:.02,lsBack:60,botStone:1100,back:[0,-60],crownKeep:0,crownPen:1,pots:120,potMax:250,potCd:.25,heal:.08,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.8,.68,.6,.56],potPrice:20,potPack:10,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,ff:.2,ffN:4,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.012,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   // a wide castle: room to fight in the yard and in the throne room without everyone standing on everyone
@@ -655,7 +663,7 @@ function sgBot(B,i,dt,rnd,ev){
   if(chase){tx=e.x;ty=e.y;stop=rng*.8;}else{const p=sgRoute(f,dest);tx=p[0];ty=p[1];stop=spot?10:6;}
   {const dx=tx-f.x,dy=ty-f.y,d=Math.hypot(dx,dy);if(d>stop&&!(f.pushT>t)){const st=Math.min(d-stop+1,BR.spd*dt);sgMove(B,f,f.x+dx/d*st,f.y+dy/d*st);if(Math.abs(dx)>4)f.face=dx>=0?1:-1;}}
   if((f.think-=dt)>0)return;f.think=.12+rnd()*.1;
-  const act=k=>{const o=sgAct(B,i,k,rnd);if(o&&!o.no){ev.push(o);return o;}return null;},can=k=>f.at[k]<=t;
+  const sq=COMBO[f.c]||COMBO.blade,act=(k,cb)=>{if(!cb&&j>=0&&areaOf(f.c,k)&&areaList(B,i,j,k,rng+40,null,true).length)return null;const o=sgAct(B,i,k,rnd,j);if(o&&!o.no){ev.push(o);return o;}return null;},can=k=>f.at[k]<=t;
   if(f.hp<.55&&f.pots>0&&can('pot')&&!(f.wound>t)&&act('pot'))return;
   if(f.hp<.3&&e&&bd<rng+40&&can('dash'))act('dash');
   if(!mine&&can('use')){if(q>=0&&spot&&S.swBy[q]<0&&S.swp[q][2]!==i){act('use');return;}if(role==='lead'&&spot&&S.crown[2]!==i){act('use');return;}}
@@ -669,8 +677,8 @@ function sgBot(B,i,dt,rnd,ev){
   // an enemy who stands on a switch or on the crown is shoved off it
   if(can('bash')&&bd<=rng+30&&(sgNear(e,SG.sw[0],SG.zone)||sgNear(e,SG.sw[1],SG.zone)||sgNear(e,SG.crown,SG.zone))&&!(e.sh>t)&&act('bash'))return;
   // the combo: a blow, then the quick skill, then the stunning one, each in its time; the less skilled just strike
-  if(f.cs>0){if(t<f.cn)return;const o=act(f.cs===1?'s0':'s1');if(o&&o.cb===2){f.cs=2;f.cn=t+SG.cbMin+.05+rnd()*.2;}else f.cs=0;return;}
-  if(can('atk')&&f.at.s0<=t+.5&&f.at.s1<=t+1.1&&rnd()<(f.sk||.5)){const o=act('atk');if(o&&o.to>=0&&!o.miss){f.cs=1;f.cn=t+SG.cbMin+.05+rnd()*.2;}return;}
+  if(f.cs>0){if(t<f.cn)return;const o=act(sq[f.cs],1);if(o&&o.cb===2){f.cs=2;f.cn=t+SG.cbMin+.05+rnd()*.2;}else f.cs=0;return;}
+  if(can('atk')&&f.at.s0<=t+.5&&f.at.s1<=t+1.1&&rnd()<(f.sk||.5)){const o=act(sq[0],1);if(o&&o.to>=0&&!o.miss){f.cs=1;f.cn=t+SG.cbMin+.05+rnd()*.2;}return;}
   if(can('s3')&&rnd()<.5&&act('s3'))return;
   if(rnd()>(f.sk||.5))for(const k of ['s1','s0'])if(can(k)&&act(k))return;
   if(can('atk'))act('atk');
@@ -680,9 +688,9 @@ function sgGang(e,i,t){const hb=e.hb||(e.hb={});let n=0;for(const k in hb){if(t-
 // Each class has one skill that strikes more than one: the blade sweeps all around himself, the witch's storm bursts around
 // her enemy, the hunter's volley finds the nearest few in his reach. The others take a part of the blow, and no combo.
 const areaOf=(c,k)=>(c==='blade'&&k==='s0')||((c==='storm'||c==='lord')&&k==='s1')||(c==='hunter'&&k==='s0'),atFoe=c=>c==='storm'||c==='lord'; // the warlord's judgement falls around his enemy, as the witch's storm does
-function areaList(B,i,j,k,rng,sees){const me=B.f[i],e=B.f[j],t=B.t,L=[];B.f.forEach((x,q)=>{if(q===i||q===j||!x.alive||(me.g!==undefined&&x.g===me.g)||x.inv>t)return;
+function areaList(B,i,j,k,rng,sees,own){const me=B.f[i],e=B.f[j],t=B.t,L=[];B.f.forEach((x,q)=>{if(q===i||q===j||!x.alive||(me.g!==undefined&&(x.g===me.g)!==!!own)||(own&&me.g===undefined)||x.inv>t)return;
     const d=atFoe(me.c)?brDist(x,e):brDist(x,me),lim=atFoe(me.c)?(me.c==='lord'?SG.areaR*.75:SG.areaR):me.c==='blade'?Math.min(rng,LIVE_RNG.blade+SG.areaB+14):rng;if(d<=lim&&(!sees||sees(x)))L.push([d,q]);});
-  return L.sort((a,b)=>a[0]-b[0]).slice(0,me.c==='hunter'?2:SG.areaN).map(x=>x[1]);}
+  return L.sort((a,b)=>a[0]-b[0]).slice(0,own?SG.ffN:me.c==='hunter'?2:SG.areaN).map(x=>x[1]);}
 function sgAct(B,i,k,rnd,want){
   const me=B.f[i],t=B.t,K=DUEL_LIVE;if(B.over||t<0||!me||!me.alive||(me.stun>t&&k!=='pot')||!(k in me.at)||me.at[k]>t)return null;
   const o={by:i,k:k,to:-1,dm:0,crit:false,miss:false,stun:false,dead:false,heal:0};
@@ -696,10 +704,10 @@ function sgAct(B,i,k,rnd,want){
   if(k==='pot'){if(me.pots<1)return null;me.at.pot=t+SG.potCd;me.pots--;me.hp=Math.min(1,me.hp+SG.heal);o.heal=SG.heal;return o;}
   // the great skill is a leap: it reaches far, and carries the attacker onto his enemy
   const rng=k==='s3'?Math.max(SG.leap,LIVE_RNG[me.c]+60):LIVE_RNG[me.c]+(k==='atk'?14:k==='bash'?30:k==='s0'?40:20),au=sgBuff(me,t);let j=-1,bd=1e9;
-  B.f.forEach((e,q)=>{if(q===i||!e.alive||e.g===me.g)return;const d=brDist(e,me);if(d<=rng&&d<bd&&sgSees(B,me,e)){bd=d;j=q;}});
+  B.f.forEach((e,q)=>{if(q===i||!e.alive||e.g===me.g||!inFront(me,e))return;const d=brDist(e,me);if(d<=rng&&d<bd&&sgSees(B,me,e)){bd=d;j=q;}});
   // the enemy he chose, if he is in reach and in sight; otherwise the nearest
   if(want>=0&&want!==i&&want!==j){const w=B.f[want|0];if(w&&w.alive&&w.g!==me.g&&brDist(w,me)<=rng&&sgSees(B,me,w))j=want|0;}
-  let mult;const cool=()=>{if(k==='atk'){me.at.atk=t+me.T*au.spd;me.chain=(me.chain+1)%4;mult=me.T/1.5*(me.chain===0?1.5:.84)*1.5;}else if(k==='bash'){me.at.bash=t+SG.bashCd;mult=SG.bashM;}else if(k==='s3'){me.at.s3=t+SG.cd.s3;mult=K.sk[3].m;}
+  let mult;const cool=()=>{if(k==='atk'){me.at.atk=t+me.T*au.spd;me.chain=(me.chain+1)%4;mult=PVP_ATK[me.chain===0?0:1];}else if(k==='bash'){me.at.bash=t+SG.bashCd;mult=SG.bashM;}else if(k==='s3'){me.at.s3=t+SG.cd.s3;mult=K.sk[3].m;}
     // As in the old games the fighting skills wait for nothing but the hand: one beat between blows, shared by all of them
     else{mult=SG.skM[k];}
     if(k==='atk'||k==='s0'||k==='s1'){const n=t+SG.skT*au.spd;for(const q of ['atk','s0','s1'])if(me.at[q]<n)me.at[q]=n;}};
@@ -713,12 +721,12 @@ function sgAct(B,i,k,rnd,want){
   // Each character's own numbers decide, as in the old sieges: a beginner barely scratches a finished character and
   // falls to him in a few blows. Between equals nothing is decided by numbers: potions and combos decide.
   const raw=(x,y)=>x.d*300/(300+y.def)/y.pool,rel=Math.sqrt(raw(me,e)/Math.max(1e-9,raw(e,me)));
-  o.crit=rnd()<me.cr;const base=clamp(SG.hit*Math.pow(rel,SG.gam),SG.hitMin,SG.hitMax);let dm=base*mult*au.dmg*sgBuff(e,t).def*(o.crit?Math.min(SG.critMax,1+(me.cdm-1)*.5):1)*(.9+rnd()*.2);
+  o.crit=rnd()<me.cr;const base=clamp(SG.hit*Math.pow(rel,SG.gam),SG.hitMin,SG.hitMax);let dm=base*mult*pvpTake(e.c,k)*au.dmg*sgBuff(e,t).def*(o.crit?Math.min(SG.critMax,1+(me.cdm-1)*.5):1)*(.9+rnd()*.2);
   // A combo, as the old games had it: one fixed order on one enemy, a plain blow, then the quick skill, then the
   // stunning one, each neither too soon after the last nor too late. Anything else in between breaks it, so pressing
   // everything at once gives nothing. The last blow bursts, stuns, throws back and stops potions for a moment.
   {const gap=t-me.cbT,ok=gap>=SG.cbMin&&gap<=SG.cbMax&&me.cbTo===j;
-    if(k==='atk')me.cb=1;else if(k==='s0'&&me.cb===1&&ok)me.cb=2;else if(k==='s1'&&me.cb===2&&ok){me.cb=0;o.combo=true;}else me.cb=0;
+    if(k==='s3'||k==='bash')me.cb=0;else if(comboAdv(me,me.c,k,ok))o.combo=true;
     me.cbT=t;me.cbTo=j;o.cb=me.cb;}
   if(e.sh>t){dm*=1-K.sk[2].cut;o.guard=true;}
   // one burst at a time: an enemy still wounded by a combo takes the next one as a plain strong blow, so three players cannot erase one in a breath
@@ -727,8 +735,13 @@ function sgAct(B,i,k,rnd,want){
   // A crowd still wins, but not in a breath, and the one in the middle has time to drink and to be helped.
   {const n=sgGang(e,i,t);if(n>0){dm*=SG.gang[Math.min(n,SG.gang.length)-1];o.gang=n+1;}}
   if(areaOf(me.c,k)){o.more=[];for(const q of areaList(B,i,j,k,rng,x=>sgSees(B,me,x))){const x=B.f[q],r2=Math.sqrt(raw(me,x)/Math.max(1e-9,raw(x,me)));
-      let d2=clamp(SG.hit*Math.pow(r2,SG.gam),SG.hitMin,SG.hitMax)*mult*SG.areaM*au.dmg*sgBuff(x,t).def*(x.sh>t?1-K.sk[2].cut:1)*(.9+rnd()*.2);const n=sgGang(x,i,t);if(n>0)d2*=SG.gang[Math.min(n,SG.gang.length)-1];
-      x.hp-=d2;const dead=x.hp<=0;if(dead)sgDown(B,q,i);o.more.push([q,d2,dead?1:0]);}}
+      let d2=clamp(SG.hit*Math.pow(r2,SG.gam),SG.hitMin,SG.hitMax)*mult*pvpTake(x.c,k)*SG.areaM*au.dmg*sgBuff(x,t).def*(x.sh>t?1-K.sk[2].cut:1)*(.9+rnd()*.2);const n=sgGang(x,i,t);if(n>0)d2*=SG.gang[Math.min(n,SG.gang.length)-1];
+      x.hp-=d2;const dead=x.hp<=0;if(dead)sgDown(B,q,i);o.more.push([q,d2,dead?1:0]);}
+    // As in the old sieges an area skill does not choose: a guildmate standing in it takes a fifth of the blow. He is never
+    // stunned or thrown by it and a combo adds nothing, but it can be the blow that drops him, and nobody is credited for that.
+    for(const q of areaList(B,i,j,k,rng,x=>sgSees(B,me,x),true)){const x=B.f[q],r2=Math.sqrt(raw(me,x)/Math.max(1e-9,raw(x,me)));
+      const d2=clamp(SG.hit*Math.pow(r2,SG.gam),SG.hitMin,SG.hitMax)*mult*pvpTake(x.c,k)*SG.areaM*SG.ff*au.dmg*sgBuff(x,t).def*(x.sh>t?1-K.sk[2].cut:1)*(.9+rnd()*.2);
+      x.hp-=d2;const dead=x.hp<=0;if(dead)sgDown(B,q,-1);o.more.push([q,d2,dead?1:0,1]);}}
   // and nobody is kept stunned without end: after a stun wears off, a moment passes before the next can land
   e.hp-=dm;o.dm=dm;if(o.combo&&!o.guard&&!(e.stunI>t)){e.stun=t+K.sk[1].stun;e.stunI=t+K.sk[1].stun+SG.stunGap;o.stun=true;}
   // blows that move: the quick skill and the combo throw the enemy back a little, unless he stands behind his shield
@@ -833,7 +846,18 @@ function siegeInfo(now){
 const PARTY_XP=.05; // extra XP for each active party member on the same map beyond the second player, party of up to 5
 const partyXp=n=>PARTY_XP*Math.max(0,Math.min(4,n|0)-1); // extra XP per active party member in the same map, up to 3
 const GOLD_SHOP=[{k:'gem',t:'אבן נשמה',d:'חומר לשדרוג ציוד',cost:5000},{k:'box',t:'תיבת אוצר',d:'פריט מהמפה הגבוהה שפתחת, אבנים או זהב',cost:40000},{k:'ticket',t:'כרטיס זירה',d:'קרב נוסף',cost:10000},{k:'scroll',t:'מגילת ניסיון',d:'50% יותר ניסיון למשך 30 דקות',cost:200000}];
-const RESET_SHOP=[{k:'charm',t:'3 קמעות הגנה',d:'שדרוג שנכשל לא מוריד דרגה',cost:6},{k:'bless',t:'ברכת נצח',d:'5% יותר ניסיון לתמיד לכל הדמויות, עד 10 פעמים',cost:8},{k:'pts',t:'50 נקודות סטט',d:'לדמות הנוכחית, נשארות לתמיד',cost:10},{k:'jewel',t:'אבן שלמות',d:'מוסיפה אופציה חסרה לפריט אקסלנט',cost:6},{k:'abox',t:'תיבה עתיקה',d:'פריט אגדי או עתיק מהמפה הגבוהה שפתחת',cost:12},{k:'feather',t:'נוצת נצח',d:'מפתחת כנפיים +15 לדרגה הבאה',cost:12},{k:'areset',t:'3 ריסטים אוטומטיים',d:'כשהדמות מגיעה לרמה 400 בזמן שאתה לא מחובר, היא עושה ריסט לבד וממשיכה להתאמן. ריסט כזה נותן חצי מהאותות',cost:75}];
+// The reset shop opens shelf by shelf: every shelf asks for more resets on the account's best character, so each
+// reset is worth more than its strength. need = resets to open it, wk = how many a week, max = how many ever.
+const RESET_SHOP=[{k:'charm',t:'3 קמעות הגנה',d:'שדרוג שנכשל לא מוריד דרגה',cost:6,need:1},{k:'jewel',t:'אבן שלמות',d:'מוסיפה אופציה חסרה לפריט אקסלנט',cost:6,need:1},{k:'pts',t:'50 נקודות סטט',d:'לדמות הנוכחית, נשארות לתמיד',cost:10,need:1},{k:'bless',t:'ברכת נצח',d:'5% יותר ניסיון לתמיד לכל הדמויות, עד 10 פעמים',cost:8,need:1},
+ {k:'abox',t:'תיבה עתיקה',d:'פריט אגדי או עתיק מהמפה הגבוהה שפתחת',cost:12,need:5},{k:'feather',t:'נוצת נצח',d:'מפתחת כנפיים +15 לדרגה הבאה',cost:12,need:5},{k:'scroll3',t:'3 מגילות ניסיון',d:'שעה וחצי של 50% יותר ניסיון',cost:10,need:5,wk:3},{k:'ticket5',t:'5 כרטיסי זירה',d:'חמישה קרבות נוספים',cost:5,need:5,wk:4},
+ {k:'areset',t:'3 ריסטים אוטומטיים',d:'כשהדמות מגיעה לרמה 400 בזמן שאתה לא מחובר, היא עושה ריסט לבד וממשיכה להתאמן. ריסט כזה נותן חצי מהאותות',cost:75,need:10},{k:'rpet2',t:'שועל רפאים',d:'חיית מחמד לארבעה ימים',cost:20,need:10,wk:2,bag:1},{k:'sbox3',t:'3 תיבות עונה',d:'15% לחלק סט עתיק בכל תיבה, אחרת נדיר או אגדי',cost:15,need:10,wk:5},
+ {k:'exbox',t:'תיבת אקסלנט',d:'פריט אגדי או עתיק מהמפה הגבוהה שפתחת, תמיד אקסלנט',cost:60,need:20,wk:2,bag:1},{k:'rpet3',t:'דרקון צעיר',d:'חיית מחמד לשבועיים',cost:80,need:20,wk:1,bag:1},
+ {k:'anbox',t:'תיבת עתיק',d:'פריט עתיק מהמפה הגבוהה שפתחת, בטוח',cost:45,need:30,wk:3,bag:1},{k:'pts2',t:'250 נקודות סטט',d:'לדמות הנוכחית, נשארות לתמיד. עד 10 פעמים',cost:40,need:30,max:10},
+ {k:'exanc',t:'עתיק אקסלנט',d:'פריט עתיק אקסלנט מהמפה הגבוהה שפתחת',cost:140,need:40,wk:1,bag:1},
+ {k:'pts3',t:'600 נקודות סטט',d:'לדמות הנוכחית, נשארות לתמיד. עד 5 פעמים',cost:90,need:50,max:5}];
+const topResets=A=>A.chars.reduce((n,c)=>Math.max(n,c.resets|0),0);
+// how many of a shelf item may still be bought: [left this week or -1, left ever or -1]
+function resetLeft(A,o){const wk=A.week&&A.week.key===weekKey()&&A.week.rs||{},lb=A.rsb||{};return [o.wk?Math.max(0,o.wk-(wk[o.k]|0)):-1,o.max?Math.max(0,o.max-(lb[o.k]|0)):-1];}
 // The ancient city has its own coin. Ancient points fall only from kills made by hand inside the city, a few a day and
 // no more than CITY_WEEK a week, and buy only in the city's shop, which is open only while the guild holds the castle.
 // The strongest thing on sale takes about twelve weeks of holding the castle.
@@ -1148,7 +1172,20 @@ function apply(A,kind,args,ctx){
       if(shop==='city'&&!_castle)return fail('החנות פתוחה רק לגילדה שמחזיקה בטירה');
       const o=list&&list.find(x=>x.k===k);if(!o)return fail('המוצר לא קיים');
       if(shop==='prem'&&(k==='wsk1'||k==='wsk2')){const id=k==='wsk1'?1:2;A.wsk=Array.isArray(A.wsk)?A.wsk:[];if(A.wsk.indexOf(id)>=0){A.wskOn=(A.wskOn|0)===id?0:id;r.bought=o.t;r.free=true;break;}if(!((A.prem||0)>=o.cost))return fail('אין מספיק');A.prem-=o.cost;A.wsk.push(id);A.wskOn=id;r.bought=o.t;break;} // owned: wearing it or taking it off costs nothing
+      if(shop==='reset'){const lf=resetLeft(A,o);if(o.need&&topResets(A)<o.need)return fail('נפתח בריסט '+o.need);if(lf[0]===0)return fail('הגעת למגבלה השבועית');if(lf[1]===0)return fail('הגעת למקסימום');}
       if(!((A[cur]||0)>=o.cost))return fail('אין מספיק');
+      if(shop==='reset'){
+        if(o.bag&&S.inv.length>=BAG)return fail('התיק מלא. פנה מקום כדי לקנות');
+        if(k==='bless'&&A.bless>=10)return fail('הגעת למקסימום');if(k==='areset'&&(A.areset|0)+ARESET_PACK>ARESET_MAX)return fail('הגעת למקסימום');
+        if(o.wk){const w=ensureWeek(A);w.rs=w.rs||{};w.rs[k]=(w.rs[k]|0)+1;}if(o.max){A.rsb=A.rsb||{};A.rsb[k]=(A.rsb[k]|0)+1;}
+        const zi=Math.min(S.open,BASEZ-1),box=(r4,ex)=>{const it=makeItem(S,rslot(),tierOf(zi),r4?4:3,zi);if(ex)makeExcellent(it);return {it:it,where:gainItem(S,it)};};
+        if(k==='ticket5'){A.cred-=o.cost;A.tickets+=5;r.bought=o.t;break;}
+        if(k==='sbox3'){A.cred-=o.cost;A.sboxes+=3;r.bought=o.t;break;}
+        if(k==='rpet2'||k==='rpet3'){A.cred-=o.cost;const it=makePet(S,k==='rpet2'?2:3);S.inv.push(it);r.bought=o.t;r.item=it;break;}
+        if(k==='exbox'){A.cred-=o.cost;r.box=box(_rnd()<.25,true);break;}
+        if(k==='anbox'){A.cred-=o.cost;r.box=box(true,_rnd()<.2);break;}
+        if(k==='exanc'){A.cred-=o.cost;r.box=box(true,true);break;}
+        if(k==='pts2'||k==='pts3'){const n=k==='pts2'?250:600;A.cred-=o.cost;A.bonusPts+=n;S.pts+=n;if(S.autoPts)autoAlloc(S);r.bought=o.t;break;}}
       if(shop==='city'){
         if(S.inv.length>=BAG)return fail('התיק מלא. פנה מקום כדי לקנות');
         if(k==='cbox'){A.anc-=o.cost;r.box=openBox(S,'a');break;}
@@ -1248,4 +1285,4 @@ function apply(A,kind,args,ctx){
   return r;
 }
 
-export {VOID_STEP,VOID_SET,VOID_TIER,VOID_RAR,CAPEN,WSKIN,wskinOn,bankCap,PET_PERM,nameBad,NAME_MIN,PETN2,petName,sgCamp,areaOf,sgShield,sgBot,sgRoute,sgNear,LIVE_SURV,CLEAN_DAY,livePlausible,CITY_SHOP,CITY_WEEK,CITY_RATE,CITY_TIER,CITY_RAR,CITY_PERFECT,BANK,sgBuff,sgSees,EXB,exCount,SIEGE_MIN,RESET_RAR,keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};
+export {topResets,resetLeft,COMBO,PVP_TAKE,pvpTake,inFront,VOID_STEP,VOID_SET,VOID_TIER,VOID_RAR,CAPEN,WSKIN,wskinOn,bankCap,PET_PERM,nameBad,NAME_MIN,PETN2,petName,sgCamp,areaOf,sgShield,sgBot,sgRoute,sgNear,LIVE_SURV,CLEAN_DAY,livePlausible,CITY_SHOP,CITY_WEEK,CITY_RATE,CITY_TIER,CITY_RAR,CITY_PERFECT,BANK,sgBuff,sgSees,EXB,exCount,SIEGE_MIN,RESET_RAR,keepStart,keepGate,keepLive,SG,sgBlocked,sgMove,sgNew,sgAdd,sgAct,sgStep,sgDown,sgReward,sgSpawn,brDist,brSpeed,brCan,PETN,PET_DAYS,PET_BOX,PET_AF,makePet,petOn,petRoll,afkEta,ARESET_PACK,ARESET_MAX,autoReset,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,setBoost,boostNow,brKill,JEW,JEWV,jewBase,JEW_RATE,jewelDrop,BR,brNew,brAct,brStep,brRing,brRank,brBots,brReward,brWindow,brAlive,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,PERFECT_BOSS,PERFECT_ELITE,PERFECT_TOWER,PERFECT_FLOOR,perfectDrop,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveNew,liveAct,liveOver,WORLD_BASE,worldReward,DUEL_LIVE,RESPEC_COST,WEEKLY,SIDEQ,EGGS,pickOf,PICK_KEYS,ensureWeek,reqOf,canWear,lacks,WING_MAX,wingFeathers,wingChance,DUEL_ROUNDS,DUEL_POTS,duelNew,duelCan,duelRound,duelAI,duelSettle,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,makeExcellent,addOpt,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,cleanAuras,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM};

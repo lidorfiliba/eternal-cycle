@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261128092208';
+const BUILD='20261128094610';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,wskinOn,CAPEN,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -497,7 +497,40 @@ function drawForm(key,an,fi,x,y,bx,by,k,sc,bh,look,t,flip,front,anim){
     const n=Math.min(12,pf*2);for(let i=0;i<n;i++){const a=t*1.8+i*6.28/n,px=bx+Math.cos(a)*26*sc,py=by-H*.5+Math.sin(a)*H*.42+Math.sin(a*2)*4;ctx.globalAlpha=Math.sin(a)>0?.95:.4;ctx.fillStyle=PRISM[(i+Math.floor(t*4))%6];ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=10;ctx.beginPath();ctx.arc(px,py,2.2*sc,0,7);ctx.fill();}}
   ctx.restore();
 }
+// The warlord rides. His beast is drawn under him: a great dark war-beast in gilded plate, mane and tail of fire, and
+// it fights with him: its head lunges with his blows and on his skills it breathes fire.
+const MOUNT_UP=34,MOUNT_SC=.86;
+function drawMount(x,y,sc,t,flip,mv,anim,sk,front){
+  const f=flip?-1:1,u=sc,X=q=>x+f*q*u,Y=q=>y-q*u,run=mv?Math.sin(t*13):0,bob=mv?Math.abs(Math.sin(t*13))*2.5*u:Math.sin(t*2.4)*.8*u,lunge=anim>0?Math.sin((1-anim)*Math.PI)*9:0,FIRE='#ff7a2e';
+  ctx.save();
+  if(!front){
+    ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(x,y+1,44*u,7*u,0,0,7);ctx.fill();
+    // far legs, then the tail of fire, then the body
+    const leg=(bx,ph,col,w)=>{const sw=run?Math.sin(t*13+ph)*9:0,lift=run?Math.max(0,Math.cos(t*13+ph))*5:0;ctx.strokeStyle=col;ctx.lineWidth=w*u;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(X(bx),Y(24)-bob);ctx.lineTo(X(bx+sw*.4),Y(12+lift));ctx.lineTo(X(bx+sw),Y(lift));ctx.stroke();
+      if(!LITE){ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.55+.25*Math.sin(t*9+ph);ctx.fillStyle=FIRE;ctx.beginPath();ctx.ellipse(X(bx+sw),Y(lift+1),6*u,3*u,0,0,7);ctx.fill();ctx.restore();}};
+    leg(-20,2.2,'#120c18',6);leg(20,.6,'#120c18',6);
+    if(!LITE){ctx.save();ctx.globalCompositeOperation='lighter';for(let q=0;q<5;q++){const w=Math.sin(t*8+q*1.3)*4;ctx.globalAlpha=.7-q*.11;ctx.fillStyle=q<2?'#ffd75e':FIRE;ctx.beginPath();ctx.moveTo(X(-32),Y(40)-bob);ctx.quadraticCurveTo(X(-46-q*5),Y(46+w)-bob,X(-52-q*6),Y(30-q*5+w)-bob);ctx.quadraticCurveTo(X(-42-q*3),Y(32)-bob,X(-32),Y(32)-bob);ctx.fill();}ctx.restore();}
+    const g=ctx.createLinearGradient(0,Y(50),0,Y(20));g.addColorStop(0,'#3a2a48');g.addColorStop(1,'#140e1c');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(x,Y(35)-bob,36*u,14*u,0,0,7);ctx.fill();
+    ctx.beginPath();ctx.ellipse(X(-22),Y(36)-bob,16*u,15*u,0,0,7);ctx.fill();ctx.beginPath();ctx.ellipse(X(24),Y(38)-bob,15*u,15*u,0,0,7);ctx.fill();
+    leg(-26,0,'#241a2e',7);leg(14,3.6,'#241a2e',7);
+    ctx.restore();return;}
+  // in front of the rider: the saddle cloth over his legs, the plated neck and head, the mane of fire, the breath
+  ctx.fillStyle='#7a1626';ctx.strokeStyle='#f2c14e';ctx.lineWidth=1.6*u;ctx.beginPath();ctx.moveTo(X(-15),Y(50)-bob);ctx.lineTo(X(15),Y(50)-bob);ctx.lineTo(X(18),Y(26)-bob);ctx.lineTo(X(0),Y(20)-bob);ctx.lineTo(X(-18),Y(26)-bob);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#f2c14e';ctx.beginPath();ctx.moveTo(X(0),Y(42)-bob);ctx.lineTo(X(5),Y(35)-bob);ctx.lineTo(X(0),Y(28)-bob);ctx.lineTo(X(-5),Y(35)-bob);ctx.closePath();ctx.fill();
+  const hx=X(50+lunge),hy=Y(60-lunge*.5)-bob;
+  ctx.strokeStyle='#241a2e';ctx.lineWidth=17*u;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(X(28),Y(42)-bob);ctx.quadraticCurveTo(X(36),Y(58)-bob,hx-f*6*u,hy+3*u);ctx.stroke();
+  ctx.strokeStyle='#f2c14e';ctx.lineWidth=2*u;ctx.beginPath();ctx.moveTo(X(22),Y(50)-bob);ctx.quadraticCurveTo(X(31),Y(40)-bob,X(38),Y(34)-bob);ctx.stroke();
+  ctx.save();ctx.translate(hx,hy);ctx.scale(f,1);ctx.rotate(.5-lunge*.02);
+  ctx.fillStyle='#2c2038';ctx.beginPath();ctx.ellipse(4*u,0,13*u,7.5*u,0,0,7);ctx.fill();ctx.fillStyle='#f2c14e';ctx.beginPath();ctx.moveTo(-6*u,-7*u);ctx.lineTo(12*u,-6*u);ctx.lineTo(15*u,-1*u);ctx.lineTo(-4*u,-2*u);ctx.closePath();ctx.fill(); // the gilded face plate
+  ctx.fillStyle='#e9e2f5';ctx.beginPath();ctx.moveTo(-5*u,-7*u);ctx.lineTo(-9*u,-19*u);ctx.lineTo(-1*u,-8*u);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(2*u,-7*u);ctx.lineTo(1*u,-16*u);ctx.lineTo(6*u,-7*u);ctx.closePath();ctx.fill(); // horns
+  ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle='#ff3b2e';ctx.shadowColor='#ff3b2e';ctx.shadowBlur=LITE?0:8;ctx.beginPath();ctx.arc(5*u,-3*u,2*u,0,7);ctx.fill();ctx.restore();
+  if(anim>0&&!LITE){const p=Math.sin((1-anim)*Math.PI),L=(sk?80:34)*u*p;ctx.save();ctx.globalCompositeOperation='lighter';for(let q=0;q<3;q++){const gr=ctx.createLinearGradient(14*u,0,14*u+L,0);gr.addColorStop(0,q?'#ffd75e':'#fff');gr.addColorStop(.5,FIRE);gr.addColorStop(1,'transparent');ctx.fillStyle=gr;ctx.globalAlpha=.75*p;ctx.beginPath();ctx.moveTo(14*u,2*u);ctx.quadraticCurveTo(14*u+L*.6,(-10-q*6)*u*p+Math.sin(t*30+q)*3,14*u+L,(q-1)*12*u*p);ctx.quadraticCurveTo(14*u+L*.6,(12+q*5)*u*p,14*u,5*u);ctx.fill();}ctx.restore();}
+  ctx.restore();
+  if(!LITE){ctx.save();ctx.globalCompositeOperation='lighter';for(let q=0;q<6;q++){const u2=q/5,mx=X(26+u2*20+lunge*u2),my=Y(46+u2*18-lunge*.4*u2)-bob,fl=(9+Math.sin(t*10+q*1.7)*4)*u;ctx.globalAlpha=.75;ctx.fillStyle=q%2?'#ffd75e':FIRE;ctx.beginPath();ctx.moveTo(mx-4*u,my);ctx.quadraticCurveTo(mx-f*6*u,my-fl*1.5,mx+4*u,my);ctx.fill();}ctx.restore();}
+  ctx.restore();
+}
 function drawHero(x,y,sc,look,t,anim,flip,dead,mv,fury){
+  if(look.c==='lord'&&!dead&&!look.spr&&!drawHero.rid){drawMount(x,y,sc,t,flip,mv,anim,look.sk,false);drawHero.rid=1;try{drawHero(x,y-MOUNT_UP*sc,sc*MOUNT_SC,look,t,anim,flip,dead,false,fury);}finally{drawHero.rid=0;}drawMount(x,y,sc,t,flip,mv,anim,look.sk,true);return;}
   const key=look.spr||CLSSPR[look.c],m=SPR[key],k=2*sc,cl=CLS[look.c]||CLS.blade;
   const maxP=Math.max(look.w?look.w[2]:0,look.ar?look.ar[2]:0,look.g?look.g[2]:0);
   const gc=fury?'#ffd75e':gearColor(look.w||look.ar||look.g,t,cl.c);
@@ -648,12 +681,14 @@ function castArt(m,col){
 // Each class's two fighting skills have a look of their own. In a crowd only the blows that touch me are drawn in full.
 function skillFx(cls,k,ax,g,vx,ge,face,c,full){
   if(cls==='lord'&&full){
-    if(k==='s0'){ // the order of war: a golden wave rolls out from his raised scepter, banners of light at his sides
-      for(let q=0;q<3;q++)SC.fx.push({k:'ring',x:ax,y:g-6,life:.35+q*.14,c:q===1?'#fff':c,r:60+q*46});for(const q of [-1,1])SC.fx.push({k:'pillar',x:ax+q*30,y:g,life:.4,d:.4,c:c});
-      SC.fx.push({k:'wave',x:ax+face*10,y:g,dir:face,dist:Math.min(240,Math.abs(vx-ax)+70),h:86,life:.32,d:.32,c:c});SC.fx.push({k:'flash',x:vx,y:ge-30,r:50,life:.22,d:.22,c:'#fff'});burst(vx,ge-30,c,12);}
-    else{ // the king's judgement: a crown of light falls on the enemy and bursts around him
-      SC.fx.push({k:'met',x0:vx,y0:ge-260,x:vx,y:ge-10,life:.22,d:.22,c:'#fff'});for(let q=0;q<6;q++){const a=q*Math.PI/3;SC.fx.push({k:'pillar',x:vx+Math.cos(a)*54,y:ge+Math.sin(a)*6,life:.4+q*.03,d:.5,c:q%2?c:'#fff'});}
-      SC.fx.push({k:'rune',x:vx,y:ge-2,r:92,life:.8,d:.8,c:c});SC.fx.push({k:'star',x:vx,y:ge-70,r:44,rot:0,life:.5,d:.5,c:c});SC.fx.push({k:'ring',x:vx,y:ge-4,life:.6,c:'#fff',r:120});burst(vx,ge-40,c,20);}
+    const F='#ff7a2e';
+    if(k==='s0'){ // chains of fire: three of them lash out from his hand and wrap the enemy
+      for(const q of [-1,0,1])SC.fx.push({k:'chain',x1:ax+face*14,y1:g-92+q*8,x2:vx+q*10,y2:ge-34+q*16,life:.3+Math.abs(q)*.05,d:.35});
+      SC.fx.push({k:'ring',x:vx,y:ge-8,life:.35,c:F,r:54});SC.fx.push({k:'flash',x:vx,y:ge-30,r:50,life:.22,d:.22,c:'#ffd75e'});burst(vx,ge-30,F,14);}
+    else{ // the beast's breath: it stamps, fire runs along the ground to the enemy and rises around him, and chains fall on those beside him
+      SC.fx.push({k:'wave',x:ax+face*30,y:g,dir:face,dist:Math.min(280,Math.abs(vx-ax)+80),h:90,life:.34,d:.34,c:F});for(let q=0;q<2;q++)SC.fx.push({k:'ring',x:ax+face*26,y:g-4,life:.3+q*.1,c:q?'#ffd75e':F,r:40+q*26});
+      for(let q=0;q<6;q++){const a=q*Math.PI/3;SC.fx.push({k:'chain',x1:vx+Math.cos(a)*120,y1:ge-200,x2:vx+Math.cos(a)*44,y2:ge-10+Math.sin(a)*6,life:.4+q*.03,d:.5});}
+      SC.fx.push({k:'pillar',x:vx,y:ge,life:.4,d:.5,c:F});SC.fx.push({k:'ring',x:vx,y:ge-4,life:.6,c:'#ffd75e',r:120});burst(vx,ge-40,F,22);}
     return;}
   if(!full){if(k==='s1'){SC.fx.push({k:'pillar',x:vx,y:ge,life:.35,d:.35,c:c});}else SC.fx.push({k:'flash',x:vx,y:ge-30,r:30,life:.2,d:.2,c:c});return;}
   if(cls==='blade'){
@@ -681,9 +716,10 @@ function skillFx(cls,k,ax,g,vx,ge,face,c,full){
 }
 function attackFx(cls,hx,hy,face,targets,combo,c){
   for(const tg of targets){
-    if(cls==='lord'){ // the warlord does not cut: his word falls on the enemy as a pillar of gold, and the ground under it is marked
-      SC.fx.push({k:'pillar',x:tg.x,y:tg.y,life:combo?.42:.24,d:combo?.42:.24,c:'#ffd75e'});SC.fx.push({k:'rune',x:tg.x,y:tg.y-2,r:combo?46:24,life:.4,d:.4,c:c});
-      if(combo){for(const q of [-1,1])SC.fx.push({k:'pillar',x:tg.x+q*22,y:tg.y,life:.3,d:.5,c:c});SC.fx.push({k:'wave',x:hx+face*16,y:tg.y,dir:face,dist:Math.abs(tg.x-hx)+40,h:40,life:.3,d:.3,c:'#ffd75e'});}}
+    if(cls==='lord'){ // the warlord does not cut: a chain of fire lashes out from his hand and burns where it lands; on the great blows his beast stamps
+      SC.fx.push({k:'chain',x1:hx+face*14,y1:hy-92,x2:tg.x,y2:tg.y-30,life:combo?.36:.24,d:combo?.36:.24});burst(tg.x,tg.y-30,'#ff7a2e',combo?14:6);
+      if(combo){for(const q of [-1,1])SC.fx.push({k:'chain',x1:tg.x+q*90,y1:tg.y-190,x2:tg.x+q*6,y2:tg.y-24,life:.4,d:.4});SC.fx.push({k:'pillar',x:tg.x,y:tg.y,life:.3,d:.4,c:'#ff7a2e'});
+        SC.fx.push({k:'wave',x:hx+face*30,y:tg.y,dir:face,dist:Math.abs(tg.x-hx)+50,h:46,life:.3,d:.3,c:'#ff7a2e'});SC.fx.push({k:'ring',x:hx+face*26,y:hy-4,life:.3,c:'#ffb23e',r:44});}}
     else if(cls==='blade')SC.fx.push({k:'slash',x:tg.x-6*face,y:tg.y-28,rot:Math.random()*1.2-.6+(face<0?3.14:0),life:.22,c:c,big:combo});
     else if(cls==='storm'){if(combo){const pts=[];let px=tg.x+(Math.random()-.5)*30,py=0;while(py<tg.y-20){pts.push([px,py]);px+=(Math.random()-.5)*26;py+=18;}pts.push([tg.x,tg.y-24]);SC.fx.push({k:'bolt',pts:pts,life:.28,c:c});}
       else SC.fx.push({k:'line',x1:hx+16*face,y1:hy-96,x2:tg.x,y2:tg.y-26,life:.16,c:c,w:4});}
@@ -712,6 +748,11 @@ function drawFx(dt){
     else if(f.k==='wave'){const a=clamp(f.life/f.d,0,1),x=f.x+f.dir*(1-a)*f.dist,H=f.h*(.6+a*.4);ctx.globalAlpha=a;const R=H*.5;ctx.save();ctx.translate(x,f.y-R);ctx.scale(f.dir,1);ctx.beginPath();ctx.arc(0,0,R,-1.25,1.25);ctx.arc(-R*.4,0,R*.85,1,-1,true);ctx.closePath();ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,R-1,-1,1);ctx.stroke();ctx.restore();
       if(!calm&&Math.random()<.6)SC.parts.push({x:x,y:f.y-Math.random()*H,vx:-f.dir*60,vy:-30,life:.4,c:f.c,s:2});}
     else if(f.k==='screen'){ctx.shadowBlur=0;ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=clamp(f.life/f.d,0,1)*.28;ctx.fillStyle=f.c;ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);ctx.restore();}
+    else if(f.k==='chain'){ // a chain of fire: dark links along a sagging line, each wrapped in flame
+      const a=clamp(f.life/f.d,0,1),dx=f.x2-f.x1,dy=f.y2-f.y1,len=Math.hypot(dx,dy)||1,n=Math.max(4,Math.round(len/11)),sag=Math.min(26,len*.12)*(.4+.6*a),an=Math.atan2(dy,dx),grow=clamp((1-a)*3,0,1);
+      ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=a*.5;ctx.strokeStyle='#ff7a2e';ctx.lineWidth=9;ctx.lineCap='round';ctx.beginPath();for(let i=0;i<=n*grow;i++){const u=i/n,px=f.x1+dx*u,py=f.y1+dy*u+Math.sin(u*Math.PI)*sag;i?ctx.lineTo(px,py):ctx.moveTo(px,py);}ctx.stroke();ctx.restore();
+      for(let i=0;i<=n*grow;i++){const u=i/n,px=f.x1+dx*u,py=f.y1+dy*u+Math.sin(u*Math.PI)*sag;ctx.save();ctx.translate(px,py);ctx.rotate(an+(i%2?1.2:0));ctx.globalAlpha=a;ctx.strokeStyle=i%2?'#ffd75e':'#3a2418';ctx.lineWidth=2.2;ctx.beginPath();ctx.ellipse(0,0,5.5,3,0,0,7);ctx.stroke();
+        if(i%2===0){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=a*.8;ctx.fillStyle=i%4?'#ff7a2e':'#ffd75e';const fl=5+((i*13+Math.floor(f.life*30))%7);ctx.beginPath();ctx.moveTo(-3,0);ctx.quadraticCurveTo(0,-fl*1.6,3,0);ctx.fill();}ctx.restore();}}
     else if(f.k==='line'){ctx.globalAlpha=clamp(f.life/.15,0,1);ctx.lineCap='round';ctx.lineWidth=f.w+1;ctx.beginPath();ctx.moveTo(f.x1,f.y1);ctx.lineTo(f.x2,f.y2);ctx.stroke();ctx.strokeStyle='#fff';ctx.lineWidth=Math.max(1,f.w*.4);ctx.beginPath();ctx.moveTo(f.x1+(f.x2-f.x1)*.45,f.y1+(f.y2-f.y1)*.45);ctx.lineTo(f.x2,f.y2);ctx.stroke();}
     else if(f.k==='bolt'){ctx.globalAlpha=clamp(f.life/.2,0,1);for(const [w,col] of [[5,f.c],[1.6,'#fff']]){ctx.strokeStyle=col;ctx.lineWidth=w;ctx.beginPath();f.pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.stroke();}ctx.strokeStyle=f.c;ctx.lineWidth=1.5;ctx.beginPath();f.pts.forEach((p,i)=>{if(i&&i%3===0){ctx.moveTo(p[0],p[1]);ctx.lineTo(p[0]+((i*37)%40-20),p[1]+22);}});ctx.stroke();}
     else if(f.k==='ring'){const a=Math.min(1,f.life/.4),R=f.r||90;ctx.globalAlpha=a;ctx.lineWidth=4*a+1;ctx.beginPath();ctx.ellipse(f.x,f.y,(1-a)*R+10,((1-a)*R+10)*.35,0,0,7);ctx.stroke();}
@@ -911,7 +952,7 @@ function splash(m,col){
   let px=m.x;for(const o of near){
     if(cls==='storm')SC.fx.push({k:'bolt',pts:[[px,m.y-28],[(px+o.x)/2+(Math.random()-.5)*14,m.y-40-Math.random()*14],[o.x,o.y-26]],life:.2,c:col});
     else if(cls==='hunter')SC.fx.push({k:'line',x1:px,y1:m.y-26,x2:o.x,y2:o.y-26,life:.14,c:col,w:2});
-    else if(cls==='lord')SC.fx.push({k:'pillar',x:o.x,y:o.y,life:.2,d:.3,c:'#ffd75e'});
+    else if(cls==='lord')SC.fx.push({k:'chain',x1:m.x,y1:m.y-30,x2:o.x,y2:o.y-28,life:.26,d:.26});
     else SC.fx.push({k:'slash',x:o.x-6*h.face,y:o.y-28,rot:Math.random()*1.2-.6+(h.face<0?3.14:0),life:.2,c:col});
     SC.fx.push({k:'flash',x:o.x,y:o.y-26,r:16,life:.16,d:.16,c:col});px=o.x;strike(o,.6,col,false);}
 }
@@ -933,7 +974,7 @@ function cast(i,auto){
     addNum(h.x,gy()-100,'+'+fmt(C.hp*.3),'#6fe39a',true);SC.nums.push({x:h.x,y:gy()-135,txt:CLS[S.cls].sk[4]+'!',c:'#9fe8ff',s:18,life:1});}
   else if(i===5){const ts=alive().filter(m=>Math.abs(m.x-h.x)<560);if(!ts.length&&auto)return false;
     snd('ult');h.anim=1;h.skA=.5;SC.fx.push({k:'rune',x:h.x,y:gy()-2,r:210,life:1.1,d:1.1,c:col});if(!calm){SC.fx.push({k:'screen',life:.3,d:.3,c:col});SC.shake=.45;}for(const d of [-1,1])SC.fx.push({k:'wave',x:h.x+d*30,y:gy(),dir:d,dist:520,h:110,life:.6,d:.6,c:col});for(let k=0;k<5;k++)SC.fx.push({k:'ring',x:h.x+(k-2)*200,y:gy()-20,life:.35+k*.06,c:col,r:150});
-    if(S.cls==='lord'){for(let k=0;k<11;k++){const px=h.x+(k-5)*100,d=.3+Math.abs(k-5)*.07;SC.fx.push({k:'pillar',x:px,y:gy(),life:d,d:d+.2,c:k%2?'#fff':'#ffd75e'});SC.fx.push({k:'rune',x:px,y:gy()-2,r:44,life:d+.3,d:d+.3,c:'#ffd75e'});}SC.fx.push({k:'star',x:h.x,y:gy()-120,r:70,rot:0,life:.7,d:.7,c:'#ffd75e'});}
+    if(S.cls==='lord'){for(let k=0;k<11;k++){const px=h.x+(k-5)*100,d=.35+Math.abs(k-5)*.06;SC.fx.push({k:'chain',x1:px+(k%2?70:-70),y1:gy()-330,x2:px,y2:gy()-8,life:d,d:d});SC.fx.push({k:'pillar',x:px,y:gy(),life:d,d:d+.25,c:k%2?'#ffd75e':'#ff7a2e'});}SC.fx.push({k:'ring',x:h.x,y:gy()-6,life:.6,c:'#ff7a2e',r:160});}
     else if(S.cls==='blade')for(let k=0;k<9;k++)SC.fx.push({k:'cres',x:h.x+(k-4)*95+Math.random()*30,y:gy()-30-Math.random()*50,R:40+Math.random()*24,rot:Math.random()*6.28,sp:(Math.random()<.5?-1:1)*1.6,life:.3+k*.05,d:.3+k*.05,c:col});
     else if(S.cls==='storm'){const tg=ts.length?ts:[{x:h.x+h.face*160}];for(let k=0;k<Math.max(7,tg.length);k++){const tx=tg[k%tg.length].x+(k>=tg.length?(Math.random()-.5)*240:0),d=.35+k*.07;SC.fx.push({k:'met',x0:tx+170,y0:-30,x:tx,y:gy()-14,life:d,d:d,c:k%2?'#ff8a4d':col});}}
     else for(let k=0;k<26;k++){const tx=h.x-520+k*40+Math.random()*30;SC.fx.push({k:'line',x1:tx+70,y1:-10,x2:tx,y2:gy()-8,life:.18+k*.02,c:col,w:2});}
@@ -945,10 +986,12 @@ function cast(i,auto){
 // A combo against monsters, in the same order as against players: a plain blow, the first skill, then the pulling one,
 // each within a short moment of the last. Only by hand; the pulling skill's wait is what keeps it from being cheap.
 const CBW=1.6,CBM=6,CBS=2.5;
-function comboStep(i,col){
-  const h=SC.hero,ok=SC.t-(h.cbT||-9)<=CBW;
-  if(i===0&&h.cb===1&&ok){h.cb=2;h.cbT=SC.t;SC.nums.push({x:h.x,y:gy()-160,txt:'2/3',c:'#ffd75e',s:15,life:.8});return;}
-  if(i===1&&h.cb===2&&ok){h.cb=0;const live=alive();let m=h.cbM&&live.indexOf(h.cbM)>=0?h.cbM:null;if(!m){let bd=420;for(const o of live){const d=Math.abs(o.x-h.x);if(d<bd){bd=d;m=o;}}}
+function comboStep(i,col,hitM){
+  const h=SC.hero,k=i<0?'atk':i===0?'s0':i===1?'s1':'',q=G.COMBO[S.cls]||G.COMBO.blade,ok=SC.t-(h.cbT||-9)<=CBW,n=ok?h.cb|0:0;
+  if(hitM)h.cbM=hitM;
+  if(n>0&&k===q[n]){h.cb=n+1;h.cbT=SC.t;if(h.cb<3){SC.nums.push({x:h.x,y:gy()-160,txt:h.cb+'/3',c:'#ffd75e',s:15,life:.8});return;}}
+  else{if(k===q[0]){h.cb=1;h.cbT=SC.t;}else if(k!=='atk')h.cb=0;return;} // plain blows fall by themselves here, so they never break the order
+  {h.cb=0;const live=alive();let m=h.cbM&&live.indexOf(h.cbM)>=0?h.cbM:null;if(!m){let bd=420;for(const o of live){const d=Math.abs(o.x-h.x);if(d<bd){bd=d;m=o;}}}
     if(!m)return;snd('ult');snd('slam');SC.nums.push({x:h.x,y:gy()-165,txt:'קומבו!',c:'#ff5c7a',s:W<560?24:32,life:1.2});
     const hit=(o,k)=>{SC.fx.push({k:'star',x:o.x,y:gy()-40,r:k>3?64:36,rot:0,life:.45,d:.45,c:'#ff5c7a'});SC.fx.push({k:'pillar',x:o.x,y:gy(),life:.4,d:.4,c:'#ffd75e'});burst(o.x,gy()-40,'#ffb23e',k>3?30:12);strike(o,k,col,true);};
     SC.fx.push({k:'ring',x:m.x,y:gy()-10,life:.5,c:'#ffd75e',r:110});hit(m,CBM);
@@ -1037,9 +1080,9 @@ function updateWorld(dt){
     else if(Math.abs(dx)>r){h.x+=Math.sign(dx)*spd*dt;h.mv=true;}
     else{
       if(S.auto&&h.autoSk<=0&&h.cds[0]<=0&&S.lvl>=SKLV[0]&&cast(0,true))h.autoSk=8;
-      if(h.atkT<=0){h.atkT=1/(C.aspd*(h.buff>0?2:1));h.anim=1;h.lastAtk=SC.t;const col=gearColor(lookOf(S).w,SC.t,CLS[S.cls].c);h.chain=SC.t-(h.chainT||0)>2.5?1:(h.chain||0)+1;h.chainT=SC.t;if(!(h.cb===2&&SC.t-h.cbT<=CBW)){h.cb=1;h.cbT=SC.t;h.cbM=m;}const step=h.chain%4; // the ordinary attack is a four-beat chain: jab, cross, jab, finisher
+      if(h.atkT<=0){h.atkT=1/(C.aspd*(h.buff>0?2:1));h.anim=1;h.lastAtk=SC.t;const col=gearColor(lookOf(S).w,SC.t,CLS[S.cls].c);h.chain=SC.t-(h.chainT||0)>2.5?1:(h.chain||0)+1;h.chainT=SC.t;comboStep(-1,col,m);const step=h.chain%4; // the ordinary attack is a four-beat chain: jab, cross, jab, finisher
         if(step===0){attackFx(S.cls,h.x,hY(),h.face,[m],true,col);h.skA=.25;
-          if(S.cls==='lord'){for(let q=0;q<3;q++)SC.fx.push({k:'ring',x:m.x,y:gy()-8,life:.3+q*.1,c:q%2?'#fff':'#ffd75e',r:36+q*26});SC.fx.push({k:'star',x:m.x,y:gy()-70,r:30,rot:0,life:.35,d:.35,c:'#ffd75e'});}
+          if(S.cls==='lord'){SC.fx.push({k:'wave',x:h.x+h.face*30,y:gy(),dir:h.face,dist:Math.abs(m.x-h.x)+70,h:70,life:.32,d:.32,c:'#ff7a2e'});for(let q=0;q<2;q++)SC.fx.push({k:'ring',x:h.x+h.face*30,y:gy()-4,life:.3+q*.12,c:q?'#ffd75e':'#ff7a2e',r:40+q*30});burst(m.x,gy()-30,'#ff7a2e',16);}
           else if(S.cls==='blade'){SC.fx.push({k:'cres',x:m.x,y:gy()-38,R:50,rot:h.face<0?3.14:0,sp:1.4*h.face,life:.28,d:.28,c:col});SC.fx.push({k:'wave',x:h.x+h.face*20,y:gy(),dir:h.face,dist:150,h:64,life:.3,d:.3,c:col});}
           else if(S.cls==='storm'){SC.fx.push({k:'pillar',x:m.x,y:gy(),life:.35,d:.35,c:col});SC.fx.push({k:'rune',x:m.x,y:gy()-2,r:44,life:.5,d:.5,c:col});}
           else for(let q=-1;q<=1;q++)SC.fx.push({k:'line',x1:h.x+18*h.face,y1:gy()-58+q*10,x2:m.x,y2:m.y-26+q*14,life:.16+Math.abs(q)*.04,c:col,w:2.5});
@@ -1233,7 +1276,7 @@ function brShow(d,o){
   if(k==='s2'){if(o.by===d.me)snd('fury');SC.fx.push({k:'rune',x:ax,y:g-2,r:60,life:.9,d:.9,c:'#9fe8ff'});return;}
   if(k==='dash'){for(let q=0;q<4;q++)SC.parts.push({x:ax,y:g-20-q*14,vx:(Math.random()-.5)*120,vy:0,life:.4,c:'#9fe8ff',s:3});return;}
   if(k==='pot'){burst(ax,g-50,'#6fe39a',o.by===d.me?12:5);return;}
-  const v=D.f[o.to];if(!v)return;if(o.by===d.me){d.cbN=o.miss?0:o.cb|0;d.cbAt=D.t;if(d.cbN===2)SC.nums.push({x:ax,y:g-150,txt:'2/3',c:'#ffd75e',s:20,life:.7});}
+  const v=D.f[o.to];if(!v)return;if(o.by===d.me){if(d.sel<0&&v.alive&&!o.dead)d.sel=o.to;d.cbN=o.miss?0:o.cb|0;d.cbAt=D.t;if(d.cbN===2)SC.nums.push({x:ax,y:g-150,txt:'2/3',c:'#ffd75e',s:20,life:.7});}
   if(o.px){const q0=bP(v.x,v.y);if(o.to===d.me){v.x=o.px[0];v.y=o.px[1];b.go=null;d.last=[v.x,v.y];}else b.tg[o.to]=[o.px[0],o.px[1]];const q1=bP(o.px[0],o.px[1]); // thrown back: a streak and dust along the way
     SC.fx.push({k:'line',x1:q0[0],y1:q0[1]-10,x2:q1[0],y2:q1[1]-10,life:.3,c:'#e8d8b8',w:4});for(let q=0;q<7;q++)SC.parts.push({x:q0[0]+(q1[0]-q0[0])*q/7,y:q0[1]-4,vx:(Math.random()-.5)*50,vy:-30-Math.random()*40,life:.5,c:'#d8c8a8',s:3});}
   const pv=bP(v.x,v.y),vx=pv[0],ge=pv[1],big=k!=='atk';va.anim=1;if(Math.abs(v.x-a.x)>4)va.face=v.x>=a.x?1:-1;
@@ -1248,7 +1291,7 @@ function brShow(d,o){
   if(o.combo&&!(o.by===d.me||o.to===d.me)&&D.f.length>3){SC.nums.push({x:vx,y:ge-130,txt:'קומבו!',c:'#ff5c7a',s:15,life:.8});SC.fx.push({k:'ring',x:vx,y:ge-10,life:.4,c:'#ffd75e',r:60});}
   else if(o.combo){snd('ult');SC.nums.push({x:vx,y:ge-150,txt:'קומבו!',c:'#ff5c7a',s:W<560?26:36,life:1.2});SC.fx.push({k:'star',x:vx,y:ge-40,r:70,rot:0,life:.5,d:.5,c:'#ff5c7a'});SC.fx.push({k:'ring',x:vx,y:ge-10,life:.5,c:'#ffd75e',r:90});snd('slam');burst(vx,ge-40,'#ffb23e',46);burst(vx,ge-40,'#fff',18);for(let q=0;q<3;q++)SC.fx.push({k:'ring',x:vx,y:ge-10,life:.45+q*.18,c:q===1?'#fff':'#ff5c7a',r:70+q*55});for(let q=-3;q<=3;q++)SC.fx.push({k:'pillar',x:vx+q*24,y:ge,life:.4+Math.abs(q)*.06,d:.6,c:q%2?'#ffd75e':'#ff5c7a'});SC.fx.push({k:'flash',x:vx,y:ge-40,r:150,life:.3,d:.3,c:'#fff'});if(!calm)SC.fx.push({k:'screen',life:.22,d:.22,c:'#ffb23e'});if(!calm)SC.shake=o.by===d.me||o.to===d.me?.7:.3;}
   else if(b.sg&&o.cb===2&&o.by===d.me)addNum(ax,g-150,'קומבו 2/3','#ffb23e',false);
-  if(o.more)for(const x of o.more){const f=D.f[x[0]];if(!f)continue;const p=bP(f.x,f.y);d.v[x[0]].hitT=.18;SC.fx.push({k:'flash',x:p[0],y:p[1]-30,r:26,life:.2,d:.2,c:cc});if(o.by===d.me||x[0]===d.me||D.f.length<=3)addNum(p[0],p[1]-92,fmt(Math.max(1,Math.round(x[1]*(b.sg?(b.hpv&&b.hpv[x[0]]||2000)*5:10000)))),x[0]===d.me?'#ff5c7a':'#fff',false);}
+  if(o.more)for(const x of o.more){const f=D.f[x[0]];if(!f)continue;const p=bP(f.x,f.y);d.v[x[0]].hitT=.18;SC.fx.push({k:'flash',x:p[0],y:p[1]-30,r:26,life:.2,d:.2,c:cc});if(o.by===d.me||x[0]===d.me||D.f.length<=3)addNum(p[0],p[1]-92,fmt(Math.max(1,Math.round(x[1]*(b.sg?(b.hpv&&b.hpv[x[0]]||2000)*5:10000)))),x[3]?'#9fb0c8':x[0]===d.me?'#ff5c7a':'#fff',false);}
   if(o.dead&&!(b.sg&&o.by!==d.me&&o.to!==d.me))addNum(vx,ge-140,b.names[o.by]+' חיסל את '+b.names[o.to],'#ffd75e',true);
 }
 function brOver(m){
@@ -1310,7 +1353,7 @@ function drawSg(dt){
   if(shUp){const q=R(SG.shield),hh=70*k;ctx.save();ctx.globalAlpha=.3+.12*Math.sin(SC.t*3);ctx.fillStyle='#7df9ff';ctx.fillRect(q[0],q[1]-hh,q[2],q[3]+hh);ctx.globalAlpha=.9;ctx.strokeStyle='#bff';ctx.lineWidth=2;ctx.strokeRect(q[0],q[1]-hh,q[2],q[3]+hh);ctx.restore();label('מגן המגדל',q[0]+q[2]/2,q[1]-hh-6,'#9fe8ff',10.5);}
   SG.gates.forEach((g,q)=>{const hp=S2.gate[q],st=SG.stat.indexOf(q)>=0;if(hp>0)wall(g,st?'#7df9ff':'#b98a4a',st?'#3a8aa8':'#7a5a2e');const p=bP((g[0]+g[2])/2,(g[1]+g[3])/2);if(hp>0)hpBar(p[0]-24,p[1]-44*k-14,48,hp,st?'#7df9ff':'#ffb23e');if(st&&hp<=0)return;label(st?'אבן שמירה':hp>0?'שער':'שער פרוץ',p[0],p[1]-44*k-20,hp>0?(st?'#9fe8ff':'#ffb23e'):'#8f88b8',10);});
   ctx.restore();
-  let tgt=-1;if(me.alive){const rng=LIVE_RNG[me.cls]+14;let bd=1e9;D.f.forEach((f,i)=>{if(i===d.me||!f.alive||b.g[i]===myG)return;const q=Math.hypot(f.x-me.x,f.y-me.y);if(q<=rng&&q<bd){bd=q;tgt=i;}});tgt=selMark(d,tgt,rng);
+  let tgt=-1;if(me.alive){const rng=LIVE_RNG[me.cls]+14;let bd=1e9;D.f.forEach((f,i)=>{if(i===d.me||!f.alive||b.g[i]===myG||!G.inFront({x:me.x,face:d.v[d.me].face},f))return;const q=Math.hypot(f.x-me.x,f.y-me.y);if(q<=rng&&q<bd){bd=q;tgt=i;}});tgt=selMark(d,tgt,rng);
     const p=bP(me.x,me.y);ctx.strokeStyle='rgba(125,249,255,.22)';ctx.lineWidth=1;ctx.setLineDash([5,6]);ctx.beginPath();ctx.ellipse(p[0],p[1],rng*k,rng*k*.55,0,0,7);ctx.stroke();ctx.setLineDash([]);}
   if(b.go&&me.alive){const p=bP(b.go[0],b.go[1]);ctx.strokeStyle='rgba(125,249,255,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(p[0],p[1],9,4,0,0,7);ctx.stroke();}
   const ord=D.f.map((_,i)=>i).sort((p,q)=>D.f[p].y-D.f[q].y);
@@ -1356,7 +1399,7 @@ function drawBr(dt){
     label(LOOTN[l.k],p[0],y-14*big,c,9.5);}
   ctx.restore();
   // whom my next hit would reach
-  let tgt=-1;if(b.phase==='fight'&&me.alive){const rng=BR.rng+14;let bd=1e9;D.f.forEach((f,i)=>{if(i===d.me||!f.alive)return;const q=Math.hypot(f.x-me.x,f.y-me.y);if(q<=rng&&q<bd){bd=q;tgt=i;}});tgt=selMark(d,tgt,rng);
+  let tgt=-1;if(b.phase==='fight'&&me.alive){const rng=BR.rng+14;let bd=1e9;D.f.forEach((f,i)=>{if(i===d.me||!f.alive||!G.inFront({x:me.x,face:d.v[d.me].face},f))return;const q=Math.hypot(f.x-me.x,f.y-me.y);if(q<=rng&&q<bd){bd=q;tgt=i;}});tgt=selMark(d,tgt,rng);
     const p=bP(me.x,me.y);ctx.strokeStyle='rgba(125,249,255,.22)';ctx.lineWidth=1;ctx.setLineDash([5,6]);ctx.beginPath();ctx.ellipse(p[0],p[1],rng*k,rng*k*.55,0,0,7);ctx.stroke();ctx.setLineDash([]);}
   if(b.go&&me.alive){const p=bP(b.go[0],b.go[1]);ctx.strokeStyle='rgba(125,249,255,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(p[0],p[1],9,4,0,0,7);ctx.stroke();}
   const ord=D.f.map((_,i)=>i).sort((p,q)=>D.f[p].y-D.f[q].y);
@@ -1424,9 +1467,9 @@ function duelHpTick(){const d=SC.duel;if(!d||d.spec)return;const me=d.D.f[d.me];
 function renderDuelBar(){
   const d=SC.duel,bar=$('duelBar'),hpb=$('duelHp');$('specBtn').style.display=d&&d.spec?'':'none';if(!d||d.spec){bar.style.display='none';hpb.style.display='none';return;}bar.style.display='grid';const me=d.D.f[d.me],off=d.sent||d.go>0;
   const desk=DESK&&$('stage').clientWidth>=640;bar.classList.toggle('desk',desk);hpb.style.display='';hpb.classList.toggle('mob',!desk);duelHpTick();
-  const sgOn=!!(d.br&&d.br.sg),brOn=!!d.br||!!(d.D&&d.D.pvp),cg=brOn&&d.cbN?d.D.t-d.cbAt:-1,cbK=cg>=SG.cbMin&&cg<=SG.cbMax?(d.cbN===1?'s0':'s1'):'';
+  const sgOn=!!(d.br&&d.br.sg),brOn=!!d.br||!!(d.D&&d.D.pvp),cg=brOn&&d.cbN?d.D.t-d.cbAt:-1,cbQ=G.COMBO[S.cls]||G.COMBO.blade,cbK=cg>=SG.cbMin&&cg<=SG.cbMax?cbQ[d.cbN]:'';
   bar.querySelectorAll('button').forEach((b,i)=>{const k=DBTN[i];if(k==='buf'||k==='bash'){b.style.display=sgOn?'':'none';if(!sgOn)return;}const cd=k==='atk'?0:Math.max(0,(me.at[k]||0)-d.D.t),nm=k==='atk'?'תקיפה':k==='dash'?'צעד':k==='bash'?'הדיפה':k==='buf'?BUFN[S.cls][0]:k==='pot'?'שיקוי ×'+me.pots:CLS[S.cls].sk[k==='s0'?0:k==='s1'?3:k==='s2'?4:5],
-    t=(desk?'<kbd>'+keyName(keyOf(k))+'</kbd>':'')+nm+'<small>'+(cd>.6?Math.ceil(cd)+' שנ׳':k==='pot'&&!me.pots?'נגמר':k==='buf'?BUFN[S.cls][1]:k==='bash'?'זורק יריב ממתג':k===cbK?'קומבו עכשיו':brOn&&k==='atk'?'קומבו 1':brOn&&k==='s0'?'קומבו 2':brOn&&k==='s1'?'קומבו 3':k==='s3'&&d.br?'זינוק':k==='s2'?'מגן':k==='s3'?'מכה סופית':k==='s1'?'מהמם':k==='dash'?'חמיקה':'&nbsp;')+'</small>';
+    t=(desk?'<kbd>'+keyName(keyOf(k))+'</kbd>':'')+nm+'<small>'+(cd>.6?Math.ceil(cd)+' שנ׳':k==='pot'&&!me.pots?'נגמר':k==='buf'?BUFN[S.cls][1]:k==='bash'?'זורק יריב ממתג':k===cbK?'קומבו עכשיו':brOn&&k===cbQ[0]?'קומבו 1':brOn&&k===cbQ[1]?'קומבו 2':brOn&&k===cbQ[2]?'קומבו 3':k==='s3'&&d.br?'זינוק':k==='s2'?'מגן':k==='s3'?'מכה סופית':k==='s1'?'מהמם':k==='dash'?'חמיקה':'&nbsp;')+'</small>';
     if(desk){const mx=d.cdMax||(d.cdMax={});if(cd>(mx[k]||0))mx[k]=cd;if(cd<=0)mx[k]=0;const pc=cd>0&&mx[k]?Math.round(cd/mx[k]*100)+'%':'0%';if(b.dataset.cd!==pc){b.dataset.cd=pc;b.style.setProperty('--cd',pc);}}
     if(b.dataset.h!==t){b.dataset.h=t;b.innerHTML=t;}const dis=off||cd>0||(k==='pot'&&!me.pots);if(b.disabled!==dis)b.disabled=dis;b.classList.toggle('rdy',!dis&&(cbK?k===cbK:k==='s3'&&!sgOn));});
 }
@@ -1458,7 +1501,7 @@ function duelAct(k){
   if((d.br||D.pvp)&&(k==='s0'||k==='s1')&&me.at[k]>D.t&&me.at[k]-D.t<.5&&!(me.stun>D.t)){d.q={k:k,until:D.t+.7};return;}
   if(d.br){if(d.br.phase!=='fight'||!me.alive||D.t<0||(me.stun>D.t&&k!=='pot')||me.at[k]>D.t||(k==='pot'&&!me.pots))return;
     if(k==='bash'&&d.br.sg){const r=LIVE_RNG[me.cls]+30,mg=d.br.g[d.me];if(!D.f.some((f,i)=>i!==d.me&&f.alive&&d.br.g[i]!==mg&&Math.hypot(f.x-me.x,f.y-me.y)<=r)){const p=bP(me.x,me.y);addNum(p[0],p[1]-110,'אין יריב צמוד להדוף','#ffd75e',false);me.at.bash=D.t+.6;return;}}
-    {const q=d.sel,f=q>=0?D.f[q]:null;if(q>=0&&(!f||!f.alive))d.sel=-1;netSend(d.sel>=0?{t:d.br.sg?'sgAct':'brAct',k:k,to:d.sel}:{t:d.br.sg?'sgAct':'brAct',k:k});}
+    {const q=d.sel,f=q>=0?D.f[q]:null;if(q>=0&&(!f||!f.alive))d.sel=-1;const fc=d.v[d.me].face<0?-1:1;netSend(d.sel>=0?{t:d.br.sg?'sgAct':'brAct',k:k,to:d.sel,f:fc}:{t:d.br.sg?'sgAct':'brAct',k:k,f:fc});}
     if(k==='dash'){me.at.dash=D.t+DUEL_LIVE.dash.cd;d.noSnap=D.t+.8;let vx=joy.v[0]||SC.hero.dir,vy=joy.v[1]||SC.hero.dz;if(!vx&&!vy){if(d.br.go){vx=d.br.go[0]-me.x;vy=d.br.go[1]-me.y;}else{const an=Math.random()*Math.PI*2;vx=Math.cos(an);vy=Math.sin(an);}}const n=Math.hypot(vx,vy)||1;if(d.br.sg)me.g=d.br.g[d.me];if(d.br.sg)sgMove({sg:d.br.sg},me,me.x+vx/n*DUEL_LIVE.dash.d,me.y+vy/n*DUEL_LIVE.dash.d);else{me.x+=vx/n*DUEL_LIVE.dash.d;me.y+=vy/n*DUEL_LIVE.dash.d;const r=Math.hypot(me.x,me.y);if(r>BR.R){me.x*=BR.R/r;me.y*=BR.R/r;}}netSend({t:d.br.sg?'sgPos':'brPos',x:Math.round(me.x),y:Math.round(me.y),f:d.v[d.me].face});}else if(k==='atk'||k==='s0'||k==='s1'){const n=D.t+SG.skT;for(const q of ['atk','s0','s1'])if(me.at[q]<n)me.at[q]=n;}else me.at[k]=D.t+(k==='pot'?.12:.3);return;}
   if(d.net){if((me.stun>D.t&&!(D.pvp&&k==='pot'))||me.at[k]>D.t)return;netSend({t:'act',k:k});if(D.pvp&&(k==='atk'||k==='s0'||k==='s1')){const n=D.t+SG.skT;for(const q of ['atk','s0','s1'])if(me.at[q]<n)me.at[q]=n;return;}if(k==='dash'){me.at.dash=D.t+DUEL_LIVE.dash.cd;dashMove(d,d.me);netSend({t:'pos',x:me.x,z:me.z});}else if(k==='atk')me.at.atk=D.t+D.T[d.me];return;}
   const o=liveAct(D,0,k,Math.random);if(!o)return;if(k==='dash')dashMove(d,0);dShow(d,o);renderDuelBar();if(k==='s1'||k==='s3')d.ai.threat=.5;
@@ -1695,8 +1738,9 @@ function renderChar(){
    '<div class="kv"><span>הגנה</span><b class="num">'+fmt(c.def)+'</b></div>'+
    '<div class="kv"><span>בונוס ניסיון</span><b class="num">'+L('+'+Math.round((c.xpM-1)*100)+'%')+'</b></div>'+
    '<div class="kv"><span>טווח תקיפה</span><b>'+(S.cls==='blade'?'קרוב':S.cls==='lord'?'בינוני':'רחוק')+'</b></div></div></div>';
-  {const sk=CLS[S.cls].sk,cb=n=>'<b style="color:#ff5c7a;margin-inline-start:6px">קומבו '+n+'/3</b>',mv=[['תקיפה',cb(1),'מכה רגילה. פותחת את הקומבו'],[sk[0],cb(2),'מיומנות מהירה בלי המתנה. החוליה השנייה בקומבו'],[sk[3],cb(3),'סוגרת את הקומבו. רק בקומבו היא מהממת'],[sk[5],'','המיומנות הגדולה. זינוק אל יריב רחוק'],[sk[4],'','מגן לשלוש שניות. עוצר הדיפה והלם'],['צעד','','חמיקה קצרה לכיוון שמכוונים'],['הדיפה','','במצור בלבד. זורקת יריב רחוק'],[BUFN[S.cls][0],'','במצור בלבד. '+BUFN[S.cls][1]]];
-    h+='<h2>המתקפות שלך בקרב</h2><div class="card"><p class="hint">בזירה, במגדל, במצור ובמעגל האחרון. <b>קומבו עובד בכל קרב מול שחקנים:</b> לוחצים על שלוש המתקפות המסומנות לפי הסדר, הכי מהר שאפשר. קומבו מתפוצץ על היריב, מוריד חלק גדול מהחיים שלו, מהמם אותו והודף אותו.</p><p class="hint"><b>בחירת יריב:</b> לחיצה על יריב מסמנת אותו, והמכות שלך הולכות אליו כל עוד הוא בטווח. <b>מכת אזור:</b> '+(S.cls==='blade'?'המיומנות הראשונה שלך פוגעת בכל היריבים שסביבך':S.cls==='storm'||S.cls==='lord'?'המיומנות המהממת שלך פוגעת גם ביריבים שליד היריב שבחרת':'המיומנות הראשונה שלך פוגעת גם בשני היריבים הקרובים אליך')+'.</p>'+mv.map(m=>'<div class="kv" style="align-items:flex-start;margin:6px 0"><span><b>'+m[0]+'</b>'+m[1]+'<br><small style="color:var(--dim)">'+m[2]+'</small></span></div>').join('')+'</div>';}
+  {const sk=CLS[S.cls].sk,cb=n=>n?'<b style="color:#ff5c7a;margin-inline-start:6px">קומבו '+n+'/3</b>':'',cq=G.COMBO[S.cls]||G.COMBO.blade,ci=k=>cq.indexOf(k)+1,nmK=k=>k==='atk'?'תקיפה':sk[k==='s0'?0:3],
+      mv=[['תקיפה',cb(ci('atk')),'מכה רגילה. חלשה לבדה, ובעיקר מול לוחם להב'],[sk[0],cb(ci('s0')),'מיומנות מהירה בלי המתנה'],[sk[3],cb(ci('s1')),'מיומנות חזקה בלי המתנה'],[sk[5],'','המיומנות הגדולה. זינוק אל יריב רחוק'],[sk[4],'','מגן לשלוש שניות. עוצר הדיפה והלם'],['צעד','','חמיקה קצרה לכיוון שמכוונים'],['הדיפה','','במצור בלבד. זורקת יריב רחוק'],[BUFN[S.cls][0],'','במצור בלבד. '+BUFN[S.cls][1]]];
+    h+='<h2>המתקפות שלך בקרב</h2><div class="card"><p class="hint">בזירה, במגדל, במצור ובמעגל האחרון. <b>לכל דמות קומבו משלה.</b> הקומבו שלך: <b>'+cq.map(nmK).join(' ← ')+'</b>, על אותו יריב, הכי מהר שאפשר. המכה האחרונה מתפוצצת על היריב, מהממת אותו והודפת אותו.</p><p class="hint"><b>כיוון:</b> שום מכה לא מכוונת לבד. בלי יריב מסומן פוגעים רק במי שעומד מול הדמות. לחיצה על יריב מסמנת אותו, והמכות הולכות אליו כל עוד הוא בטווח. היריב הראשון שפגעת בו מסומן לבד.</p><p class="hint"><b>מכת אזור:</b> '+(S.cls==='blade'?'המיומנות הראשונה שלך פוגעת בכל מי שסביבך':S.cls==='storm'||S.cls==='lord'?'המיומנות החזקה שלך פוגעת גם במי שעומד ליד היריב שבחרת':'המיומנות הראשונה שלך פוגעת גם בשני היריבים הקרובים אליך')+'. <b>במצור היא פוגעת גם בחברי הגילדה שלך שעומדים בתוכה, בחמישית מהנזק.</b></p><p class="hint"><b>חוסן:</b> לוחם להב סופג הכי פחות, ומכה רגילה בקושי מזיזה אותו. מכשפת סער וצייד צללים נופלים מהר גם ממכות רגילות.</p>'+mv.map(m=>'<div class="kv" style="align-items:flex-start;margin:6px 0"><span><b>'+m[0]+'</b>'+m[1]+'<br><small style="color:var(--dim)">'+m[2]+'</small></span></div>').join('')+'</div>';}
   {const ml=mastery(A.kills),a0=masteryNeed(ml),a1=masteryNeed(ml+1);
     h+='<h2>דרגת המעגל</h2><div class="card" style="display:block"><div class="kv"><b style="color:var(--gold)">דרגה '+L(ml)+'</b><b class="num">'+L('+'+ml*MASTERY_PCT+'%')+' נזק וחיים</b></div><div class="bar gold" style="margin:6px 0"><i style="width:'+clamp((A.kills-a0)/(a1-a0)*100,0,100)+'%"></i></div><p class="hint">הדרגה הזו לא נגמרת. כל מפלצת שהחשבון חיסל אי פעם נספרת, וכל דרגה מוסיפה '+L(MASTERY_PCT+'%')+' נזק וחיים לכל הדמויות. עוד '+L(fmt(Math.max(0,a1-A.kills)))+' חיסולים לדרגה הבאה.</p></div>';}
   {const R=totalResets(A),nx=ARTS.find(a=>R<a.r);
@@ -1760,12 +1804,18 @@ function renderZones(){
   return h;
 }
 function shopList(name,list,have,curName){
-  return list.map(o=>{let dis=have<o.cost;if(o.k==='bless'&&A.bless>=10)dis=true;if(o.k==='bankx'&&(A.bankX|0)>=3)dis=true;
+  const top=name==='reset'?G.topResets(A):0;let lastNeed=0;
+  return list.map(o=>{let dis=have<o.cost,head='',note='';if(o.k==='bless'&&A.bless>=10)dis=true;
+    if(name==='reset'){const lf=G.resetLeft(A,o),lock=top<o.need;if(o.need!==lastNeed){lastNeed=o.need;head='<p class="hint" style="margin:12px 0 4px"><b>'+(o.need<=1?'מהריסט הראשון':'מריסט '+L(o.need))+'</b>'+(lock?' · נעול. חסרים לך '+L(o.need-top)+' ריסטים':'')+'</p>';}
+      if(lf[0]>=0)note=' · נשארו '+L(lf[0])+' השבוע';if(lf[1]>=0)note+=' · נשארו '+L(lf[1])+' בסך הכול';
+      if(lock)return head+'<div class="card shop" style="opacity:.5"><div class="z"><b>'+o.t+'</b>'+(o.d?'<small>'+o.d+'</small>':'')+'</div><button class="btn sm" disabled>ריסט '+L(o.need)+'</button></div>';
+      if(lf[0]===0||lf[1]===0)dis=true;
+      return head+'<div class="card shop"><div class="z"><b>'+o.t+'</b><small>'+(o.d||'')+note+'</small></div><button class="btn sm'+(dis?'':' pri')+'" data-act="buy" data-s="'+name+'" data-k="'+o.k+'"'+(dis?' disabled':'')+'>'+L(fmt(o.cost))+' '+curName+'</button></div>';}if(o.k==='bankx'&&(A.bankX|0)>=3)dis=true;
     if(o.k==='wsk1'||o.k==='wsk2'){const id=o.k==='wsk1'?1:2;if((A.wsk||[]).indexOf(id)>=0)return '<div class="card shop"><div class="z"><b>'+o.t+'</b><small>'+o.d+'</small></div><button class="btn sm'+((A.wskOn|0)===id?'':' pri')+'" data-act="buy" data-s="'+name+'" data-k="'+o.k+'">'+((A.wskOn|0)===id?'הסר':'לבש')+'</button></div>';}
     return '<div class="card shop"><div class="z"><b>'+o.t+'</b>'+(o.d?'<small>'+o.d+'</small>':'')+'</div><button class="btn sm'+(dis?'':' pri')+'" data-act="buy" data-s="'+name+'" data-k="'+o.k+'"'+(dis?' disabled':'')+'>'+L(fmt(o.cost))+' '+curName+'</button></div>';}).join('');
 }
 function renderShop(){
-  let h=renderCredits()+renderMarket()+'<h2>חנות אותות ריסט</h2><p class="hint">אותות מקבלים רק מריסט. יש לך '+L(A.cred)+'.'+((A.areset|0)>0?' ריסטים אוטומטיים שנותרו: '+L(A.areset|0)+'.':'')+'</p>'+shopList('reset',RESET_SHOP,A.cred,'אותות');
+  let h=renderCredits()+renderMarket()+'<h2>חנות אותות ריסט</h2><p class="hint">אותות מקבלים רק מריסט. יש לך '+L(A.cred)+'. המדפים נפתחים לפי מספר הריסטים של הדמות הכי מתקדמת שלך ('+L(G.topResets(A))+'), וחלק מהמוצרים מוגבלים בכמות לשבוע.'+((A.areset|0)>0?' ריסטים אוטומטיים שנותרו: '+L(A.areset|0)+'.':'')+'</p>'+shopList('reset',RESET_SHOP,A.cred,'אותות');
   {const cas=!!(guild.mine&&guild.mine.castle)||(ONLINE&&me.admin);h+='<h2>חנות העיר העתיקה</h2><p class="hint">נקודות עתיקות נופלות רק ממפלצות בעיר העתיקה, כשמשחקים שם בעצמך, ועד '+CITY_WEEK+' בשבוע. יש לך '+L(A.anc|0)+'. השבוע אספת '+L((A.week&&A.week.anc)|0)+' מתוך '+CITY_WEEK+'.'+(cas?'':' החנות פתוחה רק לגילדה שמחזיקה בטירה.')+'</p>'+shopList('city',CITY_SHOP,cas?A.anc|0:-1,'נקודות');}
   h+='<h2>חנות זהב</h2>'+(A.boost>Date.now()?'<p class="hint">מגילת ניסיון פעילה עוד '+fmtT((A.boost-Date.now())/1000)+'.</p>':'')+shopList('gold',GOLD_SHOP,A.gold,'זהב');
   h+='<h2>חנות העונה</h2><p class="hint">מטבעות עונה מקבלים מהפס, מריסטים ומהזירה.</p>'+shopList('season',SEASON_SHOP,A.coins,'מטבעות');

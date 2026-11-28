@@ -376,7 +376,7 @@ test('the last circle: an open round field, everyone equal, gear from the ground
   assert.equal(G.brAct(B,0,'atk',rnd),null,'nothing happens during the countdown');B.t=0;B.loot=[];B.nextLoot=1e9;B.dropped=true;
   const put=(i,x,y)=>{B.f[i].x=x;B.f[i].y=y;};put(0,0,0);put(1,40,20);for(let i=2;i<6;i++){put(i,-500,-300+i*40);B.f[i].think=1e9;B.f[i].bot=false;}
   const o=G.brAct(B,0,'atk',rnd);assert.ok(o&&o.to===1&&o.dm>0,'a hit lands on the nearest fighter in reach, in any direction');assert.equal(G.brAct(B,0,'atk',rnd),null,'the attack has a cooldown');
-  B.t=5;const back=G.brAct(B,1,'atk',rnd);assert.ok(Math.abs(back.dm/o.dm-1)<.7,'what a player wears outside does not matter here: '+back.dm+' vs '+o.dm);
+  B.t=5;const back=G.brAct(B,1,'atk',rnd,0);assert.ok(Math.abs(back.dm/o.dm-1)<.7,'what a player wears outside does not matter here: '+back.dm+' vs '+o.dm);
   put(1,0,300);B.t=10;assert.equal(G.brAct(B,0,'atk',rnd),null,'out of reach');put(1,40,20);
   // gear from the ground
   B.loot=[{id:900,x:5,y:5,k:'w'},{id:901,x:-5,y:5,k:'a'},{id:902,x:400,y:0,k:'w'}];let ev=G.brStep(B,.1,rnd);assert.equal(ev.filter(e=>e.k==='pick'&&e.by===0).length,2);assert.equal(B.f[0].w,1);assert.equal(B.f[0].ar,1);assert.equal(B.loot.length,1,'a find far away stays');
@@ -423,7 +423,7 @@ test("the day's trial: sized to the character, timed by the server, a better med
 
 test('a bought auto reset: only while away, the character resets at the top, stays on its map and keeps training',()=>{
   const now=clock(1.8e12);G.setEnv(()=>.5,now);const A=G.newAccount();G.apply(A,'create',{name:'Auto',cls:'blade'},{});const s=A.chars[0];A.open=G.BASEZ-1;
-  A.cred=74;assert.ok(!G.apply(A,'buy',{shop:'reset',k:'areset'},{}).ok,'it costs marks');A.cred=75;assert.ok(G.apply(A,'buy',{shop:'reset',k:'areset'},{}).ok);assert.equal(A.areset,G.ARESET_PACK);assert.equal(A.cred,0);
+  s.resets=10;A.cred=74;assert.ok(!G.apply(A,'buy',{shop:'reset',k:'areset'},{}).ok,'it costs marks');A.cred=75;assert.ok(G.apply(A,'buy',{shop:'reset',k:'areset'},{}).ok);assert.equal(A.areset,G.ARESET_PACK);assert.equal(A.cred,0);
   s.lvl=G.CAP-1;s.xp=0;s.stats.str=4000;s.stats.vit=2000;s.zone=20;s.last=now();const r0=s.resets,rep=G.offline(s,6*3600);
   assert.ok(rep.resets>=1,'reset while away: '+JSON.stringify(rep).slice(0,120));assert.equal(s.resets,r0+rep.resets);assert.equal(A.areset,G.ARESET_PACK-rep.resets);assert.equal(s.zone,20,'stays on its map');assert.ok(s.lvl>1&&s.lvl<=G.CAP,'and went on training: '+s.lvl);
   assert.equal(A.cred,Array.from({length:rep.resets},(_,i)=>Math.floor((10+2*Math.min(r0+i+1,10))/2)).reduce((a,b)=>a+b,0),'half the marks of an ordinary reset');
@@ -482,7 +482,7 @@ test('castle siege: no guards, real strength, walls and gates, switches then the
   fe.x=G.SG.crown[0];fe.y=G.SG.crown[1];B.t+=2;assert.equal(G.sgAct(B,e,'use',rnd).no,'lead');B.f[e].lead=true;B.t+=2;assert.equal(G.sgAct(B,e,'use',rnd).no,'sw','a leader whose guild does not hold the switches gets nothing');B.f[e].lead=false;fe.x=600;fe.y=1900;
   fl.x=G.SG.crown[0];fl.y=G.SG.crown[1];B.t+=2;const uc=G.sgAct(B,L,'use',rnd);assert.ok(uc&&uc.c===1);for(let i=0;i<60;i++)G.sgStep(B,.2,rnd);assert.ok(B.sg.crown[1]>5&&B.sg.holder===0,'the crown takes half a minute, not less');
   { // the one holding the right switch is killed: the switch is free again and the crown stops
-    fe.x=fb.x+20;fe.y=fb.y;fb.hp=.0001;B.t+=30;fe.at.s3=0;const kk=G.sgAct(B,e,'s3',rnd);assert.ok(kk.dead);const e2=G.sgStep(B,.2,rnd);assert.equal(B.sg.sw[1],0);assert.equal(B.sg.crown[1],0);assert.ok(e2.some(x=>x.k==='swLost'&&x.q===1)&&e2.some(x=>x.k==='cstop'));
+    fe.x=fb.x+20;fe.y=fb.y;fe.face=-1;fb.hp=.0001;B.t+=30;fe.at.s3=0;const kk=G.sgAct(B,e,'s3',rnd);assert.ok(kk.dead);const e2=G.sgStep(B,.2,rnd);assert.equal(B.sg.sw[1],0);assert.equal(B.sg.crown[1],0);assert.ok(e2.some(x=>x.k==='swLost'&&x.q===1)&&e2.some(x=>x.k==='cstop'));
     fe.x=600;fe.y=1900;fb.alive=true;fb.hp=1;fb.x=G.SG.sw[1][0];fb.y=G.SG.sw[1][1];B.t+=2;G.sgAct(B,b,'use',rnd);for(let i=0;i<20;i++)G.sgStep(B,.2,rnd);assert.deepEqual(B.sg.sw,[7,7]);}
   B.t+=2;G.sgAct(B,L,'use',rnd);ev=[];for(let i=0;i<160;i++)ev=ev.concat(G.sgStep(B,.2,rnd));assert.equal(B.sg.holder,7,'the leader on the crown for long enough, with both switches held: the castle is theirs');assert.ok(ev.some(x=>x.k==='taken'&&x.g===7&&x.by===L));
   assert.deepEqual(B.sg.gate,G.SG.gates.map(()=>G.SG.gateHp),'the gates are whole again');assert.deepEqual(B.sg.sw,[0,0]);
@@ -588,8 +588,31 @@ test('moves that move: the leap carries the attacker onto a far enemy, the shove
     q.pots=5;const h0=q.hp;assert.ok(G.brAct(B,1,'pot',rnd).heal===G.SG.heal&&q.hp>h0);B.t+=G.SG.potCd+.01;assert.ok(G.brAct(B,1,'pot',rnd),'a potion by the press');}
   { // one skill of each class strikes several, and the enemy he chose comes first
     const B=G.brNew([{id:'p',n:'p',c:'blade'},{id:'q',n:'q',c:'storm'},{id:'r',n:'r',c:'hunter'},{id:'z',n:'z',c:'hunter'}],rnd);B.t=5;const f=B.f;f[0].x=0;f[0].y=0;f[1].x=40;f[1].y=0;f[2].x=-60;f[2].y=0;f[3].x=600;f[3].y=0;
-    const near=G.brAct(B,0,'atk',rnd);assert.equal(near.to,1);B.t+=1;const ch=G.brAct(B,0,'atk',rnd,2);assert.equal(ch.to,2,'the chosen enemy is struck, not the nearest');B.t+=1;assert.equal(G.brAct(B,0,'atk',rnd,3).to,1,'one out of reach cannot be chosen');
+    const near=G.brAct(B,0,'atk',rnd);assert.equal(near.to,1);B.t+=1;const ch=G.brAct(B,0,'atk',rnd,2);assert.equal(ch.to,2,'the chosen enemy is struck, not the nearest');B.t+=1;assert.equal(f[0].face,-1,'he turned to the one he chose');assert.equal(G.brAct(B,0,'atk',rnd,3).to,2,'one out of reach cannot be chosen: the blow falls on the one he faces');
+    B.t+=1;f[2].x=-200;assert.equal(G.brAct(B,0,'atk',rnd),null,'nothing aims for the hand: an enemy behind his back is not struck unless he is marked');f[0].face=1;assert.equal(G.brAct(B,0,'atk',rnd).to,1,'he turns, and strikes');f[2].x=-60;
     B.t+=1;const sw=G.brAct(B,0,'s0',rnd);assert.ok(sw.more&&sw.more.length===1&&sw.more[0][0]===2&&sw.more[0][1]<sw.dm,'the blade sweeps the others around him, for less: '+JSON.stringify(sw.more));B.t+=1;assert.ok(!G.brAct(B,0,'s1',rnd).more,'his other skill strikes one');}
+});
+test('every class has its own combo order and its own toughness against players',()=>{
+  const rnd=()=>.5;
+  for(const c of Object.keys(G.CLS)){const q=G.COMBO[c];assert.ok(q&&q.slice().sort().join()==='atk,s0,s1','three moves, each once: '+c);
+    const B=G.brNew([{id:'p',n:'p',c:c},{id:'q',n:'q',c:'blade'}],rnd);B.t=5;const p=B.f[0],e=B.f[1];p.x=0;p.y=0;e.x=30;e.y=0;e.hp=1e6;
+    let o;for(const k of q){B.t+=G.SG.skT+.05;o=G.brAct(B,0,k,rnd);}assert.ok(o&&o.combo,'the order of '+c+' makes a combo');
+    if(c!=='blade'){p.cb=0;for(const k of G.COMBO.blade){B.t+=G.SG.skT+.05;o=G.brAct(B,0,k,rnd);}assert.ok(!o.combo,'and the blade\'s order is not the order of '+c);}}
+  assert.equal(new Set(Object.values(G.COMBO).map(q=>q.join())).size,Object.keys(G.CLS).length,'no two classes share an order');
+  const hit=(c,k)=>{const B=G.brNew([{id:'p',n:'p',c:'blade'},{id:'q',n:'q',c:c}],rnd);B.t=5;B.f[0].x=0;B.f[0].y=0;B.f[1].x=30;B.f[1].y=0;B.f[0].chain=1;return G.brAct(B,0,k,rnd).dm;};
+  assert.ok(hit('blade','atk')<hit('lord','atk')&&hit('lord','atk')<hit('hunter','atk')&&hit('hunter','atk')<hit('storm','atk'),'a plain blow barely moves a blade and falls hardest on the witch');
+  assert.ok(hit('storm','atk')/hit('blade','atk')>1.7,'by far');assert.ok(hit('storm','s0')/hit('blade','s0')<1.25,'a skill cuts through the blade far better than a plain blow: he falls to combos');
+});
+test('the reset shop opens shelf by shelf with resets, and some goods are counted by the week or for ever',()=>{
+  G.setEnv(Math.random,()=>1.8e12);const A=G.newAccount();G.apply(A,'create',{cls:'blade',name:'shelf'},{});const S=A.chars[0];A.cred=5000;
+  const buy=k=>G.apply(A,'buy',{shop:'reset',k:k},{});
+  assert.equal(buy('charm').ok,false,'nothing before the first reset');S.resets=1;assert.equal(buy('charm').ok,true);assert.equal(buy('abox').ok,false,'the next shelf is closed');
+  S.resets=5;assert.equal(buy('abox').ok,true);const t0=A.tickets;for(let i=0;i<4;i++)assert.equal(buy('ticket5').ok,true);assert.equal(A.tickets,t0+20);assert.equal(buy('ticket5').ok,false,'four a week');assert.deepEqual(G.resetLeft(A,G.RESET_SHOP.find(o=>o.k==='ticket5')),[0,-1]);
+  assert.equal(buy('exbox').ok,false);S.resets=20;const c0=A.cred,x=buy('exbox');assert.ok(x.ok&&x.box&&x.box.it.ex&&A.cred===c0-60,'an excellent item, always');
+  S.resets=30;const an=buy('anbox');assert.ok(an.ok&&an.box.it.r===4,'an ancient item, always');const p0=A.bonusPts;for(let i=0;i<10;i++)assert.equal(buy('pts2').ok,true);assert.equal(A.bonusPts,p0+2500);assert.equal(buy('pts2').ok,false,'ten for ever');
+  assert.equal(buy('exanc').ok,false);S.resets=40;const ea=buy('exanc');assert.ok(ea.ok&&ea.box.it.r===4&&ea.box.it.ex);assert.equal(buy('exanc').ok,false,'one a week');
+  A.week.key='old';assert.equal(buy('exanc').ok,true,'a new week, a new count');assert.equal(buy('pts2').ok,false,'but for ever is for ever');
+  const needs=G.RESET_SHOP.map(o=>o.need);assert.deepEqual(needs,needs.slice().sort((a,b)=>a-b),'shelves in order');assert.ok(needs[needs.length-1]>=50,'and the last is far');
 });
 test('the game master walks anywhere; nobody else does',()=>{
   G.setEnv(Math.random,()=>1.8e12);const zi=G.ZONES.findIndex(z=>z.castle),far=G.ZONES.length-2;
@@ -685,7 +708,8 @@ test('the warlord: strength from endurance, less harm and more life than the bla
   const D=G.liveNew(fl,fb,true);D.t=5;D.f[1].x=D.f[0].x+60;D.f[1].z=D.f[0].z;assert.ok(G.liveAct(D,0,'atk',rnd),'his reach is between the blade\'s and the witch\'s');assert.ok(G.LIVE_RNG.lord>G.LIVE_RNG.blade&&G.LIVE_RNG.lord<G.LIVE_RNG.storm);
   const S=G.sgNew(rnd,{}),a=G.sgAdd(S,Object.assign({id:'l'},fl),1,'A',rnd),e1=G.sgAdd(S,Object.assign({id:'e1'},fb),2,'B',rnd),e2=G.sgAdd(S,Object.assign({id:'e2'},fb),2,'B',rnd),m=G.sgAdd(S,Object.assign({id:'m'},fb),1,'A',rnd);S.t=5;
   for(const i of [a,e1,e2,m]){S.f[i].x=0;S.f[i].y=1900;S.f[i].bot=false;}S.f[e1].x=60;S.f[e2].x=100;
-  const s1=G.sgAct(S,a,'s1',rnd);assert.ok(s1&&s1.to===e1&&s1.more&&s1.more.length===1&&s1.more[0][0]===e2,'his judgement falls on those beside his enemy');S.t+=1;assert.ok(!G.sgAct(S,a,'s0',rnd).more);
+  const s1=G.sgAct(S,a,'s1',rnd);{const foes=s1.more.filter(x=>!x[3]),own=s1.more.filter(x=>x[3]);assert.ok(s1&&s1.to===e1&&foes.length===1&&foes[0][0]===e2,'his judgement falls on those beside his enemy');
+    assert.ok(own.length===1&&own[0][0]===m&&own[0][1]>0&&own[0][1]<foes[0][1]*.35&&S.f[m].hp<1,'and on a guildmate who stands in it, for a fifth: an area skill does not choose');}S.t+=1;assert.ok(!G.sgAct(S,a,'s0',rnd).more);
   const bf=G.sgAct(S,a,'buf',rnd);assert.ok(bf&&bf.bk==='b'&&bf.n>=2,'his command gives life to the guild around him');
   const R=G.brNew([{id:'p',n:'p',c:'lord'},{id:'q',n:'q',c:'blade'}],rnd);R.t=5;R.f[0].x=0;R.f[0].y=0;R.f[1].x=60;R.f[1].y=0;assert.ok(G.brAct(R,0,'atk',rnd));
   assert.equal(G.cleanPlayer('x',{c:'nosuch'}).c,'blade','an unknown class is never trusted');

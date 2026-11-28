@@ -144,6 +144,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
       f.x += dx / d * st; f.y += dy / d * st; { const r = Math.hypot(f.x, f.y); if (r > G.BR.R) { f.x *= G.BR.R / r; f.y *= G.BR.R / r; } } f.face = Number(m.f) < 0 ? -1 : 1; return;
     }
     if (m.t === 'brAct') {
+      if (m.f !== undefined && B.f[i]) B.f[i].face = Number(m.f) < 0 ? -1 : 1;
       const o = G.brAct(B, i, String(m.k), rnd, Number.isInteger(m.to) ? m.to : -1); if (!o) return; if (o.no) return;
       const out = brState(B); out.ev = [o]; out.s = out.s.map((q, k) => (k === i || k === o.to || (o.more && o.more.some((x) => x[0] === k)) ? q : null)); brAll(out); send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t });
       if (B.over) brFinish(b);
@@ -214,7 +215,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
       G.sgMove(B, f, f.x + dx / d * st, f.y + dy / d * st); f.face = Number(m.f) < 0 ? -1 : 1; return;
     }
     // An action is told to everyone with only the two fighters it touched: with thirty players, a whole picture of everyone on every blow would flood the phones.
-    if (m.t === 'sgAct') { const o = G.sgAct(B, i, String(m.k), rnd, Number.isInteger(m.to) ? m.to : -1); if (!o) return; if (o.no) return send(uid, { t: 'sgHint', no: o.no }); const out = sgState(B); out.ev = [o]; out.s = out.s.map((q, k) => (k === i || k === o.to || (o.more && o.more.some((x) => x[0] === k)) ? q : null)); sgAll(out); return send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t }); }
+    if (m.t === 'sgAct') { if (m.f !== undefined && B.f[i]) B.f[i].face = Number(m.f) < 0 ? -1 : 1; const o = G.sgAct(B, i, String(m.k), rnd, Number.isInteger(m.to) ? m.to : -1); if (!o) return; if (o.no) return send(uid, { t: 'sgHint', no: o.no }); const out = sgState(B); out.ev = [o]; out.s = out.s.map((q, k) => (k === i || k === o.to || (o.more && o.more.some((x) => x[0] === k)) ? q : null)); sgAll(out); return send(uid, { t: 'brMe', at: f.at, pots: f.pots, T: B.t }); }
   }
 
   // ---- Shared monsters (a pilot on one map). The server holds the monsters of each floor of that map: their health,
