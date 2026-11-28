@@ -598,14 +598,14 @@ function brBots(ps,n,rnd){const cl=Object.keys(CLS),out=[];
 // castle when the time runs out keeps it for the week. Until a guild takes it, the castle's own guards hold it.
 // Here real strength counts: the numbers come from each character as it is. The fallen return after a few seconds.
 // Positions are x,y from the middle of the field; y grows toward the viewer (the castle is at the top).
-const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:4,respIn:15,respSafe:3,fwd:[[0,1150],[0,550],[0,330]],lsHit:.02,lsBack:60,botStone:1100,back:[0,-60],crownKeep:0,crownPen:1,pots:120,potMax:250,potCd:.25,heal:.08,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.8,.68,.6,.56],potPrice:20,potPack:10,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,ff:.2,ffN:4,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:64,
+const SG={W:2500,Y0:-1195,Y1:2150,TIME:59*60,crownT:30,swT:3,resp:4,respIn:15,respSafe:3,fwd:[[0,1150],[0,550],[0,330]],lsHit:.02,lsBack:60,botStone:1100,back:[0,-60],crownKeep:0,crownPen:1,pots:120,potMax:250,potCd:.25,heal:.08,skT:.4,skM:{s0:1,s1:1.15},stunGap:1.6,gangT:2,gang:[.8,.68,.6,.56],potPrice:20,potPack:10,hit:.045,gam:.75,hitMin:.0015,hitMax:.14,critMax:1.6,comboM:1.5,comboFlat:.2,wound:.8,cbMin:0,cbMax:1,areaM:.6,areaN:3,ff:.2,ffN:4,areaR:90,areaB:30,push:16,pushC:30,pushT:.25,pushI:.6,cd:{s3:12},leap:230,bashCd:7,bashM:.3,bashPush:90,
   buf:{cd:14,dur:25,r:180,dmg:1.15,def:.87,hp:1.15,spd:.9},gateHp:1,gateHit:.012,rad:14,
   // the castle's own walls, then two ramparts across the long road up from the camp: each leaves narrow ways through, where fights happen
   // a wide castle: room to fight in the yard and in the throne room without everyone standing on everyone
   walls:[[-970,-1052,970,-1002],[-970,82,-105,132],[105,82,970,132],[-970,-1052,-920,-565],[-970,-376,-920,132],[920,-1052,970,-565],[920,-376,970,132],[-920,-618,-147,-576],[147,-618,920,-576],[-1250,690,-370,714],[-230,690,230,714],[370,690,1250,714],[-1250,1290,-430,1314],[-290,1290,290,1314],[430,1290,1250,1314]],
   gates:[[-105,82,105,132],[-970,-565,-920,-376],[920,-565,970,-376],[-430,1290,-290,1314],[290,1290,430,1314],[-370,690,-230,714],[230,690,370,714],[-640,-440,-590,-400],[590,-440,640,-400],[-400,-110,-350,-70],[350,-110,400,-70]],
   // the last four are no gates but the guardian stones in the yard: while one stands, a shield bars the throne room to all but the castle's own
-  stat:[7,8,9,10],shield:[-147,-618,147,-576],statR:170,statHeal:.03,sw:[[-798,-809],[798,-809]],crown:[0,-870],zone:58,
+  stat:[7,8,9,10],shield:[-147,-618,147,-576],statR:170,statHeal:.03,sw:[[-798,-809],[798,-809]],crown:[0,-870],zone:95,
   // potions: beside the camp, half way up the road, and inside the castle
   shops:[[-170,1990],[0,1010],[693,-229]],shopR:70,camp:[0,1960],yard:[0,-439],posts:[[-798,-809],[798,-809],[-84,-19],[84,-19],[0,-838]],
   hall:[-920,-1002,920,82]};
