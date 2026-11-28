@@ -251,7 +251,8 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     let mon; if (own) { let pm = ownMons.get(uid); if (!pm) ownMons.set(uid, pm = {}); mon = pm[pk]; if (!mon || !mon.alive || now - mon.at > OWN_KEEP) mon = pm[pk] = { hp: r.max * (i === -1 ? 30 : G.ELITE_HP), top: r.max * (i === -1 ? 30 : G.ELITE_HP), alive: true }; mon.at = now; } else mon = r.mons[i];
     if (!mon || !mon.alive) return;
     // his own pace: so many blows' worth a second, a short burst allowed; whatever he asks beyond it is cut down to it
-    ws.sb = Math.min(12, (ws.sb || 0) + (now - (ws.sbT || now)) / 1000 * Math.max(.3, p.a) * (r.ev ? 12 : 2.8)); ws.sbT = now; if (ws.sb < .2) return;
+    // Since the maps fight on the siege's beat, a hand that keeps its skills going lands more than plain blows alone: the pace allows for it.
+    ws.sb = Math.min(30, (ws.sb || 0) + (now - (ws.sbT || now)) / 1000 * (r.ev ? Math.max(.3, p.a) * 12 : Math.max(.3, p.a) * 2.8 + 8)); ws.sbT = now; if (ws.sb < .2) return;
     let mult = Math.max(.2, Math.min(6, Number(m.m) || 1)); if (mult > ws.sb) mult = ws.sb; ws.sb -= mult;
     const crit = rnd() < p.cr, d = Math.max(1, Math.round(p.d * (crit ? p.cd : 1) * mult * (.9 + rnd() * .2)));
     mon.hp -= d;

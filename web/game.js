@@ -1,5 +1,5 @@
 import * as G from './core.js';
-const BUILD='20261128115439';
+const BUILD='20261128130211';
 const {CITY_SHOP,CITY_WEEK,TRIAL_TRIES,TRIAL_T,TRIAL_RW,TRIAL_MOD,TRIAL_MEDAL,dayNum,BANK,bankCap,wskinOn,CAPEN,EXB,exCount,keepStart,keepGate,SG,sgCamp,sgMove,PETN,PETN2,PET_DAYS,PET_BOX,petOn,setBoost,boostNow,BR,brRing,brWindow,JEWV,SETN2,SETB2,setKey,setName,setTable,PERFECT_M,mastery,masteryNeed,MASTERY_PCT,ELITE_HP,TOWER_TRIES,towerBoss,towerReward,LIVE_W,LIVE_RNG,LIVE_LANE,liveFrom,liveAct,liveOver,worldReward,RESPEC_COST,WEEKLY,SIDEQ,pickOf,reqOf,canWear,WING_MAX,wingFeathers,wingChance,DUEL_LIVE,PASS_MAX,PASS_STEP,PASS_DAY,tierOf,REGION,KEY_SHARDS,KEY_GOLD,KEEP_GATE,KEEP_HP,keepOpen,PACKS,PREM_SHOP,TIER_MIN,evTier,tierRange,tierReward,isFull,STAT_MAX,PARTY_SHARE,LOGIN_RW,AURAS,partyXp,GUILD_FEE,SECRET_Q,siegeInfo,FLOORS,floorMin,zs,canFloor,afkFloor,EVENTS,QUIZ,localMin,evWindows,evMods,evNext,quizFor,BASEZ,canEnter,PARTY_XP,setEnv,CAP,ZONES,MHP,ZSPR,CLS,STATN,RAR,TIERN,WINGN,AFF,POOL,SLOTS,SLOTN,SETN,SETB,rslot,isSet,setCounts,UPCH,clamp,need,pois,tzParts,dayKey,seasonKey,AFK,SHARED,newAccount,newChar,bind,ensureDay,itemVals,itemName,itemScore,calc,zoneInfo,afkZone,autoAlloc,addXp,rollAff,makeItem,rollRar,sellVal,stash,gainItem,rollLoot,offline,canReset,resetGain,doReset,upCost,upChance,upgrade,openBox,passReward,passLevel,TASKS,fighter,simDuel,BOSSN,GOLD_SHOP,RESET_SHOP,SEASON_SHOP,totalResets,slotsOpen,anyEq,QUESTS,give,numOr,int,gearOr,cleanPlayer,cleanItem,adopt,findIt,maxKps,BOTN,buildOpps,apply,BAG,MATK,SKLV,SKCD,DROPS,ARM}=G;
 import {tr,getLang,setLang,startLang} from './i18n.js';
 const PG=p=>p+(getLang()==='en'?'.en':'')+'.html'; // the terms and privacy pages exist in both languages
@@ -884,7 +884,7 @@ function dropOrbs(m,rep){
 function afterXp(ups){
   if(!(ups>0))return;snd('lvl');statsDirty=true;panelDirty=true;const h=SC.hero;
   h.luAt=SC.t;SC.fx.push({k:'lvl',x:h.x,y:gy(),life:.9,c:'#f2c14e'});SC.fx.push({k:'rune',x:h.x,y:gy()-2,r:64,life:1,d:1,c:'#ffd75e'});SC.fx.push({k:'pillar',x:h.x,y:gy(),life:.7,d:.7,c:'#ffd75e'});addNum(h.x,gy()-120,'רמה '+S.lvl,'#f2c14e',true);
-  for(let i=0;i<6;i++)if(S.lvl>=SKLV[i]&&S.lvl-ups<SKLV[i]&&i>0)toast('כישור חדש: '+CLS[S.cls].sk[i]);
+  for(let i=0;i<6;i++)if(!S.resets&&S.lvl>=SKLV[i]&&S.lvl-ups<SKLV[i]&&i>0)toast('כישור חדש: '+CLS[S.cls].sk[i]);
   if(splashN(S.lvl)>splashN(S.lvl-ups))toast('המכה הרגילה שלך פוגעת עכשיו גם ב-'+splashN(S.lvl)+' מפלצות סמוכות');
   if(S.lvl>=CAP)toast('רמה 400. אפשר לבצע ריסט');
 }
@@ -979,7 +979,7 @@ function cast(i,auto){
   const h=SC.hero;if(SC.mode!=='farm'||SC.zi<0||h.dead>0||h.climb)return false;
   if(i===7)return drinkPot(false);
   if(i===6){if(h.dashT>0)return false;h.dashT=DUEL_LIVE.dash.cd;h.inv=DUEL_LIVE.dash.inv;const d=h.dir||h.face||1,x0=h.x;h.x=clamp(h.x+d*DUEL_LIVE.dash.d,30,mapW()-30);h.tgt=null;h.manual=.4;snd('click');SC.fx.push({k:'line',x1:x0,y1:gy()-50,x2:h.x,y2:gy()-50,life:.2,c:'#9fe8ff',w:6});burst(x0,gy()-40,'#9fe8ff',10);return true;}
-  if(S.lvl<SKLV[i]||h.cds[i]>0)return false;
+  if(!skOpen(i)||h.cds[i]>0)return false;
   const beat=i===0||i===3;if(beat&&h.beat>0){if(!auto)h.q={i:i,until:SC.t+.5};return false;} // pressed a breath early: it goes off on the beat, as in a fight
   const col=gearColor(lookOf(S).w,SC.t,CLS[S.cls].c),melee=S.cls==='blade',loud=SC.t-(h.saidT||0)>1.6;if(beat){h.beat=SG.skT;h.atkT=Math.max(h.atkT||0,SG.skT);}
   if(i===0){const cx=melee||!h.tgt?h.x+(melee?0:h.face*120):h.tgt.x,R=melee?135:120,ts=alive().filter(m=>Math.abs(m.x-cx)<R*(m.boss?1.4:1));
@@ -1011,13 +1011,13 @@ function cast(i,auto){
 }
 // In the maps a fight is the siege's fight: the two skills on one short beat, the guard, the great skill, the step, a potion by the press.
 // What the skills are worth here: [the first, the strong one, the great one], against one plain blow.
-const PVE_SK=[1.3,1.6,4];
+const PVE_SK=[.5,1.6,4],skOpen=i=>S.resets>0||S.lvl>=SKLV[i]; // the first skill strikes everyone around, so each takes less; a character that has reset once keeps all its skills from level 1
 function drinkPot(auto){const h=SC.hero;if(SC.mode!=='farm'||SC.zi<0||h.dead>0||h.potT>0||h.hp>=C.hp)return false;if(A.pots==null)A.pots=G.POT_START;
   if(A.pots<1){if(!auto&&SC.t-(h.noPotT||-9)>4){h.noPotT=SC.t;toast('נגמרו השיקויים. קונים בחנות הזהב');}return false;}
   h.potT=SG.potCd;A.pots--;pend.pots++;const g=C.hp*SG.heal;h.hp=Math.min(C.hp,h.hp+g);snd('coin');addNum(h.x,gy()-100,'+'+fmt(g),'#6fe39a');SC.fx.push({k:'ring',x:h.x,y:gy()-40,life:.25,c:'#6fe39a',r:34});return true;}
 // A combo against monsters, in the same order as against players: a plain blow, the first skill, then the pulling one,
 // each within a short moment of the last. Only by hand; the pulling skill's wait is what keeps it from being cheap.
-const CBW=1.6,CBM=1.6,CBS=.8;
+const CBW=1.6,CBM=1.6,CBS=.5;
 function comboStep(i,col,hitM){
   const h=SC.hero,k=i<0?'atk':i===0?'s0':i===3?'s1':'',q=G.COMBO[S.cls]||G.COMBO.blade,ok=SC.t-(h.cbT||-9)<=CBW,n=ok?h.cb|0:0;
   if(hitM)h.cbM=hitM;
@@ -1113,7 +1113,7 @@ function updateWorld(dt){
       if(Math.abs(d)>7){h.x+=Math.sign(d)*Math.min(Math.abs(d),spd*dt);h.mv=true;}else if(mu){h.up=1;snd('click');}}
     else if(Math.abs(dx)>r){h.x+=Math.sign(dx)*spd*dt;h.mv=true;}
     else{
-      if(S.auto&&h.autoSk<=0&&S.lvl>=SKLV[0]&&cast(0,true))h.autoSk=3;
+      if(S.auto&&h.autoSk<=0&&cast(0,true))h.autoSk=3;
       if(h.atkT<=0){h.atkT=1/(C.aspd*(h.buff>0?2:1));h.anim=1;h.lastAtk=SC.t;const col=gearColor(lookOf(S).w,SC.t,CLS[S.cls].c);h.chain=SC.t-(h.chainT||0)>2.5?1:(h.chain||0)+1;h.chainT=SC.t;comboStep(-1,col,m);const step=h.chain%4; // the ordinary attack is a four-beat chain: jab, cross, jab, finisher
         if(step===0){attackFx(S.cls,h.x,hY(),h.face,[m],true,col);h.skA=.25;
           if(S.cls==='lord'){SC.fx.push({k:'wave',x:h.x+h.face*30,y:gy(),dir:h.face,dist:Math.abs(m.x-h.x)+70,h:70,life:.32,d:.32,c:'#ff7a2e'});for(let q=0;q<2;q++)SC.fx.push({k:'ring',x:h.x+h.face*30,y:gy()-4,life:.3+q*.12,c:q?'#ffd75e':'#ff7a2e',r:40+q*30});burst(m.x,gy()-30,'#ff7a2e',16);}
@@ -1748,7 +1748,7 @@ function renderHud(){
   $('autoBtn').textContent='אוטומטי: '+(S.auto?'פעיל':'כבוי');$('autoBtn').classList.toggle('on',!!S.auto);
   const bs=$('skills').children,h=SC.hero;
   {const cq=G.COMBO[S.cls]||G.COMBO.blade,cn={s0:cq.indexOf('s0')+1,s1:cq.indexOf('s1')+1},pots=A.pots==null?G.POT_START:A.pots;
-  for(const b of bs){const i=+b.dataset.i,lock=i<6&&S.lvl<SKLV[i],cd=i===6?h.dashT||0:i===7?0:h.cds[i],nm=i===6?'צעד':i===7?'שיקוי ×'+pots:CLS[S.cls].sk[i];b.className=lock?'lock':cd>0||(i===7&&pots<1)?'cd':'';
+  for(const b of bs){const i=+b.dataset.i,lock=i<6&&!skOpen(i),cd=i===6?h.dashT||0:i===7?0:h.cds[i],nm=i===6?'צעד':i===7?'שיקוי ×'+pots:CLS[S.cls].sk[i];b.className=lock?'lock':cd>0||(i===7&&pots<1)?'cd':'';
     const txt=lock?'רמה '+SKLV[i]:cd>.6?Math.ceil(cd)+' שנ׳':i===7?(pots<1?'נגמר':'&nbsp;'):i===0?'קומבו '+cn.s0:i===3?'קומבו '+cn.s1:'מוכן',kb=DESK?'<kbd>'+keyName(keyOf('k'+i))+'</kbd>':'';if(b.dataset.s!==txt+S.cls+nm){b.dataset.s=txt+S.cls+nm;b.innerHTML=kb+esc(nm)+'<b>'+txt+'</b>';}}}
   {const pb=$('potBtn'),v=prefs.autoPot==null?50:prefs.autoPot;pb.style.display=$('autoBtn').style.display;const t=v?'שיקוי אוטומטי: '+v+'%':'שיקוי אוטומטי: כבוי';if(pb.textContent!==t)pb.textContent=t;pb.classList.toggle('on',!!v);}
   const q=QUESTS[A.q],qe=$('quest');
