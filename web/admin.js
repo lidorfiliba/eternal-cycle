@@ -53,6 +53,7 @@
       '<p><b>הודעה לכולם</b><br><input id="gmSay" maxlength="120" placeholder="טקסט ההודעה" style="width:70%"> <button data-a="gm" data-u="say">שלח</button></p>'+
       '<p><b>בונוס לכולם</b><br>ניסיון × <input id="gmXp" value="1.5" size="3"> שלל × <input id="gmDrop" value="1" size="3"> למשך <input id="gmMin" value="30" size="3"> דקות <button data-a="gm" data-u="boost">הפעל</button> <button data-a="gm" data-u="boost0">בטל בונוס</button></p>'+
       '<p><b>המעגל האחרון</b><br>הרשמה של <input id="gmSec" value="90" size="3"> שניות <button data-a="gm" data-u="br">פתח</button> <button data-a="gm" data-u="brStop">בטל הרשמה</button></p>'+
+      '<p><b>בוס עולם</b><br>למשך <input id="gmWb" value="12" size="3"> דקות (5 עד 30) <button data-a="gm" data-u="world">זמן בוס עולם</button> <button data-a="gm" data-u="worldStop">בטל בוס שזומן</button></p>'+
       '<p><b>מצור</b><br>למשך <input id="gmSg" value="12" size="3"> דקות: <button data-a="gm" data-u="siege">מצור ידידות</button> <button data-a="gm" data-u="siegeBots4">אימון מול בוטים 4 מול 4</button> <button data-a="gm" data-u="siegeBots6">אימון 6 מול 6</button> <button data-a="gm" data-u="siegeStop">עצור מצור</button></p></div>';
     h+='<div class="card stats"><div><b>'+d.users+'</b>חשבונות</div><div><b>'+d.online+'</b>מחוברים עכשיו</div><div><b>'+d.day+'</b>פעילים ביממה</div></div>';
     if(shop){h+='<h2>תרומות וקרדיטים</h2><div class="card stats"><div><b>'+shop.paid_total+'</b>ש"ח אושרו</div><div><b>'+shop.paid_count+'</b>תרומות</div><div><b>'+shop.pending.length+'</b>ממתינות</div></div><div class="card">';
@@ -96,8 +97,8 @@
     if(b.dataset.a==='sNew'){const c=prompt('הקלד את 6 הספרות שמופיעות עכשיו באפליקציית האימות. הקודים הישנים יפסיקו לעבוד.');if(!c)return;let r=null;try{r=await post('tfaCodes',{code:c.trim()},ses.token);}catch(err){}if(!r||!r.ok){await load(esc(r&&r.msg||'הפעולה נכשלה'));return;}sign={step:'codes',user:ses.user,pass:'',tok:ses.token,sec:null,codes:r.codes};return signForm();}
     if(b.dataset.a==='sOut'){keep(null);sign={step:'in',user:'',pass:'',tok:'',sec:null,codes:null};return signForm();}
     if(b.dataset.a[0]==='s'&&['sIn','sCode','sBack','sOn','sDone'].indexOf(b.dataset.a)>=0){b.disabled=true;await signDo(b.dataset.a);return;}
-    if(b.dataset.a==='gm'){const k=b.dataset.u,n=id=>+($(id)?$(id).value:0)||0,m=k==='say'?{a:'say',m:$('gmSay').value}:k==='boost'?{a:'boost',xp:n('gmXp'),drop:n('gmDrop'),min:n('gmMin')}:k==='boost0'?{a:'boost',min:0}:k==='br'?{a:'br',sec:n('gmSec')}:k==='siege'?{a:'siege',min:n('gmSg')}:k==='siegeBots4'?{a:'siegeBots',min:n('gmSg'),n:4}:k==='siegeBots6'?{a:'siegeBots',min:n('gmSg'),n:6}:{a:k};
-      if((k==='boost'||k==='say'||k==='siege')&&!confirm('לבצע עכשיו על כל המחוברים?'))return;b.disabled=true;let r=null;try{r=await call('agm',m);}catch(err){}await load(esc(r&&r.result&&r.result.msg||'הפעולה נכשלה'));return;}
+    if(b.dataset.a==='gm'){const k=b.dataset.u,n=id=>+($(id)?$(id).value:0)||0,m=k==='say'?{a:'say',m:$('gmSay').value}:k==='boost'?{a:'boost',xp:n('gmXp'),drop:n('gmDrop'),min:n('gmMin')}:k==='boost0'?{a:'boost',min:0}:k==='br'?{a:'br',sec:n('gmSec')}:k==='world'?{a:'world',min:n('gmWb')}:k==='siege'?{a:'siege',min:n('gmSg')}:k==='siegeBots4'?{a:'siegeBots',min:n('gmSg'),n:4}:k==='siegeBots6'?{a:'siegeBots',min:n('gmSg'),n:6}:{a:k};
+      if((k==='boost'||k==='say'||k==='siege'||k==='world')&&!confirm('לבצע עכשיו על כל המחוברים?'))return;b.disabled=true;let r=null;try{r=await call('agm',m);}catch(err){}await load(esc(r&&r.result&&r.result.msg||'הפעולה נכשלה'));return;}
     let u=b.dataset.u;if(u==='#'){u=($('who').value||'').trim();if(!u)return;}
     b.disabled=true;let j=null;
     try{

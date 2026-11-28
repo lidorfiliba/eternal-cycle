@@ -821,3 +821,11 @@ test('the world boss is struck by the hand: blows count by the character\'s powe
   now+=1000;r=G.apply(A,'tick',{z:0,f:0,kills:0,wb:5000},{});assert.ok(r.world.dmg<=one*(G.WB_BURST+1),'a made-up count is cut to what the clock allows');
   now+=1000;r=G.apply(A,'tick',{z:0,f:0,kills:0,wb:5000},{});assert.ok(r.world.dmg<=one*(G.WB_RATE+1)*1.01,'and after that, to the rate');
 });
+test('a world boss called by a game master stands in for the clock\'s own, for its minutes and for collecting afterwards',()=>{
+  let now=Date.UTC(2026,11,5,2,10,0);G.setEnv(()=>.5,()=>now);assert.ok(!G.evWindows(now,0).some(w=>w.e.world),'none by the clock at this minute');
+  G.setWorld({key:'world:gmTEST',start:now,end:now+12*60000});
+  try{let w=G.evWindows(now+60000,0).find(x=>x.e.world);assert.ok(w&&w.live&&w.key==='world:gmTEST');
+    const A=G.newAccount();G.apply(A,'create',{name:'gmboss',cls:'blade'},{});G.apply(A,'travel',{z:0},{});G.apply(A,'tick',{z:0,f:0,kills:0},{});now+=5000;const r=G.apply(A,'tick',{z:0,f:0,kills:0,wb:4},{});assert.equal(r.world.key,'world:gmTEST');
+    w=G.evWindows(now+13*60000,60).find(x=>x.e.world);assert.ok(w&&!w.live&&w.key==='world:gmTEST','still there to collect from');assert.equal(G.evWindows(now+13*60000,0).some(x=>x.e.world),false);
+  }finally{G.setWorld(null);}
+});

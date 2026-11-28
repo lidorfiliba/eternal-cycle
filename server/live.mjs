@@ -117,6 +117,12 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
       await gmChat('מצור ידידות נפתח ל-' + min + ' דקות. מצטרפים מלשונית הגילדה'); return ok('מצור ידידות נפתח ל-' + min + ' דקות');
     }
     if (a === 'siegeStop') { if (!sg) return no('אין מצור שרץ'); sg.B.over = 1; return ok('המצור ייסגר מיד'); }
+    if (a === 'world') { // a world boss now, for everyone, on every map
+      if (G.evWindows(now, 0).some((w) => w.e.world && w.live)) return no('בוס העולם כבר פעיל');
+      const min = Math.max(5, Math.min(30, Math.floor(Number(m.min)) || 12)), w = G.setWorld({ key: 'world:gm' + Math.round(now / 60000), start: now, end: now + min * 60000 });
+      all({ t: 'wb', key: w.key, left: w.end - now }); await gmChat('בוס העולם זומן! הלב שלו עומד במרכז כל מפה למשך ' + min + ' דקות'); return ok('בוס העולם פעיל ל-' + min + ' דקות');
+    }
+    if (a === 'worldStop') { if (!G.worldNow(now)) return no('אין בוס עולם שזומן'); G.setWorld(null); all({ t: 'wb', key: '', left: 0 }); return ok('בוס העולם שזומן בוטל'); }
     if (a === 'boost') {
       const min = Math.max(0, Math.min(120, Math.floor(Number(m.min)) || 0)), b = G.setBoost(min ? { xp: m.xp, drop: m.drop, until: now + min * 60000 } : null);
       all({ t: 'boost', xp: b ? b.xp : 1, drop: b ? b.drop : 1, left: b ? b.until - now : 0 });
@@ -412,6 +418,7 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
             if (sg && !sg.done) ws.send(JSON.stringify({ t: 'sgOpen', left: Math.max(0, ((sg.B.sg.time || G.SG.TIME) - sg.B.t) * 1000), test: sg.test ? 1 : 0, quiet: 1 }));
             if (br && br.phase === 'sign') ws.send(JSON.stringify({ t: 'brOpen', left: Math.max(0, br.end - clock()), quiet: 1 }));
             { const b = G.boostNow(clock()); if (b) ws.send(JSON.stringify({ t: 'boost', xp: b.xp, drop: b.drop, left: b.until - clock(), quiet: 1 })); }
+            { const w = G.worldNow(clock()); if (w) ws.send(JSON.stringify({ t: 'wb', key: w.key, left: w.end - clock(), quiet: 1 })); }
             return;
           }
           await onMsg(ws, m);
