@@ -620,5 +620,8 @@ test('siege gathering over the socket: the field opens early, a fighter walks on
     fa.x=fa.px+G.SG.prepR-2;fa.y=fa.py;a.send({t:'sgPos',x:fa.x+20,y:fa.y,f:1});await new Promise(r=>setTimeout(r,150));assert.ok(Math.hypot(fa.x-fa.px,fa.y-fa.py)<=G.SG.prepR,'and not past the edge of the gathering ground');
     fb.x=fa.x+20;fb.y=fa.y;a.send({t:'sgAct',k:'atk',to:sb.me,f:1});await new Promise(r=>setTimeout(r,200));assert.equal(fb.hp,1,'no blow before the hour');
     B.t=0;a.send({t:'sgAct',k:'atk',to:sb.me,f:1});await new Promise(r=>setTimeout(r,250));assert.ok(fb.hp<1,'and from the hour on, blows land');
+    // leaving and coming back: the same fighter, the same potions, and not within a blink
+    fa.pots=77;a.send({t:'sgLeave'});await new Promise(r=>setTimeout(r,100));assert.equal(fa.alive,false);a.send({t:'sgJoin'});assert.equal((await a.wait('sgNo')).why,'wait');
+    x.gone.get(a.uid)[1]-=60000;a.send({t:'sgJoin'});const sa2=await a.wait('brStart');assert.equal(sa2.me,sa.me,'the same fighter');assert.equal(B.f[sa2.me].pots,77);assert.equal(B.f[sa2.me].alive,true);assert.equal(B.f.length,2,'no second body');
   }finally{for(const u of [a,b])if(u&&u.ws)u.ws.close();srv.live.close();srv.close();}
 });

@@ -188,14 +188,19 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
     if (m.t === 'sgJoin') {
       if (!x || x.done || inDuel.has(uid) || (br && br.joined.has(uid))) return send(uid, { t: 'sgNo', why: 'closed' });
       let i = x.idx.get(uid);
+      const old = i == null && x.gone ? x.gone.get(uid) : null;
+      if (old && clock() - old[1] < G.SG.respIn * 1000) return send(uid, { t: 'sgNo', why: 'wait', s: Math.ceil(G.SG.respIn - (clock() - old[1]) / 1000) }); // no stepping out and in to cross the field in a blink
       if (i == null) {
         const boss = !!(x.bots && x.bots.by === uid); // the one who opened a practice siege needs no guild for it, and leads
         const gm = (await admin.from('guild_members').select('guild_id').eq('user_id', uid).maybeSingle()).data; if (!gm && !boss) return send(uid, { t: 'sgNo', why: 'guild' });
         const g = gm ? (await admin.from('guilds').select('id,name,tag,leader').eq('id', gm.guild_id).maybeSingle()).data : { id: 900001, name: 'הצד שלך', tag: 'YOU', leader: uid }, p = await snap(uid); if (!g || !p || sg !== x || x.done) return send(uid, { t: 'sgNo', why: 'closed' });
         if (boss) g.leader = uid;
         if (x.idx.has(uid)) return; const gid = Number(g.id); x.names.set(gid, String(g.name));
+        if (old && x.B.f[old[0]] && x.B.f[old[0]].g === gid) { i = old[0]; x.gone.delete(uid); const f = x.B.f[i]; f.post = null; G.sgSpawn(x.B, f, rnd); f.inv = x.B.t + G.SG.respSafe; x.idx.set(uid, i); x.prof[i] = p; }
+        else {
         if (!x.scaled) { x.scaled = true; for (const f of x.B.f) if (f.g === 0) { f.d = p.d * .8; f.pool = Math.max(1, p.h * 5 * .9); f.def = p.f * .8; } } // the guards measure up to the first to arrive
         i = G.sgAdd(x.B, p, gid, g.tag, rnd, String(g.leader) === String(uid)); x.idx.set(uid, i); x.prof[i] = p;
+        if (old && x.B.f[old[0]]) { const o = x.B.f[old[0]]; x.B.f[i].pots = o.pots; x.B.f[i].bought = o.bought; x.gone.delete(uid); } // he changed guild while away: a new fighter, the same purse
         if (boss && !x.botsIn) { // his side and the other, built from his own strength so the fight is even, each with a role
           x.botsIn = true; const B = x.B, n = x.bots.n, eg = 999001, cls = ['lord', 'blade', 'storm', 'hunter'], names = G.BOTN || []; // every class fights in the practice, the warlord on both sides x.names.set(eg, 'שומרי הכתר');
           const mk = (k, c) => Object.assign({}, p, { id: 'sgbot' + k, n: String(names[k % (names.length || 1)] || 'לוחם ' + (k + 1)).slice(0, 14), c, bot: true, d: p.d * (.9 + rnd() * .2), h: p.h * (.9 + rnd() * .2) });
@@ -206,11 +211,13 @@ export function attachLive(server, { admin, auth, G, rnd, push = null, clock = D
           B.sg.holder = eg; for (let k = 0; k < n; k++) put(10 + k, eg, 'BOT', theirRoles[k] || 'fight', k === 0);
         }
         const add = JSON.stringify({ t: 'sgAdd', i, f: sgPub(x.B, i, x), xy: [x.B.f[i].x, x.B.f[i].y] }); for (const u of x.idx.keys()) if (u !== uid) { const o = socks.get(u); if (o && o.readyState === 1) o.send(add); }
+        }
       }
       return send(uid, { t: 'brStart', sg: sgView(x.B), lead: x.B.f[i].lead ? 1 : 0, test: x.test ? 1 : 0, me: i, f: x.B.f.map((_, q) => sgPub(x.B, q, x)), T: x.B.t, xy: x.B.f.map((f) => [f.x, f.y]), loot: [], guilds: [...x.names.entries()] });
     }
     if (!x || x.done) return; const i = x.idx.get(uid); if (i == null) return; const B = x.B, f = B.f[i];
-    if (m.t === 'sgLeave') { x.idx.delete(uid); f.alive = false; f.resp = 0; return; }
+    // Leaving is free and so is coming back: the same fighter returns, with the potions he had left and what he owes for them.
+    if (m.t === 'sgLeave') { x.idx.delete(uid); f.alive = false; f.resp = 0; (x.gone || (x.gone = new Map())).set(uid, [i, clock()]); return; }
     if (!f.alive || (B.t < 0 && m.t !== 'sgPos')) return;
     if (m.t === 'sgPos') {
       const ox = f.x, oy = f.y; if (B.t < 0 && f.px === undefined) { f.px = f.x; f.py = f.y; }
